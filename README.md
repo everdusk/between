@@ -1,5 +1,7 @@
 # Between
 
+**Репозиторий:** [github.com/everdusk/between](https://github.com/everdusk/between)
+
 Telegram Mini App — личный дневник для подготовки к еженедельной психотерапии.  
 Интерфейс на русском; бренд — **Between**. Данные в `localStorage` на устройстве (без аккаунта и обязательного бэкенда).
 

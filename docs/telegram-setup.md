@@ -2,6 +2,7 @@
 
 Клиент v1 — **Telegram Mini App** без обязательного сервера. Токен бота в репозиторий не коммитим.
 
+**Репозиторий (source of truth):** [github.com/everdusk/between](https://github.com/everdusk/between)  
 **Бот:** [@BetweenJournalBot](https://t.me/BetweenJournalBot) (создан). Токен не передан в проект.
 
 ## Чеклист BotFather
@@ -14,14 +15,14 @@
 
 ## Дальше
 
-- Нужен публичный HTTPS URL приложения для Menu Button.
+- Подключите [everdusk/between](https://github.com/everdusk/between) к Vercel → получите HTTPS URL → укажите в Menu Button.
 - Серверная валидация `initData` (токен в env) — позже, по желанию.
 
 ## Публичный URL
 
 Telegram открывает Mini App только по **HTTPS**. Для теста с телефона:
 
-- задеплойте Next.js (Vercel и т.п.), или
+- задеплойте Next.js на Vercel из GitHub-репо [everdusk/between](https://github.com/everdusk/between), или
 - поднимите туннель к локальному `npm run dev` (ngrok / cloudflared) и укажите этот HTTPS URL в Menu Button.
 
 ## Локальная разработка без Telegram
