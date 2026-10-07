@@ -3,6 +3,8 @@ import type { ThemeParams, WebApp, WebAppUser } from "@twa-dev/types";
 export type TelegramSession = {
   ready: boolean;
   inTelegram: boolean;
+  /** True when opened on localhost / 127.0.0.1 (local Next.dev), not production HTTPS. */
+  isLocalHost: boolean;
   user: WebAppUser | null;
   displayName: string;
   colorScheme: "light" | "dark";
@@ -10,6 +12,12 @@ export type TelegramSession = {
 };
 
 export const DEV_DISPLAY_NAME = "Гость";
+
+export function isLocalDevHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+}
 
 export function isLikelyTelegram(webApp: WebApp): boolean {
   return Boolean(webApp.initData) || Boolean(webApp.initDataUnsafe?.user);

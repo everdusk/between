@@ -63,11 +63,13 @@ export function TherapyApp() {
               {telegram.ready
                 ? telegram.inTelegram
                   ? `Привет, ${telegram.displayName}`
-                  : `Привет, ${telegram.displayName} · режим разработки`
+                  : telegram.isLocalHost
+                    ? `Привет, ${telegram.displayName} · режим разработки`
+                    : `Привет, ${telegram.displayName}`
                 : "Загрузка…"}
             </p>
           </div>
-          {!telegram.inTelegram && telegram.ready && (
+          {!telegram.inTelegram && telegram.ready && telegram.isLocalHost && (
             <span className="shrink-0 rounded-md border border-border/70 bg-background/70 px-2 py-1 text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
               localhost
             </span>
@@ -164,7 +166,7 @@ export function TherapyApp() {
 
       <footer className="relative z-10 px-4 py-4 text-center text-[0.7rem] leading-relaxed text-muted-foreground">
         Between · данные только на этом устройстве
-        {!telegram.inTelegram && telegram.ready
+        {!telegram.inTelegram && telegram.ready && telegram.isLocalHost
           ? " · вне Telegram — локальный режим"
           : null}
       </footer>

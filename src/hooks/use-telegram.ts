@@ -9,12 +9,14 @@ import {
   DEV_DISPLAY_NAME,
   displayNameFromUser,
   isLikelyTelegram,
+  isLocalDevHost,
   type TelegramSession,
 } from "@/lib/telegram";
 
 const FALLBACK: TelegramSession = {
   ready: false,
   inTelegram: false,
+  isLocalHost: false,
   user: null,
   displayName: DEV_DISPLAY_NAME,
   colorScheme: "light",
@@ -49,6 +51,7 @@ export function useTelegram(): TelegramSession {
     function syncFromWebApp(wa: WebApp, inTelegram: boolean) {
       if (cancelled) return;
       const user = wa.initDataUnsafe?.user ?? null;
+      const isLocalHost = isLocalDevHost();
       if (inTelegram) {
         applyTelegramTheme(wa.themeParams, wa.colorScheme);
         applyViewportHeight(wa.viewportStableHeight || wa.viewportHeight);
@@ -58,6 +61,7 @@ export function useTelegram(): TelegramSession {
       setSession({
         ready: true,
         inTelegram,
+        isLocalHost,
         user,
         displayName: inTelegram
           ? displayNameFromUser(user)
@@ -96,6 +100,7 @@ export function useTelegram(): TelegramSession {
           setSession({
             ...FALLBACK,
             ready: true,
+            isLocalHost: isLocalDevHost(),
           });
         }
       });
