@@ -166,7 +166,7 @@ export function TherapyApp() {
 
       <footer className="relative z-10 px-4 py-4 text-center text-[0.7rem] leading-relaxed text-muted-foreground">
         Between · данные только на этом устройстве
-        {!telegram.inTelegram && telegram.ready
+        {!telegram.inTelegram && telegram.ready && telegram.isLocalHost
           ? " · вне Telegram — локальный режим"
           : null}
       </footer>
