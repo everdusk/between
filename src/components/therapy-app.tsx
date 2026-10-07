@@ -54,7 +54,7 @@ export function TherapyApp() {
             href="#top"
             className="font-display text-lg tracking-tight text-foreground transition-opacity hover:opacity-80"
           >
-            Therapy Helper
+            Between
           </a>
           <nav className="hidden gap-1 sm:flex" aria-label="Разделы">
             {SECTIONS.map((s) => (
@@ -93,7 +93,7 @@ export function TherapyApp() {
           )}
         >
           <p className="font-display text-5xl leading-[1.05] tracking-tight text-foreground sm:text-6xl md:text-7xl">
-            Therapy Helper
+            Between
           </p>
           <h1 className="mt-6 max-w-[18ch] text-xl font-medium leading-snug text-foreground/90 sm:text-2xl">
             Дневник к сеансу: ясность вместо хаоса в голове
