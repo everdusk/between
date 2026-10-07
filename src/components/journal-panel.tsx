@@ -83,7 +83,7 @@ export function JournalPanel({
 
       {isEmpty && (
         <p className="rounded-lg border border-dashed border-border/80 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
-          Пока нет записи на сегодня. Начните с настроения и пары предложений
+          Пока нет записи на эту дату. Начните с настроения и пары предложений
           — достаточно честного черновика.
         </p>
       )}
