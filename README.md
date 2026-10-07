@@ -5,7 +5,8 @@
 Telegram Mini App — личный дневник для подготовки к еженедельной психотерапии.  
 Интерфейс на русском; бренд — **Between**. Данные в `localStorage` на устройстве (без аккаунта и обязательного бэкенда).
 
-**Бот:** [@BetweenJournalBot](https://t.me/BetweenJournalBot) — создан. Menu Button URL ещё не задан (нужен HTTPS). Токен в репозиторий не передавался.
+**Бот:** [@BetweenJournalBot](https://t.me/BetweenJournalBot) — создан. Токен в репозиторий не передавался.  
+**HTTPS:** [https://between-rouge.vercel.app](https://between-rouge.vercel.app) — задеплоено. Menu Button в BotFather ещё нужно указать вручную.
 
 ## Возможности (v1)
 
@@ -13,7 +14,7 @@ Telegram Mini App — личный дневник для подготовки к
 - **Неделя** — сводка, повторяющиеся темы, «говорить на сеансе»
 - **Сеансы** — итоги встречи и список прошлых записей
 - Telegram WebApp SDK: `ready()`, `expand()`, theme/viewport; имя из `initDataUnsafe.user`
-- Вне Telegram — **режим разработки** (localhost), чтобы можно было тестировать без бота
+- Вне Telegram — браузерный режим; на localhost — **режим разработки**
 
 ## Локальный запуск
 
@@ -32,15 +33,15 @@ npm run dev
 | --- | --- |
 | Бот `@BetweenJournalBot` | Готово |
 | Bot token в проекте | Нет (не нужен для client-only v1) |
-| Menu Button → Web App URL | Ожидает HTTPS (деплой или туннель) |
+| HTTPS деплой | [between-rouge.vercel.app](https://between-rouge.vercel.app) |
+| Menu Button → Web App URL | Ожидает BotFather (`/setmenubutton`) |
 
-Когда будет HTTPS URL: BotFather → `/setmenubutton` → `@BetweenJournalBot` → `Открыть Between` → URL.
+В BotFather: `/setmenubutton` → `@BetweenJournalBot` → текст `Открыть Between` → URL `https://between-rouge.vercel.app`.
 
 ### Как тестировать в Telegram
 
-1. Задеплойте приложение по HTTPS **или** поднимите туннель к localhost (`ngrok http 43123` / `cloudflared tunnel`).
-2. Укажите этот URL в Menu Button бота.
-3. Откройте [@BetweenJournalBot](https://t.me/BetweenJournalBot) → кнопка меню → Between.
+1. Убедитесь, что Menu Button указывает на HTTPS URL выше.
+2. Откройте [@BetweenJournalBot](https://t.me/BetweenJournalBot) → кнопка меню → Between.
 
 Опциональный шаблон env: `.env.example` (`BOT_TOKEN` — только для будущей серверной проверки).
 

@@ -63,11 +63,13 @@ export function TherapyApp() {
               {telegram.ready
                 ? telegram.inTelegram
                   ? `Привет, ${telegram.displayName}`
-                  : `Привет, ${telegram.displayName} · режим разработки`
+                  : telegram.isLocalHost
+                    ? `Привет, ${telegram.displayName} · режим разработки`
+                    : `Привет, ${telegram.displayName}`
                 : "Загрузка…"}
             </p>
           </div>
-          {!telegram.inTelegram && telegram.ready && (
+          {!telegram.inTelegram && telegram.ready && telegram.isLocalHost && (
             <span className="shrink-0 rounded-md border border-border/70 bg-background/70 px-2 py-1 text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
               localhost
             </span>
