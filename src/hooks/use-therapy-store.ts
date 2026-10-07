@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { createId, toDateKey, weekKey } from "@/lib/dates";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { createId, weekKey } from "@/lib/dates";
 import { clearStore, loadStore, saveStore } from "@/lib/storage";
 import {
   emptyStore,
@@ -14,12 +14,31 @@ import {
 
 type Status = "loading" | "ready" | "error";
 
+function subscribe() {
+  return () => {};
+}
+
+function getServerSnapshot() {
+  return false;
+}
+
+function getClientSnapshot() {
+  return true;
+}
+
 export function useTherapyStore() {
+  const hydrated = useSyncExternalStore(
+    subscribe,
+    getClientSnapshot,
+    getServerSnapshot,
+  );
+
   const [store, setStore] = useState<TherapyStore>(emptyStore);
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!hydrated) return;
     const result = loadStore();
     if (result.ok) {
       setStore(result.data);
@@ -29,7 +48,7 @@ export function useTherapyStore() {
       setStatus("error");
       setError(result.error);
     }
-  }, []);
+  }, [hydrated]);
 
   const persist = useCallback((next: TherapyStore) => {
     const result = saveStore(next);
@@ -184,14 +203,13 @@ export function useTherapyStore() {
   );
 
   const entryForDate = useCallback(
-    (date: string = toDateKey()) =>
-      store.entries.find((e) => e.date === date) ?? null,
+    (date: string) => store.entries.find((e) => e.date === date) ?? null,
     [store.entries],
   );
 
   return {
     store,
-    status,
+    status: hydrated ? status : "loading",
     error,
     resetCorrupted,
     upsertEntry,
