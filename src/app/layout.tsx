@@ -15,7 +15,7 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "Between — дневник к сеансу",
   description:
-    "Личный дневник для подготовки к психотерапии: ежедневные записи, недельный обзор и итоги сеанса.",
+    "Telegram Mini App: личный дневник для подготовки к психотерапии — ежедневные записи, недельный обзор и итоги сеанса.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

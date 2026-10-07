@@ -89,8 +89,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply font-sans;
+    min-height: var(--tg-viewport-stable-height, 100dvh);
+  }
   body {
     @apply bg-background text-foreground;
+    min-height: var(--tg-viewport-stable-height, 100dvh);
     background-image:
       radial-gradient(
         ellipse 120% 80% at 10% -10%,
@@ -110,8 +115,18 @@
       );
     background-attachment: fixed;
   }
-  html {
-    @apply font-sans;
+  /* Inside Telegram, prefer solid theme bg so WebApp colors win */
+  html[data-telegram-theme] body {
+    background-image: none;
+    background-color: var(--tg-bg-color, var(--background));
+    color: var(--tg-text-color, var(--foreground));
+  }
+  html[data-telegram-theme] .atmosphere-blob {
+    opacity: 0.22;
+  }
+  html[data-telegram-theme="dark"] .atmosphere-grain {
+    mix-blend-mode: soft-light;
+    opacity: 0.06;
   }
 }
 
