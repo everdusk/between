@@ -1,24 +1,21 @@
-# Between — настройка Telegram-бота (с нуля)
+# Between — настройка Telegram-бота
 
 Клиент v1 — **Telegram Mini App** без обязательного сервера. Токен бота в репозиторий не коммитим.
 
+**Бот:** [@BetweenJournalBot](https://t.me/BetweenJournalBot) (создан). Токен не передан в проект.
+
 ## Чеклист BotFather
 
-1. Откройте [@BotFather](https://t.me/BotFather) → `/newbot`.
-2. Display name: **Between**. Username: например `BetweenJournalBot` / `between_app_bot` (должен заканчиваться на `bot`, быть свободным).
-3. BotFather пришлёт **bot token** — сохраните у себя (менеджер паролей). **Не присылайте токен в чат**, пока не решите хранить его в env для будущей проверки `initData`.
-4. Настройте кнопку меню Web App:
-   - `/setmenubutton` → выберите бота → **Configure menu button** → текст, например `Открыть Between` → URL Web App.
-   - Пока нет HTTPS-деплоя, поставьте placeholder (например `https://example.com`) и замените после публикации / туннеля.
-   - Альтернатива: Bot Settings → Menu Button в интерфейсе BotFather.
-5. (Опционально) `/setdescription` и `/setabouttext` — коротко на русском: дневник к сеансу психотерапии.
+1. ~~`/newbot`~~ — готово (`@BetweenJournalBot`).
+2. Токен — у пользователя локально; в чат не нужен для клиентского v1.
+3. Menu Button → Web App URL — **ждёт HTTPS** (деплой или туннель):
+   - `/setmenubutton` → `@BetweenJournalBot` → текст `Открыть Between` → HTTPS URL приложения.
+4. (Опционально) `/setdescription` и `/setabouttext` — дневник к сеансу психотерапии.
 
-## Что прислать обратно в этот проект
+## Дальше
 
-- **Username бота** (например `@BetweenJournalBot`).
-- Хотите ли вы, чтобы мы позже положили токен в env окружения агента **только для серверной валидации `initData`** (сейчас не требуется) — да / нет.
-
-Токен в чат не нужен для клиентского v1.
+- Нужен публичный HTTPS URL приложения для Menu Button.
+- Серверная валидация `initData` (токен в env) — позже, по желанию.
 
 ## Публичный URL
 
