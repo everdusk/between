@@ -197,6 +197,7 @@ export function SessionPrepSummary({
               type="button"
               variant="secondary"
               size="sm"
+              className="min-w-[12.5rem]"
               onClick={handleCopy}
               aria-live="polite"
             >
