@@ -56,12 +56,34 @@ export function SessionPrepSummary({
 
   async function handleCopy() {
     if (!summary) return;
+    const text = summary.plainText;
+    let ok = false;
     try {
-      await navigator.clipboard.writeText(summary.plainText);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      }
+    } catch {
+      ok = false;
+    }
+    if (!ok) {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch {
+        ok = false;
+      }
+    }
+    if (ok) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1800);
-    } catch {
-      // Clipboard may be blocked outside secure context — ignore quietly
     }
   }
 
