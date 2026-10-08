@@ -21,7 +21,7 @@ export function SessionPrepSummary({
     [entries, sessions],
   );
   const [open, setOpen] = useState(true);
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "ok" | "fail">("idle");
 
   if (!summary) {
     return (
@@ -74,6 +74,7 @@ export function SessionPrepSummary({
         ta.style.position = "fixed";
         ta.style.left = "-9999px";
         document.body.appendChild(ta);
+        ta.focus();
         ta.select();
         ok = document.execCommand("copy");
         document.body.removeChild(ta);
@@ -81,10 +82,8 @@ export function SessionPrepSummary({
         ok = false;
       }
     }
-    if (ok) {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1800);
-    }
+    setCopyState(ok ? "ok" : "fail");
+    window.setTimeout(() => setCopyState("idle"), 2000);
   }
 
   return (
@@ -194,14 +193,19 @@ export function SessionPrepSummary({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" variant="secondary" size="sm" onClick={handleCopy}>
-              Скопировать сводку
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleCopy}
+              aria-live="polite"
+            >
+              {copyState === "ok"
+                ? "Скопировано"
+                : copyState === "fail"
+                  ? "Не удалось скопировать"
+                  : "Скопировать сводку"}
             </Button>
-            {copied && (
-              <span className="animate-in fade-in text-sm text-primary duration-500">
-                Скопировано
-              </span>
-            )}
           </div>
         </div>
       )}
