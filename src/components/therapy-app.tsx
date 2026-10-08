@@ -148,6 +148,7 @@ export function TherapyApp() {
               <TabsContent value="week" className="mt-0 outline-none">
                 <WeeklyPanel
                   entries={store.entries}
+                  sessions={store.sessions}
                   weekPreps={store.weekPreps}
                   onSavePrep={saveWeekPrep}
                   disabled={disabled}
