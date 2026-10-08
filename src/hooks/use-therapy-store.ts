@@ -1,7 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createId, weekKey } from "@/lib/dates";
+import {
+  collapseJournalByDate,
+  fetchJournal,
+  mergeStores,
+  putJournal,
+} from "@/lib/journal-api";
 import { clearStore, loadStore, saveStore } from "@/lib/storage";
 import {
   emptyStore,
@@ -26,7 +32,21 @@ function getClientSnapshot() {
   return true;
 }
 
-export function useTherapyStore() {
+function deviceTimeZone(): string | null {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
+export function useTherapyStore(options?: {
+  initData?: string;
+  inTelegram?: boolean;
+}) {
+  const initData = options?.initData ?? "";
+  const inTelegram = Boolean(options?.inTelegram && initData);
+
   const hydrated = useSyncExternalStore(
     subscribe,
     getClientSnapshot,
@@ -36,21 +56,15 @@ export function useTherapyStore() {
   const [store, setStore] = useState<TherapyStore>(emptyStore);
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
+  const [syncLabel, setSyncLabel] = useState<"local" | "cloud" | "offline-cloud">(
+    "local",
+  );
+  const storeRef = useRef(store);
+  storeRef.current = store;
+  const initDataRef = useRef(initData);
+  initDataRef.current = initData;
 
-  useEffect(() => {
-    if (!hydrated) return;
-    const result = loadStore();
-    if (result.ok) {
-      setStore(result.data);
-      setStatus("ready");
-      setError(null);
-    } else {
-      setStatus("error");
-      setError(result.error);
-    }
-  }, [hydrated]);
-
-  const persist = useCallback((next: TherapyStore) => {
+  const applyLocal = useCallback((next: TherapyStore) => {
     const result = saveStore(next);
     if (result.ok) {
       setStore(result.data);
@@ -63,12 +77,88 @@ export function useTherapyStore() {
     return false;
   }, []);
 
+  const syncFromCloud = useCallback(async () => {
+    const data = initDataRef.current;
+    if (!data) return;
+    const remote = await fetchJournal(data);
+    if (!remote.ok) {
+      if (remote.status === 503 || remote.status === 401) {
+        setSyncLabel("offline-cloud");
+      }
+      return;
+    }
+    const local = loadStore();
+    const localStore = local.ok ? local.data : emptyStore();
+    const merged = collapseJournalByDate(
+      mergeStores(localStore, remote.store),
+    );
+    applyLocal(merged);
+    setSyncLabel("cloud");
+    const tz = deviceTimeZone();
+    void putJournal(data, merged, tz);
+  }, [applyLocal]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const result = loadStore();
+    if (result.ok) {
+      setStore(result.data);
+      setStatus("ready");
+      setError(null);
+    } else {
+      setStatus("error");
+      setError(result.error);
+      return;
+    }
+
+    if (inTelegram) {
+      void syncFromCloud();
+    } else {
+      setSyncLabel("local");
+    }
+  }, [hydrated, inTelegram, syncFromCloud]);
+
+  // Refresh when Mini App regains focus (picks up bot-appended lines)
+  useEffect(() => {
+    if (!inTelegram) return;
+    const onFocus = () => {
+      void syncFromCloud();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void syncFromCloud();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [inTelegram, syncFromCloud]);
+
+  const persist = useCallback(
+    (next: TherapyStore) => {
+      const ok = applyLocal(next);
+      if (!ok) return false;
+      if (initDataRef.current) {
+        const tz = deviceTimeZone();
+        void putJournal(initDataRef.current, next, tz).then((cloudOk) => {
+          setSyncLabel(cloudOk ? "cloud" : "offline-cloud");
+        });
+      }
+      return true;
+    },
+    [applyLocal],
+  );
+
   const resetCorrupted = useCallback(() => {
     const result = clearStore();
     if (result.ok) {
       setStore(result.data);
       setStatus("ready");
       setError(null);
+      if (initDataRef.current) {
+        void putJournal(initDataRef.current, result.data, deviceTimeZone());
+      }
     } else {
       setError(result.error);
     }
@@ -83,12 +173,13 @@ export function useTherapyStore() {
       tags: string[];
     }) => {
       const now = new Date().toISOString();
-      const existing = store.entries.find(
+      const current = storeRef.current;
+      const existing = current.entries.find(
         (e) => e.id === input.id || (!input.id && e.date === input.date),
       );
       let entries: JournalEntry[];
       if (existing) {
-        entries = store.entries.map((e) =>
+        entries = current.entries.map((e) =>
           e.id === existing.id
             ? {
                 ...e,
@@ -110,42 +201,44 @@ export function useTherapyStore() {
             tags: input.tags,
             updatedAt: now,
           },
-          ...store.entries,
+          ...current.entries,
         ];
       }
-      return persist({ ...store, entries });
+      return persist({ ...current, entries });
     },
-    [persist, store],
+    [persist],
   );
 
   const deleteEntry = useCallback(
     (id: string) => {
+      const current = storeRef.current;
       return persist({
-        ...store,
-        entries: store.entries.filter((e) => e.id !== id),
+        ...current,
+        entries: current.entries.filter((e) => e.id !== id),
       });
     },
-    [persist, store],
+    [persist],
   );
 
   const saveWeekPrep = useCallback(
     (key: string, talkNotes: string) => {
       const now = new Date().toISOString();
-      const existing = store.weekPreps.find((w) => w.weekKey === key);
+      const current = storeRef.current;
+      const existing = current.weekPreps.find((w) => w.weekKey === key);
       let weekPreps: WeekPrep[];
       if (existing) {
-        weekPreps = store.weekPreps.map((w) =>
+        weekPreps = current.weekPreps.map((w) =>
           w.weekKey === key ? { ...w, talkNotes, updatedAt: now } : w,
         );
       } else {
         weekPreps = [
-          ...store.weekPreps,
+          ...current.weekPreps,
           { weekKey: key, talkNotes, updatedAt: now },
         ];
       }
-      return persist({ ...store, weekPreps });
+      return persist({ ...current, weekPreps });
     },
-    [persist, store],
+    [persist],
   );
 
   const upsertSession = useCallback(
@@ -157,10 +250,11 @@ export function useTherapyStore() {
       homework: string;
     }) => {
       const now = new Date().toISOString();
+      const current = storeRef.current;
       const wk = weekKey(new Date(input.date + "T12:00:00"));
       let sessions: SessionNote[];
       if (input.id) {
-        sessions = store.sessions.map((s) =>
+        sessions = current.sessions.map((s) =>
           s.id === input.id
             ? {
                 ...s,
@@ -184,22 +278,23 @@ export function useTherapyStore() {
             weekKey: wk,
             updatedAt: now,
           },
-          ...store.sessions,
+          ...current.sessions,
         ];
       }
-      return persist({ ...store, sessions });
+      return persist({ ...current, sessions });
     },
-    [persist, store],
+    [persist],
   );
 
   const deleteSession = useCallback(
     (id: string) => {
+      const current = storeRef.current;
       return persist({
-        ...store,
-        sessions: store.sessions.filter((s) => s.id !== id),
+        ...current,
+        sessions: current.sessions.filter((s) => s.id !== id),
       });
     },
-    [persist, store],
+    [persist],
   );
 
   const entryForDate = useCallback(
@@ -211,6 +306,7 @@ export function useTherapyStore() {
     store,
     status: hydrated ? status : "loading",
     error,
+    syncLabel,
     resetCorrupted,
     upsertEntry,
     deleteEntry,
@@ -218,5 +314,6 @@ export function useTherapyStore() {
     upsertSession,
     deleteSession,
     entryForDate,
+    refreshCloud: syncFromCloud,
   };
 }

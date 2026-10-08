@@ -1,24 +1,26 @@
 # Between
 
-**Репозиторий:** [github.com/everdusk/between](https://github.com/everdusk/between)
+**Репозиторий:** [github.com/everdusk/between](https://github.com/everdusk/between)  
+**Production:** [https://between-rouge.vercel.app/](https://between-rouge.vercel.app/)
 
 Telegram Mini App — личный дневник для подготовки к еженедельной психотерапии.  
-Интерфейс на русском; бренд — **Between**. Данные в `localStorage` на устройстве (без аккаунта и обязательного бэкенда).
+Интерфейс на русском; бренд — **Between**.
 
-**Бот:** [@BetweenJournalBot](https://t.me/BetweenJournalBot) — создан. Menu Button URL ещё не задан (нужен HTTPS). Токен в репозиторий не передавался.
+**Бот:** [@BetweenJournalBot](https://t.me/BetweenJournalBot)
 
 ## Возможности (v1)
 
 - **Дневник** — дата, настроение, текст, теги
 - **Неделя** — сводка, повторяющиеся темы, «говорить на сеансе»
 - **Сеансы** — итоги встречи и список прошлых записей
-- Telegram WebApp SDK: `ready()`, `expand()`, theme/viewport; имя из `initDataUnsafe.user`
-- Вне Telegram — **режим разработки** (localhost), чтобы можно было тестировать без бота
+- **Чат бота** — любой текст в личке с ботом дописывается в сегодняшний день (сервер + Redis)
+- Mini App sync по Telegram `initData` (вне Telegram — `localStorage`)
 
 ## Локальный запуск
 
 ```bash
 npm install
+cp .env.example .env.local   # опционально, для webhook/sync
 npm run dev
 ```
 
@@ -31,23 +33,23 @@ npm run dev
 | Шаг | Статус |
 | --- | --- |
 | Бот `@BetweenJournalBot` | Готово |
-| Bot token в проекте | Нет (не нужен для client-only v1) |
-| Menu Button → Web App URL | Ожидает HTTPS (деплой или туннель) |
+| Production HTTPS | `https://between-rouge.vercel.app/` |
+| Menu Button → Web App | Укажите production URL в BotFather |
+| `BOT_TOKEN` + Upstash Redis в Vercel | Нужно для чата → дневник |
+| Webhook → `/api/telegram/webhook` | После env (см. docs) |
 
-Когда будет HTTPS URL: BotFather → `/setmenubutton` → `@BetweenJournalBot` → `Открыть Between` → URL.
+### Env (Vercel)
 
-### Как тестировать в Telegram
-
-1. Задеплойте приложение по HTTPS **или** поднимите туннель к localhost (`ngrok http 43123` / `cloudflared tunnel`).
-2. Укажите этот URL в Menu Button бота.
-3. Откройте [@BetweenJournalBot](https://t.me/BetweenJournalBot) → кнопка меню → Between.
-
-Опциональный шаблон env: `.env.example` (`BOT_TOKEN` — только для будущей серверной проверки).
+- `BOT_TOKEN`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+- `TELEGRAM_WEBHOOK_SECRET` (рекомендуется)
+- `NEXT_PUBLIC_APP_URL` (опционально)
 
 ## Стек
 
-Next.js (App Router), TypeScript, Tailwind, shadcn/ui, `@twa-dev/sdk`.
+Next.js (App Router), TypeScript, Tailwind, shadcn/ui, `@twa-dev/sdk`, Upstash Redis.
 
 ## Не в v1
 
-Валидация `initData` на сервере, облачная синхронизация, PDF, напоминания, шаринг с терапевтом.
+PDF, напоминания, шаринг с терапевтом, отдельный аккаунт вне Telegram.

@@ -19,6 +19,7 @@ const FALLBACK: TelegramSession = {
   displayName: DEV_DISPLAY_NAME,
   colorScheme: "light",
   viewportStableHeight: null,
+  initData: "",
 };
 
 export function useTelegram(): TelegramSession {
@@ -66,6 +67,7 @@ export function useTelegram(): TelegramSession {
         viewportStableHeight: inTelegram
           ? wa.viewportStableHeight || wa.viewportHeight || null
           : null,
+        initData: inTelegram ? wa.initData || "" : "",
       });
     }
 

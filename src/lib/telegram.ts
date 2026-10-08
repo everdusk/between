@@ -7,6 +7,8 @@ export type TelegramSession = {
   displayName: string;
   colorScheme: "light" | "dark";
   viewportStableHeight: number | null;
+  /** Raw WebApp initData for server auth; empty outside Telegram. */
+  initData: string;
 };
 
 export const DEV_DISPLAY_NAME = "Гость";
