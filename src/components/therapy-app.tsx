@@ -24,13 +24,17 @@ export function TherapyApp() {
     store,
     status,
     error,
+    syncLabel,
     resetCorrupted,
     upsertEntry,
     deleteEntry,
     saveWeekPrep,
     upsertSession,
     deleteSession,
-  } = useTherapyStore();
+  } = useTherapyStore({
+    initData: telegram.initData,
+    inTelegram: telegram.inTelegram,
+  });
 
   const [section, setSection] = useState<SectionId>("journal");
   const disabled = status !== "ready";
@@ -163,7 +167,12 @@ export function TherapyApp() {
       </main>
 
       <footer className="relative z-10 px-4 py-4 text-center text-[0.7rem] leading-relaxed text-muted-foreground">
-        Between · данные только на этом устройстве
+        Between
+        {syncLabel === "cloud"
+          ? " · синхронизация с сервером"
+          : syncLabel === "offline-cloud"
+            ? " · локально (облако недоступно)"
+            : " · данные на этом устройстве"}
         {!telegram.inTelegram && telegram.ready
           ? " · вне Telegram — локальный режим"
           : null}
