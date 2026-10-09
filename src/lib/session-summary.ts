@@ -1,10 +1,6 @@
 import { formatDayLabel, formatLongDate } from "@/lib/dates";
-import {
-  MOOD_LABELS,
-  type JournalEntry,
-  type MoodLevel,
-  type SessionNote,
-} from "@/lib/types";
+import { feelingValence, formatFeelings } from "@/lib/feelings";
+import type { Feeling, JournalEntry, SessionNote } from "@/lib/types";
 
 const EXCERPT_MAX = 180;
 
@@ -20,25 +16,27 @@ export function getLastSession(
   })[0];
 }
 
-/**
- * Journal entries written after the last session day.
- * Session-day notes are excluded (итог сеанса / день встречи ≠ «после»).
- */
+function afterSession(entries: JournalEntry[], sessionDate: string): JournalEntry[] {
+  return entries
+    .filter((entry) => entry.date > sessionDate)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
+}
+
+/** Notes with text written after the last session day. */
 export function entriesAfterSession(
   entries: JournalEntry[],
   sessionDate: string,
 ): JournalEntry[] {
-  return entries
-    .filter((e) => e.date > sessionDate && e.body.trim().length > 0)
-    .sort((a, b) => a.date.localeCompare(b.date));
+  return afterSession(entries, sessionDate).filter((entry) => entry.body.trim().length > 0);
 }
 
 export type ThemeCount = { tag: string; count: number };
+export type FeelingTotal = { feeling: Feeling; count: number };
 
 export type DayHighlight = {
+  id: string;
   date: string;
-  mood: MoodLevel;
-  moodLabel: string;
+  feelingsLabel: string;
   excerpt: string;
   tags: string[];
 };
@@ -47,7 +45,8 @@ export type PeriodSummary = {
   lastSession: SessionNote;
   entries: JournalEntry[];
   entryCount: number;
-  avgMood: number | null;
+  checkinCount: number;
+  feelings: FeelingTotal[];
   moodTrend: "up" | "down" | "flat" | null;
   themes: ThemeCount[];
   highlights: DayHighlight[];
@@ -74,25 +73,24 @@ function pluralEntries(n: number): string {
 }
 
 function moodTrendOf(entries: JournalEntry[]): PeriodSummary["moodTrend"] {
-  if (entries.length < 2) return null;
-  const mid = Math.floor(entries.length / 2);
-  const first = entries.slice(0, mid);
-  const second = entries.slice(mid);
+  const scored = entries.filter((entry) => feelingValence(entry.feelings) !== null);
+  if (scored.length < 2) return null;
+  const mid = Math.floor(scored.length / 2);
+  const first = scored.slice(0, mid);
+  const second = scored.slice(mid);
   if (first.length === 0 || second.length === 0) return null;
   const avg = (xs: JournalEntry[]) =>
-    xs.reduce((s, e) => s + e.mood, 0) / xs.length;
-  const a = avg(first);
-  const b = avg(second);
-  const delta = b - a;
-  if (delta >= 0.4) return "up";
-  if (delta <= -0.4) return "down";
+    xs.reduce((sum, entry) => sum + (feelingValence(entry.feelings) ?? 0), 0) / xs.length;
+  const delta = avg(second) - avg(first);
+  if (delta >= 0.35) return "up";
+  if (delta <= -0.35) return "down";
   return "flat";
 }
 
 function themeCounts(entries: JournalEntry[]): ThemeCount[] {
   const counts = new Map<string, number>();
-  for (const e of entries) {
-    for (const tag of e.tags) {
+  for (const entry of entries) {
+    for (const tag of entry.tags) {
       counts.set(tag, (counts.get(tag) ?? 0) + 1);
     }
   }
@@ -102,50 +100,60 @@ function themeCounts(entries: JournalEntry[]): ThemeCount[] {
     .slice(0, 8);
 }
 
-function pickHighlights(entries: JournalEntry[]): DayHighlight[] {
-  if (entries.length === 0) return [];
-  if (entries.length <= 5) {
-    return entries.map((e) => ({
-      date: e.date,
-      mood: e.mood,
-      moodLabel: MOOD_LABELS[e.mood],
-      excerpt: truncateExcerpt(e.body),
-      tags: e.tags,
-    }));
+function feelingTotals(entries: JournalEntry[]): FeelingTotal[] {
+  const counts = new Map<Feeling, number>();
+  for (const entry of entries) {
+    for (const feeling of entry.feelings) {
+      counts.set(feeling, (counts.get(feeling) ?? 0) + 1);
+    }
   }
+  return [...counts.entries()]
+    .map(([feeling, count]) => ({ feeling, count }))
+    .sort((a, b) => b.count - a.count || a.feeling.localeCompare(b.feeling, "ru"))
+    .slice(0, 6);
+}
 
-  // Prefer extremes + middle + latest for longer periods
-  const byMoodAsc = [...entries].sort((a, b) => a.mood - b.mood);
-  const lowest = byMoodAsc[0];
-  const highest = byMoodAsc[byMoodAsc.length - 1];
+function pickHighlights(entries: JournalEntry[]): DayHighlight[] {
+  const toHighlight = (entry: JournalEntry): DayHighlight => ({
+    id: entry.id,
+    date: entry.date,
+    feelingsLabel: formatFeelings(entry.feelings),
+    excerpt: truncateExcerpt(entry.body),
+    tags: entry.tags,
+  });
+
+  if (entries.length === 0) return [];
+  if (entries.length <= 5) return entries.map(toHighlight);
+
+  const scored = entries.map((entry) => ({
+    entry,
+    valence: feelingValence(entry.feelings),
+  }));
+  const withValence = scored.filter((item) => item.valence !== null);
+  const lowest = [...withValence].sort((a, b) => (a.valence ?? 0) - (b.valence ?? 0))[0]?.entry;
+  const highest = [...withValence].sort((a, b) => (b.valence ?? 0) - (a.valence ?? 0))[0]?.entry;
   const mid = entries[Math.floor(entries.length / 2)];
   const latest = entries[entries.length - 1];
   const earliest = entries[0];
 
   const picked: JournalEntry[] = [];
-  for (const e of [earliest, lowest, mid, highest, latest]) {
-    if (!picked.some((p) => p.id === e.id)) picked.push(e);
+  for (const entry of [earliest, lowest, mid, highest, latest]) {
+    if (entry && !picked.some((item) => item.id === entry.id)) picked.push(entry);
   }
   return picked
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .map((e) => ({
-      date: e.date,
-      mood: e.mood,
-      moodLabel: MOOD_LABELS[e.mood],
-      excerpt: truncateExcerpt(e.body),
-      tags: e.tags,
-    }));
+    .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt))
+    .map(toHighlight);
 }
 
 function trendSentence(trend: PeriodSummary["moodTrend"]): string | null {
   if (trend === "up") {
-    return "Настроение к концу периода в среднем выше, чем в начале.";
+    return "К концу периода самочувствие в среднем легче, чем в начале.";
   }
   if (trend === "down") {
-    return "Настроение к концу периода в среднем ниже, чем в начале.";
+    return "К концу периода самочувствие в среднем тяжелее, чем в начале.";
   }
   if (trend === "flat") {
-    return "Настроение за период без явного сдвига вверх или вниз.";
+    return "Самочувствие за период без явного сдвига.";
   }
   return null;
 }
@@ -155,8 +163,12 @@ function buildPlainText(summary: Omit<PeriodSummary, "plainText">): string {
   lines.push(
     `После сеанса ${formatLongDate(summary.lastSession.date)} · ${pluralEntries(summary.entryCount)}`,
   );
-  if (summary.avgMood !== null) {
-    lines.push(`Среднее настроение: ${summary.avgMood.toFixed(1)}`);
+  if (summary.feelings.length > 0) {
+    lines.push(
+      `Состояния: ${summary.feelings
+        .map((item) => `${item.feeling} ×${item.count}`)
+        .join(", ")}`,
+    );
   }
   const trend = trendSentence(summary.moodTrend);
   if (trend) lines.push(trend);
@@ -164,16 +176,17 @@ function buildPlainText(summary: Omit<PeriodSummary, "plainText">): string {
   if (summary.themes.length > 0) {
     lines.push("");
     lines.push(
-      `Темы: ${summary.themes.map((t) => (t.count > 1 ? `${t.tag} (×${t.count})` : t.tag)).join(", ")}`,
+      `Темы: ${summary.themes.map((item) => (item.count > 1 ? `${item.tag} (×${item.count})` : item.tag)).join(", ")}`,
     );
   }
 
   if (summary.highlights.length > 0) {
     lines.push("");
     lines.push("Ключевые моменты:");
-    for (const h of summary.highlights) {
-      lines.push(`• ${formatDayLabel(h.date)} — ${h.moodLabel}`);
-      lines.push(`  ${h.excerpt}`);
+    for (const highlight of summary.highlights) {
+      const feeling = highlight.feelingsLabel ? ` — ${highlight.feelingsLabel}` : "";
+      lines.push(`• ${formatDayLabel(highlight.date)}${feeling}`);
+      lines.push(`  ${highlight.excerpt}`);
     }
   }
 
@@ -187,20 +200,19 @@ export function buildPeriodSummary(
   const lastSession = getLastSession(sessions);
   if (!lastSession) return null;
 
-  const periodEntries = entriesAfterSession(entries, lastSession.date);
-  const avgMood =
-    periodEntries.length > 0
-      ? periodEntries.reduce((s, e) => s + e.mood, 0) / periodEntries.length
-      : null;
+  const periodEvents = afterSession(entries, lastSession.date);
+  const periodEntries = periodEvents.filter((entry) => entry.body.trim().length > 0);
   const themes = themeCounts(periodEntries);
   const highlights = pickHighlights(periodEntries);
-  const moodTrend = moodTrendOf(periodEntries);
+  const feelings = feelingTotals(periodEvents);
+  const moodTrend = moodTrendOf(periodEvents);
 
   const base = {
     lastSession,
     entries: periodEntries,
     entryCount: periodEntries.length,
-    avgMood,
+    checkinCount: periodEvents.filter((entry) => entry.source === "checkin").length,
+    feelings,
     moodTrend,
     themes,
     highlights,

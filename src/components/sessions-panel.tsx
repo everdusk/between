@@ -6,12 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { SessionRhythm } from "@/components/session-rhythm";
 import { formatLongDate, toDateKey } from "@/lib/dates";
-import type { SessionNote } from "@/lib/types";
+import type { NotifyPrefs, SessionNote, SessionPlan } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface SessionsPanelProps {
   sessions: SessionNote[];
+  plan: SessionPlan | null;
+  notify: NotifyPrefs;
   onSave: (input: {
     id?: string;
     date: string;
@@ -20,6 +23,8 @@ interface SessionsPanelProps {
     homework: string;
   }) => boolean;
   onDelete: (id: string) => boolean;
+  onSavePlan: (plan: Omit<SessionPlan, "updatedAt">) => boolean;
+  onSaveNotify: (prefs: Pick<NotifyPrefs, "moodPolls" | "eveningNudge">) => boolean;
   disabled?: boolean;
 }
 
@@ -32,8 +37,12 @@ const emptyForm = () => ({
 
 export function SessionsPanel({
   sessions,
+  plan,
+  notify,
   onSave,
   onDelete,
+  onSavePlan,
+  onSaveNotify,
   disabled,
 }: SessionsPanelProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -87,6 +96,14 @@ export function SessionsPanel({
           какие шаги взять с собой.
         </p>
       </div>
+
+      <SessionRhythm
+        plan={plan}
+        notify={notify}
+        onSavePlan={onSavePlan}
+        onSaveNotify={onSaveNotify}
+        disabled={disabled}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">

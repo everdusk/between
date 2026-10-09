@@ -9,7 +9,8 @@
 ## Возможности
 
 1. **Mini App** — дневник / неделя / сеансы (кнопка меню).
-2. **Чат бота** — любой обычный текст в личке с ботом **дописывается в сегодняшний день**. После этого откройте Mini App — строка будет в дневнике.
+2. **Чат бота** — любой обычный текст в личке сохраняется **отдельной заметкой** на сегодня. Темы ставятся из текста, тег «бот» не пишется.
+3. **Опросы** — в 9:00, 14:00 и 18:00 бот присылает кнопки самочувствия. В 21:00 спрашивает, есть ли заметка, если текста за день не было. Выключатели — в Mini App, вкладка «Сеансы».
 
 ## Env в Vercel
 
@@ -20,6 +21,8 @@
 | `UPSTASH_REDIS_REST_TOKEN` | да | Upstash Redis REST token |
 | `TELEGRAM_WEBHOOK_SECRET` | рекомендуется | секрет webhook (см. ниже) |
 | `NEXT_PUBLIC_APP_URL` | опционально | `https://between-rouge.vercel.app` (кнопка Mini App в ответах) |
+| `CRON_SECRET` | да, для опросов | секрет почасового вызова `/api/telegram/digest` |
+| `GEMINI_API_KEY` или `GROQ_API_KEY` | нет | кнопка «Сформулировать текст». Без ключа бриф собирается правилами |
 
 Создать Redis: [Upstash](https://upstash.com/) → Redis → REST API → скопировать URL и token в Vercel → Redeploy.
 
@@ -36,7 +39,7 @@ curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/setWebhook" \
 curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/setWebhook" \
   -d "url=https://between-rouge.vercel.app/api/telegram/webhook" \
   -d "secret_token=${TELEGRAM_WEBHOOK_SECRET}" \
-  -d "allowed_updates=[\"message\"]"
+  -d "allowed_updates=[\"message\",\"callback_query\"]"
 ```
 
 Проверка:
@@ -63,9 +66,27 @@ curl -sS "https://between-rouge.vercel.app/api/telegram/webhook"
 ## Как пользоваться
 
 1. Напишите боту `/start` — краткая подсказка + кнопка «Открыть Between».
-2. Пишите любой текст в чат — бот ответит «Записала в сегодняшний день».
-3. Откройте Mini App — запись появится в дневнике за сегодня (с меткой времени).
-4. Часовой пояс: при открытии Mini App сохраняется timezone устройства; до первого открытия «сегодня» считается в UTC.
+2. Пишите любой текст в чат — бот сохранит его отдельной заметкой.
+3. Откройте Mini App — заметка будет в дневнике за сегодня. Настроение отмечается кнопками в опросе или в приложении.
+4. Часовой пояс: при открытии Mini App сохраняется timezone устройства. До первого открытия напоминания и «сегодня» считаются по `Europe/Moscow`.
+
+## Напоминания
+
+На бесплатном тарифе Vercel почасовой cron при деплое отклоняется, поэтому расписание живёт в Upstash QStash (бесплатный уровень, тот же аккаунт, что и Redis).
+
+1. В Vercel задайте длинный `CRON_SECRET`.
+2. В [Upstash QStash](https://console.upstash.com/qstash) создайте schedule:
+   - Destination: `https://between-rouge.vercel.app/api/telegram/digest`
+   - Cron: `0 * * * *` (каждый час, UTC)
+   - Forward header: `Authorization` = `Bearer <CRON_SECRET>`
+3. Проверка вручную:
+
+```bash
+curl -sS "https://between-rouge.vercel.app/api/telegram/digest" \
+  -H "Authorization: Bearer ${CRON_SECRET}"
+```
+
+Бот пишет пользователю только в местный час 9, 14, 18 или 21. В остальные часы вызов ничего не отправляет. Пользователь попадает в список после сообщения боту или открытия Mini App.
 
 ## Локальная разработка
 

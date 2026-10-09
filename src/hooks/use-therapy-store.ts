@@ -2,18 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createId, weekKey } from "@/lib/dates";
-import {
-  collapseJournalByDate,
-  fetchJournal,
-  mergeStores,
-  putJournal,
-} from "@/lib/journal-api";
+import { isFeeling } from "@/lib/feelings";
+import { fetchJournal, mergeStores, putJournal } from "@/lib/journal-api";
+import { sanitizeTags } from "@/lib/tags";
 import { clearStore, loadStore, saveStore } from "@/lib/storage";
 import {
   emptyStore,
+  type Feeling,
   type JournalEntry,
-  type MoodLevel,
+  type NotifyPrefs,
   type SessionNote,
+  type SessionPlan,
   type TherapyStore,
   type WeekPrep,
 } from "@/lib/types";
@@ -60,9 +59,13 @@ export function useTherapyStore(options?: {
     "local",
   );
   const storeRef = useRef(store);
-  storeRef.current = store;
   const initDataRef = useRef(initData);
-  initDataRef.current = initData;
+  useEffect(() => {
+    storeRef.current = store;
+  }, [store]);
+  useEffect(() => {
+    initDataRef.current = initData;
+  }, [initData]);
 
   const applyLocal = useCallback((next: TherapyStore) => {
     const result = saveStore(next);
@@ -89,9 +92,7 @@ export function useTherapyStore(options?: {
     }
     const local = loadStore();
     const localStore = local.ok ? local.data : emptyStore();
-    const merged = collapseJournalByDate(
-      mergeStores(localStore, remote.store),
-    );
+    const merged = mergeStores(localStore, remote.store);
     applyLocal(merged);
     setSyncLabel("cloud");
     const tz = deviceTimeZone();
@@ -102,6 +103,8 @@ export function useTherapyStore(options?: {
     if (!hydrated) return;
     const result = loadStore();
     if (result.ok) {
+      // Local journal is only available after mount.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate localStorage once on the client
       setStore(result.data);
       setStatus("ready");
       setError(null);
@@ -118,7 +121,6 @@ export function useTherapyStore(options?: {
     }
   }, [hydrated, inTelegram, syncFromCloud]);
 
-  // Refresh when Mini App regains focus (picks up bot-appended lines)
   useEffect(() => {
     if (!inTelegram) return;
     const onFocus = () => {
@@ -168,38 +170,42 @@ export function useTherapyStore(options?: {
     (input: {
       id?: string;
       date: string;
-      mood: MoodLevel;
       body: string;
+      feelings: Feeling[];
       tags: string[];
     }) => {
       const now = new Date().toISOString();
       const current = storeRef.current;
-      const existing = current.entries.find(
-        (e) => e.id === input.id || (!input.id && e.date === input.date),
-      );
+      const existing = input.id
+        ? current.entries.find((entry) => entry.id === input.id)
+        : undefined;
+      const feelings = input.feelings.filter(isFeeling).slice(0, 6);
+      const tags = sanitizeTags(input.tags);
       let entries: JournalEntry[];
       if (existing) {
-        entries = current.entries.map((e) =>
-          e.id === existing.id
+        entries = current.entries.map((entry) =>
+          entry.id === existing.id
             ? {
-                ...e,
+                ...entry,
                 date: input.date,
-                mood: input.mood,
                 body: input.body,
-                tags: input.tags,
+                feelings,
+                tags,
                 updatedAt: now,
               }
-            : e,
+            : entry,
         );
       } else {
         entries = [
           {
             id: createId(),
             date: input.date,
-            mood: input.mood,
-            body: input.body,
-            tags: input.tags,
+            createdAt: now,
             updatedAt: now,
+            body: input.body,
+            feelings,
+            tags,
+            source: "app",
           },
           ...current.entries,
         ];
@@ -214,7 +220,7 @@ export function useTherapyStore(options?: {
       const current = storeRef.current;
       return persist({
         ...current,
-        entries: current.entries.filter((e) => e.id !== id),
+        entries: current.entries.filter((entry) => entry.id !== id),
       });
     },
     [persist],
@@ -224,11 +230,11 @@ export function useTherapyStore(options?: {
     (key: string, talkNotes: string) => {
       const now = new Date().toISOString();
       const current = storeRef.current;
-      const existing = current.weekPreps.find((w) => w.weekKey === key);
+      const existing = current.weekPreps.find((prep) => prep.weekKey === key);
       let weekPreps: WeekPrep[];
       if (existing) {
-        weekPreps = current.weekPreps.map((w) =>
-          w.weekKey === key ? { ...w, talkNotes, updatedAt: now } : w,
+        weekPreps = current.weekPreps.map((prep) =>
+          prep.weekKey === key ? { ...prep, talkNotes, updatedAt: now } : prep,
         );
       } else {
         weekPreps = [
@@ -237,6 +243,46 @@ export function useTherapyStore(options?: {
         ];
       }
       return persist({ ...current, weekPreps });
+    },
+    [persist],
+  );
+
+  const saveBrief = useCallback(
+    (key: string, briefText: string, briefStamp: string, talkNotes: string) => {
+      const now = new Date().toISOString();
+      const current = storeRef.current;
+      const existing = current.weekPreps.find((prep) => prep.weekKey === key);
+      const next: WeekPrep = {
+        weekKey: key,
+        talkNotes,
+        updatedAt: now,
+        briefText,
+        briefStamp,
+      };
+      const weekPreps = existing
+        ? current.weekPreps.map((prep) => (prep.weekKey === key ? { ...prep, ...next } : prep))
+        : [...current.weekPreps, next];
+      return persist({ ...current, weekPreps });
+    },
+    [persist],
+  );
+
+  const saveSessionPlan = useCallback(
+    (input: Omit<SessionPlan, "updatedAt">) => {
+      const current = storeRef.current;
+      const sessionPlan: SessionPlan = { ...input, updatedAt: new Date().toISOString() };
+      return persist({ ...current, sessionPlan });
+    },
+    [persist],
+  );
+
+  const saveNotify = useCallback(
+    (input: Pick<NotifyPrefs, "moodPolls" | "eveningNudge">) => {
+      const current = storeRef.current;
+      return persist({
+        ...current,
+        notify: { ...input, updatedAt: new Date().toISOString() },
+      });
     },
     [persist],
   );
@@ -254,10 +300,10 @@ export function useTherapyStore(options?: {
       const wk = weekKey(new Date(input.date + "T12:00:00"));
       let sessions: SessionNote[];
       if (input.id) {
-        sessions = current.sessions.map((s) =>
-          s.id === input.id
+        sessions = current.sessions.map((session) =>
+          session.id === input.id
             ? {
-                ...s,
+                ...session,
                 date: input.date,
                 summary: input.summary,
                 insights: input.insights,
@@ -265,7 +311,7 @@ export function useTherapyStore(options?: {
                 weekKey: wk,
                 updatedAt: now,
               }
-            : s,
+            : session,
         );
       } else {
         sessions = [
@@ -291,15 +337,10 @@ export function useTherapyStore(options?: {
       const current = storeRef.current;
       return persist({
         ...current,
-        sessions: current.sessions.filter((s) => s.id !== id),
+        sessions: current.sessions.filter((session) => session.id !== id),
       });
     },
     [persist],
-  );
-
-  const entryForDate = useCallback(
-    (date: string) => store.entries.find((e) => e.date === date) ?? null,
-    [store.entries],
   );
 
   return {
@@ -311,9 +352,11 @@ export function useTherapyStore(options?: {
     upsertEntry,
     deleteEntry,
     saveWeekPrep,
+    saveBrief,
+    saveSessionPlan,
+    saveNotify,
     upsertSession,
     deleteSession,
-    entryForDate,
     refreshCloud: syncFromCloud,
   };
 }

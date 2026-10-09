@@ -83,6 +83,24 @@ export function formatLongDate(key: string): string {
   return `${d.getDate()} ${MONTHS_GENITIVE[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+export function formatTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export function trailingDateKeys(days: number, from = new Date()): string[] {
+  const keys: string[] = [];
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const date = new Date(from.getFullYear(), from.getMonth(), from.getDate() - offset);
+    keys.push(toDateKey(date));
+  }
+  return keys;
+}
+
 export function createId(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
     return crypto.randomUUID();

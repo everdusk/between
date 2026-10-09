@@ -29,6 +29,9 @@ export function TherapyApp() {
     upsertEntry,
     deleteEntry,
     saveWeekPrep,
+    saveBrief,
+    saveSessionPlan,
+    saveNotify,
     upsertSession,
     deleteSession,
   } = useTherapyStore({
@@ -151,14 +154,20 @@ export function TherapyApp() {
                   sessions={store.sessions}
                   weekPreps={store.weekPreps}
                   onSavePrep={saveWeekPrep}
+                  onSaveBrief={saveBrief}
+                  initData={telegram.inTelegram ? telegram.initData : ""}
                   disabled={disabled}
                 />
               </TabsContent>
               <TabsContent value="sessions" className="mt-0 outline-none">
                 <SessionsPanel
                   sessions={store.sessions}
+                  plan={store.sessionPlan}
+                  notify={store.notify}
                   onSave={upsertSession}
                   onDelete={deleteSession}
+                  onSavePlan={saveSessionPlan}
+                  onSaveNotify={saveNotify}
                   disabled={disabled}
                 />
               </TabsContent>
