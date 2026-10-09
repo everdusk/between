@@ -1,6 +1,11 @@
 import { Redis } from "@upstash/redis";
 import { normalizeStore } from "./migrate";
 import { emptyStore, type TherapyStore } from "./types";
+import {
+  emptyWeekAccess,
+  normalizeWeekAccess,
+  type WeekAccessRecord,
+} from "./week-access";
 
 let client: Redis | null = null;
 
@@ -38,6 +43,10 @@ function briefKey(userId: number | string, stamp: string): string {
 
 function briefCountKey(userId: number | string, dateKey: string): string {
   return `between:user:${userId}:brief-count:${dateKey}`;
+}
+
+function weekAccessKey(userId: number | string): string {
+  return `between:user:${userId}:week-access`;
 }
 
 export async function rememberUser(userId: number | string): Promise<void> {
@@ -139,6 +148,22 @@ export async function cacheBrief(
   const redis = getRedis();
   if (!redis) return;
   await redis.set(briefKey(userId, stamp), text, { ex: 60 * 60 * 24 * 21 });
+}
+
+export async function loadWeekAccess(userId: number | string): Promise<WeekAccessRecord> {
+  const redis = getRedis();
+  if (!redis) return emptyWeekAccess();
+  const raw = await redis.get<unknown>(weekAccessKey(userId));
+  return normalizeWeekAccess(raw);
+}
+
+export async function saveWeekAccess(
+  userId: number | string,
+  record: WeekAccessRecord,
+): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(weekAccessKey(userId), normalizeWeekAccess(record));
 }
 
 /** Returns false when the user already used the daily free model budget. */

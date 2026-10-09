@@ -1,20 +1,28 @@
 import { NextResponse } from "next/server";
 import { addCheckin, appendBotMessageToToday } from "@/lib/journal-server";
-import { redisConfigured } from "@/lib/redis";
+import { loadWeekAccess, redisConfigured, saveWeekAccess } from "@/lib/redis";
 import { appUrl } from "@/lib/telegram-auth";
 import {
   miniAppKeyboard,
   parseFeelingCallback,
   telegramRequest,
 } from "@/lib/telegram-bot";
+import { WEEK_INVOICE_PAYLOAD, grantWeekPaidUntil } from "@/lib/week-access";
 
 type TelegramChat = { id: number; type?: string };
 type TelegramUser = { id: number; first_name?: string; username?: string };
+type SuccessfulPayment = {
+  currency?: string;
+  total_amount?: number;
+  invoice_payload?: string;
+  subscription_expiration_date?: number;
+};
 type TelegramMessage = {
   message_id: number;
   text?: string;
   chat: TelegramChat;
   from?: TelegramUser;
+  successful_payment?: SuccessfulPayment;
 };
 type TelegramCallback = {
   id: string;
@@ -22,10 +30,17 @@ type TelegramCallback = {
   data?: string;
   message?: { message_id: number; chat: TelegramChat };
 };
+type PreCheckoutQuery = {
+  id: string;
+  from: TelegramUser;
+  currency?: string;
+  invoice_payload?: string;
+};
 type TelegramUpdate = {
   update_id: number;
   message?: TelegramMessage;
   callback_query?: TelegramCallback;
+  pre_checkout_query?: PreCheckoutQuery;
 };
 
 function botToken(): string | null {
@@ -89,6 +104,41 @@ async function handleCallback(callback: TelegramCallback) {
   }
 }
 
+async function handlePreCheckout(query: PreCheckoutQuery) {
+  const ours =
+    query.currency === "XTR" && query.invoice_payload === WEEK_INVOICE_PAYLOAD;
+  await telegramRequest("answerPreCheckoutQuery", {
+    pre_checkout_query_id: query.id,
+    ok: ours,
+    ...(ours ? {} : { error_message: "Этот счёт не от Between." }),
+  });
+}
+
+async function handlePayment(message: TelegramMessage) {
+  const payment = message.successful_payment;
+  const userId = message.from?.id;
+  if (!payment || !userId) return;
+  if (payment.currency !== "XTR" || payment.invoice_payload !== WEEK_INVOICE_PAYLOAD) return;
+
+  const untilSec = payment.subscription_expiration_date;
+  const paidUntil = new Date(
+    (typeof untilSec === "number" && untilSec > 0
+      ? untilSec
+      : Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60) * 1000,
+  ).toISOString();
+
+  if (redisConfigured()) {
+    const current = await loadWeekAccess(userId);
+    await saveWeekAccess(userId, grantWeekPaidUntil(current, paidUntil));
+  }
+
+  await telegramRequest("sendMessage", {
+    chat_id: message.chat.id,
+    text: "«Неделя» открыта ещё на 30 дней. Дневник по-прежнему бесплатный.",
+    reply_markup: miniAppKeyboard(appUrl()),
+  });
+}
+
 export async function POST(req: Request) {
   if (!verifyWebhookSecret(req)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
@@ -101,6 +151,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "bad json" }, { status: 400 });
   }
 
+  if (update.pre_checkout_query) {
+    await handlePreCheckout(update.pre_checkout_query);
+    return NextResponse.json({ ok: true });
+  }
+
   if (update.callback_query) {
     await handleCallback(update.callback_query);
     return NextResponse.json({ ok: true });
@@ -108,6 +163,11 @@ export async function POST(req: Request) {
 
   const message = update.message;
   if (!message?.chat?.id) {
+    return NextResponse.json({ ok: true });
+  }
+
+  if (message.successful_payment) {
+    await handlePayment(message);
     return NextResponse.json({ ok: true });
   }
 

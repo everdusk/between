@@ -43,21 +43,34 @@ export function miniAppKeyboard(url: string) {
   };
 }
 
-export async function telegramRequest(
+export async function telegramCall<T>(
   method: string,
   body: Record<string, unknown>,
-): Promise<boolean> {
+): Promise<{ ok: true; result: T } | { ok: false; description: string }> {
   const token = process.env.BOT_TOKEN?.trim();
-  if (!token) return false;
+  if (!token) return { ok: false, description: "no_token" };
   try {
     const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    const data = (await res.json()) as { ok?: boolean };
-    return Boolean(data.ok);
+    const data = (await res.json()) as {
+      ok?: boolean;
+      result?: T;
+      description?: string;
+    };
+    if (!data.ok) return { ok: false, description: data.description || "telegram_error" };
+    return { ok: true, result: data.result as T };
   } catch {
-    return false;
+    return { ok: false, description: "network" };
   }
+}
+
+export async function telegramRequest(
+  method: string,
+  body: Record<string, unknown>,
+): Promise<boolean> {
+  const result = await telegramCall<unknown>(method, body);
+  return result.ok;
 }

@@ -11,6 +11,16 @@ import type { ThemeParams } from "@twa-dev/types";
 import { applyTelegramTheme, panelColor } from "./telegram";
 import { resolveGroqModel, textFromGeminiParts } from "../app/api/brief/route";
 import { emptyStore, type JournalEntry } from "./types";
+import {
+  daysPhrase,
+  describeWeekAccess,
+  emptyWeekAccess,
+  grantWeekPaidUntil,
+  markWeekIntroSeen,
+  openWeekAccess,
+  starPriceFromEnv,
+  TRIAL_MS,
+} from "./week-access";
 
 function note(partial: Partial<JournalEntry> & Pick<JournalEntry, "id" | "body">): JournalEntry {
   return {
@@ -319,6 +329,56 @@ describe("gemini text", () => {
       "Как прошла неделя.",
     );
     assert.equal(textFromGeminiParts([{ thought: true, text: "only thought" }]), "");
+  });
+});
+
+describe("week access", () => {
+  const now = new Date("2026-10-09T12:00:00.000Z");
+
+  it("starts a 14-day trial on the first open and keeps the intro unread", () => {
+    const opened = openWeekAccess(emptyWeekAccess(), now);
+    assert.equal(opened.openedAt, now.toISOString());
+    assert.equal(opened.introSeen, false);
+    assert.equal(openWeekAccess(opened, new Date(now.getTime() + 1000)).openedAt, opened.openedAt);
+
+    const view = describeWeekAccess(opened, now, 150);
+    assert.equal(view.status, "trial");
+    assert.equal(view.daysLeft, 14);
+    assert.equal(view.starPrice, 150);
+    assert.equal(view.introSeen, false);
+    assert.equal(describeWeekAccess(markWeekIntroSeen(opened), now).introSeen, true);
+  });
+
+  it("locks the week after the fortnight and lets a later payment win", () => {
+    const opened = openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - TRIAL_MS));
+    assert.equal(describeWeekAccess(opened, now).status, "locked");
+
+    const during = describeWeekAccess(
+      openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - TRIAL_MS + 60_000)),
+      now,
+    );
+    assert.equal(during.status, "trial");
+    assert.equal(during.daysLeft, 1);
+
+    const paid = grantWeekPaidUntil(opened, "2026-11-08T12:00:00.000Z");
+    assert.equal(describeWeekAccess(paid, now).status, "paid");
+    const renewed = grantWeekPaidUntil(paid, "2026-11-01T12:00:00.000Z");
+    assert.equal(renewed.paidUntil, paid.paidUntil);
+    const later = grantWeekPaidUntil(paid, "2026-12-08T12:00:00.000Z");
+    assert.equal(later.paidUntil, "2026-12-08T12:00:00.000Z");
+  });
+
+  it("counts days and falls back to 150 stars", () => {
+    assert.equal(daysPhrase(1), "1 день");
+    assert.equal(daysPhrase(2), "2 дня");
+    assert.equal(daysPhrase(5), "5 дней");
+    assert.equal(daysPhrase(11), "11 дней");
+    assert.equal(daysPhrase(21), "21 день");
+    assert.equal(starPriceFromEnv(undefined), 150);
+    assert.equal(starPriceFromEnv("150"), 150);
+    assert.equal(starPriceFromEnv("0"), 150);
+    assert.equal(starPriceFromEnv("10001"), 150);
+    assert.equal(starPriceFromEnv("12.5"), 150);
   });
 });
 
