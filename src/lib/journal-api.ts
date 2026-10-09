@@ -1,4 +1,11 @@
-import type { TherapyStore } from "./types";
+import { normalizeStore } from "./migrate";
+import {
+  emptyNotify,
+  type NotifyPrefs,
+  type SessionPlan,
+  type TherapyStore,
+  type WeekPrep,
+} from "./types";
 
 export type JournalFetchResult =
   | { ok: true; store: TherapyStore; timeZone: string | null }
@@ -22,15 +29,16 @@ export async function fetchJournal(
     }
     const data = (await res.json()) as {
       ok?: boolean;
-      store?: TherapyStore;
+      store?: unknown;
       timeZone?: string | null;
     };
-    if (!data.ok || !data.store) {
+    const store = normalizeStore(data.store);
+    if (!data.ok || !store) {
       return { ok: false, status: res.status, error: "bad_response" };
     }
     return {
       ok: true,
-      store: data.store,
+      store,
       timeZone: data.timeZone ?? null,
     };
   } catch {
@@ -58,14 +66,40 @@ export async function putJournal(
   }
 }
 
-/** Prefer newer entries/sessions/weekPreps by updatedAt; keep all unique ids. */
-export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
-  return {
-    version: 1,
-    entries: mergeById(a.entries, b.entries),
-    sessions: mergeById(a.sessions, b.sessions),
-    weekPreps: mergeWeekPreps(a.weekPreps, b.weekPreps),
-  };
+export async function requestBrief(
+  initData: string,
+  facts: string,
+  stamp: string,
+): Promise<
+  | { ok: true; text: string | null; reason?: string }
+  | { ok: false; error: string }
+> {
+  try {
+    const res = await fetch("/api/brief", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": initData,
+      },
+      body: JSON.stringify({ facts, stamp }),
+    });
+    const data = (await res.json()) as {
+      ok?: boolean;
+      text?: string | null;
+      reason?: string;
+      error?: string;
+    };
+    if (!res.ok || !data.ok) {
+      return { ok: false, error: data.error ?? "brief_failed" };
+    }
+    return { ok: true, text: data.text ?? null, reason: data.reason };
+  } catch {
+    return { ok: false, error: "network" };
+  }
+}
+
+function newerThan(a: string, b: string): boolean {
+  return a >= b;
 }
 
 function mergeById<T extends { id: string; updatedAt: string }>(
@@ -79,15 +113,11 @@ function mergeById<T extends { id: string; updatedAt: string }>(
       map.set(item.id, item);
     }
   }
-  // Also collapse same-date journal entries: keep newer, prefer longer body if tie
   return [...map.values()];
 }
 
-function mergeWeekPreps(
-  left: TherapyStore["weekPreps"],
-  right: TherapyStore["weekPreps"],
-): TherapyStore["weekPreps"] {
-  const map = new Map<string, TherapyStore["weekPreps"][number]>();
+function mergeWeekPreps(left: WeekPrep[], right: WeekPrep[]): WeekPrep[] {
+  const map = new Map<string, WeekPrep>();
   for (const item of [...left, ...right]) {
     const prev = map.get(item.weekKey);
     if (!prev || prev.updatedAt < item.updatedAt) {
@@ -97,66 +127,25 @@ function mergeWeekPreps(
   return [...map.values()];
 }
 
-/** Collapse duplicate date entries after merge (bot + mini app). */
-export function collapseJournalByDate(store: TherapyStore): TherapyStore {
-  const byDate = new Map<string, TherapyStore["entries"][number]>();
-  for (const entry of store.entries) {
-    const prev = byDate.get(entry.date);
-    if (!prev) {
-      byDate.set(entry.date, entry);
-      continue;
-    }
-    // Prefer newer; if bot appended into one and mini app has another, join bodies
-    if (prev.updatedAt > entry.updatedAt) {
-      byDate.set(entry.date, joinBodies(prev, entry));
-    } else if (entry.updatedAt > prev.updatedAt) {
-      byDate.set(entry.date, joinBodies(entry, prev));
-    } else {
-      byDate.set(
-        entry.date,
-        entry.body.length >= prev.body.length
-          ? joinBodies(entry, prev)
-          : joinBodies(prev, entry),
-      );
-    }
-  }
-  return {
-    ...store,
-    entries: [...byDate.values()].sort((a, b) =>
-      a.date < b.date ? 1 : a.date > b.date ? -1 : 0,
-    ),
-  };
+function mergePlan(a: SessionPlan | null, b: SessionPlan | null): SessionPlan | null {
+  if (!a) return b;
+  if (!b) return a;
+  return newerThan(a.updatedAt, b.updatedAt) ? a : b;
 }
 
-function joinBodies(
-  primary: TherapyStore["entries"][number],
-  secondary: TherapyStore["entries"][number],
-): TherapyStore["entries"][number] {
-  if (!secondary.body.trim()) return primary;
-  if (!primary.body.trim()) {
-    return { ...primary, body: secondary.body, tags: uniqTags(primary.tags, secondary.tags) };
-  }
-  if (primary.body.includes(secondary.body.trim())) return primary;
-  if (secondary.body.includes(primary.body.trim())) {
-    return {
-      ...primary,
-      body: secondary.body,
-      tags: uniqTags(primary.tags, secondary.tags),
-      mood: primary.mood !== 3 ? primary.mood : secondary.mood,
-    };
-  }
-  return {
-    ...primary,
-    body: `${primary.body.trim()}\n\n${secondary.body.trim()}`,
-    tags: uniqTags(primary.tags, secondary.tags),
-    mood: primary.mood !== 3 ? primary.mood : secondary.mood,
-  };
+function mergeNotify(a: NotifyPrefs, b: NotifyPrefs): NotifyPrefs {
+  if (!a.updatedAt && !b.updatedAt) return emptyNotify();
+  return newerThan(a.updatedAt, b.updatedAt) ? a : b;
 }
 
-function uniqTags(a: string[], b: string[]): string[] {
-  const out: string[] = [];
-  for (const t of [...a, ...b]) {
-    if (t && !out.includes(t)) out.push(t);
-  }
-  return out.slice(0, 8);
+/** Keep every note. Same id keeps the newer copy; different notes on one day stay separate. */
+export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
+  return {
+    version: 2,
+    entries: mergeById(a.entries, b.entries),
+    sessions: mergeById(a.sessions, b.sessions),
+    weekPreps: mergeWeekPreps(a.weekPreps, b.weekPreps),
+    sessionPlan: mergePlan(a.sessionPlan, b.sessionPlan),
+    notify: mergeNotify(a.notify, b.notify),
+  };
 }

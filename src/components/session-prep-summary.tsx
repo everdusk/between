@@ -39,7 +39,7 @@ export function SessionPrepSummary({
 
   const sessionLabel = formatLongDate(summary.lastSession.date);
 
-  if (summary.entryCount === 0) {
+  if (summary.entryCount === 0 && summary.feelings.length === 0) {
     return (
       <section className="space-y-2 border-b border-border/70 pb-6">
         <h3 className="font-display text-lg text-foreground">
@@ -117,29 +117,40 @@ export function SessionPrepSummary({
                 {summary.entryCount}
               </strong>
             </span>
-            {summary.avgMood !== null && (
+            {summary.checkinCount > 0 && (
               <span>
-                Среднее настроение:{" "}
+                Отметок:{" "}
                 <strong className="font-medium text-foreground">
-                  {summary.avgMood.toFixed(1)}
+                  {summary.checkinCount}
                 </strong>
               </span>
             )}
           </div>
 
+          {summary.feelings.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {summary.feelings.map((item) => (
+                <Badge key={item.feeling} variant="secondary" className="font-normal">
+                  {item.feeling}
+                  <span className="ml-1.5 text-muted-foreground">×{item.count}</span>
+                </Badge>
+              ))}
+            </div>
+          )}
+
           {summary.moodTrend === "up" && (
             <p className="text-sm text-foreground/90">
-              Настроение к концу периода в среднем выше, чем в начале.
+              К концу периода самочувствие в среднем легче, чем в начале.
             </p>
           )}
           {summary.moodTrend === "down" && (
             <p className="text-sm text-foreground/90">
-              Настроение к концу периода в среднем ниже, чем в начале.
+              К концу периода самочувствие в среднем тяжелее, чем в начале.
             </p>
           )}
           {summary.moodTrend === "flat" && (
             <p className="text-sm text-muted-foreground">
-              Настроение за период без явного сдвига вверх или вниз.
+              Самочувствие за период без явного сдвига.
             </p>
           )}
 
@@ -165,32 +176,36 @@ export function SessionPrepSummary({
             </div>
           )}
 
-          <div className="space-y-2">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Ключевые моменты
-            </p>
-            <ul className="space-y-0 divide-y divide-border/70">
-              {summary.highlights.map((h) => (
-                <li key={h.date} className="space-y-1.5 py-3">
-                  <p className="text-sm font-medium text-foreground">
-                    {formatDayLabel(h.date)}
-                    <span className="ml-2 font-normal text-muted-foreground">
-                      {h.moodLabel}
-                    </span>
-                  </p>
-                  <p className="text-sm leading-relaxed text-foreground/90">
-                    {h.excerpt}
-                  </p>
-                </li>
-              ))}
-            </ul>
-            {summary.entryCount > summary.highlights.length && (
-              <p className="text-xs text-muted-foreground">
-                Показаны {summary.highlights.length} из {summary.entryCount}{" "}
-                дней — крайние по настроению и крайние по дате.
+          {summary.highlights.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Ключевые моменты
               </p>
-            )}
-          </div>
+              <ul className="space-y-0 divide-y divide-border/70">
+                {summary.highlights.map((highlight) => (
+                  <li key={highlight.id} className="space-y-1.5 py-3">
+                    <p className="text-sm font-medium text-foreground">
+                      {formatDayLabel(highlight.date)}
+                      {highlight.feelingsLabel && (
+                        <span className="ml-2 font-normal text-muted-foreground">
+                          {highlight.feelingsLabel}
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-sm leading-relaxed text-foreground/90">
+                      {highlight.excerpt}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+              {summary.entryCount > summary.highlights.length && (
+                <p className="text-xs text-muted-foreground">
+                  Показаны {summary.highlights.length} из {summary.entryCount}{" "}
+                  записей — крайние по самочувствию и по дате.
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center gap-3">
             <Button

@@ -1,19 +1,9 @@
+import { normalizeStore, storeChangedShape } from "./migrate";
 import { emptyStore, STORAGE_KEY, type TherapyStore } from "./types";
 
 export type StorageResult =
   | { ok: true; data: TherapyStore }
   | { ok: false; error: string };
-
-function isStore(value: unknown): value is TherapyStore {
-  if (!value || typeof value !== "object") return false;
-  const v = value as Record<string, unknown>;
-  return (
-    v.version === 1 &&
-    Array.isArray(v.entries) &&
-    Array.isArray(v.sessions) &&
-    Array.isArray(v.weekPreps)
-  );
-}
 
 export function loadStore(): StorageResult {
   try {
@@ -25,13 +15,17 @@ export function loadStore(): StorageResult {
       return { ok: true, data: emptyStore() };
     }
     const parsed: unknown = JSON.parse(raw);
-    if (!isStore(parsed)) {
+    const normalized = normalizeStore(parsed);
+    if (!normalized) {
       return {
         ok: false,
         error: "Данные в хранилище повреждены. Можно начать заново.",
       };
     }
-    return { ok: true, data: parsed };
+    if (storeChangedShape(parsed, normalized)) {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    }
+    return { ok: true, data: normalized };
   } catch {
     return {
       ok: false,
@@ -42,8 +36,9 @@ export function loadStore(): StorageResult {
 
 export function saveStore(store: TherapyStore): StorageResult {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-    return { ok: true, data: store };
+    const normalized = normalizeStore(store) ?? store;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    return { ok: true, data: normalized };
   } catch {
     return {
       ok: false,

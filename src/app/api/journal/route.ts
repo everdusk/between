@@ -1,24 +1,16 @@
 import { NextResponse } from "next/server";
+import { normalizeStore } from "@/lib/migrate";
 import {
   getUserTimezone,
   loadUserStore,
   redisConfigured,
+  rememberUser,
   saveUserStore,
   setUserTimezone,
 } from "@/lib/redis";
 import { validateInitData } from "@/lib/telegram-auth";
-import { emptyStore, type TherapyStore } from "@/lib/types";
-
-function isStore(value: unknown): value is TherapyStore {
-  if (!value || typeof value !== "object") return false;
-  const v = value as Record<string, unknown>;
-  return (
-    v.version === 1 &&
-    Array.isArray(v.entries) &&
-    Array.isArray(v.sessions) &&
-    Array.isArray(v.weekPreps)
-  );
-}
+import { emptyStore } from "@/lib/types";
+import { isValidTimeZone } from "@/lib/zoned";
 
 function initDataFrom(req: Request): string | null {
   return req.headers.get("x-telegram-init-data");
@@ -46,6 +38,7 @@ export async function GET(req: Request) {
 
   const store = await loadUserStore(validated.user.id);
   const timeZone = await getUserTimezone(validated.user.id);
+  await rememberUser(validated.user.id);
 
   return NextResponse.json({
     ok: true,
@@ -71,19 +64,15 @@ export async function PUT(req: Request) {
   }
 
   const payload = body as { store?: unknown; timeZone?: unknown };
-  if (!isStore(payload.store)) {
+  const store = normalizeStore(payload.store);
+  if (!store) {
     return NextResponse.json({ ok: false, error: "invalid_store" }, { status: 400 });
   }
 
-  await saveUserStore(validated.user.id, payload.store);
+  await saveUserStore(validated.user.id, store);
 
-  if (typeof payload.timeZone === "string" && payload.timeZone.length > 0) {
-    try {
-      Intl.DateTimeFormat(undefined, { timeZone: payload.timeZone });
-      await setUserTimezone(validated.user.id, payload.timeZone);
-    } catch {
-      // ignore invalid tz
-    }
+  if (typeof payload.timeZone === "string" && isValidTimeZone(payload.timeZone)) {
+    await setUserTimezone(validated.user.id, payload.timeZone);
   }
 
   return NextResponse.json({ ok: true });
