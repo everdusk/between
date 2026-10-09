@@ -49,9 +49,14 @@ export function applyTelegramTheme(theme: ThemeParams, colorScheme: "light" | "d
   set("--primary", theme.button_color);
   set("--primary-foreground", theme.button_text_color);
   set("--card", theme.section_bg_color || theme.secondary_bg_color);
-  set("--muted", theme.secondary_bg_color);
+  set("--card-foreground", theme.text_color);
+  set("--popover-foreground", theme.text_color);
+  // Telegram replaces the panel background but not these ink colors.
+  // Leaving the light-theme ink makes badges and secondary buttons look empty.
   set("--secondary", theme.secondary_bg_color);
+  set("--secondary-foreground", theme.text_color);
   set("--accent", theme.secondary_bg_color);
+  set("--accent-foreground", theme.text_color);
   set("--border", theme.section_separator_color || theme.hint_color);
   set("--input", theme.secondary_bg_color);
   set("--destructive", theme.destructive_text_color);
@@ -86,9 +91,13 @@ export function clearTelegramThemeOverrides() {
     "--primary",
     "--primary-foreground",
     "--card",
+    "--card-foreground",
+    "--popover-foreground",
     "--muted",
     "--secondary",
+    "--secondary-foreground",
     "--accent",
+    "--accent-foreground",
     "--border",
     "--input",
     "--destructive",
