@@ -6,13 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SessionPrepSummary } from "@/components/session-prep-summary";
+import { WeekSpectrum } from "@/components/week-spectrum";
 import {
   formatDayLabel,
   formatTime,
   formatWeekRange,
-  parseDateKey,
   toDateKey,
-  trailingDateKeys,
   weekDayKeys,
   weekKey,
 } from "@/lib/dates";
@@ -20,10 +19,10 @@ import {
   briefStamp,
   buildRuleBrief,
   entriesOnDates,
-  feelingCounts,
   persistentTags,
   tagCounts,
 } from "@/lib/brief";
+import { feelingFill } from "@/lib/spectrum";
 import { SLOT_LABELS } from "@/lib/feelings";
 import { requestBrief } from "@/lib/journal-api";
 import type { JournalEntry, SessionNote, WeekPrep } from "@/lib/types";
@@ -87,6 +86,7 @@ export function WeeklyPanel({
     "idle" | "loading" | "local" | "plain" | "failed"
   >("idle");
   const [briefNote, setBriefNote] = useState<string | null>(null);
+  const [focusDay, setFocusDay] = useState<string | null>(null);
 
   const byDate = new Map<string, JournalEntry[]>();
   for (const day of days) byDate.set(day, []);
@@ -100,14 +100,10 @@ export function WeeklyPanel({
 
   const weekEntries = days.flatMap((day) => byDate.get(day) ?? []);
   const prevEntries = entriesOnDates(entries, prevDays);
-  const monthEntries = entriesOnDates(
-    entries,
-    trailingDateKeys(30, parseDateKey(todayKey)),
-  );
 
-  const weekFeelings = feelingCounts(weekEntries);
-  const monthFeelings = feelingCounts(monthEntries);
   const weekTags = tagCounts(weekEntries);
+  const selectedDay =
+    focusDay && days.includes(focusDay) ? focusDay : latestNotedDay(days, byDate, todayKey);
   const carried = persistentTags(weekTags, tagCounts(prevEntries));
   const noteDays = days.filter((day) =>
     (byDate.get(day) ?? []).some((entry) => entry.body.trim()),
@@ -157,17 +153,56 @@ export function WeeklyPanel({
     <div className="space-y-8">
       <div className="space-y-1">
         <h2 className="font-display text-2xl tracking-tight text-foreground sm:text-3xl">
-          Недельный обзор
+          Сводка недели
         </h2>
         <p className="text-sm text-muted-foreground sm:text-base">
-          Неделя {formatWeekRange(now)} — сводка перед сеансом.
+          {formatWeekRange(now)} — к разговору на сеансе.
         </p>
       </div>
 
+      <WeekSpectrum
+        dayKeys={days}
+        entries={weekEntries}
+        todayKey={todayKey}
+        selectedKey={selectedDay}
+        onSelect={(day) => {
+          setFocusDay(day);
+          document.getElementById(`week-day-${day}`)?.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+          });
+        }}
+      />
+
+      {(carried.length > 0 || weekTags.length > 0) && (
+        <section className="space-y-2">
+          {carried.length > 0 && (
+            <p className="text-sm text-foreground/90">
+              С прошлой недели повторяется: {carried.join(", ")}.
+            </p>
+          )}
+          {weekTags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {weekTags.slice(0, 8).map((item) => (
+                <Badge key={item.tag} className="font-normal">
+                  {item.tag}
+                  <span className="ml-1.5 text-primary-foreground/70">×{item.count}</span>
+                </Badge>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       <SessionPrepSummary entries={entries} sessions={sessions} />
 
-      <section className="space-y-3">
-        <h3 className="font-display text-lg text-foreground">Бриф к сеансу</h3>
+      <section className="space-y-3 rounded-3xl border border-border/60 bg-card/70 p-4 sm:p-5">
+        <div className="space-y-1">
+          <h3 className="font-display text-lg text-foreground">Бриф к сеансу</h3>
+          <p className="text-sm text-muted-foreground">
+            {noteDays} из 7 дней с заметками · записей за неделю: {weekEntries.length}
+          </p>
+        </div>
         <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
           {modelText || rules}
         </p>
@@ -189,44 +224,30 @@ export function WeeklyPanel({
         </div>
       </section>
 
-      <section className="space-y-3">
-        <h3 className="font-display text-lg text-foreground">Тренды</h3>
-        <p className="text-sm text-muted-foreground">
-          Дней с заметками: {noteDays} из 7. Отметок и записей за неделю:{" "}
-          {weekEntries.length}.
-        </p>
-        <FeelingLine title="Эта неделя" items={weekFeelings} />
-        <FeelingLine title="30 дней" items={monthFeelings} />
-        {carried.length > 0 && (
-          <p className="text-sm text-foreground/90">
-            С прошлой недели повторяется: {carried.join(", ")}.
-          </p>
-        )}
-        {weekTags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {weekTags.slice(0, 8).map((item) => (
-              <Badge key={item.tag} className="font-normal">
-                {item.tag}
-                <span className="ml-1.5 text-primary-foreground/70">×{item.count}</span>
-              </Badge>
-            ))}
-          </div>
-        )}
-      </section>
-
-      <ul className="space-y-0 divide-y divide-border/70">
+      <ul className="space-y-2">
         {days.map((day) => {
           const list = byDate.get(day) ?? [];
+          const tone = list.find((entry) => entry.feelings.length > 0)?.feelings[0];
           return (
             <li
               key={day}
+              id={`week-day-${day}`}
               className={cn(
-                "grid gap-2 py-4 sm:grid-cols-[7.5rem_1fr] sm:gap-6",
-                list.length === 0 && "opacity-55",
+                "grid gap-2 rounded-2xl px-3 py-3 sm:grid-cols-[7.5rem_1fr] sm:gap-6",
+                day === selectedDay
+                  ? "bg-primary/10 ring-1 ring-primary/25"
+                  : list.length === 0 && "opacity-55",
               )}
             >
-              <div className="text-sm font-medium text-foreground">
-                {formatDayLabel(day)}
+              <div className="flex items-start gap-2 text-sm font-medium text-foreground">
+                {tone && (
+                  <span
+                    aria-hidden
+                    className="mt-1 size-2 shrink-0 rounded-full"
+                    style={{ background: feelingFill(tone) }}
+                  />
+                )}
+                <span>{formatDayLabel(day)}</span>
               </div>
               {list.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Нет записи</p>
@@ -264,7 +285,7 @@ export function WeeklyPanel({
         })}
       </ul>
 
-      <div className="space-y-3 border-t border-border/70 pt-6">
+      <div className="space-y-3 rounded-3xl border border-border/60 bg-card/70 p-4 sm:p-5">
         <div className="space-y-1">
           <Label htmlFor="talk-notes" className="font-display text-lg">
             Говорить на сеансе
@@ -297,26 +318,15 @@ export function WeeklyPanel({
   );
 }
 
-function FeelingLine({
-  title,
-  items,
-}: {
-  title: string;
-  items: { feeling: string; count: number }[];
-}) {
-  return (
-    <p className="text-sm text-muted-foreground">
-      {title}:{" "}
-      {items.length === 0 ? (
-        <span>пока нет отметок</span>
-      ) : (
-        <span className="text-foreground">
-          {items
-            .slice(0, 5)
-            .map((item) => `${item.feeling} ×${item.count}`)
-            .join(", ")}
-        </span>
-      )}
-    </p>
-  );
+function latestNotedDay(
+  days: string[],
+  byDate: Map<string, JournalEntry[]>,
+  todayKey: string,
+): string {
+  const elapsed = days.filter((day) => day <= todayKey);
+  for (let index = elapsed.length - 1; index >= 0; index -= 1) {
+    const day = elapsed[index];
+    if ((byDate.get(day) ?? []).length > 0) return day;
+  }
+  return todayKey;
 }
