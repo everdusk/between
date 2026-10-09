@@ -80,30 +80,66 @@ async function gemini(prompt: string, apiKey: string): Promise<{ text: string | 
   return { text: null, detail: geminiDetail(first.status) };
 }
 
-async function groq(prompt: string, apiKey: string): Promise<{ text: string | null; detail: string }> {
-  const model = process.env.GROQ_MODEL?.trim() || "llama-3.1-8b-instant";
+const GROQ_FALLBACK = "openai/gpt-oss-20b";
+
+/** Groq shut these off for free and developer keys on 2026-08-16. */
+const RETIRED_GROQ_MODELS = new Set([
+  "llama-3.1-8b-instant",
+  "llama-3.3-70b-versatile",
+]);
+
+export function resolveGroqModel(configured: string | undefined): string {
+  const name = configured?.trim();
+  if (!name || RETIRED_GROQ_MODELS.has(name)) return GROQ_FALLBACK;
+  return name;
+}
+
+async function groqOnce(
+  prompt: string,
+  apiKey: string,
+  model: string,
+): Promise<{ text: string | null; status: number }> {
+  const body: Record<string, unknown> = {
+    model,
+    temperature: 0.4,
+    max_completion_tokens: 1024,
+    messages: [
+      { role: "system", content: SYSTEM },
+      { role: "user", content: `Факты:\n${prompt}` },
+    ],
+  };
+  if (model.includes("gpt-oss")) body.reasoning_effort = "low";
+
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      model,
-      temperature: 0.4,
-      max_tokens: 500,
-      messages: [
-        { role: "system", content: SYSTEM },
-        { role: "user", content: `Факты:\n${prompt}` },
-      ],
-    }),
+    body: JSON.stringify(body),
   });
-  if (!res.ok) return { text: null, detail: `groq_${res.status}` };
+  if (!res.ok) return { text: null, status: res.status };
   const data = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
+    choices?: { message?: { content?: string | null } }[];
   };
   const text = data.choices?.[0]?.message?.content?.trim();
-  return { text: text || null, detail: text ? "" : "groq_empty" };
+  return { text: text || null, status: res.status };
+}
+
+async function groq(prompt: string, apiKey: string): Promise<{ text: string | null; detail: string }> {
+  const preferred = resolveGroqModel(process.env.GROQ_MODEL);
+  const first = await groqOnce(prompt, apiKey, preferred);
+  if (first.text) return { text: first.text, detail: "" };
+  if ((first.status === 400 || first.status === 404) && preferred !== GROQ_FALLBACK) {
+    const second = await groqOnce(prompt, apiKey, GROQ_FALLBACK);
+    if (second.text) return { text: second.text, detail: "" };
+    const status = second.status || first.status;
+    return { text: null, detail: status && status !== 200 ? `groq_${status}` : "groq_empty" };
+  }
+  return {
+    text: null,
+    detail: first.status && first.status !== 200 ? `groq_${first.status}` : "groq_empty",
+  };
 }
 
 export async function POST(req: Request) {

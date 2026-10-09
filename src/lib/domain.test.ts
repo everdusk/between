@@ -8,7 +8,7 @@ import { nextWeeklyOccurrence } from "./session-plan";
 import { suggestTags } from "./tags";
 import type { ThemeParams } from "@twa-dev/types";
 import { applyTelegramTheme, panelColor } from "./telegram";
-import { textFromGeminiParts } from "../app/api/brief/route";
+import { resolveGroqModel, textFromGeminiParts } from "../app/api/brief/route";
 import { emptyStore, type JournalEntry } from "./types";
 
 function note(partial: Partial<JournalEntry> & Pick<JournalEntry, "id" | "body">): JournalEntry {
@@ -184,6 +184,16 @@ describe("telegram theme", () => {
       "light",
     );
     assert.equal(day, "#f2f2f7");
+  });
+});
+
+describe("groq model", () => {
+  it("replaces the retired free-tier models", () => {
+    assert.equal(resolveGroqModel(undefined), "openai/gpt-oss-20b");
+    assert.equal(resolveGroqModel("  "), "openai/gpt-oss-20b");
+    assert.equal(resolveGroqModel("llama-3.1-8b-instant"), "openai/gpt-oss-20b");
+    assert.equal(resolveGroqModel("llama-3.3-70b-versatile"), "openai/gpt-oss-20b");
+    assert.equal(resolveGroqModel("openai/gpt-oss-120b"), "openai/gpt-oss-120b");
   });
 });
 
