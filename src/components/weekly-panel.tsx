@@ -116,6 +116,7 @@ export function WeeklyPanel({
     weekEntries,
     prevEntries,
     talkNotes,
+    todayKey,
   });
   const stamp = briefStamp(weekEntries, talkNotes);
   const modelText = prep?.briefStamp === stamp ? prep.briefText : undefined;
