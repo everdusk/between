@@ -106,6 +106,33 @@ describe("brief", () => {
     assert.match(text, /тревожно — 2/);
     assert.match(text, /С прошлой недели повторяется: мама/);
     assert.match(text, /про дедлайн/);
+    assert.match(text, /Записи:\n/);
+    assert.match(text, /Снова мама и дедлайн на работе/);
+  });
+
+  it("keeps today's notes when an older note already has the tag", () => {
+    const text = buildRuleBrief({
+      weekEntries: [
+        note({
+          id: "old",
+          date: "2026-10-08",
+          body: "[19:05] старая запись про маму",
+          tags: ["мама"],
+        }),
+        note({
+          id: "today",
+          date: "2026-10-09",
+          createdAt: "2026-10-09T16:00:00.000Z",
+          body: "обида на подругу",
+          tags: [],
+        }),
+      ],
+      prevEntries: [],
+      talkNotes: "",
+      todayKey: "2026-10-09",
+    });
+    assert.match(text, /старая запись про маму/);
+    assert.match(text, /сегодня: обида на подругу/);
   });
 });
 

@@ -1,3 +1,4 @@
+import { formatDayLabel } from "./dates";
 import { formatFeelings } from "./feelings";
 import type { Feeling, JournalEntry } from "./types";
 
@@ -42,21 +43,40 @@ export function persistentTags(
   return current.filter((item) => prev.has(item.tag)).map((item) => item.tag);
 }
 
-function excerpt(body: string): string {
+function noteExcerpt(body: string): string {
   const clean = body.replace(/\s+/g, " ").trim();
-  if (!clean) return "";
-  const sentence = clean.split(/(?<=[.!?])\s/)[0] ?? clean;
-  if (sentence.length <= 140) return sentence;
-  return `${sentence.slice(0, 137).trimEnd()}…`;
+  if (clean.length <= 240) return clean;
+  return `${clean.slice(0, 237).trimEnd()}…`;
 }
 
-function quoteForTag(entries: JournalEntry[], tag: string): string | null {
-  const note = entries.find(
-    (entry) => entry.tags.includes(tag) && entry.body.trim(),
-  );
-  if (!note) return null;
-  const text = excerpt(note.body);
-  return text ? `«${text}» — ${tag}` : null;
+/** Every note with text. Older lines drop first if the week is long; today stays. */
+function noteFacts(entries: JournalEntry[], todayKey?: string): string | null {
+  const notes = entries
+    .filter((entry) => entry.body.trim())
+    .sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt),
+    );
+  if (notes.length === 0) return null;
+
+  const lines = notes.map((entry) => {
+    const when = entry.date === todayKey ? "сегодня" : formatDayLabel(entry.date);
+    const feelings =
+      entry.feelings.length > 0 ? ` (${entry.feelings.join(", ")})` : "";
+    return {
+      date: entry.date,
+      line: `${when}${feelings}: ${noteExcerpt(entry.body)}`,
+    };
+  });
+
+  const size = () => lines.reduce((sum, item) => sum + item.line.length + 1, 0);
+  while (lines.length > 1 && size() > 2800) {
+    const index = lines.findIndex((item) => item.date !== todayKey);
+    if (index === -1) break;
+    lines.splice(index, 1);
+  }
+
+  return `Записи:\n${lines.map((item) => item.line).join("\n")}`;
 }
 
 function feelingLine(
@@ -83,6 +103,7 @@ export function buildRuleBrief(input: {
   weekEntries: JournalEntry[];
   prevEntries: JournalEntry[];
   talkNotes: string;
+  todayKey?: string;
 }): string {
   const notes = input.weekEntries.filter((entry) => entry.body.trim());
   const feelings = feelingCounts(input.weekEntries);
@@ -112,12 +133,8 @@ export function buildRuleBrief(input: {
     lines.push(`С прошлой недели повторяется: ${carried.slice(0, 4).join(", ")}.`);
   }
 
-  const quotes = tags
-    .slice(0, 3)
-    .map((item) => quoteForTag(notes, item.tag))
-    .filter((line): line is string => Boolean(line))
-    .slice(0, 2);
-  if (quotes.length > 0) lines.push(quotes.join("\n"));
+  const facts = noteFacts(notes, input.todayKey);
+  if (facts) lines.push(facts);
 
   if (talk) lines.push(`Сказать на сеансе: ${talk}`);
   else lines.push("Поле «говорить на сеансе» пока пустое.");
