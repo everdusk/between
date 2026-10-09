@@ -62,10 +62,14 @@ const MONTHS_GENITIVE = [
   "декабря",
 ];
 
+export function weekdayShort(key: string): string {
+  const d = parseDateKey(key);
+  return WEEKDAY_SHORT[d.getDay() === 0 ? 6 : d.getDay() - 1];
+}
+
 export function formatDayLabel(key: string): string {
   const d = parseDateKey(key);
-  const weekday = WEEKDAY_SHORT[d.getDay() === 0 ? 6 : d.getDay() - 1];
-  return `${weekday}, ${d.getDate()} ${MONTHS_GENITIVE[d.getMonth()]}`;
+  return `${weekdayShort(key)}, ${d.getDate()} ${MONTHS_GENITIVE[d.getMonth()]}`;
 }
 
 export function formatWeekRange(date: Date = new Date()): string {

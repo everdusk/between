@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { buildRuleBrief } from "./brief";
+import { buildWeekSpectrum, spectrumHeadline } from "./spectrum";
 import { digestAction } from "./digest";
 import { mergeStores } from "./journal-api";
 import { normalizeStore } from "./migrate";
@@ -133,6 +134,90 @@ describe("brief", () => {
     });
     assert.match(text, /старая запись про маму/);
     assert.match(text, /сегодня: обида на подругу/);
+  });
+});
+
+describe("spectrum", () => {
+  const days = [
+    "2026-10-05",
+    "2026-10-06",
+    "2026-10-07",
+    "2026-10-08",
+    "2026-10-09",
+    "2026-10-10",
+    "2026-10-11",
+  ];
+
+  it("orders the week from lighter feelings toward heavier ones", () => {
+    const spectrum = buildWeekSpectrum(days, [
+      note({
+        id: "mon",
+        date: "2026-10-05",
+        createdAt: "2026-10-05T08:00:00.000Z",
+        body: "злость с утра",
+        feelings: ["злость"],
+      }),
+      note({
+        id: "tue",
+        date: "2026-10-06",
+        createdAt: "2026-10-06T09:00:00.000Z",
+        body: "легче",
+        feelings: ["радость", "спокойно"],
+      }),
+      note({
+        id: "wed-am",
+        date: "2026-10-07",
+        createdAt: "2026-10-07T07:00:00.000Z",
+        body: "утро",
+        feelings: ["тревожно"],
+      }),
+      note({
+        id: "wed-pm",
+        date: "2026-10-07",
+        createdAt: "2026-10-07T19:00:00.000Z",
+        body: "вечер",
+        feelings: ["тревожно", "усталость"],
+      }),
+    ]);
+
+    assert.deepEqual(
+      spectrum.shares.map((share) => share.feeling),
+      ["радость", "спокойно", "усталость", "тревожно", "злость"],
+    );
+    assert.deepEqual(spectrum.top, ["тревожно"]);
+    assert.equal(spectrumHeadline(spectrum, 4), "Чаще всего — тревожно.");
+    const wednesday = spectrum.days[2];
+    assert.deepEqual(
+      wednesday.slices.map((slice) => slice.feelings),
+      [["тревожно"], ["тревожно", "усталость"]],
+    );
+    assert.equal(spectrum.days[6].slices.length, 0);
+  });
+
+  it("names a tie and an empty week", () => {
+    const tied = buildWeekSpectrum(days, [
+      note({
+        id: "a",
+        date: "2026-10-05",
+        body: "радость",
+        feelings: ["радость"],
+      }),
+      note({
+        id: "b",
+        date: "2026-10-06",
+        body: "грусть",
+        feelings: ["грусть"],
+      }),
+    ]);
+    assert.equal(
+      spectrumHeadline(tied, 2),
+      "Одинаково часто — радость и грусть.",
+    );
+    const empty = buildWeekSpectrum(days, []);
+    assert.equal(
+      spectrumHeadline(empty, 0),
+      "Неделя ещё пустая. Отметка самочувствия станет здесь цветной полосой.",
+    );
   });
 });
 
