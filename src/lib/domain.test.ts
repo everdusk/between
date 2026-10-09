@@ -7,7 +7,8 @@ import { normalizeStore } from "./migrate";
 import { nextWeeklyOccurrence } from "./session-plan";
 import { suggestTags } from "./tags";
 import type { ThemeParams } from "@twa-dev/types";
-import { applyTelegramTheme } from "./telegram";
+import { applyTelegramTheme, panelColor } from "./telegram";
+import { textFromGeminiParts } from "../app/api/brief/route";
 import { emptyStore, type JournalEntry } from "./types";
 
 function note(partial: Partial<JournalEntry> & Pick<JournalEntry, "id" | "body">): JournalEntry {
@@ -152,8 +153,50 @@ describe("telegram theme", () => {
 
     globalThis.document = previous;
     assert.equal(props.get("--secondary"), "#2c2c2e");
+    assert.equal(props.get("--muted"), "#2c2c2e");
     assert.equal(props.get("--secondary-foreground"), "#ffffff");
     assert.equal(props.get("--accent-foreground"), "#ffffff");
+  });
+
+  it("does not paint dark text on a light panel", () => {
+    const light = panelColor(
+      {
+        bg_color: "#1c1c1e",
+        text_color: "#ffffff",
+        secondary_bg_color: "#f2f2f7",
+      } as unknown as ThemeParams,
+      "dark",
+    );
+    assert.equal(light, "#1c1c1e");
+    const dark = panelColor(
+      {
+        bg_color: "#1c1c1e",
+        secondary_bg_color: "#2c2c2e",
+      } as unknown as ThemeParams,
+      "dark",
+    );
+    assert.equal(dark, "#2c2c2e");
+    const day = panelColor(
+      {
+        bg_color: "#ffffff",
+        secondary_bg_color: "#f2f2f7",
+      } as unknown as ThemeParams,
+      "light",
+    );
+    assert.equal(day, "#f2f2f7");
+  });
+});
+
+describe("gemini text", () => {
+  it("skips thought parts that hide the brief", () => {
+    assert.equal(
+      textFromGeminiParts([
+        { thought: true, text: "internal" },
+        { text: "Как прошла неделя." },
+      ]),
+      "Как прошла неделя.",
+    );
+    assert.equal(textFromGeminiParts([{ thought: true, text: "only thought" }]), "");
   });
 });
 

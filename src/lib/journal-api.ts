@@ -87,12 +87,17 @@ export async function requestBrief(
       ok?: boolean;
       text?: string | null;
       reason?: string;
+      detail?: string;
       error?: string;
     };
     if (!res.ok || !data.ok) {
       return { ok: false, error: data.error ?? "brief_failed" };
     }
-    return { ok: true, text: data.text ?? null, reason: data.reason };
+    return {
+      ok: true,
+      text: data.text ?? null,
+      reason: data.detail ? `${data.reason ?? "model_failed"}:${data.detail}` : data.reason,
+    };
   } catch {
     return { ok: false, error: "network" };
   }

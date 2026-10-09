@@ -29,6 +29,25 @@ import { requestBrief } from "@/lib/journal-api";
 import type { JournalEntry, SessionNote, WeekPrep } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+function briefFailure(reason: string | undefined): string {
+  if (reason === "limit") {
+    return "На сегодня хватит запросов к модели. Ниже сборка по записям.";
+  }
+  if (reason === "no_model") {
+    return "Ключ модели на сервер не попал. В Vercel нужна GEMINI_API_KEY или GROQ_API_KEY для Production.";
+  }
+  if (
+    reason?.includes("gemini_400") ||
+    reason?.includes("gemini_401") ||
+    reason?.includes("gemini_403") ||
+    reason?.includes("groq_401") ||
+    reason?.includes("groq_403")
+  ) {
+    return "Сервер отклонил ключ модели. В Vercel для Production нужен ключ AI Studio (GEMINI_API_KEY) или Groq (GROQ_API_KEY), без кавычек.";
+  }
+  return `Модель не ответила${reason ? ` (${reason})` : ""}. Ниже сборка по записям.`;
+}
+
 interface WeeklyPanelProps {
   entries: JournalEntry[];
   sessions: SessionNote[];
@@ -123,9 +142,7 @@ export function WeeklyPanel({
       setBriefPhase(result.ok ? "plain" : "failed");
       setBriefNote(
         result.ok
-          ? result.reason === "limit"
-            ? "На сегодня хватит запросов к модели. Ниже сборка по записям."
-            : "Модель сейчас недоступна. Ниже сборка по записям — она бесплатная."
+          ? briefFailure(result.reason)
           : "Не удалось сформулировать текст. Ниже сборка по записям.",
       );
       return;
