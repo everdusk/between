@@ -11,11 +11,18 @@ import {
   weekDayKeys,
   weekKey,
 } from "@/lib/dates";
-import { MOOD_LABELS, type JournalEntry, type WeekPrep } from "@/lib/types";
+import { SessionPrepSummary } from "@/components/session-prep-summary";
+import {
+  MOOD_LABELS,
+  type JournalEntry,
+  type SessionNote,
+  type WeekPrep,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface WeeklyPanelProps {
   entries: JournalEntry[];
+  sessions: SessionNote[];
   weekPreps: WeekPrep[];
   onSavePrep: (weekKey: string, talkNotes: string) => boolean;
   disabled?: boolean;
@@ -23,6 +30,7 @@ interface WeeklyPanelProps {
 
 export function WeeklyPanel({
   entries,
+  sessions,
   weekPreps,
   onSavePrep,
   disabled,
@@ -86,6 +94,8 @@ export function WeeklyPanel({
           Неделя {formatWeekRange(now)} — сводка перед сеансом.
         </p>
       </div>
+
+      <SessionPrepSummary entries={entries} sessions={sessions} />
 
       {weekEntries.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border/80 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
