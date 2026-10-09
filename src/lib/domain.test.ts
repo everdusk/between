@@ -6,6 +6,8 @@ import { mergeStores } from "./journal-api";
 import { normalizeStore } from "./migrate";
 import { nextWeeklyOccurrence } from "./session-plan";
 import { suggestTags } from "./tags";
+import type { ThemeParams } from "@twa-dev/types";
+import { applyTelegramTheme } from "./telegram";
 import { emptyStore, type JournalEntry } from "./types";
 
 function note(partial: Partial<JournalEntry> & Pick<JournalEntry, "id" | "body">): JournalEntry {
@@ -115,6 +117,43 @@ describe("session plan", () => {
     assert.equal(next?.getFullYear(), 2026);
     assert.equal(next?.getMonth(), 9);
     assert.equal(next?.getDate(), 15);
+  });
+});
+
+describe("telegram theme", () => {
+  it("paints secondary buttons and badges with the Telegram text color", () => {
+    const props = new Map<string, string>();
+    const previous = globalThis.document;
+    globalThis.document = {
+      documentElement: {
+        dataset: {},
+        style: {
+          setProperty(name: string, value: string) {
+            props.set(name, value);
+          },
+          removeProperty(name: string) {
+            props.delete(name);
+          },
+        },
+      },
+    } as unknown as Document;
+
+    applyTelegramTheme(
+      {
+        bg_color: "#1c1c1e",
+        text_color: "#ffffff",
+        hint_color: "#8e8e93",
+        button_color: "#3390ec",
+        button_text_color: "#ffffff",
+        secondary_bg_color: "#2c2c2e",
+      } as unknown as ThemeParams,
+      "dark",
+    );
+
+    globalThis.document = previous;
+    assert.equal(props.get("--secondary"), "#2c2c2e");
+    assert.equal(props.get("--secondary-foreground"), "#ffffff");
+    assert.equal(props.get("--accent-foreground"), "#ffffff");
   });
 });
 
