@@ -60,7 +60,15 @@ export function resolveBotLocale(
   return selected ?? device ?? localeFromTelegram(telegramCode) ?? "ru";
 }
 
-/** The greeting ignores the in-app choice and follows the device. */
+/** Header greeting follows an explicit choice, then the device language. */
+export function resolveAppGreetingLocale(
+  selected: LocaleId | null,
+  device: LocaleId,
+): LocaleId {
+  return selected ?? device;
+}
+
+/** Bot /start follows the device, not the in-app menu. */
 export function resolveGreetingLocale(
   navigatorCode: string | null | undefined,
   device: LocaleId | null,

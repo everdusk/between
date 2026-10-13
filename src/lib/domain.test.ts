@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { buildRuleBrief } from "./brief";
-import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale } from "./i18n";
+import {
+  localeFromTelegram,
+  resolveAppGreetingLocale,
+  resolveBotLocale,
+  resolveGreetingLocale,
+} from "./i18n";
 import { catalogsShareKeys, countPhrase, feelingLabel, translate } from "./messages";
 import { pollText } from "./digest";
 import { feelingKeyboard, parseFeelingCallback } from "./telegram-bot";
@@ -429,6 +434,13 @@ describe("languages", () => {
     assert.equal(board.inline_keyboard[0][0].text, "anxious");
     assert.equal(board.inline_keyboard[0][0].callback_data, "c:m:0");
     assert.equal(parseFeelingCallback("c:m:0")?.feeling, "тревожно");
+  });
+
+  it("lets an explicit language choice win the header greeting", () => {
+    assert.equal(resolveAppGreetingLocale("en", "ru"), "en");
+    assert.equal(resolveAppGreetingLocale(null, "ru"), "ru");
+    assert.equal(translate("en", "hello", { name: "Анастасия" }), "Hello, Анастасия");
+    assert.equal(translate("ru", "hello", { name: "Анастасия" }), "Привет, Анастасия");
   });
 
   it("translates a rule brief only when copy is passed", () => {

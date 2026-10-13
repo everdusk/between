@@ -54,7 +54,7 @@ function localizeStorageError(
 }
 
 function TherapyShell({ telegram }: { telegram: TelegramSession }) {
-  const { t, locale, deviceLocale, setLocale } = useI18n();
+  const { t, locale, greetingLocale, setLocale } = useI18n();
   const {
     store,
     status,
@@ -76,10 +76,10 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
 
   const [section, setSection] = useState<SectionId>("journal");
   const disabled = status !== "ready";
-  const name = shownName(telegram.displayName, translate(deviceLocale, "guest"));
+  const name = shownName(telegram.displayName, translate(greetingLocale, "guest"));
   const greeting = !telegram.ready
-    ? translate(deviceLocale, "loading")
-    : translate(deviceLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
+    ? translate(greetingLocale, "loading")
+    : translate(greetingLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
 
   return (
     <div

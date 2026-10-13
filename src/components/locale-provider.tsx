@@ -14,6 +14,7 @@ import {
   isLocale,
   localeFromTelegram,
   localeMeta,
+  resolveAppGreetingLocale,
   type LocaleId,
 } from "@/lib/i18n";
 import { syncLocale } from "@/lib/locale-client";
@@ -29,7 +30,7 @@ const STORAGE_KEY = "between:locale";
 
 type I18nValue = {
   locale: LocaleId;
-  deviceLocale: LocaleId;
+  greetingLocale: LocaleId;
   setLocale: (locale: LocaleId) => void;
   t: (key: MessageKey, vars?: Record<string, string | number | undefined>) => string;
   count: (count: number, stem: "day" | "note") => string;
@@ -55,22 +56,25 @@ export function LocaleProvider({
   children: ReactNode;
 }) {
   const [locale, setLocaleState] = useState<LocaleId>("ru");
+  const [chosen, setChosen] = useState<LocaleId | null>(null);
   const [deviceLocale, setDeviceLocale] = useState<LocaleId>("ru");
 
   useLayoutEffect(() => {
     const device = deviceLocaleFromNavigator();
     let stored: string | null = null;
+    let explicit: LocaleId | null = null;
     let next: LocaleId = "ru";
     try {
       stored = localStorage.getItem(STORAGE_KEY);
-      if (isLocale(stored)) next = stored;
-      else next = localeFromTelegram(telegramLanguage) ?? "ru";
+      if (isLocale(stored)) explicit = stored;
+      next = explicit ?? localeFromTelegram(telegramLanguage) ?? "ru";
     } catch {
       next = localeFromTelegram(telegramLanguage) ?? "ru";
     }
     // Stored choice and the device language are known only on the client.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- apply before paint so the first frame matches the saved language
     setLocaleState(next);
+    setChosen(explicit);
     setDeviceLocale(device);
     applyDocument(next);
     syncLocale(initData, {
@@ -81,6 +85,7 @@ export function LocaleProvider({
 
   const setLocale = useCallback((next: LocaleId) => {
     setLocaleState(next);
+    setChosen(next);
     applyDocument(next);
     try {
       localStorage.setItem(STORAGE_KEY, next);
@@ -98,14 +103,14 @@ export function LocaleProvider({
     } as const;
     return {
       locale,
-      deviceLocale,
+      greetingLocale: resolveAppGreetingLocale(chosen, deviceLocale),
       setLocale,
       t: (key, vars) => translate(locale, key, vars),
       count: (amount, stem) => countPhrase(locale, amount, stem),
       feeling: (feeling) => feelingLabel(locale, feeling),
       slot: (slot) => translate(locale, slotKey[slot]),
     };
-  }, [locale, deviceLocale, setLocale]);
+  }, [locale, chosen, deviceLocale, setLocale]);
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
