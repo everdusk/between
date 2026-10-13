@@ -26,12 +26,47 @@ export function localeMeta(id: LocaleId) {
   return LOCALES.find((item) => item.id === id) ?? LOCALES[0];
 }
 
-/** Maps a Telegram language_code onto a supported audience language. */
+/** Maps a Telegram or browser language code onto a supported audience language. */
 export function localeFromTelegram(code: string | null | undefined): LocaleId | null {
   if (!code) return null;
   const base = code.toLowerCase().split("-")[0];
   if (base === "in") return "id";
   return isLocale(base) ? base : null;
+}
+
+export function localeFromLanguages(
+  codes: readonly (string | null | undefined)[],
+): LocaleId | null {
+  for (const code of codes) {
+    const locale = localeFromTelegram(code);
+    if (locale) return locale;
+  }
+  return null;
+}
+
+/** Preferred language of this browser or WebView. */
+export function deviceLocaleFromNavigator(): LocaleId {
+  if (typeof navigator === "undefined") return "ru";
+  const list = navigator.languages?.length ? navigator.languages : [navigator.language];
+  return localeFromLanguages(list) ?? "ru";
+}
+
+/** Bot replies and mood buttons follow an explicit choice, then the device. */
+export function resolveBotLocale(
+  selected: LocaleId | null,
+  device: LocaleId | null,
+  telegramCode?: string | null,
+): LocaleId {
+  return selected ?? device ?? localeFromTelegram(telegramCode) ?? "ru";
+}
+
+/** The greeting ignores the in-app choice and follows the device. */
+export function resolveGreetingLocale(
+  navigatorCode: string | null | undefined,
+  device: LocaleId | null,
+  telegramCode?: string | null,
+): LocaleId {
+  return localeFromTelegram(navigatorCode) ?? device ?? localeFromTelegram(telegramCode) ?? "ru";
 }
 
 const MODEL_LANGUAGE: Record<LocaleId, string> = {

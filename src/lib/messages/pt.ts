@@ -169,4 +169,22 @@ export const pt: Catalog = {
   briefToday: "hoje",
   briefSay: "Falar na sessão: {talk}",
   briefTalkEmpty: "O campo «falar na sessão» ainda está vazio.",
+  botOpen: "Abrir Between",
+  botHelp:
+    "Between — um diário para a sessão.\n\nEscreva qualquer texto — eu salvo como uma nota separada de hoje e marco os temas.\nDe manhã, à tarde e à noite posso perguntar como você está. À noite aviso se o dia ficou sem nota.\nHorário e interruptores ficam no Mini App, na aba Sessões.",
+  botUnknown:
+    "Comando desconhecido. Escreva um texto comum — eu salvo como uma nota separada. /help — uma dica.",
+  botNotReady:
+    "Ainda não consigo salvar a nota: BOT_TOKEN ou Redis não está no servidor. Abra o Mini App — as notas neste aparelho continuam funcionando.",
+  botSaved: "Salvei como uma nota separada de hoje. Abra o Between para ver.",
+  botSaveFail: "Não consegui salvar a nota. Tente de novo daqui a pouco.",
+  botCheckinNotReady: "O servidor ainda não está pronto para salvar a marca.",
+  botCheckinSaved: "Salvei: {feeling}. Se quiser, acrescente uma nota na próxima mensagem.",
+  botCheckinFail: "Não consegui salvar a marca. Tente de novo.",
+  botInvoiceForeign: "Esta cobrança não é do Between.",
+  botWeekPaid: "«Semana» fica aberta por mais 30 dias. O diário continua gratuito.",
+  botPollMorning: "Manhã. Como você está agora? Toque numa palavra — eu salvo a marca.",
+  botPollDay: "Tarde. Como você está agora? Toque numa palavra — eu salvo a marca.",
+  botPollEvening: "Noite. Como você está agora? Toque numa palavra — eu salvo a marca.",
+  botNudge: "Tem algo de hoje para contar? Envie uma mensagem — eu salvo como uma nota separada.",
 };

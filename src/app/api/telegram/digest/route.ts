@@ -1,14 +1,12 @@
 import { NextResponse } from "next/server";
-import {
-  digestAction,
-  NUDGE_TEXT,
-  POLL_TEXT,
-  slotForHour,
-} from "@/lib/digest";
+import { digestAction, nudgeText, pollText, slotForHour } from "@/lib/digest";
+import { resolveBotLocale } from "@/lib/i18n";
 import {
   claimDigestSlot,
   getUserTimezone,
   listUserIds,
+  loadDeviceLocale,
+  loadUserLocale,
   loadUserStore,
   redisConfigured,
   releaseDigestSlot,
@@ -60,16 +58,21 @@ async function runDigest() {
         continue;
       }
 
+      const locale = resolveBotLocale(
+        await loadUserLocale(userId),
+        await loadDeviceLocale(userId),
+        null,
+      );
       const ok =
         action.type === "poll"
           ? await telegramRequest("sendMessage", {
               chat_id: Number(userId),
-              text: POLL_TEXT[action.slot],
-              reply_markup: feelingKeyboard(action.slot),
+              text: pollText(action.slot, locale),
+              reply_markup: feelingKeyboard(action.slot, locale),
             })
           : await telegramRequest("sendMessage", {
               chat_id: Number(userId),
-              text: NUDGE_TEXT,
+              text: nudgeText(locale),
             });
 
       if (!ok) {

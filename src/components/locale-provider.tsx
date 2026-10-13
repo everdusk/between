@@ -10,11 +10,13 @@ import {
   type ReactNode,
 } from "react";
 import {
+  deviceLocaleFromNavigator,
   isLocale,
   localeFromTelegram,
   localeMeta,
   type LocaleId,
 } from "@/lib/i18n";
+import { syncLocale } from "@/lib/locale-client";
 import {
   countPhrase,
   feelingLabel,
@@ -27,6 +29,7 @@ const STORAGE_KEY = "between:locale";
 
 type I18nValue = {
   locale: LocaleId;
+  deviceLocale: LocaleId;
   setLocale: (locale: LocaleId) => void;
   t: (key: MessageKey, vars?: Record<string, string | number | undefined>) => string;
   count: (count: number, stem: "day" | "note") => string;
@@ -44,27 +47,37 @@ function applyDocument(locale: LocaleId) {
 
 export function LocaleProvider({
   telegramLanguage,
+  initData = "",
   children,
 }: {
   telegramLanguage?: string | null;
+  initData?: string;
   children: ReactNode;
 }) {
   const [locale, setLocaleState] = useState<LocaleId>("ru");
+  const [deviceLocale, setDeviceLocale] = useState<LocaleId>("ru");
 
   useLayoutEffect(() => {
+    const device = deviceLocaleFromNavigator();
+    let stored: string | null = null;
     let next: LocaleId = "ru";
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      stored = localStorage.getItem(STORAGE_KEY);
       if (isLocale(stored)) next = stored;
       else next = localeFromTelegram(telegramLanguage) ?? "ru";
     } catch {
       next = localeFromTelegram(telegramLanguage) ?? "ru";
     }
-    // Stored choice and Telegram language are known only on the client.
+    // Stored choice and the device language are known only on the client.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- apply before paint so the first frame matches the saved language
     setLocaleState(next);
+    setDeviceLocale(device);
     applyDocument(next);
-  }, [telegramLanguage]);
+    syncLocale(initData, {
+      device,
+      ...(isLocale(stored) ? { locale: stored } : {}),
+    });
+  }, [telegramLanguage, initData]);
 
   const setLocale = useCallback((next: LocaleId) => {
     setLocaleState(next);
@@ -74,7 +87,8 @@ export function LocaleProvider({
     } catch {
       // Private mode can block storage; the choice still applies for this visit.
     }
-  }, []);
+    syncLocale(initData, { locale: next });
+  }, [initData]);
 
   const value = useMemo<I18nValue>(() => {
     const slotKey = {
@@ -84,13 +98,14 @@ export function LocaleProvider({
     } as const;
     return {
       locale,
+      deviceLocale,
       setLocale,
       t: (key, vars) => translate(locale, key, vars),
       count: (amount, stem) => countPhrase(locale, amount, stem),
       feeling: (feeling) => feelingLabel(locale, feeling),
       slot: (slot) => translate(locale, slotKey[slot]),
     };
-  }, [locale, setLocale]);
+  }, [locale, deviceLocale, setLocale]);
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }

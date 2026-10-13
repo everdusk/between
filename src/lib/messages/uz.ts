@@ -169,4 +169,21 @@ export const uz: Catalog = {
   briefToday: "bugun",
   briefSay: "Seansta aytish: {talk}",
   briefTalkEmpty: "«Seansta aytish» maydoni hali bo‘sh.",
+  botOpen: "Between’ni ochish",
+  botHelp:
+    "Between — seans uchun kundalik.\n\nIstalgan matn yozing — bugungi alohida qayd sifatida saqlayman va mavzularni o‘zim qo‘yaman.\nErtalab, kunduzi va kechqurun holingizni so‘rashi mumkinman. Kechqurun qayd bo‘lmasa eslataman.\nJadval va tugmalar Mini App’da, Seanslar varag‘ida.",
+  botUnknown: "Noma’lum buyruq. Oddiy matn yozing — alohida qayd qilib saqlayman. /help — yordam.",
+  botNotReady:
+    "Hozircha qaydni saqlay olmayman: serverda BOT_TOKEN yoki Redis yo‘q. Mini App’ni oching — shu qurilmadagi qaydlar ishlaydi.",
+  botSaved: "Bugun uchun alohida qayd qilib saqladim. Ko‘rish uchun Between’ni oching.",
+  botSaveFail: "Qayd saqlanmadi. Birozdan keyin qayta urinib ko‘ring.",
+  botCheckinNotReady: "Server belgini saqlashga hali tayyor emas.",
+  botCheckinSaved: "Saqladim: {feeling}. Xohlasangiz, keyingi xabarda qayd qo‘shing.",
+  botCheckinFail: "Belgi saqlanmadi. Qayta urinib ko‘ring.",
+  botInvoiceForeign: "Bu hisob Between’dan emas.",
+  botWeekPaid: "«Hafta» yana 30 kunga ochiq. Kundalik bepul qoladi.",
+  botPollMorning: "Ertalab. Hozir qandaysiz? Bitta so‘zni bosing — belgini saqlayman.",
+  botPollDay: "Kun. Hozir qandaysiz? Bitta so‘zni bosing — belgini saqlayman.",
+  botPollEvening: "Kechqurun. Hozir qandaysiz? Bitta so‘zni bosing — belgini saqlayman.",
+  botNudge: "Bugun ulashadigan narsa bormi? Xabar yozing — alohida qayd qilib saqlayman.",
 };

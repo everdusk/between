@@ -169,4 +169,22 @@ export const tr: Catalog = {
   briefToday: "bugün",
   briefSay: "Seansta söylemek: {talk}",
   briefTalkEmpty: "«Seansta söylemek» alanı hâlâ boş.",
+  botOpen: "Between’i aç",
+  botHelp:
+    "Between — seans için bir günlük.\n\nHerhangi bir metin yazın — bugün için ayrı bir not olarak kaydeder, temaları kendim koyarım.\nSabah, gün içinde ve akşam nasıl olduğunuzu sorabilirim. Akşam, günün notu yoksa hatırlatırım.\nSaat ve anahtarlar Mini App’te, Seanslar sekmesinde.",
+  botUnknown:
+    "Bilinmeyen komut. Düz bir metin yazın — ayrı bir not olarak kaydederim. /help — ipucu.",
+  botNotReady:
+    "Notu henüz kaydedemiyorum: sunucuda BOT_TOKEN veya Redis yok. Mini App’i açın — bu cihazdaki notlar çalışır.",
+  botSaved: "Bugün için ayrı bir not olarak kaydettim. Görmek için Between’i açın.",
+  botSaveFail: "Not kaydedilemedi. Biraz sonra yeniden deneyin.",
+  botCheckinNotReady: "Sunucu işareti kaydetmeye henüz hazır değil.",
+  botCheckinSaved: "Kaydettim: {feeling}. İsterseniz sonraki mesajda bir not ekleyin.",
+  botCheckinFail: "İşaret kaydedilemedi. Yeniden deneyin.",
+  botInvoiceForeign: "Bu fatura Between’den değil.",
+  botWeekPaid: "«Hafta» 30 gün daha açık. Günlük ücretsiz kalır.",
+  botPollMorning: "Sabah. Şu an nasılsınız? Bir sözcüğe dokunun — işareti kaydederim.",
+  botPollDay: "Gün. Şu an nasılsınız? Bir sözcüğe dokunun — işareti kaydederim.",
+  botPollEvening: "Akşam. Şu an nasılsınız? Bir sözcüğe dokunun — işareti kaydederim.",
+  botNudge: "Bugünden paylaşacak bir şey var mı? Bir mesaj yazın — ayrı bir not olarak kaydederim.",
 };

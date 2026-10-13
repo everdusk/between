@@ -169,4 +169,21 @@ export const vi: Catalog = {
   briefToday: "hôm nay",
   briefSay: "Nói trong buổi trị liệu: {talk}",
   briefTalkEmpty: "Ô «nói trong buổi trị liệu» vẫn trống.",
+  botOpen: "Mở Between",
+  botHelp:
+    "Between — nhật ký cho buổi trị liệu.\n\nGửi bất kỳ đoạn chữ nào — mình lưu thành một ghi chú riêng cho hôm nay và gắn chủ đề.\nSáng, trưa và tối mình có thể hỏi bạn thế nào. Tối mình nhắc nếu ngày chưa có ghi chú.\nLịch và công tắc nằm trong Mini App, tab Buổi trị liệu.",
+  botUnknown: "Lệnh không rõ. Gửi chữ thường — mình lưu thành ghi chú riêng. /help — gợi ý.",
+  botNotReady:
+    "Chưa lưu được ghi chú: máy chủ chưa có BOT_TOKEN hoặc Redis. Mở Mini App — ghi chú trên máy này vẫn dùng được.",
+  botSaved: "Đã lưu thành ghi chú riêng cho hôm nay. Mở Between để xem.",
+  botSaveFail: "Không lưu được ghi chú. Thử lại sau một lát.",
+  botCheckinNotReady: "Máy chủ chưa sẵn sàng lưu dấu.",
+  botCheckinSaved: "Đã lưu: {feeling}. Nếu muốn, thêm ghi chú ở tin nhắn sau.",
+  botCheckinFail: "Không lưu được dấu. Thử lại.",
+  botInvoiceForeign: "Hóa đơn này không phải của Between.",
+  botWeekPaid: "«Tuần» mở thêm 30 ngày. Nhật ký vẫn miễn phí.",
+  botPollMorning: "Buổi sáng. Bạn thế nào lúc này? Chạm một từ — mình lưu dấu.",
+  botPollDay: "Ban ngày. Bạn thế nào lúc này? Chạm một từ — mình lưu dấu.",
+  botPollEvening: "Buổi tối. Bạn thế nào lúc này? Chạm một từ — mình lưu dấu.",
+  botNudge: "Hôm nay có gì muốn kể không? Gửi tin — mình lưu thành ghi chú riêng.",
 };

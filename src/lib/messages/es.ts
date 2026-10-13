@@ -169,4 +169,22 @@ export const es: Catalog = {
   briefToday: "hoy",
   briefSay: "Decir en la sesión: {talk}",
   briefTalkEmpty: "El campo «decir en la sesión» todavía está vacío.",
+  botOpen: "Abrir Between",
+  botHelp:
+    "Between — un diario para la sesión.\n\nEscribe cualquier texto: lo guardo como una nota aparte de hoy y pongo los temas.\nPor la mañana, por la tarde y por la noche puedo preguntar cómo estás. Por la noche aviso si el día no tuvo nota.\nEl horario y los interruptores están en la Mini App, pestaña Sesiones.",
+  botUnknown:
+    "Comando desconocido. Escribe un texto normal: lo guardo como una nota aparte. /help — una pista.",
+  botNotReady:
+    "Todavía no puedo guardar la nota: en el servidor faltan BOT_TOKEN o Redis. Abre la Mini App: las notas en este dispositivo siguen funcionando.",
+  botSaved: "Guardada como nota aparte de hoy. Abre Between para verla.",
+  botSaveFail: "No pude guardar la nota. Inténtalo de nuevo en un momento.",
+  botCheckinNotReady: "El servidor aún no está listo para guardar la marca.",
+  botCheckinSaved: "Guardado: {feeling}. Si quieres, añade una nota en el siguiente mensaje.",
+  botCheckinFail: "No pude guardar la marca. Inténtalo de nuevo.",
+  botInvoiceForeign: "Esta factura no es de Between.",
+  botWeekPaid: "«Semana» queda abierta otros 30 días. El diario sigue siendo gratis.",
+  botPollMorning: "Mañana. ¿Cómo estás ahora? Toca una palabra y guardo la marca.",
+  botPollDay: "Día. ¿Cómo estás ahora? Toca una palabra y guardo la marca.",
+  botPollEvening: "Noche. ¿Cómo estás ahora? Toca una palabra y guardo la marca.",
+  botNudge: "¿Hay algo de hoy que contar? Escribe un mensaje y lo guardo como una nota aparte.",
 };

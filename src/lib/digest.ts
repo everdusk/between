@@ -1,3 +1,5 @@
+import type { LocaleId } from "./i18n";
+import { translate } from "./messages";
 import type { CheckinSlot, TherapyStore } from "./types";
 
 export const POLL_HOURS = {
@@ -67,11 +69,16 @@ export function digestAction(input: {
   return { type: "poll", slot };
 }
 
-export const POLL_TEXT: Record<CheckinSlot, string> = {
-  morning: "Утро. Как вы сейчас? Нажмите одно слово — я запишу отметку.",
-  day: "День. Как вы сейчас? Нажмите одно слово — я запишу отметку.",
-  evening: "Вечер. Как вы сейчас? Нажмите одно слово — я запишу отметку.",
-};
+const POLL_KEY = {
+  morning: "botPollMorning",
+  day: "botPollDay",
+  evening: "botPollEvening",
+} as const;
 
-export const NUDGE_TEXT =
-  "Есть чем поделиться за сегодня? Напишите сообщение — я сохраню его отдельной заметкой.";
+export function pollText(slot: CheckinSlot, locale: LocaleId = "ru"): string {
+  return translate(locale, POLL_KEY[slot]);
+}
+
+export function nudgeText(locale: LocaleId = "ru"): string {
+  return translate(locale, "botNudge");
+}

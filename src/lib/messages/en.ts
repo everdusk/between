@@ -179,4 +179,22 @@ export const en: Catalog = {
   briefToday: "today",
   briefSay: "To say in session: {talk}",
   briefTalkEmpty: "The “to say in session” field is still empty.",
+  botOpen: "Open Between",
+  botHelp:
+    "Between is a journal for the session.\n\nSend any text — I save it as a separate note for today and pick the themes.\nMorning, afternoon and evening I can ask how you are. In the evening I remind you if the day has no note.\nThe schedule and switches are in the Mini App, on the Sessions tab.",
+  botUnknown:
+    "Unknown command. Send ordinary text — I save it as a separate note. /help — a hint.",
+  botNotReady:
+    "I cannot save the note yet: BOT_TOKEN or Redis is not set up on the server. Open the Mini App — notes on this device still work.",
+  botSaved: "Saved as a separate note for today. Open Between to see it.",
+  botSaveFail: "Could not save the note. Try again in a moment.",
+  botCheckinNotReady: "The server is not ready to save the mark yet.",
+  botCheckinSaved: "Saved: {feeling}. If you want, add a note in the next message.",
+  botCheckinFail: "Could not save the mark. Try again.",
+  botInvoiceForeign: "This invoice is not from Between.",
+  botWeekPaid: "Week is open for another 30 days. The journal stays free.",
+  botPollMorning: "Morning. How are you now? Tap one word — I will save the mark.",
+  botPollDay: "Afternoon. How are you now? Tap one word — I will save the mark.",
+  botPollEvening: "Evening. How are you now? Tap one word — I will save the mark.",
+  botNudge: "Anything to share from today? Send a message — I will save it as a separate note.",
 };

@@ -1,3 +1,5 @@
+import type { LocaleId } from "./i18n";
+import { feelingLabel, translate } from "./messages";
 import { PICKER_FEELINGS, type CheckinSlot } from "./types";
 
 const SLOT_CODE: Record<CheckinSlot, string> = {
@@ -12,13 +14,13 @@ const CODE_SLOT: Record<string, CheckinSlot> = {
   e: "evening",
 };
 
-export function feelingKeyboard(slot: CheckinSlot) {
+export function feelingKeyboard(slot: CheckinSlot, locale: LocaleId = "ru") {
   const code = SLOT_CODE[slot];
   const rows = [];
   for (let index = 0; index < PICKER_FEELINGS.length; index += 3) {
     rows.push(
       PICKER_FEELINGS.slice(index, index + 3).map((feeling, offset) => ({
-        text: feeling,
+        text: feelingLabel(locale, feeling),
         callback_data: `c:${code}:${index + offset}`,
       })),
     );
@@ -37,9 +39,9 @@ export function parseFeelingCallback(
   return { slot, feeling };
 }
 
-export function miniAppKeyboard(url: string) {
+export function miniAppKeyboard(url: string, locale: LocaleId = "ru") {
   return {
-    inline_keyboard: [[{ text: "Открыть Between", web_app: { url } }]],
+    inline_keyboard: [[{ text: translate(locale, "botOpen"), web_app: { url } }]],
   };
 }
 

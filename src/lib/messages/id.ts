@@ -169,4 +169,22 @@ export const id: Catalog = {
   briefToday: "hari ini",
   briefSay: "Untuk dikatakan di sesi: {talk}",
   briefTalkEmpty: "Kolom «untuk dikatakan di sesi» masih kosong.",
+  botOpen: "Buka Between",
+  botHelp:
+    "Between — jurnal untuk sesi.\n\nKirim teks apa saja — saya simpan sebagai catatan terpisah untuk hari ini dan mengisi temanya.\nPagi, siang, dan sore saya bisa bertanya bagaimana keadaan Anda. Malam saya ingatkan jika hari itu belum ada catatan.\nJadwal dan tombol ada di Mini App, tab Sesi.",
+  botUnknown:
+    "Perintah tidak dikenal. Kirim teks biasa — saya simpan sebagai catatan terpisah. /help — petunjuk.",
+  botNotReady:
+    "Belum bisa menyimpan catatan: BOT_TOKEN atau Redis belum diatur di server. Buka Mini App — catatan di perangkat ini tetap jalan.",
+  botSaved: "Tersimpan sebagai catatan terpisah untuk hari ini. Buka Between untuk melihatnya.",
+  botSaveFail: "Catatan gagal disimpan. Coba lagi sebentar lagi.",
+  botCheckinNotReady: "Server belum siap menyimpan tanda.",
+  botCheckinSaved: "Tersimpan: {feeling}. Jika mau, tambahkan catatan di pesan berikutnya.",
+  botCheckinFail: "Tanda gagal disimpan. Coba lagi.",
+  botInvoiceForeign: "Tagihan ini bukan dari Between.",
+  botWeekPaid: "«Minggu» terbuka 30 hari lagi. Jurnal tetap gratis.",
+  botPollMorning: "Pagi. Bagaimana keadaan Anda sekarang? Ketuk satu kata — saya simpan tandanya.",
+  botPollDay: "Siang. Bagaimana keadaan Anda sekarang? Ketuk satu kata — saya simpan tandanya.",
+  botPollEvening: "Sore. Bagaimana keadaan Anda sekarang? Ketuk satu kata — saya simpan tandanya.",
+  botNudge: "Ada yang ingin dibagi dari hari ini? Kirim pesan — saya simpan sebagai catatan terpisah.",
 };

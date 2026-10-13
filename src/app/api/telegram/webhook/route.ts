@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
+import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale, type LocaleId } from "@/lib/i18n";
 import { addCheckin, appendBotMessageToToday } from "@/lib/journal-server";
-import { loadWeekAccess, redisConfigured, saveWeekAccess } from "@/lib/redis";
+import { feelingLabel, translate } from "@/lib/messages";
+import {
+  loadDeviceLocale,
+  loadUserLocale,
+  loadWeekAccess,
+  redisConfigured,
+  rememberDeviceLocale,
+  saveWeekAccess,
+} from "@/lib/redis";
 import { appUrl } from "@/lib/telegram-auth";
 import {
   miniAppKeyboard,
@@ -10,7 +19,12 @@ import {
 import { WEEK_INVOICE_PAYLOAD, grantWeekPaidUntil } from "@/lib/week-access";
 
 type TelegramChat = { id: number; type?: string };
-type TelegramUser = { id: number; first_name?: string; username?: string };
+type TelegramUser = {
+  id: number;
+  first_name?: string;
+  username?: string;
+  language_code?: string;
+};
 type SuccessfulPayment = {
   currency?: string;
   total_amount?: number;
@@ -54,11 +68,22 @@ function verifyWebhookSecret(req: Request): boolean {
   return got === expected;
 }
 
-const HELP_TEXT =
-  "Between — дневник к сеансу.\n\n" +
-  "Напишите любой текст — я сохраню его отдельной заметкой на сегодня и сама поставлю темы.\n" +
-  "Утром, днём и вечером могу спросить, как вы. Вечером напомню, если за день не было заметки.\n" +
-  "Расписание и выключатели — в Mini App, вкладка «Сеансы».";
+async function localesFor(user: TelegramUser | undefined): Promise<{
+  reply: LocaleId;
+  greeting: LocaleId;
+}> {
+  const code = user?.language_code;
+  const seen = localeFromTelegram(code);
+  if (user?.id && seen && redisConfigured()) {
+    await rememberDeviceLocale(user.id, seen);
+  }
+  const selected = user?.id && redisConfigured() ? await loadUserLocale(user.id) : null;
+  const device = user?.id && redisConfigured() ? await loadDeviceLocale(user.id) : null;
+  return {
+    reply: resolveBotLocale(selected, device, code),
+    greeting: resolveGreetingLocale(null, device, code),
+  };
+}
 
 export async function GET() {
   return NextResponse.json({
@@ -75,11 +100,12 @@ async function handleCallback(callback: TelegramCallback) {
     await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
     return;
   }
+  const { reply } = await localesFor(callback.from);
 
   if (!botToken() || !redisConfigured()) {
     await telegramRequest("answerCallbackQuery", {
       callback_query_id: callback.id,
-      text: "Сервер ещё не готов сохранить отметку.",
+      text: translate(reply, "botCheckinNotReady"),
       show_alert: true,
     });
     return;
@@ -92,13 +118,15 @@ async function handleCallback(callback: TelegramCallback) {
       await telegramRequest("editMessageText", {
         chat_id: callback.message.chat.id,
         message_id: callback.message.message_id,
-        text: `Записала: ${parsed.feeling}. Если хотите, допишите заметку следующим сообщением.`,
+        text: translate(reply, "botCheckinSaved", {
+          feeling: feelingLabel(reply, parsed.feeling),
+        }),
       });
     }
   } catch {
     await telegramRequest("answerCallbackQuery", {
       callback_query_id: callback.id,
-      text: "Не удалось сохранить отметку. Попробуйте ещё раз.",
+      text: translate(reply, "botCheckinFail"),
       show_alert: true,
     });
   }
@@ -107,10 +135,11 @@ async function handleCallback(callback: TelegramCallback) {
 async function handlePreCheckout(query: PreCheckoutQuery) {
   const ours =
     query.currency === "XTR" && query.invoice_payload === WEEK_INVOICE_PAYLOAD;
+  const { reply } = await localesFor(query.from);
   await telegramRequest("answerPreCheckoutQuery", {
     pre_checkout_query_id: query.id,
     ok: ours,
-    ...(ours ? {} : { error_message: "Этот счёт не от Between." }),
+    ...(ours ? {} : { error_message: translate(reply, "botInvoiceForeign") }),
   });
 }
 
@@ -132,10 +161,11 @@ async function handlePayment(message: TelegramMessage) {
     await saveWeekAccess(userId, grantWeekPaidUntil(current, paidUntil));
   }
 
+  const { reply } = await localesFor(message.from);
   await telegramRequest("sendMessage", {
     chat_id: message.chat.id,
-    text: "«Неделя» открыта ещё на 30 дней. Дневник по-прежнему бесплатный.",
-    reply_markup: miniAppKeyboard(appUrl()),
+    text: translate(reply, "botWeekPaid"),
+    reply_markup: miniAppKeyboard(appUrl(), reply),
   });
 }
 
@@ -178,7 +208,8 @@ export async function POST(req: Request) {
   const text = (message.text ?? "").trim();
   const chatId = message.chat.id;
   const userId = message.from?.id;
-  const keyboard = miniAppKeyboard(appUrl());
+  const { reply, greeting } = await localesFor(message.from);
+  const keyboard = miniAppKeyboard(appUrl(), reply);
 
   if (!text) {
     return NextResponse.json({ ok: true });
@@ -188,8 +219,8 @@ export async function POST(req: Request) {
   if (lower === "/start" || lower.startsWith("/start ") || lower === "/help") {
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: HELP_TEXT,
-      reply_markup: keyboard,
+      text: translate(greeting, "botHelp"),
+      reply_markup: miniAppKeyboard(appUrl(), greeting),
     });
     return NextResponse.json({ ok: true });
   }
@@ -197,7 +228,7 @@ export async function POST(req: Request) {
   if (text.startsWith("/")) {
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: "Неизвестная команда. Напишите обычный текст — я запишу его отдельной заметкой. /help — подсказка.",
+      text: translate(reply, "botUnknown"),
       reply_markup: keyboard,
     });
     return NextResponse.json({ ok: true });
@@ -206,9 +237,7 @@ export async function POST(req: Request) {
   if (!botToken() || !redisConfigured()) {
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text:
-        "Пока не могу сохранить запись: на сервере не настроены BOT_TOKEN или Redis. " +
-        "Откройте Mini App — локальные записи на устройстве работают.",
+      text: translate(reply, "botNotReady"),
       reply_markup: keyboard,
     });
     return NextResponse.json({ ok: true });
@@ -222,13 +251,13 @@ export async function POST(req: Request) {
     await appendBotMessageToToday(userId, text);
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: "Записала отдельной заметкой на сегодня. Откройте Between, чтобы увидеть её.",
+      text: translate(reply, "botSaved"),
       reply_markup: keyboard,
     });
   } catch {
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: "Не удалось сохранить запись. Попробуйте ещё раз чуть позже.",
+      text: translate(reply, "botSaveFail"),
       reply_markup: keyboard,
     });
   }

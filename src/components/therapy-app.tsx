@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTelegram } from "@/hooks/use-telegram";
 import { useTherapyStore } from "@/hooks/use-therapy-store";
 import { LOCALES } from "@/lib/i18n";
+import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,10 @@ const SECTION_KEY = {
 export function TherapyApp() {
   const telegram = useTelegram();
   return (
-    <LocaleProvider telegramLanguage={telegram.user?.language_code}>
+    <LocaleProvider
+      telegramLanguage={telegram.user?.language_code}
+      initData={telegram.inTelegram ? telegram.initData : ""}
+    >
       <TherapyShell telegram={telegram} />
     </LocaleProvider>
   );
@@ -50,7 +54,7 @@ function localizeStorageError(
 }
 
 function TherapyShell({ telegram }: { telegram: TelegramSession }) {
-  const { t, locale, setLocale } = useI18n();
+  const { t, locale, deviceLocale, setLocale } = useI18n();
   const {
     store,
     status,
@@ -72,7 +76,10 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
 
   const [section, setSection] = useState<SectionId>("journal");
   const disabled = status !== "ready";
-  const name = shownName(telegram.displayName, t("guest"));
+  const name = shownName(telegram.displayName, translate(deviceLocale, "guest"));
+  const greeting = !telegram.ready
+    ? translate(deviceLocale, "loading")
+    : translate(deviceLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
 
   return (
     <div
@@ -98,13 +105,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
             <p className="font-display text-xl tracking-tight text-foreground">
               Between
             </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {telegram.ready
-                ? telegram.inTelegram
-                  ? t("hello", { name })
-                  : t("helloDev", { name })
-                : t("loading")}
-            </p>
+            <p className="truncate text-xs text-muted-foreground">{greeting}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <label className="sr-only" htmlFor="app-language">

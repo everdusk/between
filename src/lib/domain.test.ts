@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { buildRuleBrief } from "./brief";
-import { localeFromTelegram } from "./i18n";
-import { catalogsShareKeys, countPhrase, feelingLabel } from "./messages";
+import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale } from "./i18n";
+import { catalogsShareKeys, countPhrase, feelingLabel, translate } from "./messages";
+import { pollText } from "./digest";
+import { feelingKeyboard, parseFeelingCallback } from "./telegram-bot";
 import { buildWeekSpectrum, spectrumHeadline } from "./spectrum";
 import { digestAction } from "./digest";
 import { mergeStores } from "./journal-api";
@@ -405,6 +407,26 @@ describe("languages", () => {
     assert.equal(countPhrase("en", 2, "note"), "2 notes");
     assert.equal(feelingLabel("en", "тревожно"), "anxious");
     assert.equal(feelingLabel("ru", "тревожно"), "тревожно");
+  });
+
+  it("keeps bot replies on the chosen language and the greeting on the device", () => {
+    assert.equal(resolveBotLocale("en", "ru", "hi"), "en");
+    assert.equal(resolveBotLocale(null, "hi", "en"), "hi");
+    assert.equal(resolveBotLocale(null, null, "pt-BR"), "pt");
+    assert.equal(resolveBotLocale(null, null, "de"), "ru");
+    assert.equal(resolveGreetingLocale("en-US", "ru", "hi"), "en");
+    assert.equal(resolveGreetingLocale(null, "id", "ru"), "id");
+    assert.equal(resolveGreetingLocale(undefined, null, "de"), "ru");
+    assert.equal(
+      translate("ru", "botHelp").split("\n")[0],
+      "Between — дневник к сеансу.",
+    );
+    assert.match(pollText("morning"), /Утро/);
+    assert.match(pollText("morning", "en"), /Morning/);
+    const board = feelingKeyboard("morning", "en");
+    assert.equal(board.inline_keyboard[0][0].text, "anxious");
+    assert.equal(board.inline_keyboard[0][0].callback_data, "c:m:0");
+    assert.equal(parseFeelingCallback("c:m:0")?.feeling, "тревожно");
   });
 
   it("translates a rule brief only when copy is passed", () => {

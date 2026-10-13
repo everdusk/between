@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis";
+import { isLocale, type LocaleId } from "./i18n";
 import { normalizeStore } from "./migrate";
 import { emptyStore, type TherapyStore } from "./types";
 import {
@@ -47,6 +48,14 @@ function briefCountKey(userId: number | string, dateKey: string): string {
 
 function weekAccessKey(userId: number | string): string {
   return `between:user:${userId}:week-access`;
+}
+
+function localeKey(userId: number | string): string {
+  return `between:user:${userId}:locale`;
+}
+
+function deviceLocaleKey(userId: number | string): string {
+  return `between:user:${userId}:device-locale`;
 }
 
 export async function rememberUser(userId: number | string): Promise<void> {
@@ -178,4 +187,44 @@ export async function takeBriefAttempt(
   const count = await redis.incr(key);
   if (count === 1) await redis.expire(key, 60 * 60 * 48);
   return count <= limit;
+}
+
+async function readLocale(key: string): Promise<LocaleId | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const value = await redis.get<string>(key);
+  return isLocale(value) ? value : null;
+}
+
+export async function loadUserLocale(userId: number | string): Promise<LocaleId | null> {
+  return readLocale(localeKey(userId));
+}
+
+export async function saveUserLocale(userId: number | string, locale: LocaleId): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(localeKey(userId), locale);
+}
+
+export async function loadDeviceLocale(userId: number | string): Promise<LocaleId | null> {
+  return readLocale(deviceLocaleKey(userId));
+}
+
+export async function saveDeviceLocale(userId: number | string, locale: LocaleId): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(deviceLocaleKey(userId), locale);
+}
+
+/** Keeps a language seen from Telegram until the Mini App reports the device. */
+export async function rememberDeviceLocale(
+  userId: number | string,
+  locale: LocaleId,
+): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  const key = deviceLocaleKey(userId);
+  const existing = await redis.get<string>(key);
+  if (isLocale(existing)) return;
+  await redis.set(key, locale);
 }
