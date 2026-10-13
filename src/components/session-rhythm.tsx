@@ -1,14 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toDateKey } from "@/lib/dates";
+import { formatLongDate, toDateKey, weekdayLong, weekdayShort } from "@/lib/dates";
 import {
-  describeSessionPlan,
   isSessionTime,
-  WEEKDAY_SHORT,
+  nextWeeklyOccurrence,
+  onceSessionDate,
 } from "@/lib/session-plan";
 import { DEFAULT_TIME_ZONE, type NotifyPrefs, type SessionPlan } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,16 @@ export function SessionRhythm(props: SessionRhythmProps) {
   return <SessionRhythmForm key={props.plan?.updatedAt ?? "new"} {...props} />;
 }
 
+const WEEKDAY_KEYS = [
+  "2026-01-05",
+  "2026-01-06",
+  "2026-01-07",
+  "2026-01-08",
+  "2026-01-09",
+  "2026-01-10",
+  "2026-01-11",
+];
+
 function SessionRhythmForm({
   plan,
   notify,
@@ -40,13 +51,14 @@ function SessionRhythmForm({
   onSaveNotify,
   disabled,
 }: SessionRhythmProps) {
+  const { t, locale } = useI18n();
   const [mode, setMode] = useState<SessionPlan["mode"]>(plan?.mode ?? "weekly");
   const [date, setDate] = useState(plan?.date || toDateKey());
   const [time, setTime] = useState(plan?.time || "17:00");
   const [weekday, setWeekday] = useState(plan?.weekday ?? 3);
   const [savedFlash, setSavedFlash] = useState(false);
   const zone = deviceZoneLabel();
-  const preview = plan ? describeSessionPlan(plan) : "Расписание ещё не задано.";
+  const preview = plan ? planPreview(plan, locale, t) : t("noSchedule");
 
   function handleSave(event: React.FormEvent) {
     event.preventDefault();
@@ -62,7 +74,7 @@ function SessionRhythmForm({
   return (
     <section className="space-y-5 border-b border-border/70 pb-6">
       <div className="space-y-1">
-        <h3 className="font-display text-lg text-foreground">Когда сеанс</h3>
+        <h3 className="font-display text-lg text-foreground">{t("whenSession")}</h3>
         <p className="text-sm text-muted-foreground">{preview}</p>
       </div>
 
@@ -74,7 +86,7 @@ function SessionRhythmForm({
             disabled={disabled}
             onClick={() => setMode("once")}
           >
-            Ближайшая дата
+            {t("nextDate")}
           </Button>
           <Button
             type="button"
@@ -82,13 +94,13 @@ function SessionRhythmForm({
             disabled={disabled}
             onClick={() => setMode("weekly")}
           >
-            Каждую неделю
+            {t("everyWeek")}
           </Button>
         </div>
 
         {mode === "once" ? (
           <div className="space-y-2">
-            <Label htmlFor="plan-date">Дата</Label>
+            <Label htmlFor="plan-date">{t("date")}</Label>
             <Input
               id="plan-date"
               type="date"
@@ -101,11 +113,11 @@ function SessionRhythmForm({
           </div>
         ) : (
           <div className="space-y-2">
-            <Label>День</Label>
+            <Label>{t("day")}</Label>
             <div className="flex flex-wrap gap-1.5">
-              {WEEKDAY_SHORT.map((label, index) => (
+              {WEEKDAY_KEYS.map((key, index) => (
                 <button
-                  key={label}
+                  key={key}
                   type="button"
                   disabled={disabled}
                   aria-pressed={weekday === index}
@@ -117,7 +129,7 @@ function SessionRhythmForm({
                       : "border-border/80 bg-background/70",
                   )}
                 >
-                  {label}
+                  {weekdayShort(key, locale)}
                 </button>
               ))}
             </div>
@@ -125,7 +137,7 @@ function SessionRhythmForm({
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="plan-time">Время</Label>
+          <Label htmlFor="plan-time">{t("time")}</Label>
           <Input
             id="plan-time"
             type="time"
@@ -139,20 +151,18 @@ function SessionRhythmForm({
 
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={disabled || !isSessionTime(time)}>
-            Сохранить расписание
+            {t("saveSchedule")}
           </Button>
           {savedFlash && (
-            <span className="text-sm text-primary">Сохранено</span>
+            <span className="text-sm text-primary">{t("saved")}</span>
           )}
         </div>
       </form>
 
       <div className="space-y-3">
-        <h3 className="font-display text-lg text-foreground">Напоминания бота</h3>
+        <h3 className="font-display text-lg text-foreground">{t("botReminders")}</h3>
         <p className="text-sm text-muted-foreground">
-          Опросы в 9:00, 14:00 и 18:00. В 21:00 — вопрос, если за день не было
-          заметки. Часовой пояс телефона: {zone}. Пока приложение не открывали,
-          бот считает время по {DEFAULT_TIME_ZONE}.
+          {t("remindersBody", { zone, fallback: DEFAULT_TIME_ZONE })}
         </p>
         <label className="flex items-start gap-2 text-sm text-foreground">
           <input
@@ -167,7 +177,7 @@ function SessionRhythmForm({
               })
             }
           />
-          Спрашивать самочувствие три раза в день
+          {t("pollToggle")}
         </label>
         <label className="flex items-start gap-2 text-sm text-foreground">
           <input
@@ -182,9 +192,30 @@ function SessionRhythmForm({
               })
             }
           />
-          В 21:00 спросить, есть ли чем поделиться
+          {t("nudgeToggle")}
         </label>
       </div>
     </section>
   );
+}
+
+function planPreview(
+  plan: SessionPlan,
+  locale: string,
+  t: (key: "planOnceMissing" | "planOncePast" | "planOnceNext" | "planWeeklyMissing" | "planWeekly", vars?: Record<string, string>) => string,
+): string {
+  if (plan.mode === "once") {
+    const at = onceSessionDate(plan);
+    if (!at) return t("planOnceMissing");
+    const when = `${formatLongDate(plan.date, locale)}, ${plan.time}`;
+    if (at.getTime() < Date.now()) return t("planOncePast", { when });
+    return t("planOnceNext", { when });
+  }
+  const next = nextWeeklyOccurrence(plan);
+  if (!next) return t("planWeeklyMissing");
+  return t("planWeekly", {
+    day: weekdayLong(plan.weekday, locale),
+    time: plan.time,
+    date: formatLongDate(toDateKey(next), locale),
+  });
 }

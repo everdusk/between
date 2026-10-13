@@ -1,15 +1,16 @@
 "use client";
 
+import { useI18n } from "@/components/locale-provider";
 import { formatDayLabel, weekdayShort } from "@/lib/dates";
 import {
   UNMARKED_FILL,
   buildWeekSpectrum,
   feelingFill,
-  spectrumHeadline,
   type DaySlice,
 } from "@/lib/spectrum";
-import type { JournalEntry } from "@/lib/types";
+import type { Feeling, JournalEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import type { MessageKey } from "@/lib/messages";
 
 interface WeekSpectrumProps {
   dayKeys: string[];
@@ -19,15 +20,32 @@ interface WeekSpectrumProps {
   onSelect: (dayKey: string) => void;
 }
 
-function spectrumTitle(spectrum: ReturnType<typeof buildWeekSpectrum>): string {
-  if (spectrum.feelingTotal === 0) return "Пока тихо";
-  if (spectrum.top.length === 1) return spectrum.top[0];
-  if (spectrum.top.length === 2) return `${spectrum.top[0]} и ${spectrum.top[1]}`;
-  return "Несколько состояний";
+function spectrumTitle(
+  spectrum: ReturnType<typeof buildWeekSpectrum>,
+  t: (key: MessageKey, vars?: Record<string, string | number | undefined>) => string,
+  feeling: (value: Feeling) => string,
+): string {
+  if (spectrum.feelingTotal === 0) return t("spectrumQuiet");
+  if (spectrum.top.length === 1) return feeling(spectrum.top[0]);
+  if (spectrum.top.length === 2) {
+    return t("spectrumPair", { a: feeling(spectrum.top[0]), b: feeling(spectrum.top[1]) });
+  }
+  return t("spectrumSeveral");
 }
 
-function sliceLabel(slice: DaySlice): string {
-  return slice.feelings.length > 0 ? slice.feelings.join(", ") : "без отметки";
+function spectrumLead(
+  spectrum: ReturnType<typeof buildWeekSpectrum>,
+  noteCount: number,
+  t: (key: MessageKey, vars?: Record<string, string | number | undefined>) => string,
+  feeling: (value: Feeling) => string,
+): string {
+  if (spectrum.feelingTotal === 0 && noteCount === 0) return t("spectrumEmpty");
+  if (spectrum.feelingTotal === 0) return t("spectrumNoFeelings");
+  if (spectrum.top.length === 1) return t("spectrumTopOne", { feeling: feeling(spectrum.top[0]) });
+  if (spectrum.top.length === 2) {
+    return t("spectrumTopTwo", { a: feeling(spectrum.top[0]), b: feeling(spectrum.top[1]) });
+  }
+  return t("spectrumTopMany");
 }
 
 export function WeekSpectrum({
@@ -37,10 +55,11 @@ export function WeekSpectrum({
   selectedKey,
   onSelect,
 }: WeekSpectrumProps) {
+  const { t, locale, feeling, count } = useI18n();
   const spectrum = buildWeekSpectrum(dayKeys, entries);
   const noteCount = spectrum.days.reduce((sum, day) => sum + day.slices.length, 0);
-  const headline = spectrumHeadline(spectrum, noteCount);
-  const title = spectrumTitle(spectrum);
+  const headline = spectrumLead(spectrum, noteCount, t, feeling);
+  const title = spectrumTitle(spectrum, t, feeling);
   const selected = spectrum.days.find((day) => day.key === selectedKey) ?? spectrum.days[0];
   const lead = spectrum.top[0];
 
@@ -63,7 +82,7 @@ export function WeekSpectrum({
             id="week-spectrum-title"
             className="text-[0.68rem] font-medium tracking-[0.16em] text-muted-foreground uppercase"
           >
-            Спектр недели
+            {t("spectrumLabel")}
           </p>
           <p className="font-display text-3xl tracking-tight text-foreground">{title}</p>
           {title !== headline && (
@@ -77,7 +96,7 @@ export function WeekSpectrum({
               className="flex h-3 gap-1"
               role="img"
               aria-label={spectrum.shares
-                .map((share) => `${share.feeling} ${share.count}`)
+                .map((share) => `${feeling(share.feeling)} ${share.count}`)
                 .join(", ")}
             >
               {spectrum.shares.map((share) => (
@@ -93,7 +112,7 @@ export function WeekSpectrum({
               ))}
             </div>
             {spectrum.shares.length > 1 && (
-              <p className="text-[0.7rem] text-muted-foreground">Слева легче, справа тяжелее</p>
+              <p className="text-[0.7rem] text-muted-foreground">{t("spectrumAxis")}</p>
             )}
             <ul className="flex flex-wrap gap-x-3 gap-y-1.5">
               {spectrum.shares.map((share) => (
@@ -103,7 +122,7 @@ export function WeekSpectrum({
                     className="size-2 shrink-0 rounded-full"
                     style={{ background: feelingFill(share.feeling) }}
                   />
-                  <span>{share.feeling}</span>
+                  <span>{feeling(share.feeling)}</span>
                   <span className="text-muted-foreground">{share.count}</span>
                 </li>
               ))}
@@ -116,9 +135,13 @@ export function WeekSpectrum({
             const selectedDay = day.key === selectedKey;
             const isToday = day.key === todayKey;
             const isFuture = day.key > todayKey;
-            const names = day.slices.map(sliceLabel);
-            const label = `${formatDayLabel(day.key)}${
-              names.length > 0 ? `: ${names.join("; ")}` : ": записей нет"
+            const names = day.slices.map((slice) =>
+              slice.feelings.length > 0
+                ? slice.feelings.map((item) => feeling(item)).join(", ")
+                : t("unmarked"),
+            );
+            const label = `${formatDayLabel(day.key, locale)}${
+              names.length > 0 ? `: ${names.join("; ")}` : `: ${t("noEntry")}`
             }`;
             return (
               <button
@@ -167,7 +190,7 @@ export function WeekSpectrum({
                       isToday ? "font-semibold text-foreground" : "text-muted-foreground",
                     )}
                   >
-                    {weekdayShort(day.key)}
+                    {weekdayShort(day.key, locale)}
                   </span>
                   <span className="mt-0.5 text-[0.65rem] text-muted-foreground">
                     {Number(day.key.slice(8))}
@@ -183,6 +206,11 @@ export function WeekSpectrum({
             dayKey={selected.key}
             slices={selected.slices}
             entries={entries.filter((entry) => entry.date === selected.key)}
+            locale={locale}
+            feeling={feeling}
+            count={count}
+            emptyDay={t("noNotesDay")}
+            noFeeling={t("noteNoFeeling")}
           />
         )}
       </div>
@@ -194,10 +222,20 @@ function DayReading({
   dayKey,
   slices,
   entries,
+  locale,
+  feeling,
+  count,
+  emptyDay,
+  noFeeling,
 }: {
   dayKey: string;
   slices: DaySlice[];
   entries: JournalEntry[];
+  locale: string;
+  feeling: (value: Feeling) => string;
+  count: (amount: number, stem: "note") => string;
+  emptyDay: string;
+  noFeeling: string;
 }) {
   const feelings = [...new Set(slices.flatMap((slice) => slice.feelings))];
   const withText = entries
@@ -208,15 +246,15 @@ function DayReading({
   return (
     <div className="rounded-2xl bg-background/55 px-3 py-3">
       <p className="font-display text-lg tracking-tight text-foreground">
-        {formatDayLabel(dayKey)}
+        {formatDayLabel(dayKey, locale)}
       </p>
       <p className="mt-1 text-sm text-muted-foreground">
         {slices.length === 0
-          ? "В этот день записей нет."
+          ? emptyDay
           : feelings.length > 0
-            ? feelings.join(", ")
-            : "Запись без отметки самочувствия."}
-        {slices.length > 1 ? ` · ${slices.length} ${notesLabel(slices.length)}` : ""}
+            ? feelings.map((item) => feeling(item)).join(", ")
+            : noFeeling}
+        {slices.length > 1 ? ` · ${count(slices.length, "note")}` : ""}
       </p>
       {preview.length > 0 && (
         <ul className="mt-2 space-y-1.5">
@@ -229,14 +267,6 @@ function DayReading({
       )}
     </div>
   );
-}
-
-function notesLabel(count: number): string {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod10 === 1 && mod100 !== 11) return "запись";
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "записи";
-  return "записей";
 }
 
 function excerpt(body: string): string {

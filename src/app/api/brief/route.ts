@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isLocale, modelLanguageName, type LocaleId } from "@/lib/i18n";
 import {
   cacheBrief,
   getCachedBrief,
@@ -15,6 +16,17 @@ const SYSTEM = [
   "Если фактов мало, так и напиши.",
 ].join(" ");
 
+function systemPrompt(locale: LocaleId): string {
+  if (locale === "ru") return SYSTEM;
+  return [
+    "Ты помогаешь человеку собрать короткий бриф к сеансу психотерапии.",
+    "Используй только факты ниже. Не ставь диагнозы, не давай советов, не выдумывай события и цитаты.",
+    `Напиши на языке «${modelLanguageName(locale)}» три коротких абзаца: как прошла неделя по состояниям, какие темы повторялись, что вынести на сеанс.`,
+    "Если фактов мало, так и напиши.",
+    "Названия состояний в фактах могут быть по-русски — в брифе передай их на языке ответа.",
+  ].join(" ");
+}
+
 type GeminiPart = { text?: string; thought?: boolean };
 
 export function textFromGeminiParts(parts: GeminiPart[] | undefined): string {
@@ -30,6 +42,7 @@ async function geminiOnce(
   apiKey: string,
   model: string,
   thinking: boolean,
+  system: string,
 ): Promise<{ text: string | null; status: number }> {
   const generationConfig: Record<string, unknown> = {
     maxOutputTokens: 1024,
@@ -43,7 +56,7 @@ async function geminiOnce(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `${SYSTEM}\n\nФакты:\n${prompt}` }] }],
+        contents: [{ parts: [{ text: `${system}\n\nФакты:\n${prompt}` }] }],
         generationConfig,
       }),
     },
@@ -60,20 +73,25 @@ function geminiDetail(status: number): string {
   return status && status !== 200 ? `gemini_${status}` : "gemini_empty";
 }
 
-async function gemini(prompt: string, apiKey: string): Promise<{ text: string | null; detail: string }> {
+async function gemini(
+  prompt: string,
+  apiKey: string,
+  system: string,
+): Promise<{ text: string | null; detail: string }> {
   const preferred = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
   const first = await geminiOnce(
     prompt,
     apiKey,
     preferred,
     !preferred.startsWith("gemini-2.0"),
+    system,
   );
   if (first.text) return { text: first.text, detail: "" };
   if (first.status === 401 || first.status === 403) {
     return { text: null, detail: geminiDetail(first.status) };
   }
   if (preferred !== "gemini-2.0-flash") {
-    const second = await geminiOnce(prompt, apiKey, "gemini-2.0-flash", false);
+    const second = await geminiOnce(prompt, apiKey, "gemini-2.0-flash", false, system);
     if (second.text) return { text: second.text, detail: "" };
     return { text: null, detail: geminiDetail(second.status || first.status) };
   }
@@ -98,13 +116,14 @@ async function groqOnce(
   prompt: string,
   apiKey: string,
   model: string,
+  system: string,
 ): Promise<{ text: string | null; status: number }> {
   const body: Record<string, unknown> = {
     model,
     temperature: 0.4,
     max_completion_tokens: 1024,
     messages: [
-      { role: "system", content: SYSTEM },
+      { role: "system", content: system },
       { role: "user", content: `Факты:\n${prompt}` },
     ],
   };
@@ -126,12 +145,16 @@ async function groqOnce(
   return { text: text || null, status: res.status };
 }
 
-async function groq(prompt: string, apiKey: string): Promise<{ text: string | null; detail: string }> {
+async function groq(
+  prompt: string,
+  apiKey: string,
+  system: string,
+): Promise<{ text: string | null; detail: string }> {
   const preferred = resolveGroqModel(process.env.GROQ_MODEL);
-  const first = await groqOnce(prompt, apiKey, preferred);
+  const first = await groqOnce(prompt, apiKey, preferred, system);
   if (first.text) return { text: first.text, detail: "" };
   if ((first.status === 400 || first.status === 404) && preferred !== GROQ_FALLBACK) {
-    const second = await groqOnce(prompt, apiKey, GROQ_FALLBACK);
+    const second = await groqOnce(prompt, apiKey, GROQ_FALLBACK, system);
     if (second.text) return { text: second.text, detail: "" };
     const status = second.status || first.status;
     return { text: null, detail: status && status !== 200 ? `groq_${status}` : "groq_empty" };
@@ -158,9 +181,11 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ ok: false, error: "bad_json" }, { status: 400 });
   }
-  const payload = body as { facts?: unknown; stamp?: unknown };
+  const payload = body as { facts?: unknown; stamp?: unknown; locale?: unknown };
   const facts = typeof payload.facts === "string" ? payload.facts.trim() : "";
   const stamp = typeof payload.stamp === "string" ? payload.stamp.trim() : "";
+  const locale: LocaleId = isLocale(payload.locale) ? payload.locale : "ru";
+  const system = systemPrompt(locale);
   if (!facts || facts.length > 4000 || !stamp || stamp.length > 64) {
     return NextResponse.json({ ok: false, error: "invalid_brief" }, { status: 400 });
   }
@@ -184,11 +209,11 @@ export async function POST(req: Request) {
   }
 
   const result = geminiKey
-    ? await gemini(facts, geminiKey)
-    : await groq(facts, groqKey as string);
+    ? await gemini(facts, geminiKey, system)
+    : await groq(facts, groqKey as string, system);
 
   if (!result.text && geminiKey && groqKey) {
-    const fallback = await groq(facts, groqKey);
+    const fallback = await groq(facts, groqKey, system);
     if (fallback.text) {
       if (redisConfigured()) await cacheBrief(validated.user.id, stamp, fallback.text);
       return NextResponse.json({ ok: true, text: fallback.text });

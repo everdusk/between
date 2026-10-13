@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { useI18n } from "@/components/locale-provider";
 import { SessionRhythm } from "@/components/session-rhythm";
 import { formatLongDate, toDateKey } from "@/lib/dates";
 import type { NotifyPrefs, SessionNote, SessionPlan } from "@/lib/types";
@@ -45,6 +46,7 @@ export function SessionsPanel({
   onSaveNotify,
   disabled,
 }: SessionsPanelProps) {
+  const { t, locale } = useI18n();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [savedFlash, setSavedFlash] = useState(false);
@@ -89,11 +91,10 @@ export function SessionsPanel({
     <div className="space-y-8">
       <div className="space-y-1">
         <h2 className="font-display text-2xl tracking-tight text-foreground sm:text-3xl">
-          Итоги сеанса
+          {t("sessionsTitle")}
         </h2>
         <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
-          После встречи зафиксируйте, что обсудили, какие инсайты остались и
-          какие шаги взять с собой.
+          {t("sessionsLead")}
         </p>
       </div>
 
@@ -108,7 +109,7 @@ export function SessionsPanel({
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="space-y-2">
-            <Label htmlFor="session-date">Дата сеанса</Label>
+            <Label htmlFor="session-date">{t("sessionDate")}</Label>
             <Input
               id="session-date"
               type="date"
@@ -124,13 +125,13 @@ export function SessionsPanel({
           </div>
           {editingId && (
             <Button type="button" variant="ghost" onClick={startNew}>
-              Новая запись
+              {t("newEntry")}
             </Button>
           )}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="session-summary">Что обсудили</Label>
+          <Label htmlFor="session-summary">{t("discussed")}</Label>
           <Textarea
             id="session-summary"
             value={form.summary}
@@ -138,14 +139,14 @@ export function SessionsPanel({
             onChange={(e) =>
               setForm((f) => ({ ...f, summary: e.target.value }))
             }
-            placeholder="Кратко: темы разговора, ключевые моменты"
+            placeholder={t("discussedPlaceholder")}
             className="min-h-24 resize-y"
             required
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="session-insights">Инсайты</Label>
+          <Label htmlFor="session-insights">{t("insights")}</Label>
           <Textarea
             id="session-insights"
             value={form.insights}
@@ -153,13 +154,13 @@ export function SessionsPanel({
             onChange={(e) =>
               setForm((f) => ({ ...f, insights: e.target.value }))
             }
-            placeholder="Что стало яснее, что зацепило"
+            placeholder={t("insightsPlaceholder")}
             className="min-h-20 resize-y"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="session-homework">Домашка и следующие шаги</Label>
+          <Label htmlFor="session-homework">{t("homework")}</Label>
           <Textarea
             id="session-homework"
             value={form.homework}
@@ -167,7 +168,7 @@ export function SessionsPanel({
             onChange={(e) =>
               setForm((f) => ({ ...f, homework: e.target.value }))
             }
-            placeholder="Что попробовать до следующего сеанса"
+            placeholder={t("homeworkPlaceholder")}
             className="min-h-20 resize-y"
           />
         </div>
@@ -177,11 +178,11 @@ export function SessionsPanel({
             type="submit"
             disabled={disabled || !form.summary.trim()}
           >
-            {editingId ? "Обновить итог" : "Сохранить итог"}
+            {editingId ? t("updateSession") : t("saveSession")}
           </Button>
           {savedFlash && (
             <span className="animate-in fade-in text-sm text-primary duration-500">
-              Сохранено
+              {t("saved")}
             </span>
           )}
         </div>
@@ -191,12 +192,11 @@ export function SessionsPanel({
 
       <div className="space-y-4">
         <h3 className="font-display text-lg text-foreground">
-          Прошлые сеансы
+          {t("pastSessions")}
         </h3>
         {sorted.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border/80 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
-            Пока нет сохранённых итогов. После первого сеанса запись появится
-            здесь.
+            {t("noSessions")}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -216,10 +216,10 @@ export function SessionsPanel({
                     aria-expanded={open}
                   >
                     <span className="font-medium text-foreground">
-                      {formatLongDate(session.date)}
+                      {formatLongDate(session.date, locale)}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {open ? "Свернуть" : "Открыть"}
+                      {open ? t("collapse") : t("expand")}
                     </span>
                   </button>
                   <div
@@ -232,7 +232,7 @@ export function SessionsPanel({
                       <div className="space-y-3 border-t border-border/50 px-4 py-4 text-sm leading-relaxed">
                         <div>
                           <p className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">
-                            Обсудили
+                            {t("discussedShort")}
                           </p>
                           <p className="whitespace-pre-wrap text-foreground/90">
                             {session.summary}
@@ -241,7 +241,7 @@ export function SessionsPanel({
                         {session.insights && (
                           <div>
                             <p className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">
-                              Инсайты
+                              {t("insightsShort")}
                             </p>
                             <p className="whitespace-pre-wrap text-foreground/90">
                               {session.insights}
@@ -251,7 +251,7 @@ export function SessionsPanel({
                         {session.homework && (
                           <div>
                             <p className="mb-1 text-xs uppercase tracking-wider text-muted-foreground">
-                              Дальше
+                              {t("nextShort")}
                             </p>
                             <p className="whitespace-pre-wrap text-foreground/90">
                               {session.homework}
@@ -266,7 +266,7 @@ export function SessionsPanel({
                             disabled={disabled}
                             onClick={() => startEdit(session)}
                           >
-                            Редактировать
+                            {t("edit")}
                           </Button>
                           <Button
                             type="button"
@@ -275,7 +275,7 @@ export function SessionsPanel({
                             disabled={disabled}
                             onClick={() => onDelete(session.id)}
                           >
-                            Удалить
+                            {t("delete")}
                           </Button>
                         </div>
                       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -23,18 +24,17 @@ import {
   tagCounts,
 } from "@/lib/brief";
 import { feelingFill } from "@/lib/spectrum";
-import { SLOT_LABELS } from "@/lib/feelings";
 import { requestBrief } from "@/lib/journal-api";
 import type { JournalEntry, SessionNote, WeekPrep } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import type { MessageKey } from "@/lib/messages";
 
-function briefFailure(reason: string | undefined): string {
-  if (reason === "limit") {
-    return "На сегодня хватит запросов к модели. Ниже сборка по записям.";
-  }
-  if (reason === "no_model") {
-    return "Ключ модели на сервер не попал. В Vercel нужна GEMINI_API_KEY или GROQ_API_KEY для Production.";
-  }
+function briefFailure(
+  reason: string | undefined,
+  t: (key: MessageKey, vars?: Record<string, string | number | undefined>) => string,
+): string {
+  if (reason === "limit") return t("briefLimit");
+  if (reason === "no_model") return t("briefNoModel");
   if (
     reason?.includes("gemini_400") ||
     reason?.includes("gemini_401") ||
@@ -42,9 +42,9 @@ function briefFailure(reason: string | undefined): string {
     reason?.includes("groq_401") ||
     reason?.includes("groq_403")
   ) {
-    return "Сервер отклонил ключ модели. В Vercel для Production нужен ключ AI Studio (GEMINI_API_KEY) или Groq (GROQ_API_KEY), без кавычек.";
+    return t("briefBadKey");
   }
-  return `Модель не ответила${reason ? ` (${reason})` : ""}. Ниже сборка по записям.`;
+  return t("briefPlain", { reason: reason ? ` (${reason})` : "" });
 }
 
 interface WeeklyPanelProps {
@@ -71,6 +71,7 @@ export function WeeklyPanel({
   initData,
   disabled,
 }: WeeklyPanelProps) {
+  const { t, locale, feeling, slot } = useI18n();
   const now = new Date();
   const todayKey = toDateKey(now);
   const key = weekKey(now);
@@ -113,8 +114,22 @@ export function WeeklyPanel({
     prevEntries,
     talkNotes,
     todayKey,
+    copy: {
+      empty: t("briefEmpty"),
+      most: t("briefMost"),
+      mostPast: t("briefMostPast"),
+      past: t("briefPast"),
+      themes: t("briefThemes"),
+      carried: t("briefCarriedLine"),
+      entries: t("briefEntries"),
+      today: t("briefToday"),
+      say: t("briefSay"),
+      talkEmpty: t("briefTalkEmpty"),
+      feeling,
+      day: (key) => formatDayLabel(key, locale),
+    },
   });
-  const stamp = briefStamp(weekEntries, talkNotes);
+  const stamp = `${briefStamp(weekEntries, talkNotes)}:${locale}`;
   const modelText = prep?.briefStamp === stamp ? prep.briefText : undefined;
 
   function handleSave() {
@@ -131,16 +146,14 @@ export function WeeklyPanel({
     setBriefNote(null);
     if (!initData) {
       setBriefPhase("local");
-      setBriefNote("Вне Telegram остаётся сборка по записям, без модели.");
+      setBriefNote(t("briefLocal"));
       return;
     }
-    const result = await requestBrief(initData, rules, stamp);
+    const result = await requestBrief(initData, rules, stamp, locale);
     if (!result.ok || !result.text) {
       setBriefPhase(result.ok ? "plain" : "failed");
       setBriefNote(
-        result.ok
-          ? briefFailure(result.reason)
-          : "Не удалось сформулировать текст. Ниже сборка по записям.",
+        result.ok ? briefFailure(result.reason, t) : t("briefFail"),
       );
       return;
     }
@@ -153,10 +166,10 @@ export function WeeklyPanel({
     <div className="space-y-8">
       <div className="space-y-1">
         <h2 className="font-display text-2xl tracking-tight text-foreground sm:text-3xl">
-          Сводка недели
+          {t("weekTitle")}
         </h2>
         <p className="text-sm text-muted-foreground sm:text-base">
-          {formatWeekRange(now)} — к разговору на сеансе.
+          {t("weekLead", { range: formatWeekRange(now, locale) })}
         </p>
       </div>
 
@@ -178,7 +191,7 @@ export function WeeklyPanel({
         <section className="space-y-2">
           {carried.length > 0 && (
             <p className="text-sm text-foreground/90">
-              С прошлой недели повторяется: {carried.join(", ")}.
+              {t("carried", { list: carried.join(", ") })}
             </p>
           )}
           {weekTags.length > 0 && (
@@ -198,16 +211,16 @@ export function WeeklyPanel({
 
       <section className="space-y-3 rounded-3xl border border-border/60 bg-card/70 p-4 sm:p-5">
         <div className="space-y-1">
-          <h3 className="font-display text-lg text-foreground">Бриф к сеансу</h3>
+          <h3 className="font-display text-lg text-foreground">{t("briefTitle")}</h3>
           <p className="text-sm text-muted-foreground">
-            {noteDays} из 7 дней с заметками · записей за неделю: {weekEntries.length}
+            {t("briefStats", { days: noteDays, count: weekEntries.length })}
           </p>
         </div>
         <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
           {modelText || rules}
         </p>
         {modelText && (
-          <p className="text-xs text-muted-foreground">Сформулировано по фактам недели.</p>
+          <p className="text-xs text-muted-foreground">{t("briefModel")}</p>
         )}
         <div className="flex flex-wrap items-center gap-3">
           <Button
@@ -216,7 +229,7 @@ export function WeeklyPanel({
             disabled={disabled || briefPhase === "loading"}
             onClick={() => void formulate()}
           >
-            {briefPhase === "loading" ? "Собираю текст…" : "Сформулировать текст"}
+            {briefPhase === "loading" ? t("formulating") : t("formulate")}
           </Button>
           {briefNote && (
             <p className="text-sm text-muted-foreground">{briefNote}</p>
@@ -247,19 +260,19 @@ export function WeeklyPanel({
                     style={{ background: feelingFill(tone) }}
                   />
                 )}
-                <span>{formatDayLabel(day)}</span>
+                <span>{formatDayLabel(day, locale)}</span>
               </div>
               {list.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Нет записи</p>
+                <p className="text-sm text-muted-foreground">{t("noEntry")}</p>
               ) : (
                 <ul className="space-y-3">
                   {list.map((entry) => (
                     <li key={entry.id} className="space-y-1.5">
                       <p className="text-xs text-muted-foreground">
-                        {formatTime(entry.createdAt)}
-                        {entry.slot ? ` · ${SLOT_LABELS[entry.slot]}` : ""}
+                        {formatTime(entry.createdAt, locale)}
+                        {entry.slot ? ` · ${slot(entry.slot)}` : ""}
                         {entry.feelings.length > 0
-                          ? ` · ${entry.feelings.join(", ")}`
+                          ? ` · ${entry.feelings.map((item) => feeling(item)).join(", ")}`
                           : ""}
                       </p>
                       {entry.body.trim() && (
@@ -288,28 +301,25 @@ export function WeeklyPanel({
       <div className="space-y-3 rounded-3xl border border-border/60 bg-card/70 p-4 sm:p-5">
         <div className="space-y-1">
           <Label htmlFor="talk-notes" className="font-display text-lg">
-            Говорить на сеансе
+            {t("talkLabel")}
           </Label>
-          <p className="text-sm text-muted-foreground">
-            Черновик того, что важно вынести на встречу. Можно править в любой
-            момент недели.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("talkHint")}</p>
         </div>
         <Textarea
           id="talk-notes"
           value={talkNotes}
           disabled={disabled}
           onChange={(event) => setTalkDraft(event.target.value)}
-          placeholder="Например: тревога перед дедлайнами, разговор с мамой, ощущение «я не справляюсь»…"
+          placeholder={t("talkPlaceholder")}
           className="min-h-28 resize-y"
         />
         <div className="flex flex-wrap items-center gap-3">
           <Button type="button" disabled={disabled} onClick={handleSave}>
-            Сохранить заметку
+            {t("saveNote")}
           </Button>
           {savedFlash && (
             <span className="animate-in fade-in text-sm text-primary duration-500">
-              Сохранено
+              {t("saved")}
             </span>
           )}
         </div>
