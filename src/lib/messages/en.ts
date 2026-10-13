@@ -3,7 +3,7 @@ import type { Catalog } from "./ru";
 export const en: Catalog = {
   guest: "Guest",
   hello: "Hello, {name}",
-  helloDev: "Hello, {name} · development",
+  helloDev: "Hello, {name} · development mode",
   loading: "Loading…",
   loadingEntries: "Loading your notes…",
   dataError: "Could not use the saved data",

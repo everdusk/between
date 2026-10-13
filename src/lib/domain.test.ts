@@ -405,6 +405,8 @@ describe("languages", () => {
     assert.equal(countPhrase("ru", 21, "day"), "21 день");
     assert.equal(countPhrase("en", 1, "note"), "1 note");
     assert.equal(countPhrase("en", 2, "note"), "2 notes");
+    assert.equal(translate("ru", "helloDev", { name: "Гость" }), "Привет, Гость · режим разработки");
+    assert.equal(translate("en", "helloDev", { name: "Guest" }), "Hello, Guest · development mode");
     assert.equal(feelingLabel("en", "тревожно"), "anxious");
     assert.equal(feelingLabel("ru", "тревожно"), "тревожно");
   });
