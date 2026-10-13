@@ -9,6 +9,7 @@ import {
   redisConfigured,
   rememberDeviceLocale,
   saveWeekAccess,
+  saveWebLogin,
 } from "@/lib/redis";
 import { appUrl } from "@/lib/telegram-auth";
 import {
@@ -17,11 +18,13 @@ import {
   telegramRequest,
 } from "@/lib/telegram-bot";
 import { WEEK_INVOICE_PAYLOAD, grantWeekPaidUntil } from "@/lib/week-access";
+import { newWebLoginToken } from "@/lib/web-session";
 
 type TelegramChat = { id: number; type?: string };
 type TelegramUser = {
   id: number;
   first_name?: string;
+  last_name?: string;
   username?: string;
   language_code?: string;
 };
@@ -169,6 +172,21 @@ async function handlePayment(message: TelegramMessage) {
   });
 }
 
+function personName(from?: TelegramUser): string {
+  return [from?.first_name, from?.last_name].filter(Boolean).join(" ");
+}
+
+async function readerKeyboard(locale: LocaleId, from?: TelegramUser) {
+  const home = appUrl();
+  let site = home;
+  if (from?.id && redisConfigured()) {
+    const token = newWebLoginToken();
+    const saved = await saveWebLogin(token, from.id, personName(from));
+    if (saved) site = `${home}/?login=${encodeURIComponent(token)}`;
+  }
+  return miniAppKeyboard(home, locale, site);
+}
+
 export async function POST(req: Request) {
   if (!verifyWebhookSecret(req)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
@@ -220,7 +238,7 @@ export async function POST(req: Request) {
     await telegramRequest("sendMessage", {
       chat_id: chatId,
       text: translate(greeting, "botHelp"),
-      reply_markup: miniAppKeyboard(appUrl(), greeting),
+      reply_markup: await readerKeyboard(greeting, message.from),
     });
     return NextResponse.json({ ok: true });
   }
@@ -252,7 +270,7 @@ export async function POST(req: Request) {
     await telegramRequest("sendMessage", {
       chat_id: chatId,
       text: translate(reply, "botSaved"),
-      reply_markup: keyboard,
+      reply_markup: await readerKeyboard(reply, message.from),
     });
   } catch {
     await telegramRequest("sendMessage", {

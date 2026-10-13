@@ -39,10 +39,14 @@ export function parseFeelingCallback(
   return { slot, feeling };
 }
 
-export function miniAppKeyboard(url: string, locale: LocaleId = "ru") {
-  return {
-    inline_keyboard: [[{ text: translate(locale, "botOpen"), web_app: { url } }]],
-  };
+export function miniAppKeyboard(url: string, locale: LocaleId = "ru", siteUrl?: string) {
+  const rows: { text: string; web_app?: { url: string }; url?: string }[][] = [
+    [{ text: translate(locale, "botOpen"), web_app: { url } }],
+  ];
+  if (siteUrl) {
+    rows.push([{ text: translate(locale, "botSite"), url: siteUrl }]);
+  }
+  return { inline_keyboard: rows };
 }
 
 export async function telegramCall<T>(

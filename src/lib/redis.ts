@@ -216,6 +216,48 @@ export async function saveDeviceLocale(userId: number | string, locale: LocaleId
   await redis.set(deviceLocaleKey(userId), locale);
 }
 
+function webLoginKey(token: string): string {
+  return `between:web-login:${token}`;
+}
+
+export async function saveWebLogin(
+  token: string,
+  userId: number,
+  name: string,
+): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return false;
+  await redis.set(webLoginKey(token), { userId, name: name.slice(0, 120) }, { ex: 10 * 60 });
+  return true;
+}
+
+export async function takeWebLogin(
+  token: string,
+): Promise<{ userId: number; name: string } | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const key = webLoginKey(token);
+  const raw = await redis.get<unknown>(key);
+  if (raw == null) return null;
+  await redis.del(key);
+  let record: { userId?: unknown; name?: unknown };
+  if (typeof raw === "string") {
+    try {
+      record = JSON.parse(raw) as { userId?: unknown; name?: unknown };
+    } catch {
+      return null;
+    }
+  } else if (typeof raw === "object") {
+    record = raw as { userId?: unknown; name?: unknown };
+  } else {
+    return null;
+  }
+  const userId = typeof record.userId === "number" ? record.userId : Number(record.userId);
+  if (!Number.isInteger(userId) || userId <= 0) return null;
+  const name = typeof record.name === "string" ? record.name.slice(0, 120) : "";
+  return { userId, name };
+}
+
 /** Keeps a language seen from Telegram until the Mini App reports the device. */
 export async function rememberDeviceLocale(
   userId: number | string,
