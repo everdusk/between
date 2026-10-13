@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { JournalPanel } from "@/components/journal-panel";
 import { SessionsPanel } from "@/components/sessions-panel";
+import { WeekTab } from "@/components/week-tab";
 import { WeeklyPanel } from "@/components/weekly-panel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -149,15 +150,22 @@ export function TherapyApp() {
                 />
               </TabsContent>
               <TabsContent value="week" className="mt-0 outline-none">
-                <WeeklyPanel
-                  entries={store.entries}
-                  sessions={store.sessions}
-                  weekPreps={store.weekPreps}
-                  onSavePrep={saveWeekPrep}
-                  onSaveBrief={saveBrief}
-                  initData={telegram.inTelegram ? telegram.initData : ""}
-                  disabled={disabled}
-                />
+                <WeekTab
+                  active={section === "week"}
+                  ready={telegram.ready}
+                  inTelegram={telegram.inTelegram}
+                  initData={telegram.initData}
+                >
+                  <WeeklyPanel
+                    entries={store.entries}
+                    sessions={store.sessions}
+                    weekPreps={store.weekPreps}
+                    onSavePrep={saveWeekPrep}
+                    onSaveBrief={saveBrief}
+                    initData={telegram.inTelegram ? telegram.initData : ""}
+                    disabled={disabled}
+                  />
+                </WeekTab>
               </TabsContent>
               <TabsContent value="sessions" className="mt-0 outline-none">
                 <SessionsPanel

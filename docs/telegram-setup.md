@@ -23,6 +23,7 @@
 | `NEXT_PUBLIC_APP_URL` | опционально | `https://between-rouge.vercel.app` (кнопка Mini App в ответах) |
 | `CRON_SECRET` | да, для опросов | секрет почасового вызова `/api/telegram/digest` |
 | `GEMINI_API_KEY` или `GROQ_API_KEY` | нет | кнопка «Сформулировать текст». Без ключа бриф собирается правилами |
+| `WEEK_STAR_PRICE` | нет | цена вкладки «Неделя» в Stars после 14 дней. Целое 1–10000, иначе 150 |
 
 Создать Redis: [Upstash](https://upstash.com/) → Redis → REST API → скопировать URL и token в Vercel → Redeploy.
 
@@ -33,13 +34,14 @@
 ```bash
 # Без secret
 curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/setWebhook" \
-  -d "url=https://between-rouge.vercel.app/api/telegram/webhook"
+  -d "url=https://between-rouge.vercel.app/api/telegram/webhook" \
+  -d "allowed_updates=[\"message\",\"callback_query\",\"pre_checkout_query\"]"
 
 # С secret (тот же TELEGRAM_WEBHOOK_SECRET, что в Vercel)
 curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/setWebhook" \
   -d "url=https://between-rouge.vercel.app/api/telegram/webhook" \
   -d "secret_token=${TELEGRAM_WEBHOOK_SECRET}" \
-  -d "allowed_updates=[\"message\",\"callback_query\"]"
+  -d "allowed_updates=[\"message\",\"callback_query\",\"pre_checkout_query\"]"
 ```
 
 Проверка:
@@ -50,6 +52,12 @@ curl -sS "https://between-rouge.vercel.app/api/telegram/webhook"
 ```
 
 Снять webhook: `.../deleteWebhook`.
+
+После выкладки оплаты вкладки «Неделя» webhook нужно выставить заново. В `allowed_updates` обязательны `message`, `callback_query` и `pre_checkout_query`. Без `pre_checkout_query` Telegram оборвёт оплату по таймауту, и Stars не спишутся. Доступ пишется только из `successful_payment`.
+
+## Оплата вкладки «Неделя»
+
+Первое открытие «Недели» запускает 14 дней бесплатно — и для новых людей, и для тех, кто уже пользовался дневником. Дальше спектр и бриф закрываются подпиской Telegram Stars на 30 дней. Цена — `WEEK_STAR_PRICE` в Vercel (по умолчанию 150). Дневник и «Сеансы» остаются бесплатными. Отмена подписки — в Telegram; доступ держится до конца оплаченного периода.
 
 ## Чеклист BotFather
 
