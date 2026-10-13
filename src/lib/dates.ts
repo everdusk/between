@@ -62,35 +62,83 @@ const MONTHS_GENITIVE = [
   "декабря",
 ];
 
-export function weekdayShort(key: string): string {
-  const d = parseDateKey(key);
-  return WEEKDAY_SHORT[d.getDay() === 0 ? 6 : d.getDay() - 1];
+const INTL_LOCALE: Record<string, string> = {
+  en: "en",
+  hi: "hi",
+  id: "id",
+  pt: "pt-BR",
+  es: "es",
+  ar: "ar",
+  vi: "vi",
+  uk: "uk",
+  tr: "tr",
+  fa: "fa",
+  uz: "uz",
+};
+
+function intlTag(locale?: string): string | null {
+  if (!locale || locale === "ru") return null;
+  return INTL_LOCALE[locale] ?? null;
 }
 
-export function formatDayLabel(key: string): string {
+export function weekdayShort(key: string, locale?: string): string {
+  const tag = intlTag(locale);
   const d = parseDateKey(key);
-  return `${weekdayShort(key)}, ${d.getDate()} ${MONTHS_GENITIVE[d.getMonth()]}`;
+  if (!tag) return WEEKDAY_SHORT[d.getDay() === 0 ? 6 : d.getDay() - 1];
+  return new Intl.DateTimeFormat(tag, { weekday: "short" }).format(d);
 }
 
-export function formatWeekRange(date: Date = new Date()): string {
+/** Monday = 0. Russian keeps the accusative used in «каждый вторник». */
+export function weekdayLong(index: number, locale?: string): string {
+  const tag = intlTag(locale);
+  if (!tag || index < 0 || index > 6) {
+    return ["понедельник", "вторник", "среду", "четверг", "пятницу", "субботу", "воскресенье"][index] ?? "";
+  }
+  const monday = new Date(2026, 0, 5 + index);
+  return new Intl.DateTimeFormat(tag, { weekday: "long" }).format(monday);
+}
+
+export function formatDayLabel(key: string, locale?: string): string {
+  const tag = intlTag(locale);
+  const d = parseDateKey(key);
+  if (!tag) return `${weekdayShort(key)}, ${d.getDate()} ${MONTHS_GENITIVE[d.getMonth()]}`;
+  return new Intl.DateTimeFormat(tag, {
+    weekday: "short",
+    day: "numeric",
+    month: "long",
+  }).format(d);
+}
+
+export function formatWeekRange(date: Date = new Date(), locale?: string): string {
   const start = startOfWeek(date);
   const end = endOfWeek(date);
+  const tag = intlTag(locale);
   const sameMonth = start.getMonth() === end.getMonth();
-  if (sameMonth) {
-    return `${start.getDate()}–${end.getDate()} ${MONTHS_GENITIVE[start.getMonth()]}`;
+  if (!tag) {
+    if (sameMonth) return `${start.getDate()}–${end.getDate()} ${MONTHS_GENITIVE[start.getMonth()]}`;
+    return `${start.getDate()} ${MONTHS_GENITIVE[start.getMonth()]} – ${end.getDate()} ${MONTHS_GENITIVE[end.getMonth()]}`;
   }
-  return `${start.getDate()} ${MONTHS_GENITIVE[start.getMonth()]} – ${end.getDate()} ${MONTHS_GENITIVE[end.getMonth()]}`;
+  const month = new Intl.DateTimeFormat(tag, { month: "long" });
+  if (sameMonth) return `${start.getDate()}–${end.getDate()} ${month.format(start)}`;
+  return `${start.getDate()} ${month.format(start)} – ${end.getDate()} ${month.format(end)}`;
 }
 
-export function formatLongDate(key: string): string {
+export function formatLongDate(key: string, locale?: string): string {
+  const tag = intlTag(locale);
   const d = parseDateKey(key);
-  return `${d.getDate()} ${MONTHS_GENITIVE[d.getMonth()]} ${d.getFullYear()}`;
+  if (!tag) return `${d.getDate()} ${MONTHS_GENITIVE[d.getMonth()]} ${d.getFullYear()}`;
+  return new Intl.DateTimeFormat(tag, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(d);
 }
 
-export function formatTime(iso: string): string {
+export function formatTime(iso: string, locale?: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString("ru-RU", {
+  const tag = intlTag(locale) ?? "ru-RU";
+  return date.toLocaleTimeString(tag, {
     hour: "2-digit",
     minute: "2-digit",
   });

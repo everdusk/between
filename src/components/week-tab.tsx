@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
+import { useI18n } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import {
   createWeekInvoice,
@@ -12,13 +13,10 @@ import {
   writeLocalWeekAccess,
 } from "@/lib/week-access-client";
 import {
-  daysPhrase,
   markWeekIntroSeen,
   openWeekAccess,
   type WeekAccessView,
 } from "@/lib/week-access";
-
-const PAY_FAIL = "Не удалось открыть оплату.";
 
 interface WeekTabProps {
   active: boolean;
@@ -35,6 +33,7 @@ export function WeekTab({
   initData,
   children,
 }: WeekTabProps) {
+  const { t, count } = useI18n();
   const [access, setAccess] = useState<WeekAccessView | null>(null);
   const [failedOpen, setFailedOpen] = useState(false);
   const [paying, setPaying] = useState(false);
@@ -111,9 +110,7 @@ export function WeekTab({
     if (second) setAccess(second);
     setPaying(false);
     if (!second || second.status === "locked") {
-      setPayError(
-        "Оплата прошла. Если вкладка ещё закрыта, откройте «Неделю» ещё раз через минуту.",
-      );
+      setPayError(t("payPending"));
     }
   }
 
@@ -125,7 +122,7 @@ export function WeekTab({
     if (!alive.current) return;
     if (!url) {
       setPaying(false);
-      setPayError(PAY_FAIL);
+      setPayError(t("payFail"));
       return;
     }
     const webApp = (await import("@twa-dev/sdk")).default;
@@ -136,7 +133,7 @@ export function WeekTab({
         return;
       }
       setPaying(false);
-      if (status === "failed") setPayError(PAY_FAIL);
+      if (status === "failed") setPayError(t("payFail"));
     });
   }
 
@@ -144,7 +141,7 @@ export function WeekTab({
     if (failedOpen) return <>{children}</>;
     return (
       <p className="py-10 text-center text-sm text-muted-foreground" role="status">
-        Открываем неделю…
+        {t("opening")}
       </p>
     );
   }
@@ -154,12 +151,10 @@ export function WeekTab({
       <section className="space-y-4">
         <div className="space-y-1">
           <h2 className="font-display text-2xl tracking-tight text-foreground sm:text-3xl">
-            Сводка недели
+            {t("weekTitle")}
           </h2>
           <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Две бесплатные недели закончились. Спектр и бриф к сеансу открываются за{" "}
-            {access.starPrice} Stars каждые 30 дней. Отмена — в настройках Telegram. Дневник
-            остаётся бесплатным.
+            {t("paywallBody", { price: access.starPrice })}
           </p>
         </div>
         <Button
@@ -168,10 +163,10 @@ export function WeekTab({
           onClick={() => void pay()}
         >
           {paying
-            ? "Открываем оплату…"
+            ? t("paying")
             : inTelegram
-              ? `Оплатить ${access.starPrice} Stars`
-              : "Оплата в Telegram"}
+              ? t("payStars", { price: access.starPrice })
+              : t("payInTelegram")}
         </Button>
         {payError && (
           <p className="text-sm text-muted-foreground" role="alert">
@@ -189,18 +184,19 @@ export function WeekTab({
       {showIntro && (
         <section className="space-y-4 rounded-3xl border border-border/60 bg-card/70 p-4 sm:p-5">
           <p className="text-sm leading-relaxed text-foreground/90 sm:text-base">
-            Две недели «Неделя» открыта. Спектр, бриф и заметки к сеансу можно смотреть
-            свободно. Дальше вкладка стоит {access.starPrice} Stars в месяц. Дневник остаётся
-            бесплатным.
+            {t("intro", { price: access.starPrice })}
           </p>
           <Button type="button" onClick={() => void dismissIntro()}>
-            Понятно
+            {t("introOk")}
           </Button>
         </section>
       )}
       {access.status === "trial" && access.introSeen && (
         <p className="text-sm text-muted-foreground">
-          Бесплатно ещё {daysPhrase(access.daysLeft)}. Потом {access.starPrice} Stars в месяц.
+          {t("trialLine", {
+            days: count(access.daysLeft, "day"),
+            price: access.starPrice,
+          })}
         </p>
       )}
       {children}

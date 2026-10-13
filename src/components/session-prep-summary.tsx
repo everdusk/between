@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useI18n } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDayLabel, formatLongDate } from "@/lib/dates";
+import { isFeeling } from "@/lib/feelings";
 import { buildPeriodSummary } from "@/lib/session-summary";
-import type { JournalEntry, SessionNote } from "@/lib/types";
+import type { Feeling, JournalEntry, SessionNote } from "@/lib/types";
+import type { MessageKey } from "@/lib/messages";
 
 interface SessionPrepSummaryProps {
   entries: JournalEntry[];
@@ -16,6 +19,7 @@ export function SessionPrepSummary({
   entries,
   sessions,
 }: SessionPrepSummaryProps) {
+  const { t, locale, feeling } = useI18n();
   const summary = useMemo(
     () => buildPeriodSummary(entries, sessions),
     [entries, sessions],
@@ -27,28 +31,25 @@ export function SessionPrepSummary({
     return (
       <section className="space-y-2 border-b border-border/70 pb-6">
         <h3 className="font-display text-lg text-foreground">
-          С последнего сеанса
+          {t("sinceSession")}
         </h3>
         <p className="rounded-lg border border-dashed border-border/80 bg-background/40 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-          Пока нет сохранённых сеансов. Зафиксируйте итог во вкладке «Сеансы» —
-          здесь появится сводка записей после этой даты.
+          {t("noSessionsYet")}
         </p>
       </section>
     );
   }
 
-  const sessionLabel = formatLongDate(summary.lastSession.date);
+  const sessionLabel = formatLongDate(summary.lastSession.date, locale);
 
   if (summary.entryCount === 0 && summary.feelings.length === 0) {
     return (
       <section className="space-y-2 border-b border-border/70 pb-6">
         <h3 className="font-display text-lg text-foreground">
-          С последнего сеанса
+          {t("sinceSession")}
         </h3>
         <p className="text-sm text-muted-foreground">
-          После сеанса от {sessionLabel} новых записей в дневнике пока нет.
-          Пишите в «Дневник» или боту — сводка соберётся здесь к следующей
-          встрече.
+          {t("afterSessionEmpty", { date: sessionLabel })}
         </p>
       </section>
     );
@@ -56,7 +57,7 @@ export function SessionPrepSummary({
 
   async function handleCopy() {
     if (!summary) return;
-    const text = summary.plainText;
+    const text = copyText(summary, sessionLabel, t, locale, feeling);
     let ok = false;
     try {
       if (navigator.clipboard?.writeText) {
@@ -91,10 +92,10 @@ export function SessionPrepSummary({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <h3 className="font-display text-lg text-foreground">
-            С последнего сеанса
+            {t("sinceSession")}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Записи после {sessionLabel} — к подготовке к встрече.
+            {t("afterSessionLead", { date: sessionLabel })}
           </p>
         </div>
         <Button
@@ -104,7 +105,7 @@ export function SessionPrepSummary({
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
         >
-          {open ? "Свернуть" : "Открыть"}
+          {open ? t("collapse") : t("expand")}
         </Button>
       </div>
 
@@ -112,14 +113,14 @@ export function SessionPrepSummary({
         <div className="animate-in fade-in slide-in-from-top-1 space-y-4 duration-300">
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
             <span>
-              Записей:{" "}
+              {t("entriesCount")}{" "}
               <strong className="font-medium text-foreground">
                 {summary.entryCount}
               </strong>
             </span>
             {summary.checkinCount > 0 && (
               <span>
-                Отметок:{" "}
+                {t("checkinsCount")}{" "}
                 <strong className="font-medium text-foreground">
                   {summary.checkinCount}
                 </strong>
@@ -131,7 +132,7 @@ export function SessionPrepSummary({
             <div className="flex flex-wrap gap-1.5">
               {summary.feelings.map((item) => (
                 <Badge key={item.feeling} variant="secondary" className="font-normal">
-                  {item.feeling}
+                  {feeling(item.feeling)}
                   <span className="ml-1.5 text-muted-foreground">×{item.count}</span>
                 </Badge>
               ))}
@@ -140,24 +141,24 @@ export function SessionPrepSummary({
 
           {summary.moodTrend === "up" && (
             <p className="text-sm text-foreground/90">
-              К концу периода самочувствие в среднем легче, чем в начале.
+              {t("trendUp")}
             </p>
           )}
           {summary.moodTrend === "down" && (
             <p className="text-sm text-foreground/90">
-              К концу периода самочувствие в среднем тяжелее, чем в начале.
+              {t("trendDown")}
             </p>
           )}
           {summary.moodTrend === "flat" && (
             <p className="text-sm text-muted-foreground">
-              Самочувствие за период без явного сдвига.
+              {t("trendFlat")}
             </p>
           )}
 
           {summary.themes.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Темы
+                {t("themes")}
               </p>
               <ul className="flex flex-wrap gap-2">
                 {summary.themes.map(({ tag, count }) => (
@@ -179,16 +180,16 @@ export function SessionPrepSummary({
           {summary.highlights.length > 0 && (
             <div className="space-y-2">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Ключевые моменты
+                {t("keyMoments")}
               </p>
               <ul className="space-y-0 divide-y divide-border/70">
                 {summary.highlights.map((highlight) => (
                   <li key={highlight.id} className="space-y-1.5 py-3">
                     <p className="text-sm font-medium text-foreground">
-                      {formatDayLabel(highlight.date)}
+                      {formatDayLabel(highlight.date, locale)}
                       {highlight.feelingsLabel && (
                         <span className="ml-2 font-normal text-muted-foreground">
-                          {highlight.feelingsLabel}
+                          {labelFeelings(highlight.feelingsLabel, feeling)}
                         </span>
                       )}
                     </p>
@@ -200,8 +201,10 @@ export function SessionPrepSummary({
               </ul>
               {summary.entryCount > summary.highlights.length && (
                 <p className="text-xs text-muted-foreground">
-                  Показаны {summary.highlights.length} из {summary.entryCount}{" "}
-                  записей — крайние по самочувствию и по дате.
+                  {t("highlightsNote", {
+                    shown: summary.highlights.length,
+                    total: summary.entryCount,
+                  })}
                 </p>
               )}
             </div>
@@ -217,14 +220,59 @@ export function SessionPrepSummary({
               aria-live="polite"
             >
               {copyState === "ok"
-                ? "Скопировано"
+                ? t("copied")
                 : copyState === "fail"
-                  ? "Не удалось скопировать"
-                  : "Скопировать сводку"}
+                  ? t("copyFail")
+                  : t("copySummary")}
             </Button>
           </div>
         </div>
       )}
     </section>
   );
+}
+
+function labelFeelings(label: string, feeling: (value: Feeling) => string): string {
+  return label
+    .split(", ")
+    .map((item) => (isFeeling(item) ? feeling(item) : item))
+    .join(", ");
+}
+
+function copyText(
+  summary: NonNullable<ReturnType<typeof buildPeriodSummary>>,
+  sessionLabel: string,
+  t: (key: MessageKey, vars?: Record<string, string | number | undefined>) => string,
+  locale: string,
+  feeling: (value: Feeling) => string,
+): string {
+  const lines: string[] = [t("afterSessionLead", { date: sessionLabel })];
+  lines.push(`${t("entriesCount")} ${summary.entryCount}`);
+  if (summary.checkinCount > 0) lines.push(`${t("checkinsCount")} ${summary.checkinCount}`);
+  if (summary.feelings.length > 0) {
+    lines.push(
+      summary.feelings.map((item) => `${feeling(item.feeling)} ×${item.count}`).join(", "),
+    );
+  }
+  if (summary.moodTrend === "up") lines.push(t("trendUp"));
+  if (summary.moodTrend === "down") lines.push(t("trendDown"));
+  if (summary.moodTrend === "flat") lines.push(t("trendFlat"));
+  if (summary.themes.length > 0) {
+    lines.push(
+      `${t("themes")}: ${summary.themes
+        .map((item) => (item.count > 1 ? `${item.tag} ×${item.count}` : item.tag))
+        .join(", ")}`,
+    );
+  }
+  if (summary.highlights.length > 0) {
+    lines.push(t("keyMoments"));
+    for (const highlight of summary.highlights) {
+      const names = highlight.feelingsLabel
+        ? ` — ${labelFeelings(highlight.feelingsLabel, feeling)}`
+        : "";
+      lines.push(`• ${formatDayLabel(highlight.date, locale)}${names}`);
+      lines.push(`  ${highlight.excerpt}`);
+    }
+  }
+  return lines.join("\n");
 }

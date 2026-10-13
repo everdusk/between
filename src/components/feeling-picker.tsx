@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/components/locale-provider";
 import { PICKER_FEELINGS, type Feeling } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +11,7 @@ interface FeelingPickerProps {
 }
 
 export function FeelingPicker({ value, onChange, disabled }: FeelingPickerProps) {
+  const { t, feeling: feelingLabel } = useI18n();
   const extras = value.filter(
     (feeling) => !PICKER_FEELINGS.includes(feeling as (typeof PICKER_FEELINGS)[number]),
   );
@@ -24,7 +26,7 @@ export function FeelingPicker({ value, onChange, disabled }: FeelingPickerProps)
   }
 
   return (
-    <div className="flex flex-wrap gap-2" role="group" aria-label="Самочувствие">
+    <div className="flex flex-wrap gap-2" role="group" aria-label={t("feelingsGroup")}>
       {options.map((feeling) => {
         const active = value.includes(feeling);
         return (
@@ -43,7 +45,7 @@ export function FeelingPicker({ value, onChange, disabled }: FeelingPickerProps)
                 : "border-border/80 bg-background/70 text-foreground hover:bg-accent/60",
             )}
           >
-            {feeling}
+            {feelingLabel(feeling)}
           </button>
         );
       })}

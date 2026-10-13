@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { JournalPanel } from "@/components/journal-panel";
+import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WeekTab } from "@/components/week-tab";
 import { WeeklyPanel } from "@/components/weekly-panel";
@@ -9,18 +10,51 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTelegram } from "@/hooks/use-telegram";
 import { useTherapyStore } from "@/hooks/use-therapy-store";
+import { LOCALES } from "@/lib/i18n";
+import { translate } from "@/lib/messages";
+import { ru } from "@/lib/messages/ru";
+import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
 import { cn } from "@/lib/utils";
 
-const SECTIONS = [
-  { id: "journal", label: "Дневник" },
-  { id: "week", label: "Неделя" },
-  { id: "sessions", label: "Сеансы" },
-] as const;
+const SECTIONS = ["journal", "week", "sessions"] as const;
 
-type SectionId = (typeof SECTIONS)[number]["id"];
+type SectionId = (typeof SECTIONS)[number];
+
+const SECTION_KEY = {
+  journal: "tabJournal",
+  week: "tabWeek",
+  sessions: "tabSessions",
+} as const;
 
 export function TherapyApp() {
   const telegram = useTelegram();
+  return (
+    <LocaleProvider
+      telegramLanguage={telegram.user?.language_code}
+      initData={telegram.inTelegram ? telegram.initData : ""}
+    >
+      <TherapyShell telegram={telegram} />
+    </LocaleProvider>
+  );
+}
+
+function shownName(displayName: string, guest: string): string {
+  return displayName === DEV_DISPLAY_NAME ? guest : displayName;
+}
+
+function localizeStorageError(
+  error: string | null,
+  t: (key: "storageCorrupt" | "storageRead" | "storageWrite" | "storageClear") => string,
+): string {
+  if (error === ru.storageCorrupt) return t("storageCorrupt");
+  if (error === ru.storageRead) return t("storageRead");
+  if (error === ru.storageWrite) return t("storageWrite");
+  if (error === ru.storageClear) return t("storageClear");
+  return error ?? "";
+}
+
+function TherapyShell({ telegram }: { telegram: TelegramSession }) {
+  const { t, locale, deviceLocale, setLocale } = useI18n();
   const {
     store,
     status,
@@ -42,6 +76,10 @@ export function TherapyApp() {
 
   const [section, setSection] = useState<SectionId>("journal");
   const disabled = status !== "ready";
+  const name = shownName(telegram.displayName, translate(deviceLocale, "guest"));
+  const greeting = !telegram.ready
+    ? translate(deviceLocale, "loading")
+    : translate(deviceLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
 
   return (
     <div
@@ -67,19 +105,34 @@ export function TherapyApp() {
             <p className="font-display text-xl tracking-tight text-foreground">
               Between
             </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {telegram.ready
-                ? telegram.inTelegram
-                  ? `Привет, ${telegram.displayName}`
-                  : `Привет, ${telegram.displayName} · режим разработки`
-                : "Загрузка…"}
-            </p>
+            <p className="truncate text-xs text-muted-foreground">{greeting}</p>
           </div>
-          {!telegram.inTelegram && telegram.ready && (
-            <span className="shrink-0 rounded-md border border-border/70 bg-background/70 px-2 py-1 text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
-              localhost
-            </span>
-          )}
+          <div className="flex shrink-0 items-center gap-2">
+            <label className="sr-only" htmlFor="app-language">
+              {t("language")}
+            </label>
+            <select
+              id="app-language"
+              aria-label={t("language")}
+              value={locale}
+              onChange={(event) => {
+                const next = LOCALES.find((item) => item.id === event.target.value);
+                if (next) setLocale(next.id);
+              }}
+              className="max-w-36 rounded-md border border-border/70 bg-background/70 px-2 py-1 text-xs text-foreground"
+            >
+              {LOCALES.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            {!telegram.inTelegram && telegram.ready && (
+              <span className="shrink-0 rounded-md border border-border/70 bg-background/70 px-2 py-1 text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+                localhost
+              </span>
+            )}
+          </div>
         </div>
       </header>
 
@@ -92,9 +145,7 @@ export function TherapyApp() {
             <div className="mx-auto mb-3 h-1.5 w-24 overflow-hidden rounded-full bg-primary/15">
               <div className="loading-bar h-full w-1/2 rounded-full bg-primary/60" />
             </div>
-            <p className="text-sm text-muted-foreground">
-              Загружаем ваши записи…
-            </p>
+            <p className="text-sm text-muted-foreground">{t("loadingEntries")}</p>
           </div>
         )}
 
@@ -103,16 +154,12 @@ export function TherapyApp() {
             className="rounded-2xl border border-destructive/30 bg-destructive/5 px-5 py-6"
             role="alert"
           >
-            <p className="font-medium text-foreground">
-              Не удалось работать с данными
+            <p className="font-medium text-foreground">{t("dataError")}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {localizeStorageError(error, t)}
             </p>
-            <p className="mt-2 text-sm text-muted-foreground">{error}</p>
-            <Button
-              className="mt-4"
-              variant="secondary"
-              onClick={resetCorrupted}
-            >
-              Начать заново на этом устройстве
+            <Button className="mt-4" variant="secondary" onClick={resetCorrupted}>
+              {t("startOver")}
             </Button>
           </div>
         )}
@@ -124,13 +171,13 @@ export function TherapyApp() {
             className="gap-4"
           >
             <TabsList className="h-auto w-full justify-stretch gap-1 bg-background/55 p-1.5 backdrop-blur-sm">
-              {SECTIONS.map((s) => (
+              {SECTIONS.map((id) => (
                 <TabsTrigger
-                  key={s.id}
-                  value={s.id}
+                  key={id}
+                  value={id}
                   className="flex-1 px-3 py-2 data-active:shadow-none"
                 >
-                  {s.label}
+                  {t(SECTION_KEY[id])}
                 </TabsTrigger>
               ))}
             </TabsList>
@@ -187,13 +234,11 @@ export function TherapyApp() {
       <footer className="relative z-10 px-4 py-4 text-center text-[0.7rem] leading-relaxed text-muted-foreground">
         Between
         {syncLabel === "cloud"
-          ? " · синхронизация с сервером"
+          ? ` · ${t("syncCloud")}`
           : syncLabel === "offline-cloud"
-            ? " · локально (облако недоступно)"
-            : " · данные на этом устройстве"}
-        {!telegram.inTelegram && telegram.ready
-          ? " · вне Telegram — локальный режим"
-          : null}
+            ? ` · ${t("syncOffline")}`
+            : ` · ${t("syncDevice")}`}
+        {!telegram.inTelegram && telegram.ready ? ` · ${t("outsideTelegram")}` : null}
       </footer>
     </div>
   );

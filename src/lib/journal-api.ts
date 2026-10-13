@@ -1,3 +1,4 @@
+import type { LocaleId } from "./i18n";
 import { normalizeStore } from "./migrate";
 import {
   emptyNotify,
@@ -70,6 +71,7 @@ export async function requestBrief(
   initData: string,
   facts: string,
   stamp: string,
+  locale: LocaleId = "ru",
 ): Promise<
   | { ok: true; text: string | null; reason?: string }
   | { ok: false; error: string }
@@ -81,7 +83,7 @@ export async function requestBrief(
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": initData,
       },
-      body: JSON.stringify({ facts, stamp }),
+      body: JSON.stringify({ facts, stamp, locale }),
     });
     const data = (await res.json()) as {
       ok?: boolean;

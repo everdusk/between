@@ -1,5 +1,6 @@
 import { formatDayLabel } from "./dates";
 import { formatFeelings } from "./feelings";
+import { fill } from "./i18n";
 import type { Feeling, JournalEntry } from "./types";
 
 export type FeelingCount = { feeling: Feeling; count: number };
@@ -49,8 +50,41 @@ function noteExcerpt(body: string): string {
   return `${clean.slice(0, 237).trimEnd()}…`;
 }
 
+export type BriefCopy = {
+  empty: string;
+  most: string;
+  mostPast: string;
+  past: string;
+  themes: string;
+  carried: string;
+  entries: string;
+  today: string;
+  say: string;
+  talkEmpty: string;
+  feeling?: (feeling: Feeling) => string;
+  day?: (dateKey: string) => string;
+};
+
+const RU_BRIEF: BriefCopy = {
+  empty:
+    "За эту неделю ещё нет записей. Бриф соберётся из заметок, отметок и поля «говорить на сеансе».",
+  most: "Чаще всего: {main}.",
+  mostPast: "Чаще всего: {main}. {compared}.",
+  past: "{feeling} на прошлой неделе было {count}",
+  themes: "Темы: {list}.",
+  carried: "С прошлой недели повторяется: {list}.",
+  entries: "Записи:",
+  today: "сегодня",
+  say: "Сказать на сеансе: {talk}",
+  talkEmpty: "Поле «говорить на сеансе» пока пустое.",
+};
+
 /** Every note with text. Older lines drop first if the week is long; today stays. */
-function noteFacts(entries: JournalEntry[], todayKey?: string): string | null {
+function noteFacts(
+  entries: JournalEntry[],
+  todayKey: string | undefined,
+  copy: BriefCopy,
+): string | null {
   const notes = entries
     .filter((entry) => entry.body.trim())
     .sort(
@@ -60,9 +94,12 @@ function noteFacts(entries: JournalEntry[], todayKey?: string): string | null {
   if (notes.length === 0) return null;
 
   const lines = notes.map((entry) => {
-    const when = entry.date === todayKey ? "сегодня" : formatDayLabel(entry.date);
+    const when =
+      entry.date === todayKey ? copy.today : (copy.day?.(entry.date) ?? formatDayLabel(entry.date));
     const feelings =
-      entry.feelings.length > 0 ? ` (${entry.feelings.join(", ")})` : "";
+      entry.feelings.length > 0
+        ? ` (${entry.feelings.map((feeling) => copy.feeling?.(feeling) ?? feeling).join(", ")})`
+        : "";
     return {
       date: entry.date,
       line: `${when}${feelings}: ${noteExcerpt(entry.body)}`,
@@ -76,27 +113,28 @@ function noteFacts(entries: JournalEntry[], todayKey?: string): string | null {
     lines.splice(index, 1);
   }
 
-  return `Записи:\n${lines.map((item) => item.line).join("\n")}`;
+  return `${copy.entries}\n${lines.map((item) => item.line).join("\n")}`;
 }
 
 function feelingLine(
   current: FeelingCount[],
   previous: FeelingCount[],
+  copy: BriefCopy,
 ): string | null {
   if (current.length === 0) return null;
   const top = current.slice(0, 3);
   const prevMap = new Map(previous.map((item) => [item.feeling, item.count]));
+  const label = (feeling: Feeling) => copy.feeling?.(feeling) ?? feeling;
   const main = top
-    .map((item) => `${item.feeling} — ${item.count}`)
+    .map((item) => `${label(item.feeling)} — ${item.count}`)
     .join(", ");
   const compared = top
     .filter((item) => prevMap.has(item.feeling))
-    .map(
-      (item) =>
-        `${item.feeling} на прошлой неделе было ${prevMap.get(item.feeling)}`,
+    .map((item) =>
+      fill(copy.past, { feeling: label(item.feeling), count: prevMap.get(item.feeling) }),
     );
-  if (compared.length === 0) return `Чаще всего: ${main}.`;
-  return `Чаще всего: ${main}. ${compared.join("; ")}.`;
+  if (compared.length === 0) return fill(copy.most, { main });
+  return fill(copy.mostPast, { main, compared: compared.join("; ") });
 }
 
 export function buildRuleBrief(input: {
@@ -104,7 +142,9 @@ export function buildRuleBrief(input: {
   prevEntries: JournalEntry[];
   talkNotes: string;
   todayKey?: string;
+  copy?: BriefCopy;
 }): string {
+  const copy = input.copy ?? RU_BRIEF;
   const notes = input.weekEntries.filter((entry) => entry.body.trim());
   const feelings = feelingCounts(input.weekEntries);
   const prevFeelings = feelingCounts(input.prevEntries);
@@ -113,31 +153,33 @@ export function buildRuleBrief(input: {
   const talk = input.talkNotes.trim();
 
   if (notes.length === 0 && feelings.length === 0 && !talk) {
-    return "За эту неделю ещё нет записей. Бриф соберётся из заметок, отметок и поля «говорить на сеансе».";
+    return copy.empty;
   }
 
   const lines: string[] = [];
-  const feelingsText = feelingLine(feelings, prevFeelings);
+  const feelingsText = feelingLine(feelings, prevFeelings, copy);
   if (feelingsText) lines.push(feelingsText);
 
   if (tags.length > 0) {
     lines.push(
-      `Темы: ${tags
-        .slice(0, 5)
-        .map((item) => `${item.tag} ×${item.count}`)
-        .join(", ")}.`,
+      fill(copy.themes, {
+        list: tags
+          .slice(0, 5)
+          .map((item) => `${item.tag} ×${item.count}`)
+          .join(", "),
+      }),
     );
   }
 
   if (carried.length > 0) {
-    lines.push(`С прошлой недели повторяется: ${carried.slice(0, 4).join(", ")}.`);
+    lines.push(fill(copy.carried, { list: carried.slice(0, 4).join(", ") }));
   }
 
-  const facts = noteFacts(notes, input.todayKey);
+  const facts = noteFacts(notes, input.todayKey, copy);
   if (facts) lines.push(facts);
 
-  if (talk) lines.push(`Сказать на сеансе: ${talk}`);
-  else lines.push("Поле «говорить на сеансе» пока пустое.");
+  if (talk) lines.push(fill(copy.say, { talk }));
+  else lines.push(copy.talkEmpty);
 
   return lines.join("\n\n");
 }

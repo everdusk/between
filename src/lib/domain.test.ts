@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { buildRuleBrief } from "./brief";
+import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale } from "./i18n";
+import { catalogsShareKeys, countPhrase, feelingLabel, translate } from "./messages";
+import { pollText } from "./digest";
+import { feelingKeyboard, parseFeelingCallback } from "./telegram-bot";
 import { buildWeekSpectrum, spectrumHeadline } from "./spectrum";
 import { digestAction } from "./digest";
 import { mergeStores } from "./journal-api";
@@ -379,6 +383,83 @@ describe("week access", () => {
     assert.equal(starPriceFromEnv("0"), 150);
     assert.equal(starPriceFromEnv("10001"), 150);
     assert.equal(starPriceFromEnv("12.5"), 150);
+  });
+});
+
+describe("languages", () => {
+  it("maps Telegram language codes onto audience languages", () => {
+    assert.equal(localeFromTelegram("en-US"), "en");
+    assert.equal(localeFromTelegram("pt-BR"), "pt");
+    assert.equal(localeFromTelegram("in"), "id");
+    assert.equal(localeFromTelegram("fa"), "fa");
+    assert.equal(localeFromTelegram("de"), null);
+    assert.equal(localeFromTelegram(undefined), null);
+  });
+
+  it("keeps every catalog on the same keys and pluralizes days", () => {
+    assert.equal(catalogsShareKeys(), true);
+    assert.equal(countPhrase("ru", 1, "day"), "1 день");
+    assert.equal(countPhrase("ru", 2, "day"), "2 дня");
+    assert.equal(countPhrase("ru", 5, "day"), "5 дней");
+    assert.equal(countPhrase("ru", 11, "day"), "11 дней");
+    assert.equal(countPhrase("ru", 21, "day"), "21 день");
+    assert.equal(countPhrase("en", 1, "note"), "1 note");
+    assert.equal(countPhrase("en", 2, "note"), "2 notes");
+    assert.equal(translate("ru", "helloDev", { name: "Гость" }), "Привет, Гость · режим разработки");
+    assert.equal(translate("en", "helloDev", { name: "Guest" }), "Hello, Guest · development mode");
+    assert.equal(feelingLabel("en", "тревожно"), "anxious");
+    assert.equal(feelingLabel("ru", "тревожно"), "тревожно");
+  });
+
+  it("keeps bot replies on the chosen language and the greeting on the device", () => {
+    assert.equal(resolveBotLocale("en", "ru", "hi"), "en");
+    assert.equal(resolveBotLocale(null, "hi", "en"), "hi");
+    assert.equal(resolveBotLocale(null, null, "pt-BR"), "pt");
+    assert.equal(resolveBotLocale(null, null, "de"), "ru");
+    assert.equal(resolveGreetingLocale("en-US", "ru", "hi"), "en");
+    assert.equal(resolveGreetingLocale(null, "id", "ru"), "id");
+    assert.equal(resolveGreetingLocale(undefined, null, "de"), "ru");
+    assert.equal(
+      translate("ru", "botHelp").split("\n")[0],
+      "Between — дневник к сеансу.",
+    );
+    assert.match(pollText("morning"), /Утро/);
+    assert.match(pollText("morning", "en"), /Morning/);
+    const board = feelingKeyboard("morning", "en");
+    assert.equal(board.inline_keyboard[0][0].text, "anxious");
+    assert.equal(board.inline_keyboard[0][0].callback_data, "c:m:0");
+    assert.equal(parseFeelingCallback("c:m:0")?.feeling, "тревожно");
+  });
+
+  it("translates a rule brief only when copy is passed", () => {
+    const input = {
+      weekEntries: [note({ id: "a", body: "разговор с мамой", feelings: ["тревожно"], tags: ["мама"] })],
+      prevEntries: [] as ReturnType<typeof note>[],
+      talkNotes: "",
+      todayKey: "2026-10-09",
+    };
+    const russian = buildRuleBrief(input);
+    assert.match(russian, /тревожно — 1/);
+    assert.match(russian, /Записи:\n/);
+    const english = buildRuleBrief({
+      ...input,
+      copy: {
+        empty: "empty",
+        most: "Most often: {main}.",
+        mostPast: "Most often: {main}. {compared}.",
+        past: "{feeling} last week was {count}",
+        themes: "Themes: {list}.",
+        carried: "Carried: {list}.",
+        entries: "Notes:",
+        today: "today",
+        say: "Say: {talk}",
+        talkEmpty: "Nothing to say yet.",
+        feeling: (feeling) => feelingLabel("en", feeling),
+      },
+    });
+    assert.match(english, /Most often: anxious — 1/);
+    assert.match(english, /Notes:\ntoday/);
+    assert.equal(buildRuleBrief(input), russian);
   });
 });
 

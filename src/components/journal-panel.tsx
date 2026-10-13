@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { FeelingPicker } from "@/components/feeling-picker";
+import { useI18n } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatLongDate, formatTime, toDateKey } from "@/lib/dates";
-import { SLOT_LABELS } from "@/lib/feelings";
 import { sanitizeTags, suggestTags } from "@/lib/tags";
 import type { Feeling, JournalEntry } from "@/lib/types";
 
@@ -31,6 +31,7 @@ export function JournalPanel({
   onDelete,
   disabled,
 }: JournalPanelProps) {
+  const { t, locale, feeling: feelingLabel, slot } = useI18n();
   const today = toDateKey();
   const [date, setDate] = useState(today);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -114,16 +115,15 @@ export function JournalPanel({
     <div className="space-y-8">
       <div className="space-y-1">
         <h2 className="font-display text-2xl tracking-tight text-foreground sm:text-3xl">
-          Дневник дня
+          {t("journalTitle")}
         </h2>
         <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
-          За день можно оставить несколько заметок и отдельно отметить, как вы
-          себя чувствуете. Темы подставятся из текста.
+          {t("journalLead")}
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="journal-date">Дата</Label>
+        <Label htmlFor="journal-date">{t("date")}</Label>
         <Input
           id="journal-date"
           type="date"
@@ -137,14 +137,14 @@ export function JournalPanel({
           required
           className="w-auto"
         />
-        <p className="text-xs text-muted-foreground">{formatLongDate(date)}</p>
+        <p className="text-xs text-muted-foreground">{formatLongDate(date, locale)}</p>
       </div>
 
       <div className="space-y-3">
-        <h3 className="font-display text-lg text-foreground">За этот день</h3>
+        <h3 className="font-display text-lg text-foreground">{t("thisDay")}</h3>
         {dayEntries.length === 0 ? (
           <p className="rounded-lg border border-dashed border-border/80 bg-background/40 px-4 py-3 text-sm text-muted-foreground">
-            Пока пусто. Ниже можно записать мысль или просто выбрать состояние.
+            {t("dayEmpty")}
           </p>
         ) : (
           <ul className="space-y-3">
@@ -156,16 +156,16 @@ export function JournalPanel({
                   className="space-y-2 rounded-xl border border-border/60 bg-background/50 px-4 py-3"
                 >
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span>{formatTime(entry.createdAt)}</span>
-                    {entry.slot && <span>{SLOT_LABELS[entry.slot]}</span>}
-                    {entry.source === "bot" && <span>из бота</span>}
-                    {checkin && entry.source === "checkin" && <span>отметка</span>}
+                    <span>{formatTime(entry.createdAt, locale)}</span>
+                    {entry.slot && <span>{slot(entry.slot)}</span>}
+                    {entry.source === "bot" && <span>{t("fromBot")}</span>}
+                    {checkin && entry.source === "checkin" && <span>{t("checkinMark")}</span>}
                   </div>
                   {entry.feelings.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {entry.feelings.map((feeling) => (
                         <Badge key={feeling} variant="secondary" className="font-normal">
-                          {feeling}
+                          {feelingLabel(feeling)}
                         </Badge>
                       ))}
                     </div>
@@ -192,7 +192,7 @@ export function JournalPanel({
                       disabled={disabled}
                       onClick={() => startEdit(entry)}
                     >
-                      Править
+                      {t("edit")}
                     </Button>
                     <Button
                       type="button"
@@ -204,7 +204,7 @@ export function JournalPanel({
                         onDelete(entry.id);
                       }}
                     >
-                      Удалить
+                      {t("delete")}
                     </Button>
                   </div>
                 </li>
@@ -217,35 +217,31 @@ export function JournalPanel({
       <form onSubmit={handleSubmit} className="space-y-5 border-t border-border/70 pt-6">
         <div className="space-y-1">
           <h3 className="font-display text-lg text-foreground">
-            {editingId ? "Править запись" : "Новая запись"}
+            {editingId ? t("editEntry") : t("newEntry")}
           </h3>
-          <p className="text-sm text-muted-foreground">
-            Текст и состояние можно сохранить по отдельности.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("entryHint")}</p>
         </div>
 
         <div className="space-y-2">
-          <Label>Как вы себя чувствуете</Label>
+          <Label>{t("howFeel")}</Label>
           <FeelingPicker value={feelings} onChange={setFeelings} disabled={disabled} />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="journal-body">Заметка</Label>
+          <Label htmlFor="journal-body">{t("note")}</Label>
           <Textarea
             id="journal-body"
             value={body}
             disabled={disabled}
             onChange={(event) => setBody(event.target.value)}
-            placeholder="Что сейчас занимает внимание?"
+            placeholder={t("notePlaceholder")}
             className="min-h-32 resize-y"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="journal-tag">Темы</Label>
-          <p className="text-xs text-muted-foreground">
-            Совпадения из текста появляются сами. Лишние можно снять.
-          </p>
+          <Label htmlFor="journal-tag">{t("themes")}</Label>
+          <p className="text-xs text-muted-foreground">{t("themesHint")}</p>
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
@@ -257,7 +253,7 @@ export function JournalPanel({
                   className="rounded-full border border-border/80 bg-background/70 px-2.5 py-1 text-xs text-foreground"
                 >
                   {tag}
-                  <span className="ml-1.5 text-muted-foreground">убрать</span>
+                  <span className="ml-1.5 text-muted-foreground">{t("remove")}</span>
                 </button>
               ))}
             </div>
@@ -276,22 +272,22 @@ export function JournalPanel({
             onBlur={() => {
               if (tagDraft.trim()) addManual(tagDraft);
             }}
-            placeholder="Своя тема — и Enter"
+            placeholder={t("tagPlaceholder")}
           />
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" disabled={disabled || !canSave}>
-            {editingId ? "Обновить запись" : "Сохранить запись"}
+            {editingId ? t("updateEntry") : t("saveEntry")}
           </Button>
           {editingId && (
             <Button type="button" variant="ghost" disabled={disabled} onClick={resetForm}>
-              Отмена
+              {t("cancel")}
             </Button>
           )}
           {savedFlash && (
             <span className="animate-in fade-in text-sm text-primary duration-500">
-              Сохранено
+              {t("saved")}
             </span>
           )}
         </div>
