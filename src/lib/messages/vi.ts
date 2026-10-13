@@ -186,4 +186,15 @@ export const vi: Catalog = {
   botPollDay: "Ban ngày. Bạn thế nào lúc này? Chạm một từ — mình lưu dấu.",
   botPollEvening: "Buổi tối. Bạn thế nào lúc này? Chạm một từ — mình lưu dấu.",
   botNudge: "Hôm nay có gì muốn kể không? Gửi tin — mình lưu thành ghi chú riêng.",
+  webLead:
+    "Để suy nghĩ và cảm xúc ở Telegram. Nhắn cho bot khi có điều gì đè nặng — ghi chú tự lưu.",
+  webWrite: "Nhắn cho bot",
+  webReadTitle: "Ghi chép",
+  webReadLead: "Ở đây bạn đọc lại những gì đã gửi cho bot và những gì có trong nhật ký.",
+  webLoginHint: "Đăng nhập bằng Telegram để xem ghi chép của bạn.",
+  webEmpty: "Chưa có gì. Suy nghĩ đầu tiên — gửi cho bot.",
+  webLogout: "Đăng xuất",
+  webLoginFail: "Không đăng nhập được bằng Telegram. Thử lại.",
+  webUnavailable: "Hiện chưa mở được ghi chép. Bạn vẫn có thể nhắn cho bot.",
+  botSite: "Ghi chép trên web",
 };

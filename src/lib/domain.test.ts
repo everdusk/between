@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash, createHmac } from "node:crypto";
 import { describe, it } from "node:test";
 import { buildRuleBrief } from "./brief";
 import {
@@ -9,7 +10,8 @@ import {
 } from "./i18n";
 import { catalogsShareKeys, countPhrase, feelingLabel, translate } from "./messages";
 import { pollText } from "./digest";
-import { feelingKeyboard, parseFeelingCallback } from "./telegram-bot";
+import { feelingKeyboard, miniAppKeyboard, parseFeelingCallback } from "./telegram-bot";
+import { readWebSession, signWebSession, verifyTelegramLogin } from "./web-session";
 import { buildWeekSpectrum, spectrumHeadline } from "./spectrum";
 import { digestAction } from "./digest";
 import { mergeStores } from "./journal-api";
@@ -501,5 +503,54 @@ describe("digest", () => {
     });
     assert.equal(morning.type, "poll");
     if (morning.type === "poll") assert.equal(morning.slot, "morning");
+  });
+});
+
+describe("web journal", () => {
+  it("checks a Telegram login and keeps a session", () => {
+    const token = "test-bot-token";
+    const fields = {
+      id: "42",
+      first_name: "Анастасия",
+      last_name: "Лиаторовская",
+      auth_date: "1700000000",
+      username: "between",
+    };
+    const dataCheckString = Object.entries(fields)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n");
+    const secret = createHash("sha256").update(token).digest();
+    const hash = createHmac("sha256", secret).update(dataCheckString).digest("hex");
+    const user = verifyTelegramLogin(
+      { ...fields, id: 42, auth_date: 1700000000, hash },
+      token,
+      1700000000 + 60,
+    );
+    assert.deepEqual(user, { uid: 42, name: "Анастасия Лиаторовская" });
+    assert.equal(verifyTelegramLogin({ ...fields, hash: "ab" }, token, 1700000100), null);
+
+    const signed = signWebSession(user!, token, 1700000000);
+    assert.deepEqual(readWebSession(signed, token, 1700000000 + 10), user);
+    assert.equal(readWebSession(`${signed}x`, token, 1700000000), null);
+    assert.equal(readWebSession(signed, token, 1700000000 + 60 * 60 * 24 * 31), null);
+  });
+
+  it("adds a site link beside the Mini App button", () => {
+    const board = miniAppKeyboard(
+      "https://between-rouge.vercel.app",
+      "ru",
+      "https://between-rouge.vercel.app/?login=abc",
+    );
+    assert.equal(board.inline_keyboard[0][0].text, "Открыть Between");
+    assert.deepEqual(board.inline_keyboard[0][0].web_app, {
+      url: "https://between-rouge.vercel.app",
+    });
+    assert.equal(board.inline_keyboard[1][0].text, "Записи на сайте");
+    assert.equal(
+      board.inline_keyboard[1][0].url,
+      "https://between-rouge.vercel.app/?login=abc",
+    );
+    assert.equal(miniAppKeyboard("https://between-rouge.vercel.app").inline_keyboard.length, 1);
   });
 });

@@ -197,4 +197,15 @@ export const en: Catalog = {
   botPollDay: "Afternoon. How are you now? Tap one word — I will save the mark.",
   botPollEvening: "Evening. How are you now? Tap one word — I will save the mark.",
   botNudge: "Anything to share from today? Send a message — I will save it as a separate note.",
+  webLead:
+    "Leave thoughts and feelings in Telegram. Message the bot when something lands — it is saved on its own.",
+  webWrite: "Message the bot",
+  webReadTitle: "Notes",
+  webReadLead: "Read here what you already sent the bot and what is in the journal.",
+  webLoginHint: "Log in with Telegram to see your notes.",
+  webEmpty: "Nothing here yet. The first thought goes to the bot.",
+  webLogout: "Log out",
+  webLoginFail: "Could not log in with Telegram. Try again.",
+  webUnavailable: "Notes cannot be opened right now. You can still message the bot.",
+  botSite: "Notes on the site",
 };

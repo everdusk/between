@@ -187,4 +187,15 @@ export const pt: Catalog = {
   botPollDay: "Tarde. Como você está agora? Toque numa palavra — eu salvo a marca.",
   botPollEvening: "Noite. Como você está agora? Toque numa palavra — eu salvo a marca.",
   botNudge: "Tem algo de hoje para contar? Envie uma mensagem — eu salvo como uma nota separada.",
+  webLead:
+    "Deixe pensamentos e sentimentos no Telegram. Escreva ao bot quando algo apertar — a nota se salva sozinha.",
+  webWrite: "Escrever ao bot",
+  webReadTitle: "Notas",
+  webReadLead: "Aqui você relê o que já enviou ao bot e o que está no diário.",
+  webLoginHint: "Entre com o Telegram para ver suas notas.",
+  webEmpty: "Ainda vazio. O primeiro pensamento vai para o bot.",
+  webLogout: "Sair",
+  webLoginFail: "Não foi possível entrar com o Telegram. Tente de novo.",
+  webUnavailable: "As notas não abrem agora. Você ainda pode escrever ao bot.",
+  botSite: "Notas no site",
 };

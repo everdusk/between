@@ -5,6 +5,7 @@ import { JournalPanel } from "@/components/journal-panel";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WeekTab } from "@/components/week-tab";
+import { WebJournal } from "@/components/web-journal";
 import { WeeklyPanel } from "@/components/weekly-panel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,9 +34,22 @@ export function TherapyApp() {
       telegramLanguage={telegram.user?.language_code}
       initData={telegram.inTelegram ? telegram.initData : ""}
     >
-      <TherapyShell telegram={telegram} />
+      <AppBody telegram={telegram} />
     </LocaleProvider>
   );
+}
+
+function AppBody({ telegram }: { telegram: TelegramSession }) {
+  const { t } = useI18n();
+  if (!telegram.ready) {
+    return (
+      <div className="flex min-h-full flex-1 items-center justify-center px-6 py-16">
+        <p className="text-sm text-muted-foreground">{t("loading")}</p>
+      </div>
+    );
+  }
+  if (!telegram.inTelegram) return <WebJournal />;
+  return <TherapyShell telegram={telegram} />;
 }
 
 function shownName(displayName: string, guest: string): string {

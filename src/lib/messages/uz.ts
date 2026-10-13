@@ -186,4 +186,15 @@ export const uz: Catalog = {
   botPollDay: "Kun. Hozir qandaysiz? Bitta so‘zni bosing — belgini saqlayman.",
   botPollEvening: "Kechqurun. Hozir qandaysiz? Bitta so‘zni bosing — belgini saqlayman.",
   botNudge: "Bugun ulashadigan narsa bormi? Xabar yozing — alohida qayd qilib saqlayman.",
+  webLead:
+    "Fikr va hislarni Telegramda qoldiring. Og'irlik tushganda botga yozing — yozuv o'zi saqlanadi.",
+  webWrite: "Botga yozish",
+  webReadTitle: "Yozuvlar",
+  webReadLead: "Bu yerda botga yuborganingizni va kundalikdagi yozuvlarni qayta o'qiysiz.",
+  webLoginHint: "Yozuvlaringizni ko'rish uchun Telegram orqali kiring.",
+  webEmpty: "Hali bo'sh. Birinchi fikr — botga.",
+  webLogout: "Chiqish",
+  webLoginFail: "Telegram orqali kirib bo'lmadi. Qayta urinib ko'ring.",
+  webUnavailable: "Hozir yozuvlar ochilmayapti. Botga odatdagidek yozish mumkin.",
+  botSite: "Saytdagi yozuvlar",
 };

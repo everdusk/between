@@ -187,4 +187,15 @@ export const id: Catalog = {
   botPollDay: "Siang. Bagaimana keadaan Anda sekarang? Ketuk satu kata — saya simpan tandanya.",
   botPollEvening: "Sore. Bagaimana keadaan Anda sekarang? Ketuk satu kata — saya simpan tandanya.",
   botNudge: "Ada yang ingin dibagi dari hari ini? Kirim pesan — saya simpan sebagai catatan terpisah.",
+  webLead:
+    "Tinggalkan pikiran dan perasaan di Telegram. Kirim pesan ke bot saat ada yang terasa berat — catatan tersimpan sendiri.",
+  webWrite: "Tulis ke bot",
+  webReadTitle: "Catatan",
+  webReadLead: "Di sini Anda membaca kembali apa yang sudah dikirim ke bot dan yang ada di jurnal.",
+  webLoginHint: "Masuk dengan Telegram untuk melihat catatan Anda.",
+  webEmpty: "Masih kosong. Pikiran pertama — ke bot.",
+  webLogout: "Keluar",
+  webLoginFail: "Tidak berhasil masuk dengan Telegram. Coba lagi.",
+  webUnavailable: "Catatan belum bisa dibuka. Anda tetap bisa menulis ke bot.",
+  botSite: "Catatan di situs",
 };

@@ -187,4 +187,15 @@ export const tr: Catalog = {
   botPollDay: "Gün. Şu an nasılsınız? Bir sözcüğe dokunun — işareti kaydederim.",
   botPollEvening: "Akşam. Şu an nasılsınız? Bir sözcüğe dokunun — işareti kaydederim.",
   botNudge: "Bugünden paylaşacak bir şey var mı? Bir mesaj yazın — ayrı bir not olarak kaydederim.",
+  webLead:
+    "Düşünceleri ve duyguları Telegram'da bırakın. Bir şey bastırdığında bota yazın — not kendiliğinden kaydolur.",
+  webWrite: "Bota yaz",
+  webReadTitle: "Notlar",
+  webReadLead: "Burada bota gönderdiklerinizi ve günlüğe düşenleri yeniden okursunuz.",
+  webLoginHint: "Notlarınızı görmek için Telegram ile girin.",
+  webEmpty: "Henüz boş. İlk düşünce bota.",
+  webLogout: "Çıkış",
+  webLoginFail: "Telegram ile giriş olmadı. Yeniden deneyin.",
+  webUnavailable: "Notlar şu an açılmıyor. Bota her zamanki gibi yazabilirsiniz.",
+  botSite: "Sitedeki notlar",
 };
