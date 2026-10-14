@@ -98,7 +98,7 @@ export const tr: Catalog = {
   copyFail: "Kopyalanamadı",
   copySummary: "Özeti kopyala",
   briefTitle: "Seans için brief",
-  briefStats: "7 günden {days} tanesinde not var · haftanın notları: {count}",
+  briefStats: "{total} günden {days} tanesinde not var · haftanın notları: {count}",
   briefModel: "Haftanın olgularından yazıldı.",
   formulate: "Metni yaz",
   formulating: "Yazılıyor…",

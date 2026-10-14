@@ -98,7 +98,7 @@ export const es: Catalog = {
   copyFail: "No se pudo copiar",
   copySummary: "Copiar resumen",
   briefTitle: "Brief para la sesión",
-  briefStats: "{days} de 7 días con notas · notas de la semana: {count}",
+  briefStats: "{days} de {total} días con notas · notas de la semana: {count}",
   briefModel: "Escrito a partir de los hechos de la semana.",
   formulate: "Formular el texto",
   formulating: "Escribiendo…",

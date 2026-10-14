@@ -130,7 +130,7 @@ export function WeekSpectrum({
           </div>
         )}
 
-        <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 sm:gap-1.5">
           {spectrum.days.map((day) => {
             const selectedDay = day.key === selectedKey;
             const isToday = day.key === todayKey;
@@ -151,7 +151,7 @@ export function WeekSpectrum({
                 aria-label={label}
                 onClick={() => onSelect(day.key)}
                 className={cn(
-                  "flex flex-col items-center gap-1.5 rounded-2xl p-1 transition-colors",
+                  "flex min-w-11 flex-1 basis-0 flex-col items-center gap-1.5 rounded-2xl p-1 transition-colors",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                   selectedDay && "bg-background/80",
                   isFuture && day.slices.length === 0 && "opacity-45",

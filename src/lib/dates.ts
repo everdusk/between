@@ -46,6 +46,24 @@ export function weekDayKeys(date: Date = new Date()): string[] {
   });
 }
 
+export function addDays(key: string, days: number): string {
+  const date = parseDateKey(key);
+  date.setDate(date.getDate() + days);
+  return toDateKey(date);
+}
+
+/** Inclusive span. Empty when `startKey` is after `endKey`. */
+export function dateKeysBetween(startKey: string, endKey: string): string[] {
+  if (startKey > endKey) return [];
+  const keys: string[] = [];
+  let cursor = startKey;
+  while (cursor <= endKey && keys.length < 400) {
+    keys.push(cursor);
+    cursor = addDays(cursor, 1);
+  }
+  return keys;
+}
+
 const WEEKDAY_SHORT = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"];
 const MONTHS_GENITIVE = [
   "января",
@@ -110,17 +128,27 @@ export function formatDayLabel(key: string, locale?: string): string {
 }
 
 export function formatWeekRange(date: Date = new Date(), locale?: string): string {
-  const start = startOfWeek(date);
-  const end = endOfWeek(date);
+  return formatDateSpan(toDateKey(startOfWeek(date)), toDateKey(endOfWeek(date)), locale);
+}
+
+/** Day span for a therapy week, not a Monday–Sunday calendar week. */
+export function formatDateSpan(startKey: string, endKey: string, locale?: string): string {
+  const start = parseDateKey(startKey);
+  const end = parseDateKey(endKey);
   const tag = intlTag(locale);
-  const sameMonth = start.getMonth() === end.getMonth();
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
   if (!tag) {
+    if (startKey === endKey) return `${start.getDate()} ${MONTHS_GENITIVE[start.getMonth()]}`;
     if (sameMonth) return `${start.getDate()}–${end.getDate()} ${MONTHS_GENITIVE[start.getMonth()]}`;
     return `${start.getDate()} ${MONTHS_GENITIVE[start.getMonth()]} – ${end.getDate()} ${MONTHS_GENITIVE[end.getMonth()]}`;
   }
-  const month = new Intl.DateTimeFormat(tag, { month: "long" });
-  if (sameMonth) return `${start.getDate()}–${end.getDate()} ${month.format(start)}`;
-  return `${start.getDate()} ${month.format(start)} – ${end.getDate()} ${month.format(end)}`;
+  const month = new Intl.DateTimeFormat(tag, { day: "numeric", month: "long" });
+  if (startKey === endKey) return month.format(start);
+  if (sameMonth) {
+    const monthName = new Intl.DateTimeFormat(tag, { month: "long" }).format(start);
+    return `${start.getDate()}–${end.getDate()} ${monthName}`;
+  }
+  return `${month.format(start)} – ${month.format(end)}`;
 }
 
 export function formatLongDate(key: string, locale?: string): string {

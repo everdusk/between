@@ -98,7 +98,7 @@ export const ar: Catalog = {
   copyFail: "تعذّر النسخ",
   copySummary: "نسخ الملخص",
   briefTitle: "موجز للجلسة",
-  briefStats: "{days} من 7 أيام فيها ملاحظات · ملاحظات الأسبوع: {count}",
+  briefStats: "{days} من {total} أيام فيها ملاحظات · ملاحظات الأسبوع: {count}",
   briefModel: "كُتب من وقائع الأسبوع.",
   formulate: "صياغة النص",
   formulating: "تُكتب الصياغة…",
