@@ -98,7 +98,7 @@ export const uk: Catalog = {
   copyFail: "Не вдалося скопіювати",
   copySummary: "Скопіювати зведення",
   briefTitle: "Бриф до сеансу",
-  briefStats: "{days} із 7 днів із нотатками · записів за тиждень: {count}",
+  briefStats: "{days} із {total} днів із нотатками · записів за тиждень: {count}",
   briefModel: "Сформульовано за фактами тижня.",
   formulate: "Сформулювати текст",
   formulating: "Збираю текст…",

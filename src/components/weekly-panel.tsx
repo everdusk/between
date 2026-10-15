@@ -9,13 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { SessionPrepSummary } from "@/components/session-prep-summary";
 import { WeekSpectrum } from "@/components/week-spectrum";
 import {
+  formatDateSpan,
   formatDayLabel,
+  formatLongDate,
   formatTime,
-  formatWeekRange,
   toDateKey,
-  weekDayKeys,
   weekKey,
 } from "@/lib/dates";
+import { therapyWeekKey, therapyWindow } from "@/lib/session-summary";
 import {
   briefStamp,
   buildRuleBrief,
@@ -74,12 +75,13 @@ export function WeeklyPanel({
   const { t, locale, feeling, slot } = useI18n();
   const now = new Date();
   const todayKey = toDateKey(now);
-  const key = weekKey(now);
-  const days = weekDayKeys(now);
-  const prevDays = weekDayKeys(
-    new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7),
-  );
-  const prep = weekPreps.find((item) => item.weekKey === key);
+  const period = therapyWindow(sessions, entries, todayKey);
+  const days = period.days;
+  const prevDays = period.previousDays;
+  const key = therapyWeekKey(period.last);
+  const prep =
+    weekPreps.find((item) => item.weekKey === key) ??
+    weekPreps.find((item) => item.weekKey === weekKey(now));
   const [talkDraft, setTalkDraft] = useState<string | null>(null);
   const talkNotes = talkDraft ?? prep?.talkNotes ?? "";
   const [savedFlash, setSavedFlash] = useState(false);
@@ -169,7 +171,11 @@ export function WeeklyPanel({
           {t("weekTitle")}
         </h2>
         <p className="text-sm text-muted-foreground sm:text-base">
-          {t("weekLead", { range: formatWeekRange(now, locale) })}
+          {period.last && days.length === 0
+            ? t("afterSessionLead", { date: formatLongDate(period.last.date, locale) })
+            : t("weekLead", {
+                range: formatDateSpan(days[0] ?? todayKey, days[days.length - 1] ?? todayKey, locale),
+              })}
         </p>
       </div>
 
@@ -213,7 +219,11 @@ export function WeeklyPanel({
         <div className="space-y-1">
           <h3 className="font-display text-lg text-foreground">{t("briefTitle")}</h3>
           <p className="text-sm text-muted-foreground">
-            {t("briefStats", { days: noteDays, count: weekEntries.length })}
+            {t("briefStats", {
+              days: noteDays,
+              total: days.length,
+              count: weekEntries.length,
+            })}
           </p>
         </div>
         <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">

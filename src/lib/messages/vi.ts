@@ -98,7 +98,7 @@ export const vi: Catalog = {
   copyFail: "Không chép được",
   copySummary: "Chép bản tóm tắt",
   briefTitle: "Brief cho buổi trị liệu",
-  briefStats: "{days} trong 7 ngày có ghi chép · ghi chép trong tuần: {count}",
+  briefStats: "{days} trong {total} ngày có ghi chép · ghi chép trong tuần: {count}",
   briefModel: "Viết từ các sự kiện của tuần.",
   formulate: "Viết thành đoạn",
   formulating: "Đang viết…",

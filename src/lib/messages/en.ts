@@ -103,7 +103,7 @@ export const en: Catalog = {
   copyFail: "Could not copy",
   copySummary: "Copy summary",
   briefTitle: "Brief for the session",
-  briefStats: "{days} of 7 days with notes · notes this week: {count}",
+  briefStats: "{days} of {total} days with notes · notes this week: {count}",
   briefModel: "Written from the facts of the week.",
   formulate: "Write it out",
   formulating: "Writing…",

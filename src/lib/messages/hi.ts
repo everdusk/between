@@ -98,7 +98,7 @@ export const hi: Catalog = {
   copyFail: "कॉपी नहीं हो सका",
   copySummary: "सार कॉपी करें",
   briefTitle: "सेशन के लिए ब्रीफ",
-  briefStats: "7 में से {days} दिनों में नोट्स · इस हफ्ते की नोट्स: {count}",
+  briefStats: "{total} में से {days} दिनों में नोट्स · इस हफ्ते की नोट्स: {count}",
   briefModel: "हफ्ते के तथ्यों से लिखा गया।",
   formulate: "पाठ बनाएँ",
   formulating: "लिख रहे हैं…",

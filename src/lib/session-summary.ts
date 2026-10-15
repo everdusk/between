@@ -1,19 +1,57 @@
-import { formatDayLabel, formatLongDate } from "@/lib/dates";
+import { addDays, dateKeysBetween, formatDayLabel, formatLongDate, toDateKey } from "@/lib/dates";
 import { feelingValence, formatFeelings } from "@/lib/feelings";
 import type { Feeling, JournalEntry, SessionNote } from "@/lib/types";
 
 const EXCERPT_MAX = 180;
 
-/** Latest session by calendar date (then updatedAt). */
+/** Latest session on or before `todayKey`, by date then updatedAt. */
 export function getLastSession(
   sessions: SessionNote[],
+  todayKey?: string,
 ): SessionNote | null {
-  if (sessions.length === 0) return null;
-  return [...sessions].sort((a, b) => {
+  const pool = todayKey ? sessions.filter((session) => session.date <= todayKey) : sessions;
+  if (pool.length === 0) return null;
+  return [...pool].sort((a, b) => {
     const byDate = b.date.localeCompare(a.date);
     if (byDate !== 0) return byDate;
     return b.updatedAt.localeCompare(a.updatedAt);
   })[0];
+}
+
+export function therapyWeekKey(session: SessionNote | null): string {
+  return session ? `since:${session.date}` : "open";
+}
+
+/**
+ * The therapy week runs from the day after the last session through today.
+ * Without a session it runs from the first note through today, not from Monday.
+ */
+export function therapyWindow(
+  sessions: SessionNote[],
+  entries: JournalEntry[],
+  todayKey: string,
+): { last: SessionNote | null; days: string[]; previousDays: string[] } {
+  const held = [...sessions]
+    .filter((session) => session.date <= todayKey)
+    .sort((a, b) => {
+      const byDate = b.date.localeCompare(a.date);
+      if (byDate !== 0) return byDate;
+      return b.updatedAt.localeCompare(a.updatedAt);
+    });
+  const last = held[0] ?? null;
+  const previous = held[1] ?? null;
+  const days = last
+    ? dateKeysBetween(addDays(last.date, 1), todayKey)
+    : dateKeysBetween(
+        entries
+          .map((entry) => entry.date)
+          .filter((date) => date <= todayKey)
+          .sort()[0] ?? todayKey,
+        todayKey,
+      );
+  const previousDays =
+    last && previous ? dateKeysBetween(addDays(previous.date, 1), last.date) : [];
+  return { last, days, previousDays };
 }
 
 function afterSession(entries: JournalEntry[], sessionDate: string): JournalEntry[] {
@@ -197,7 +235,7 @@ export function buildPeriodSummary(
   entries: JournalEntry[],
   sessions: SessionNote[],
 ): PeriodSummary | null {
-  const lastSession = getLastSession(sessions);
+  const lastSession = getLastSession(sessions, toDateKey());
   if (!lastSession) return null;
 
   const periodEvents = afterSession(entries, lastSession.date);

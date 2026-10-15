@@ -98,7 +98,7 @@ export const fa: Catalog = {
   copyFail: "کپی نشد",
   copySummary: "کپی جمع‌بندی",
   briefTitle: "بریف جلسه",
-  briefStats: "{days} از ۷ روز با یادداشت · یادداشت‌های هفته: {count}",
+  briefStats: "{days} از {total} روز با یادداشت · یادداشت‌های هفته: {count}",
   briefModel: "از واقعیت‌های هفته نوشته شد.",
   formulate: "متن را بنویس",
   formulating: "نوشته می‌شود…",

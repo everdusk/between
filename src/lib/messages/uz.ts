@@ -98,7 +98,7 @@ export const uz: Catalog = {
   copyFail: "Nusxa olinmadi",
   copySummary: "Xulosani nusxalash",
   briefTitle: "Seans uchun brif",
-  briefStats: "7 kundan {days} tasida yozuv bor · hafta yozuvlari: {count}",
+  briefStats: "{total} kundan {days} tasida yozuv bor · hafta yozuvlari: {count}",
   briefModel: "Hafta faktlaridan yozildi.",
   formulate: "Matnni yozish",
   formulating: "Yozilmoqda…",

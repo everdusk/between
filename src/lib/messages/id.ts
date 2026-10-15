@@ -98,7 +98,7 @@ export const id: Catalog = {
   copyFail: "Tidak bisa menyalin",
   copySummary: "Salin ringkasan",
   briefTitle: "Brief untuk sesi",
-  briefStats: "{days} dari 7 hari berisi catatan · catatan minggu ini: {count}",
+  briefStats: "{days} dari {total} hari berisi catatan · catatan minggu ini: {count}",
   briefModel: "Disusun dari fakta minggu ini.",
   formulate: "Tuliskan",
   formulating: "Menyusun…",

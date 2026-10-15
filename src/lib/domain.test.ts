@@ -19,7 +19,8 @@ import { suggestTags } from "./tags";
 import type { ThemeParams } from "@twa-dev/types";
 import { applyTelegramTheme, panelColor } from "./telegram";
 import { resolveGroqModel, textFromGeminiParts } from "../app/api/brief/route";
-import { emptyStore, type JournalEntry } from "./types";
+import { therapyWindow } from "./session-summary";
+import { emptyStore, type JournalEntry, type SessionNote } from "./types";
 import {
   daysPhrase,
   describeWeekAccess,
@@ -501,5 +502,60 @@ describe("digest", () => {
     });
     assert.equal(morning.type, "poll");
     if (morning.type === "poll") assert.equal(morning.slot, "morning");
+  });
+});
+
+function session(date: string, id = date): SessionNote {
+  return {
+    id,
+    date,
+    summary: "",
+    insights: "",
+    homework: "",
+    weekKey: "",
+    updatedAt: `${date}T12:00:00.000Z`,
+  };
+}
+
+describe("therapy week", () => {
+  it("starts the day after the last session, not on Monday", () => {
+    const period = therapyWindow(
+      [session("2026-10-08"), session("2026-10-01", "earlier")],
+      [
+        note({ id: "before", date: "2026-10-07", body: "до сеанса" }),
+        note({ id: "after", date: "2026-10-09", body: "после сеанса" }),
+        note({ id: "mon", date: "2026-10-12", body: "понедельник" }),
+      ],
+      "2026-10-14",
+    );
+    assert.equal(period.last?.date, "2026-10-08");
+    assert.equal(period.days[0], "2026-10-09");
+    assert.equal(period.days.at(-1), "2026-10-14");
+    assert.equal(period.days.includes("2026-10-08"), false);
+    assert.equal(period.days.includes("2026-10-12"), true);
+    assert.equal(period.previousDays[0], "2026-10-02");
+    assert.equal(period.previousDays.at(-1), "2026-10-08");
+  });
+
+  it("ignores a session dated after today", () => {
+    const period = therapyWindow(
+      [session("2026-10-20"), session("2026-10-08")],
+      [],
+      "2026-10-14",
+    );
+    assert.equal(period.last?.date, "2026-10-08");
+    assert.equal(period.days[0], "2026-10-09");
+  });
+
+  it("starts from the first note when no session is saved", () => {
+    const period = therapyWindow(
+      [],
+      [note({ id: "first", date: "2026-10-10", body: "первая" })],
+      "2026-10-14",
+    );
+    assert.equal(period.last, null);
+    assert.equal(period.days[0], "2026-10-10");
+    assert.equal(period.days.at(-1), "2026-10-14");
+    assert.deepEqual(period.previousDays, []);
   });
 });

@@ -102,7 +102,7 @@ export const ru = {
   copyFail: "Не удалось скопировать",
   copySummary: "Скопировать сводку",
   briefTitle: "Бриф к сеансу",
-  briefStats: "{days} из 7 дней с заметками · записей за неделю: {count}",
+  briefStats: "{days} из {total} дней с заметками · записей за неделю: {count}",
   briefModel: "Сформулировано по фактам недели.",
   formulate: "Сформулировать текст",
   formulating: "Собираю текст…",
