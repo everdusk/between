@@ -19,6 +19,7 @@ import { suggestTags } from "./tags";
 import type { ThemeParams } from "@twa-dev/types";
 import { applyTelegramTheme, panelColor } from "./telegram";
 import { briefSystemPrompt, resolveGroqModel, textFromGeminiParts } from "../app/api/brief/route";
+import { formatDayLabel } from "./dates";
 import { therapyWindow } from "./session-summary";
 import { emptyStore, type JournalEntry, type SessionNote } from "./types";
 import {
@@ -99,6 +100,8 @@ describe("tags", () => {
     );
     assert.deepEqual(suggestTags("просто другой день"), []);
     assert.deepEqual(suggestTags("бот"), []);
+    assert.deepEqual(suggestTags("вкусно поела и радуюсь"), []);
+    assert.deepEqual(suggestTags("пропал аппетит, вчера переела"), ["еда"]);
   });
 });
 
@@ -188,9 +191,47 @@ describe("backlog", () => {
     });
     assert.deepEqual(
       items.map((item) => `${item.priority}:${item.text}`),
-      ["high:про дедлайн", "high:Снова: мама", "high:тревожно — 2", "mid:работа — 2"],
+      [
+        "high:про дедлайн",
+        `high:${formatDayLabel("2026-10-10")}: опять не сплю`,
+        `high:${formatDayLabel("2026-10-09")}: Снова мама и дедлайн на работе`,
+      ],
     );
     assert.equal(items.some((item) => item.text.includes("радость")), false);
+    assert.equal(items.some((item) => /— \d+$/.test(item.text)), false);
+  });
+
+  it("leaves a joyful meal off the list and keeps a hard episode", () => {
+    const items = buildRuleBacklog({
+      weekEntries: [
+        note({
+          id: "meal",
+          body: "вкусно поела и радуюсь",
+          feelings: ["радость"],
+          tags: ["еда"],
+        }),
+        note({
+          id: "meal2",
+          date: "2026-10-10",
+          body: "еще раз вкусно поела",
+          feelings: ["радость"],
+          tags: ["еда"],
+        }),
+        note({
+          id: "hard",
+          body: "стыдно, что переела за ужином",
+          feelings: ["стыд"],
+          tags: ["еда"],
+        }),
+      ],
+      prevEntries: [],
+      talkNotes: "",
+    });
+    assert.deepEqual(
+      items.map((item) => item.text),
+      [`${formatDayLabel("2026-10-09")}: стыдно, что переела за ужином`],
+    );
+    assert.equal(items[0].priority, "mid");
   });
 
   it("strips a json fence and drops a bad priority", () => {
@@ -199,6 +240,13 @@ describe("backlog", () => {
     );
     assert.deepEqual(parsed, [{ text: "разговор с мамой", priority: "mid" }]);
     assert.equal(parseModelBacklog('[{"text":"мимо","priority":"urgent"}]'), null);
+    assert.equal(parseModelBacklog('[{"text":"еда — 2","priority":"mid"}]'), null);
+    assert.deepEqual(
+      parseModelBacklog(
+        '[{"text":"вкусно поела","priority":"high"},{"text":"разговор с мамой про дедлайн","priority":"mid"}]',
+      ),
+      [{ text: "разговор с мамой про дедлайн", priority: "mid" }],
+    );
   });
 
   it("keeps a checked item when the text matches", () => {
@@ -264,6 +312,7 @@ describe("backlog", () => {
     const brief = briefSystemPrompt("ru", "brief");
     assert.equal(brief.includes("три коротких"), false);
     assert.match(brief, /датой или числом повторов/);
+    assert.match(briefSystemPrompt("ru", "backlog"), /вкусно поела/);
     assert.match(briefSystemPrompt("en", "backlog"), /JSON/);
   });
 });

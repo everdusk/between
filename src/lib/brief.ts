@@ -205,26 +205,10 @@ export type BacklogDraft = {
   priority: BacklogPriority;
 };
 
-export type BacklogCopy = {
-  again: string;
-  times: string;
-  feeling?: (feeling: Feeling) => string;
-};
-
-const RU_BACKLOG: BacklogCopy = {
-  again: "Снова: {tag}",
-  times: "{label} — {count}",
-};
-
-const HEAVY: ReadonlySet<Feeling> = new Set([
-  "тревожно",
-  "напряжение",
-  "стыд",
-  "злость",
-  "тяжело",
-]);
-
 const LIGHT: ReadonlySet<Feeling> = new Set(["радость", "спокойно"]);
+
+/** A tasty meal is not a session topic. Appetite and overeating still are, via the note text. */
+const MUNDANE_TAGS = new Set(["еда"]);
 
 const PRIORITY_RANK: Record<BacklogPriority, number> = { high: 0, mid: 1, low: 2 };
 
@@ -253,13 +237,33 @@ function sortDrafts(items: BacklogDraft[]): BacklogDraft[] {
   return [...items].sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
 }
 
+function isLightOnly(entry: JournalEntry): boolean {
+  return entry.feelings.length > 0 && entry.feelings.every((feeling) => LIGHT.has(feeling));
+}
+
+/** A note is a session topic when it names a hard feeling or a real theme, not a pleasant meal. */
+function isSessionMaterial(entry: JournalEntry): boolean {
+  if (!entry.body.trim() || isLightOnly(entry)) return false;
+  if (entry.feelings.some((feeling) => !LIGHT.has(feeling))) return true;
+  return entry.tags.some((tag) => !MUNDANE_TAGS.has(tag));
+}
+
+/** Model leftovers like «еда — 2» and a joyful meal are not topics. */
+export function isBacklogNoise(text: string): boolean {
+  const clean = text.trim().toLowerCase().replace(/ё/g, "е").replace(/^снова:\s*/, "");
+  if (/^(еда|радость|спокойно)(?:\s*[—:-]\s*\d+)?$/.test(clean)) return true;
+  if (/^[\p{L}]{2,24}\s*[—-]\s*\d+$/u.test(clean)) return true;
+  const meal = /(вкусно|поела|поел|поели)/.test(clean);
+  const hard = /(тревог|стыд|зл|тяжел|напряж|груст|устал|пусто|вин|обид|страш|плак|бессон|дедлайн|мама|пап|работ)/.test(clean);
+  return meal && !hard;
+}
+
 export function buildRuleBacklog(input: {
   weekEntries: JournalEntry[];
   prevEntries: JournalEntry[];
   talkNotes: string;
-  copy?: BacklogCopy;
+  day?: (dateKey: string) => string;
 }): BacklogItem[] {
-  const copy = input.copy ?? RU_BACKLOG;
   const drafts: BacklogDraft[] = [];
   const seen = new Set<string>();
 
@@ -275,45 +279,34 @@ export function buildRuleBacklog(input: {
   for (const line of input.talkNotes.split(/[\n;]+/)) add(line, "high");
 
   const tags = tagCounts(input.weekEntries);
-  const carried = persistentTags(tags, tagCounts(input.prevEntries));
-  for (const tag of carried) add(fill(copy.again, { tag }), "high", 2);
+  const carried = new Set(
+    persistentTags(tags, tagCounts(input.prevEntries)).filter((tag) => !MUNDANE_TAGS.has(tag)),
+  );
+  const repeatedTags = new Set(
+    tags.filter((item) => item.count >= 2 && !MUNDANE_TAGS.has(item.tag)).map((item) => item.tag),
+  );
+  const repeatedFeelings = new Set(
+    feelingCounts(input.weekEntries)
+      .filter((item) => !LIGHT.has(item.feeling) && item.count >= 2)
+      .map((item) => item.feeling),
+  );
 
-  const feelings = feelingCounts(input.weekEntries);
-  const label = (feeling: Feeling) => copy.feeling?.(feeling) ?? feeling;
-  for (const item of feelings) {
-    if (!HEAVY.has(item.feeling) || item.count < 2) continue;
-    add(fill(copy.times, { label: label(item.feeling), count: item.count }), "high", 2);
-  }
+  const notes = input.weekEntries
+    .filter(isSessionMaterial)
+    .map((entry) => {
+      const repeated =
+        entry.feelings.some((feeling) => repeatedFeelings.has(feeling)) ||
+        entry.tags.some((tag) => repeatedTags.has(tag) || carried.has(tag));
+      const when = input.day?.(entry.date) ?? formatDayLabel(entry.date);
+      return {
+        text: `${when}: ${topicExcerpt(entry.body)}`,
+        priority: (repeated ? "high" : "mid") as BacklogPriority,
+        date: entry.date,
+      };
+    })
+    .sort((a, b) => b.date.localeCompare(a.date) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
 
-  for (const item of tags) {
-    if (item.count < 2 || carried.includes(item.tag)) continue;
-    add(fill(copy.times, { label: item.tag, count: item.count }), "mid", 2);
-  }
-
-  for (const item of feelings) {
-    if (LIGHT.has(item.feeling) || HEAVY.has(item.feeling)) continue;
-    if (item.count >= 2) {
-      add(fill(copy.times, { label: label(item.feeling), count: item.count }), "mid", 2);
-    }
-  }
-
-  for (const item of feelings) {
-    if (!HEAVY.has(item.feeling) || item.count !== 1) continue;
-    add(fill(copy.times, { label: label(item.feeling), count: item.count }), "mid", 2);
-  }
-
-  if (drafts.length < 3) {
-    const notes = [...input.weekEntries]
-      .filter((entry) => entry.body.trim())
-      .sort(
-        (a, b) =>
-          a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt),
-      );
-    for (const entry of notes) {
-      add(topicExcerpt(entry.body), "low");
-      if (drafts.length >= 7) break;
-    }
-  }
+  for (const note of notes) add(note.text, note.priority, 2);
 
   return sortDrafts(drafts)
     .slice(0, 7)
@@ -352,7 +345,7 @@ export function parseModelBacklog(raw: string): BacklogDraft[] | null {
       continue;
     }
     const clean = clipTopic(record.text);
-    if (clean.length < 2) continue;
+    if (clean.length < 2 || isBacklogNoise(clean)) continue;
     const key = clean.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
