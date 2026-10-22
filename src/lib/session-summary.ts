@@ -218,13 +218,13 @@ function buildPlainText(summary: Omit<PeriodSummary, "plainText">): string {
     );
   }
 
-  if (summary.highlights.length > 0) {
+  if (summary.entries.length > 0) {
     lines.push("");
-    lines.push("Ключевые моменты:");
-    for (const highlight of summary.highlights) {
-      const feeling = highlight.feelingsLabel ? ` — ${highlight.feelingsLabel}` : "";
-      lines.push(`• ${formatDayLabel(highlight.date)}${feeling}`);
-      lines.push(`  ${highlight.excerpt}`);
+    lines.push("Записи:");
+    for (const entry of summary.entries) {
+      const feeling = entry.feelings.length ? ` — ${formatFeelings(entry.feelings)}` : "";
+      lines.push(`• ${formatDayLabel(entry.date)}${feeling}`);
+      for (const line of entry.body.trim().split("\n")) lines.push(`  ${line}`);
     }
   }
 
