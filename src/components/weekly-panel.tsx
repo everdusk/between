@@ -5,7 +5,6 @@ import { useI18n } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SessionBacklog } from "@/components/session-backlog";
-import { SessionPrepSummary } from "@/components/session-prep-summary";
 import { WeekSpectrum } from "@/components/week-spectrum";
 import {
   formatDateSpan,
@@ -216,8 +215,6 @@ export function WeeklyPanel({
         disabled={disabled}
         onSave={onSaveBacklog}
       />
-
-      <SessionPrepSummary entries={entries} sessions={sessions} />
 
       <section className="space-y-3 rounded-3xl border border-border/60 bg-card/70 p-4 sm:p-5">
         <div className="space-y-1">
