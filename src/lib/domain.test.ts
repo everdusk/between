@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildRuleBacklog, buildRuleBrief, mergeBacklog, parseModelBacklog } from "./brief";
+import {
+  buildRuleBacklog,
+  buildRuleBrief,
+  formatBacklogHandoff,
+  mergeBacklog,
+  parseModelBacklog,
+} from "./brief";
 import {
   localeFromTelegram,
   resolveAppGreetingLocale,
@@ -191,12 +197,13 @@ describe("backlog", () => {
     });
     assert.deepEqual(
       items.map((item) => `${item.priority}:${item.text}`),
-      [
-        "high:про дедлайн",
-        `high:${formatDayLabel("2026-10-10")}: опять не сплю`,
-        `high:${formatDayLabel("2026-10-09")}: Снова мама и дедлайн на работе`,
-      ],
+      ["high:про дедлайн", "high:Мама", "mid:Работа"],
     );
+    assert.match(items[0].detail ?? "", /Сами вынесли на сеанс/);
+    assert.match(items[1].detail ?? "", /Снова мама и дедлайн на работе/);
+    assert.match(items[1].detail ?? "", /На прошлой неделе это уже было/);
+    assert.match(items[2].detail ?? "", /опять не сплю/);
+    assert.doesNotMatch(items[2].detail ?? "", /На прошлой неделе/);
     assert.equal(items.some((item) => item.text.includes("радость")), false);
     assert.equal(items.some((item) => /— \d+$/.test(item.text)), false);
   });
@@ -228,17 +235,24 @@ describe("backlog", () => {
       talkNotes: "",
     });
     assert.deepEqual(
-      items.map((item) => item.text),
-      [`${formatDayLabel("2026-10-09")}: стыдно, что переела за ужином`],
+      items.map((item) => `${item.priority}:${item.text}`),
+      ["high:Стыд"],
     );
-    assert.equal(items[0].priority, "mid");
+    assert.match(items[0].detail ?? "", /стыдно, что переела за ужином/);
+    assert.match(items[0].detail ?? "", new RegExp(formatDayLabel("2026-10-09")));
+    assert.equal(
+      items.some((item) => /вкусно поела/.test(`${item.text} ${item.detail ?? ""}`)),
+      false,
+    );
   });
 
   it("strips a json fence and drops a bad priority", () => {
     const parsed = parseModelBacklog(
-      '```json\n[{"text":"разговор с мамой","priority":"mid"},{"text":"мимо","priority":"urgent"}]\n```',
+      '```json\n[{"text":"разговор с мамой","detail":"9 октября: снова про маму","priority":"mid"},{"text":"мимо","priority":"urgent"}]\n```',
     );
-    assert.deepEqual(parsed, [{ text: "разговор с мамой", priority: "mid" }]);
+    assert.deepEqual(parsed, [
+      { text: "разговор с мамой", detail: "9 октября: снова про маму", priority: "mid" },
+    ]);
     assert.equal(parseModelBacklog('[{"text":"мимо","priority":"urgent"}]'), null);
     assert.equal(parseModelBacklog('[{"text":"еда — 2","priority":"mid"}]'), null);
     assert.deepEqual(
@@ -252,14 +266,16 @@ describe("backlog", () => {
   it("keeps a checked item when the text matches", () => {
     const merged = mergeBacklog(
       [
-        { text: "Про дедлайн", priority: "high" },
+        { text: "Про дедлайн", detail: "Сами вынесли на сеанс.", priority: "high" },
         { text: "работа — 2", priority: "mid" },
       ],
       [{ text: "про дедлайн", done: true }],
     );
     assert.equal(merged[0].done, true);
     assert.equal(merged[0].priority, "high");
+    assert.equal(merged[0].detail, "Сами вынесли на сеанс.");
     assert.equal(merged[1].done, false);
+    assert.equal(merged[1].detail, undefined);
   });
 
   it("keeps a stored checklist and drops one without a stamp", () => {
@@ -275,7 +291,13 @@ describe("backlog", () => {
           briefText: "— тревожно — 2",
           briefStamp: "abc:ru",
           backlog: [
-            { id: "x", text: "про дедлайн", priority: "high", done: true },
+            {
+              id: "x",
+              text: "про дедлайн",
+              detail: "Сами вынесли на сеанс.",
+              priority: "high",
+              done: true,
+            },
             { text: "плохо", priority: "urgent", done: true },
           ],
           backlogStamp: "b:abc:ru",
@@ -288,7 +310,13 @@ describe("backlog", () => {
     assert.equal(kept.weekPreps[0].briefText, "— тревожно — 2");
     assert.equal(kept.weekPreps[0].backlogSource, "model");
     assert.deepEqual(kept.weekPreps[0].backlog, [
-      { id: "x", text: "про дедлайн", priority: "high", done: true },
+      {
+        id: "x",
+        text: "про дедлайн",
+        detail: "Сами вынесли на сеанс.",
+        priority: "high",
+        done: true,
+      },
     ]);
 
     const dropped = normalizeStore({
@@ -314,6 +342,95 @@ describe("backlog", () => {
     assert.match(brief, /датой или числом повторов/);
     assert.match(briefSystemPrompt("ru", "backlog"), /вкусно поела/);
     assert.match(briefSystemPrompt("en", "backlog"), /JSON/);
+  });
+
+  it("starts with the only hard episode and leaves a passing theme for later", () => {
+    const alone = buildRuleBacklog({
+      weekEntries: [
+        note({
+          id: "sleep",
+          body: "опять не сплю",
+          feelings: ["тревожно"],
+          tags: ["работа"],
+        }),
+      ],
+      prevEntries: [],
+      talkNotes: "",
+    });
+    assert.deepEqual(
+      alone.map((item) => `${item.priority}:${item.text}`),
+      ["high:Работа"],
+    );
+
+    const ranked = buildRuleBacklog({
+      weekEntries: [
+        note({
+          id: "sleep",
+          body: "опять не сплю",
+          feelings: ["тревожно"],
+          tags: ["работа"],
+        }),
+        note({
+          id: "aside",
+          date: "2026-10-10",
+          body: "подумала про отпуск",
+          tags: ["будущее"],
+        }),
+      ],
+      prevEntries: [],
+      talkNotes: "",
+    });
+    assert.deepEqual(
+      ranked.map((item) => `${item.priority}:${item.text}`),
+      ["high:Работа", "low:Будущее"],
+    );
+  });
+
+  it("numbers a therapist handoff by priority", () => {
+    const text = formatBacklogHandoff(
+      [
+        {
+          id: "a",
+          text: "про дедлайн",
+          detail: "Сами вынесли на сеанс.",
+          priority: "high",
+          done: false,
+        },
+        {
+          id: "b",
+          text: "Мама",
+          detail: "пт, 9 октября: Снова мама. На прошлой неделе это уже было.",
+          priority: "high",
+          done: false,
+        },
+        {
+          id: "c",
+          text: "Работа",
+          detail: "сб, 10 октября: опять не сплю",
+          priority: "mid",
+          done: false,
+        },
+      ],
+      { high: "сначала", mid: "важно", low: "если останется время" },
+      "Темы к сеансу, по важности.",
+    );
+    assert.equal(
+      text,
+      [
+        "Темы к сеансу, по важности.",
+        "",
+        "сначала",
+        "1. про дедлайн",
+        "Сами вынесли на сеанс.",
+        "",
+        "2. Мама",
+        "пт, 9 октября: Снова мама. На прошлой неделе это уже было.",
+        "",
+        "важно",
+        "3. Работа",
+        "сб, 10 октября: опять не сплю",
+      ].join("\n"),
+    );
   });
 });
 

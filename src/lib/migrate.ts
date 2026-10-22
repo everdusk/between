@@ -122,12 +122,17 @@ function normalizeBacklog(
     const text = item.text.replace(/\s+/g, " ").trim();
     if (!text) continue;
     const id = typeof item.id === "string" && item.id ? item.id : backlogId(text);
-    items.push({
+    const next: BacklogItem = {
       id,
       text: text.slice(0, 120),
       priority: item.priority,
       done: item.done === true,
-    });
+    };
+    if (typeof item.detail === "string") {
+      const detail = item.detail.replace(/\s+/g, " ").trim().slice(0, 240);
+      if (detail) next.detail = detail;
+    }
+    items.push(next);
   }
   if (items.length === 0) return null;
   const backlogSource: BacklogSource = prep.backlogSource === "model" ? "model" : "rules";
