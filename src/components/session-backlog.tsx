@@ -62,11 +62,6 @@ export function SessionBacklog({
   onSave,
 }: SessionBacklogProps) {
   const { t, locale, feeling } = useI18n();
-  const backlogCopy = {
-    again: t("backlogAgain"),
-    times: t("backlogTimes"),
-    feeling,
-  };
   const briefCopy = {
     empty: t("briefEmpty"),
     most: t("briefMost"),
@@ -82,19 +77,20 @@ export function SessionBacklog({
     day: (key: string) => formatDayLabel(key, locale),
   };
 
+  const day = (key: string) => formatDayLabel(key, locale);
   const savedRules = buildRuleBacklog({
     weekEntries,
     prevEntries,
     talkNotes: savedTalk,
-    copy: backlogCopy,
+    day,
   });
   const liveRules = buildRuleBacklog({
     weekEntries,
     prevEntries,
     talkNotes,
-    copy: backlogCopy,
+    day,
   });
-  const modelStamp = `b:${briefStamp(weekEntries, savedTalk)}:${locale}`;
+  const modelStamp = `b2:${briefStamp(weekEntries, savedTalk)}:${locale}`;
   const draftDirty = talkNotes.trim() !== savedTalk.trim();
   const stored =
     prep?.backlogStamp === modelStamp && prep.backlog && prep.backlog.length > 0
