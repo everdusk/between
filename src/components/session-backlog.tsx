@@ -259,7 +259,7 @@ export function SessionBacklog({
       )}
 
       <form
-        className="flex flex-wrap items-center gap-2"
+        className="flex items-center gap-2 rounded-2xl border border-border/60 bg-card/70 py-1.5 pr-1.5 pl-3"
         onSubmit={(event) => {
           event.preventDefault();
           add(draft);
@@ -274,9 +274,17 @@ export function SessionBacklog({
           disabled={disabled}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={t("backlogPlaceholder")}
-          className="min-w-0 flex-1"
+          className="h-9 min-w-0 flex-1 border-0 bg-transparent px-0 shadow-none focus-visible:border-transparent focus-visible:ring-0"
         />
-        <Button type="submit" disabled={disabled || draft.trim().length < 2}>
+        <Button
+          type="submit"
+          disabled={disabled}
+          className="shrink-0"
+          onClick={(event) => {
+            event.preventDefault();
+            add(draft);
+          }}
+        >
           {t("backlogAdd")}
         </Button>
       </form>
