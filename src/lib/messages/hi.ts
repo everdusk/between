@@ -169,19 +169,19 @@ export const hi: Catalog = {
   backlogHigh: "पहले",
   backlogMid: "ज़रूरी",
   backlogLow: "अगर समय बचे",
-  backlogRefreshing: "देख रही हूँ क्या ज़रूरी है…",
+  backlogRefreshing: "देख रहा हूँ क्या ज़रूरी है…",
   backlogAgain: "फिर: {tag}",
   backlogTimes: "{label} — {count}",
   botOpen: "Between खोलें",
   botHelp:
     "Between सेशन की डायरी है.\nकोई भी पाठ आज का नोट बन जाता है.",
   botUnknown:
-    "पाठ भेजें, मैं नोट सहेज लूँगी.",
+    "पाठ भेजें, मैं नोट सहेज लूँगा.",
   botNotReady:
-    "अभी सहेज नहीं सकती.",
+    "अभी सहेज नहीं सकता.",
   botSaved: "आज के लिए सहेज लिया.",
   botSaveFail: "नहीं सहेजा. फिर कोशिश करें.",
-  botCheckinNotReady: "अभी निशान नहीं सहेज सकती.",
+  botCheckinNotReady: "अभी निशान नहीं सहेज सकता.",
   botCheckinSaved: "सहेजा: {feeling}.",
   botCheckinFail: "नहीं सहेजा.",
   botInvoiceForeign: "यह बिल Between का नहीं है।",

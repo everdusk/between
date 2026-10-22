@@ -181,13 +181,13 @@ export const ru = {
   botHelp:
     "Between — дневник к сеансу.\nЛюбой текст станет заметкой на сегодня.",
   botUnknown:
-    "Не поняла. Напишите текст — запишу заметкой.",
+    "Не понял. Напишите текст — запишу заметкой.",
   botNotReady:
     "Сейчас не могу сохранить.",
-  botSaved: "Записала на сегодня.",
+  botSaved: "Записал на сегодня.",
   botSaveFail: "Не сохранилось. Попробуйте ещё раз.",
   botCheckinNotReady: "Сейчас не могу сохранить отметку.",
-  botCheckinSaved: "Записала: {feeling}.",
+  botCheckinSaved: "Записал: {feeling}.",
   botCheckinFail: "Не сохранилось.",
   botInvoiceForeign: "Этот счёт не от Between.",
   botWeekPaid: "«Неделя» открыта на 30 дней.",

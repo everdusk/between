@@ -179,10 +179,10 @@ export const uk: Catalog = {
     "Напишіть текст — запишу нотаткою.",
   botNotReady:
     "Зараз не можу зберегти.",
-  botSaved: "Записала на сьогодні.",
+  botSaved: "Записав на сьогодні.",
   botSaveFail: "Не збереглося. Спробуйте ще раз.",
   botCheckinNotReady: "Зараз не можу зберегти позначку.",
-  botCheckinSaved: "Записала: {feeling}.",
+  botCheckinSaved: "Записав: {feeling}.",
   botCheckinFail: "Не збереглося.",
   botInvoiceForeign: "Цей рахунок не від Between.",
   botWeekPaid: "«Тиждень» відкритий на 30 днів.",
