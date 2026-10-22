@@ -61,8 +61,8 @@ export interface BacklogItem {
   done: boolean;
 }
 
-/** rules — checklist from the notes; model — the same list tightened by a free model. */
-export type BacklogSource = "rules" | "model";
+/** rules — old generated list; model — the same list tightened by a model; user — lines the person wrote or kept. */
+export type BacklogSource = "rules" | "model" | "user";
 
 export interface WeekPrep {
   weekKey: string;

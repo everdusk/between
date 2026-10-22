@@ -1,31 +1,24 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/components/locale-provider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
-  briefStamp,
+  appendBacklogItem,
+  backlogSuggestions,
   buildRuleBacklog,
-  buildRuleBrief,
-  mergeBacklog,
-  parseModelBacklog,
-  type BacklogDraft,
+  seedUserBacklog,
 } from "@/lib/brief";
 import { formatDayLabel } from "@/lib/dates";
-import { requestBrief } from "@/lib/journal-api";
-import type { BacklogItem, BacklogPriority, BacklogSource, JournalEntry, WeekPrep } from "@/lib/types";
+import type { BacklogItem, BacklogSource, JournalEntry, WeekPrep } from "@/lib/types";
 import { cn } from "@/lib/utils";
-
-const ORDER: BacklogPriority[] = ["high", "mid", "low"];
 
 interface SessionBacklogProps {
   weekKey: string;
   weekEntries: JournalEntry[];
   prevEntries: JournalEntry[];
-  talkNotes: string;
-  savedTalk: string;
-  todayKey: string;
   prep?: WeekPrep;
-  initData?: string;
   disabled?: boolean;
   onSave: (
     weekKey: string,
@@ -35,186 +28,64 @@ interface SessionBacklogProps {
   ) => boolean;
 }
 
-function previousDone(
-  backlog: BacklogItem[] | undefined,
-  overrides: Record<string, boolean> | undefined,
-): { text: string; done: boolean }[] {
-  const rows = (backlog ?? []).map((item) => ({
-    text: item.text,
-    done: overrides?.[item.text.trim().toLowerCase()] ?? item.done,
-  }));
-  for (const [text, done] of Object.entries(overrides ?? {})) {
-    rows.push({ text, done });
-  }
-  return rows;
-}
-
 export function SessionBacklog({
   weekKey,
   weekEntries,
   prevEntries,
-  talkNotes,
-  savedTalk,
-  todayKey,
   prep,
-  initData,
   disabled,
   onSave,
 }: SessionBacklogProps) {
-  const { t, locale, feeling } = useI18n();
-  const briefCopy = {
-    empty: t("briefEmpty"),
-    most: t("briefMost"),
-    mostPast: t("briefMostPast"),
-    past: t("briefPast"),
-    themes: t("briefThemes"),
-    carried: t("briefCarriedLine"),
-    entries: t("briefEntries"),
-    today: t("briefToday"),
-    say: t("briefSay"),
-    talkEmpty: t("briefTalkEmpty"),
-    feeling,
-    day: (key: string) => formatDayLabel(key, locale),
-  };
-
-  const day = (key: string) => formatDayLabel(key, locale);
-  const savedRules = buildRuleBacklog({
-    weekEntries,
-    prevEntries,
-    talkNotes: savedTalk,
-    day,
-  });
-  const liveRules = buildRuleBacklog({
-    weekEntries,
-    prevEntries,
-    talkNotes,
-    day,
-  });
-  const modelStamp = `b2:${briefStamp(weekEntries, savedTalk)}:${locale}`;
-  const draftDirty = talkNotes.trim() !== savedTalk.trim();
-  const stored =
-    prep?.backlogStamp === modelStamp && prep.backlog && prep.backlog.length > 0
-      ? prep.backlog
-      : null;
-  const savedList = !draftDirty ? stored : null;
-  const savedSignature = savedRules.map((item) => `${item.priority}\t${item.text}`).join("\n");
-  const facts = buildRuleBrief({
-    weekEntries,
-    prevEntries,
-    talkNotes: savedTalk,
-    todayKey,
-    copy: briefCopy,
-  });
-
-  const savedRulesRef = useRef(savedRules);
-  const factsRef = useRef(facts);
-  const prepBacklogRef = useRef(prep?.backlog);
-  useLayoutEffect(() => {
-    savedRulesRef.current = savedRules;
-    factsRef.current = facts;
-    prepBacklogRef.current = prep?.backlog;
-  }, [savedRules, facts, prep?.backlog]);
-
-  const [doneByStamp, setDoneByStamp] = useState<Record<string, Record<string, boolean>>>({});
-  const doneRef = useRef(doneByStamp);
-  useEffect(() => {
-    doneRef.current = doneByStamp;
-  }, [doneByStamp]);
-
-  const attemptRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!savedSignature || draftDirty) return;
-    const settled =
-      prep?.backlogStamp === modelStamp &&
-      (prep.backlogSource === "model" || prep.backlogSource === "rules");
-    if (settled) return;
-
-    if (!initData) {
-      onSave(
-        weekKey,
-        mergeBacklog(
-          savedRulesRef.current,
-          previousDone(prepBacklogRef.current, doneRef.current[modelStamp]),
-        ),
-        modelStamp,
-        "rules",
-      );
-      return;
-    }
-
-    if (attemptRef.current === modelStamp) return;
-    attemptRef.current = modelStamp;
-    let cancelled = false;
-    void (async () => {
-      const result = await requestBrief(initData, factsRef.current, modelStamp, locale, "backlog");
-      if (cancelled) return;
-      const parsed: BacklogDraft[] | null =
-        result.ok && result.text ? parseModelBacklog(result.text) : null;
-      const incoming = parsed ?? savedRulesRef.current;
-      onSave(
-        weekKey,
-        mergeBacklog(
-          incoming,
-          previousDone(prepBacklogRef.current, doneRef.current[modelStamp]),
-        ),
-        modelStamp,
-        parsed ? "model" : "rules",
-      );
-    })();
-    return () => {
-      cancelled = true;
-      if (attemptRef.current === modelStamp) attemptRef.current = null;
-    };
-  }, [
-    savedSignature,
-    draftDirty,
-    prep?.backlogStamp,
-    prep?.backlogSource,
-    initData,
-    modelStamp,
-    weekKey,
-    locale,
-    onSave,
-  ]);
-
-  const base = savedList ?? liveRules;
-  const overrides = doneByStamp[modelStamp] ?? {};
-  const items = base.map((item) => ({
-    ...item,
-    done: overrides[item.text.trim().toLowerCase()] ?? item.done,
-  }));
-  const refreshing = Boolean(
-    initData &&
-      !draftDirty &&
-      savedSignature &&
-      !(prep?.backlogStamp === modelStamp && prep.backlogSource),
+  const { t, locale } = useI18n();
+  const [draft, setDraft] = useState("");
+  const seededKey = useRef<string | null>(null);
+  const owned = prep?.backlogSource === "user";
+  const seeded = useMemo(
+    () =>
+      seedUserBacklog({
+        talkNotes: prep?.talkNotes ?? "",
+        previous: prep?.backlog,
+      }),
+    [prep?.talkNotes, prep?.backlog],
+  );
+  const items = useMemo(
+    () => (owned ? (prep?.backlog ?? []) : seeded),
+    [owned, prep?.backlog, seeded],
   );
 
-  const labels: Record<BacklogPriority, string> = {
-    high: t("backlogHigh"),
-    mid: t("backlogMid"),
-    low: t("backlogLow"),
-  };
-
-  function toggle(item: BacklogItem) {
-    if (disabled) return;
-    const key = item.text.trim().toLowerCase();
-    const nextDone = !(overrides[key] ?? item.done);
-    const nextMap = { ...(doneByStamp[modelStamp] ?? {}), [key]: nextDone };
-    const nextDoneByStamp = { ...doneByStamp, [modelStamp]: nextMap };
-    doneRef.current = nextDoneByStamp;
-    setDoneByStamp(nextDoneByStamp);
-    if (!draftDirty && stored) {
-      onSave(
-        weekKey,
-        stored.map((row) =>
-          row.text.trim().toLowerCase() === key ? { ...row, done: nextDone } : row,
-        ),
-        modelStamp,
-        prep?.backlogSource ?? "rules",
-      );
+  useEffect(() => {
+    if (owned) {
+      seededKey.current = weekKey;
+      return;
     }
+    if (seededKey.current === weekKey) return;
+    seededKey.current = weekKey;
+    onSave(weekKey, seeded, "user", "user");
+  }, [owned, weekKey, seeded, onSave]);
+
+  const suggestions = useMemo(
+    () =>
+      backlogSuggestions(
+        buildRuleBacklog({
+          weekEntries,
+          prevEntries,
+          talkNotes: "",
+          day: (key) => formatDayLabel(key, locale),
+        }),
+        items,
+      ),
+    [weekEntries, prevEntries, items, locale],
+  );
+
+  function commit(next: BacklogItem[]) {
+    onSave(weekKey, next, "user", "user");
+  }
+
+  function add(text: string) {
+    const next = appendBacklogItem(items, text);
+    if (!next) return;
+    commit(next);
+    setDraft("");
   }
 
   return (
@@ -225,54 +96,96 @@ export function SessionBacklog({
         </h3>
         <p className="text-sm text-muted-foreground">{t("backlogLead")}</p>
       </div>
+
+      <form
+        className="flex flex-wrap items-center gap-2"
+        onSubmit={(event) => {
+          event.preventDefault();
+          add(draft);
+        }}
+      >
+        <label className="sr-only" htmlFor="backlog-draft">
+          {t("backlogPlaceholder")}
+        </label>
+        <Input
+          id="backlog-draft"
+          value={draft}
+          disabled={disabled}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder={t("backlogPlaceholder")}
+          className="min-w-0 flex-1"
+        />
+        <Button type="submit" disabled={disabled || draft.trim().length < 2}>
+          {t("backlogAdd")}
+        </Button>
+      </form>
+
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("backlogEmpty")}</p>
       ) : (
-        <div className="space-y-4">
-          {ORDER.map((priority) => {
-            const group = items.filter((item) => item.priority === priority);
-            if (group.length === 0) return null;
-            return (
-              <div key={priority} className="space-y-2">
-                <p className="text-xs text-muted-foreground">{labels[priority]}</p>
-                <ul className="space-y-2">
-                  {group.map((item) => (
-                    <li key={item.id}>
-                      <label
-                        className={cn(
-                          "flex cursor-pointer items-start gap-3 rounded-2xl border border-border/60 bg-card/70 px-3 py-2.5",
-                          item.done && "opacity-60",
-                          disabled && "cursor-not-allowed",
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          className="mt-0.5 size-4 shrink-0 accent-primary"
-                          checked={item.done}
-                          disabled={disabled}
-                          onChange={() => toggle(item)}
-                        />
-                        <span
-                          className={cn(
-                            "text-sm leading-relaxed text-foreground/90",
-                            item.done && "text-muted-foreground line-through",
-                          )}
-                        >
-                          {item.text}
-                        </span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })}
-        </div>
+        <ul className="space-y-2">
+          {items.map((item) => (
+            <li
+              key={item.id}
+              className="flex items-start gap-3 rounded-2xl border border-border/60 bg-card/70 px-3 py-2.5"
+            >
+              <label className={cn("flex min-w-0 flex-1 cursor-pointer items-start gap-3", disabled && "cursor-not-allowed")}>
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 shrink-0 accent-primary"
+                  checked={item.done}
+                  disabled={disabled}
+                  onChange={() =>
+                    commit(
+                      items.map((row) =>
+                        row.id === item.id ? { ...row, done: !row.done } : row,
+                      ),
+                    )
+                  }
+                />
+                <span
+                  className={cn(
+                    "text-sm leading-relaxed text-foreground/90",
+                    item.done && "text-muted-foreground line-through",
+                  )}
+                >
+                  {item.text}
+                </span>
+              </label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={disabled}
+                onClick={() => commit(items.filter((row) => row.id !== item.id))}
+              >
+                {t("backlogRemove")}
+              </Button>
+            </li>
+          ))}
+        </ul>
       )}
-      {refreshing && (
-        <p className="text-sm text-muted-foreground" role="status">
-          {t("backlogRefreshing")}
-        </p>
+
+      {suggestions.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">{t("backlogFromNotes")}</p>
+          <ul className="space-y-2">
+            {suggestions.map((item) => (
+              <li key={item.id} className="flex items-start justify-between gap-3">
+                <span className="text-sm leading-relaxed text-muted-foreground">{item.text}</span>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={disabled}
+                  onClick={() => add(item.text)}
+                >
+                  {t("backlogAdd")}
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );

@@ -372,3 +372,84 @@ export function mergeBacklog(
     done: done.has(item.text.trim().toLowerCase()),
   }));
 }
+
+export const USER_BACKLOG_CAP = 20;
+
+function topicCore(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/\s+/g, " ")
+    .replace(/^[^:]{1,40}:\s*/, "");
+}
+
+export function topicsOverlap(a: string, b: string): boolean {
+  const left = topicCore(a);
+  const right = topicCore(b);
+  if (!left || !right) return false;
+  if (left === right) return true;
+  if (left.length >= 8 && right.includes(left)) return true;
+  if (right.length >= 8 && left.includes(right)) return true;
+  return false;
+}
+
+export function openBacklogText(items: BacklogItem[]): string {
+  return items
+    .filter((item) => !item.done)
+    .map((item) => item.text)
+    .join("\n");
+}
+
+/** Lines the person wrote, plus topics they already marked as said. Generated leftovers stay out. */
+export function seedUserBacklog(input: {
+  talkNotes: string;
+  previous?: BacklogItem[];
+}): BacklogItem[] {
+  const items: BacklogItem[] = [];
+
+  function add(text: string, done: boolean) {
+    const clean = clipTopic(text);
+    if (clean.length < 2) return;
+    const index = items.findIndex((item) => topicsOverlap(item.text, clean));
+    if (index >= 0) {
+      if (done) items[index] = { ...items[index], done: true };
+      return;
+    }
+    if (items.length >= USER_BACKLOG_CAP) return;
+    items.push({
+      id: backlogId(clean),
+      text: clean,
+      priority: "high",
+      done,
+    });
+  }
+
+  for (const line of input.talkNotes.split(/[\n;]+/)) add(line, false);
+  for (const item of input.previous ?? []) {
+    if (item.done) add(item.text, true);
+  }
+  return items;
+}
+
+export function appendBacklogItem(
+  items: BacklogItem[],
+  text: string,
+): BacklogItem[] | null {
+  const clean = clipTopic(text);
+  if (clean.length < 2 || items.length >= USER_BACKLOG_CAP) return null;
+  if (items.some((item) => topicsOverlap(item.text, clean))) return null;
+  return [
+    ...items,
+    { id: backlogId(clean), text: clean, priority: "high", done: false },
+  ];
+}
+
+export function backlogSuggestions(
+  generated: BacklogItem[],
+  owned: { text: string }[],
+): BacklogItem[] {
+  return generated
+    .filter((item) => !owned.some((row) => topicsOverlap(row.text, item.text)))
+    .slice(0, 5);
+}

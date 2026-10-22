@@ -1,4 +1,4 @@
-import { backlogId } from "./brief";
+import { backlogId, USER_BACKLOG_CAP } from "./brief";
 import { normalizeFeelings } from "./feelings";
 import { sanitizeTags } from "./tags";
 import {
@@ -114,9 +114,10 @@ function normalizeBacklog(
 ): Pick<WeekPrep, "backlog" | "backlogStamp" | "backlogSource"> | null {
   if (typeof prep.backlogStamp !== "string" || !prep.backlogStamp) return null;
   if (!Array.isArray(prep.backlog)) return null;
+  const userOwned = prep.backlogSource === "user";
   const items: BacklogItem[] = [];
   for (const row of prep.backlog) {
-    if (items.length >= 7) break;
+    if (items.length >= (userOwned ? USER_BACKLOG_CAP : 7)) break;
     const item = asRecord(row);
     if (!item || typeof item.text !== "string" || !isBacklogPriority(item.priority)) continue;
     const text = item.text.replace(/\s+/g, " ").trim();
@@ -128,6 +129,13 @@ function normalizeBacklog(
       priority: item.priority,
       done: item.done === true,
     });
+  }
+  if (userOwned) {
+    return {
+      backlog: items,
+      backlogStamp: prep.backlogStamp,
+      backlogSource: "user",
+    };
   }
   if (items.length === 0) return null;
   const backlogSource: BacklogSource = prep.backlogSource === "model" ? "model" : "rules";

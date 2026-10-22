@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { openBacklogText } from "@/lib/brief";
 import { createId, weekKey } from "@/lib/dates";
 import { isFeeling } from "@/lib/feelings";
 import { fetchJournal, mergeStores, putJournal } from "@/lib/journal-api";
@@ -228,27 +229,6 @@ export function useTherapyStore(options?: {
     [persist],
   );
 
-  const saveWeekPrep = useCallback(
-    (key: string, talkNotes: string) => {
-      const now = new Date().toISOString();
-      const current = storeRef.current;
-      const existing = current.weekPreps.find((prep) => prep.weekKey === key);
-      let weekPreps: WeekPrep[];
-      if (existing) {
-        weekPreps = current.weekPreps.map((prep) =>
-          prep.weekKey === key ? { ...prep, talkNotes, updatedAt: now } : prep,
-        );
-      } else {
-        weekPreps = [
-          ...current.weekPreps,
-          { weekKey: key, talkNotes, updatedAt: now },
-        ];
-      }
-      return persist({ ...current, weekPreps });
-    },
-    [persist],
-  );
-
   const saveBrief = useCallback(
     (key: string, briefText: string, briefStamp: string, talkNotes: string) => {
       const now = new Date().toISOString();
@@ -279,11 +259,12 @@ export function useTherapyStore(options?: {
       const now = new Date().toISOString();
       const current = storeRef.current;
       const existing = current.weekPreps.find((prep) => prep.weekKey === key);
+      const talkNotes = openBacklogText(backlog);
       const next: WeekPrep = existing
-        ? { ...existing, updatedAt: now, backlog, backlogStamp, backlogSource }
+        ? { ...existing, updatedAt: now, backlog, backlogStamp, backlogSource, talkNotes }
         : {
             weekKey: key,
-            talkNotes: "",
+            talkNotes,
             updatedAt: now,
             backlog,
             backlogStamp,
@@ -381,7 +362,6 @@ export function useTherapyStore(options?: {
     resetCorrupted,
     upsertEntry,
     deleteEntry,
-    saveWeekPrep,
     saveBrief,
     saveBacklog,
     saveSessionPlan,
