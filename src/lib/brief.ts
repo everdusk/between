@@ -1,7 +1,7 @@
 import { formatDayLabel } from "./dates";
 import { formatFeelings } from "./feelings";
 import { fill } from "./i18n";
-import type { Feeling, JournalEntry } from "./types";
+import type { BacklogItem, BacklogPriority, Feeling, JournalEntry } from "./types";
 
 export type FeelingCount = { feeling: Feeling; count: number };
 export type TagCount = { tag: string; count: number };
@@ -179,7 +179,6 @@ export function buildRuleBrief(input: {
   if (facts) lines.push(facts);
 
   if (talk) lines.push(fill(copy.say, { talk }));
-  else lines.push(copy.talkEmpty);
 
   return lines.join("\n\n");
 }
@@ -199,4 +198,184 @@ export function briefStamp(entries: JournalEntry[], talkNotes: string): string {
 
 export function feelingsLabel(feelings: Feeling[]): string {
   return formatFeelings(feelings);
+}
+
+export type BacklogDraft = {
+  text: string;
+  priority: BacklogPriority;
+};
+
+export type BacklogCopy = {
+  again: string;
+  times: string;
+  feeling?: (feeling: Feeling) => string;
+};
+
+const RU_BACKLOG: BacklogCopy = {
+  again: "Снова: {tag}",
+  times: "{label} — {count}",
+};
+
+const HEAVY: ReadonlySet<Feeling> = new Set([
+  "тревожно",
+  "напряжение",
+  "стыд",
+  "злость",
+  "тяжело",
+]);
+
+const LIGHT: ReadonlySet<Feeling> = new Set(["радость", "спокойно"]);
+
+const PRIORITY_RANK: Record<BacklogPriority, number> = { high: 0, mid: 1, low: 2 };
+
+export function backlogId(text: string): string {
+  const source = text.trim().toLowerCase();
+  let hash = 5381;
+  for (let i = 0; i < source.length; i += 1) {
+    hash = (hash * 33) ^ source.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function clipTopic(text: string): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= 80) return clean;
+  return `${clean.slice(0, 77).trimEnd()}…`;
+}
+
+function topicExcerpt(body: string): string {
+  const clean = body.replace(/\s+/g, " ").trim();
+  const sentence = clean.split(/(?<=[.!?…])\s+/)[0] ?? clean;
+  return clipTopic(sentence);
+}
+
+function sortDrafts(items: BacklogDraft[]): BacklogDraft[] {
+  return [...items].sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
+}
+
+export function buildRuleBacklog(input: {
+  weekEntries: JournalEntry[];
+  prevEntries: JournalEntry[];
+  talkNotes: string;
+  copy?: BacklogCopy;
+}): BacklogItem[] {
+  const copy = input.copy ?? RU_BACKLOG;
+  const drafts: BacklogDraft[] = [];
+  const seen = new Set<string>();
+
+  function add(text: string, priority: BacklogPriority, min = 4) {
+    const clean = clipTopic(text);
+    if (clean.length < min) return;
+    const key = clean.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    drafts.push({ text: clean, priority });
+  }
+
+  for (const line of input.talkNotes.split(/[\n;]+/)) add(line, "high");
+
+  const tags = tagCounts(input.weekEntries);
+  const carried = persistentTags(tags, tagCounts(input.prevEntries));
+  for (const tag of carried) add(fill(copy.again, { tag }), "high", 2);
+
+  const feelings = feelingCounts(input.weekEntries);
+  const label = (feeling: Feeling) => copy.feeling?.(feeling) ?? feeling;
+  for (const item of feelings) {
+    if (!HEAVY.has(item.feeling) || item.count < 2) continue;
+    add(fill(copy.times, { label: label(item.feeling), count: item.count }), "high", 2);
+  }
+
+  for (const item of tags) {
+    if (item.count < 2 || carried.includes(item.tag)) continue;
+    add(fill(copy.times, { label: item.tag, count: item.count }), "mid", 2);
+  }
+
+  for (const item of feelings) {
+    if (LIGHT.has(item.feeling) || HEAVY.has(item.feeling)) continue;
+    if (item.count >= 2) {
+      add(fill(copy.times, { label: label(item.feeling), count: item.count }), "mid", 2);
+    }
+  }
+
+  for (const item of feelings) {
+    if (!HEAVY.has(item.feeling) || item.count !== 1) continue;
+    add(fill(copy.times, { label: label(item.feeling), count: item.count }), "mid", 2);
+  }
+
+  if (drafts.length < 3) {
+    const notes = [...input.weekEntries]
+      .filter((entry) => entry.body.trim())
+      .sort(
+        (a, b) =>
+          a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt),
+      );
+    for (const entry of notes) {
+      add(topicExcerpt(entry.body), "low");
+      if (drafts.length >= 7) break;
+    }
+  }
+
+  return sortDrafts(drafts)
+    .slice(0, 7)
+    .map((item) => ({
+      id: backlogId(item.text),
+      text: item.text,
+      priority: item.priority,
+      done: false,
+    }));
+}
+
+const BACKLOG_PRIORITIES = new Set<BacklogPriority>(["high", "mid", "low"]);
+
+export function parseModelBacklog(raw: string): BacklogDraft[] | null {
+  let text = raw.trim();
+  if (!text) return null;
+  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  const start = text.indexOf("[");
+  const end = text.lastIndexOf("]");
+  if (start === -1 || end <= start) return null;
+  let data: unknown;
+  try {
+    data = JSON.parse(text.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(data)) return null;
+
+  const drafts: BacklogDraft[] = [];
+  const seen = new Set<string>();
+  for (const row of data) {
+    if (!row || typeof row !== "object") continue;
+    const record = row as { text?: unknown; priority?: unknown };
+    if (typeof record.text !== "string") continue;
+    if (typeof record.priority !== "string" || !BACKLOG_PRIORITIES.has(record.priority as BacklogPriority)) {
+      continue;
+    }
+    const clean = clipTopic(record.text);
+    if (clean.length < 2) continue;
+    const key = clean.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    drafts.push({ text: clean, priority: record.priority as BacklogPriority });
+    if (drafts.length >= 7) break;
+  }
+  if (drafts.length === 0) return null;
+  return sortDrafts(drafts);
+}
+
+export function mergeBacklog(
+  incoming: BacklogDraft[],
+  previous: { text: string; done: boolean }[],
+): BacklogItem[] {
+  const done = new Set(
+    previous
+      .filter((item) => item.done)
+      .map((item) => item.text.trim().toLowerCase()),
+  );
+  return incoming.slice(0, 7).map((item) => ({
+    id: backlogId(item.text),
+    text: item.text,
+    priority: item.priority,
+    done: done.has(item.text.trim().toLowerCase()),
+  }));
 }
