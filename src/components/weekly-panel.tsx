@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SessionBacklog } from "@/components/session-backlog";
 import { SessionPrepSummary } from "@/components/session-prep-summary";
 import { WeekSpectrum } from "@/components/week-spectrum";
 import {
@@ -26,7 +27,7 @@ import {
 } from "@/lib/brief";
 import { feelingFill } from "@/lib/spectrum";
 import { requestBrief } from "@/lib/journal-api";
-import type { JournalEntry, SessionNote, WeekPrep } from "@/lib/types";
+import type { BacklogItem, BacklogSource, JournalEntry, SessionNote, WeekPrep } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { MessageKey } from "@/lib/messages";
 
@@ -59,6 +60,12 @@ interface WeeklyPanelProps {
     briefStamp: string,
     talkNotes: string,
   ) => boolean;
+  onSaveBacklog: (
+    weekKey: string,
+    backlog: BacklogItem[],
+    backlogStamp: string,
+    backlogSource: BacklogSource,
+  ) => boolean;
   initData?: string;
   disabled?: boolean;
 }
@@ -69,6 +76,7 @@ export function WeeklyPanel({
   weekPreps,
   onSavePrep,
   onSaveBrief,
+  onSaveBacklog,
   initData,
   disabled,
 }: WeeklyPanelProps) {
@@ -212,6 +220,19 @@ export function WeeklyPanel({
           )}
         </section>
       )}
+
+      <SessionBacklog
+        weekKey={key}
+        weekEntries={weekEntries}
+        prevEntries={prevEntries}
+        talkNotes={talkNotes}
+        savedTalk={prep?.talkNotes ?? ""}
+        todayKey={todayKey}
+        prep={prep}
+        initData={initData}
+        disabled={disabled}
+        onSave={onSaveBacklog}
+      />
 
       <SessionPrepSummary entries={entries} sessions={sessions} />
 

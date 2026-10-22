@@ -52,12 +52,27 @@ export interface SessionNote {
   updatedAt: string;
 }
 
+export type BacklogPriority = "high" | "mid" | "low";
+
+export interface BacklogItem {
+  id: string;
+  text: string;
+  priority: BacklogPriority;
+  done: boolean;
+}
+
+/** rules — checklist from the notes; model — the same list tightened by a free model. */
+export type BacklogSource = "rules" | "model";
+
 export interface WeekPrep {
   weekKey: string;
   talkNotes: string;
   updatedAt: string;
   briefText?: string;
   briefStamp?: string;
+  backlog?: BacklogItem[];
+  backlogStamp?: string;
+  backlogSource?: BacklogSource;
 }
 
 /** 0 = Monday … 6 = Sunday */

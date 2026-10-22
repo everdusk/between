@@ -72,6 +72,7 @@ export async function requestBrief(
   facts: string,
   stamp: string,
   locale: LocaleId = "ru",
+  kind: "brief" | "backlog" = "brief",
 ): Promise<
   | { ok: true; text: string | null; reason?: string }
   | { ok: false; error: string }
@@ -83,7 +84,7 @@ export async function requestBrief(
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": initData,
       },
-      body: JSON.stringify({ facts, stamp, locale }),
+      body: JSON.stringify({ facts, stamp, locale, kind }),
     });
     const data = (await res.json()) as {
       ok?: boolean;

@@ -12,6 +12,8 @@ import {
   type JournalEntry,
   type NotifyPrefs,
   type SessionNote,
+  type BacklogItem,
+  type BacklogSource,
   type SessionPlan,
   type TherapyStore,
   type WeekPrep,
@@ -267,6 +269,34 @@ export function useTherapyStore(options?: {
     [persist],
   );
 
+  const saveBacklog = useCallback(
+    (
+      key: string,
+      backlog: BacklogItem[],
+      backlogStamp: string,
+      backlogSource: BacklogSource,
+    ) => {
+      const now = new Date().toISOString();
+      const current = storeRef.current;
+      const existing = current.weekPreps.find((prep) => prep.weekKey === key);
+      const next: WeekPrep = existing
+        ? { ...existing, updatedAt: now, backlog, backlogStamp, backlogSource }
+        : {
+            weekKey: key,
+            talkNotes: "",
+            updatedAt: now,
+            backlog,
+            backlogStamp,
+            backlogSource,
+          };
+      const weekPreps = existing
+        ? current.weekPreps.map((prep) => (prep.weekKey === key ? next : prep))
+        : [...current.weekPreps, next];
+      return persist({ ...current, weekPreps });
+    },
+    [persist],
+  );
+
   const saveSessionPlan = useCallback(
     (input: Omit<SessionPlan, "updatedAt">) => {
       const current = storeRef.current;
@@ -353,6 +383,7 @@ export function useTherapyStore(options?: {
     deleteEntry,
     saveWeekPrep,
     saveBrief,
+    saveBacklog,
     saveSessionPlan,
     saveNotify,
     upsertSession,

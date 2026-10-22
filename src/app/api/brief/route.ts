@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseModelBacklog } from "@/lib/brief";
 import { isLocale, modelLanguageName, type LocaleId } from "@/lib/i18n";
 import {
   cacheBrief,
@@ -9,22 +10,46 @@ import {
 import { validateInitData } from "@/lib/telegram-auth";
 import { todayInTimeZone } from "@/lib/zoned";
 
-const SYSTEM = [
-  "Ты помогаешь человеку собрать короткий бриф к сеансу психотерапии.",
-  "Используй только факты ниже. Не ставь диагнозы, не давай советов, не выдумывай события и цитаты.",
-  "Напиши по-русски три коротких абзаца: как прошла неделя по состояниям, какие темы повторялись, что вынести на сеанс.",
-  "Если фактов мало, так и напиши.",
-].join(" ");
+export type BriefKind = "brief" | "backlog";
 
-function systemPrompt(locale: LocaleId): string {
-  if (locale === "ru") return SYSTEM;
+type GenLimits = { temperature: number; maxTokens: number };
+
+export function briefSystemPrompt(locale: LocaleId, kind: BriefKind = "brief"): string {
+  if (kind === "backlog") {
+    const lang =
+      locale === "ru"
+        ? "Пиши text по-русски."
+        : `Пиши text на языке «${modelLanguageName(locale)}». Названия состояний в фактах могут быть по-русски — в text передай их на языке ответа.`;
+    return [
+      "Собери список тем к сеансу психотерапии.",
+      "Верни только JSON-массив, без пояснений и без markdown. Не больше 7 объектов вида {\"text\":\"...\",\"priority\":\"high\"}.",
+      "priority — только high, mid или low.",
+      "text — одна конкретная тема, не длиннее 80 символов. Без совета, без диагноза, без утешения.",
+      "high — тема повторяется или тяжёлое состояние встречалось больше одного раза.",
+      "mid — один ясный эпизод.",
+      "low — упомянуто вскользь.",
+      "Если конкретных тем нет, верни [].",
+      lang,
+    ].join(" ");
+  }
+  const lang =
+    locale === "ru"
+      ? "Пиши по-русски."
+      : `Пиши на языке «${modelLanguageName(locale)}». Названия состояний в фактах могут быть по-русски — в ответе передай их на языке ответа.`;
   return [
-    "Ты помогаешь человеку собрать короткий бриф к сеансу психотерапии.",
-    "Используй только факты ниже. Не ставь диагнозы, не давай советов, не выдумывай события и цитаты.",
-    `Напиши на языке «${modelLanguageName(locale)}» три коротких абзаца: как прошла неделя по состояниям, какие темы повторялись, что вынести на сеанс.`,
-    "Если фактов мало, так и напиши.",
-    "Названия состояний в фактах могут быть по-русски — в брифе передай их на языке ответа.",
+    "Ты собираешь факты к сеансу психотерапии.",
+    "Используй только факты ниже. Не ставь диагнозы, не давай советов, не утешай, не интерпретируй и не выдумывай события.",
+    "Формат: короткие пункты, каждый с новой строки, начинается с «— ». Один пункт — один факт, с датой или числом повторов.",
+    "Без вступления и без заключения. Не повторяй одну мысль. Если фактов мало, перечисли их и остановись.",
+    lang,
   ].join(" ");
+}
+
+function settleModelText(raw: string | null, kind: BriefKind): string | null {
+  if (!raw) return null;
+  if (kind === "brief") return raw;
+  const parsed = parseModelBacklog(raw);
+  return parsed ? JSON.stringify(parsed) : null;
 }
 
 type GeminiPart = { text?: string; thought?: boolean };
@@ -43,10 +68,11 @@ async function geminiOnce(
   model: string,
   thinking: boolean,
   system: string,
+  limits: GenLimits,
 ): Promise<{ text: string | null; status: number }> {
   const generationConfig: Record<string, unknown> = {
-    maxOutputTokens: 1024,
-    temperature: 0.4,
+    maxOutputTokens: limits.maxTokens,
+    temperature: limits.temperature,
   };
   if (thinking) generationConfig.thinkingConfig = { thinkingBudget: 0 };
 
@@ -77,6 +103,8 @@ async function gemini(
   prompt: string,
   apiKey: string,
   system: string,
+  kind: BriefKind,
+  limits: GenLimits,
 ): Promise<{ text: string | null; detail: string }> {
   const preferred = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
   const first = await geminiOnce(
@@ -85,16 +113,23 @@ async function gemini(
     preferred,
     !preferred.startsWith("gemini-2.0"),
     system,
+    limits,
   );
-  if (first.text) return { text: first.text, detail: "" };
+  const firstText = settleModelText(first.text, kind);
+  if (firstText) return { text: firstText, detail: "" };
   if (first.status === 401 || first.status === 403) {
     return { text: null, detail: geminiDetail(first.status) };
   }
   if (preferred !== "gemini-2.0-flash") {
-    const second = await geminiOnce(prompt, apiKey, "gemini-2.0-flash", false, system);
-    if (second.text) return { text: second.text, detail: "" };
+    const second = await geminiOnce(prompt, apiKey, "gemini-2.0-flash", false, system, limits);
+    const secondText = settleModelText(second.text, kind);
+    if (secondText) return { text: secondText, detail: "" };
+    if ((first.text || second.text) && kind === "backlog") {
+      return { text: null, detail: "backlog_parse" };
+    }
     return { text: null, detail: geminiDetail(second.status || first.status) };
   }
+  if (first.text && kind === "backlog") return { text: null, detail: "backlog_parse" };
   return { text: null, detail: geminiDetail(first.status) };
 }
 
@@ -117,11 +152,12 @@ async function groqOnce(
   apiKey: string,
   model: string,
   system: string,
+  limits: GenLimits,
 ): Promise<{ text: string | null; status: number }> {
   const body: Record<string, unknown> = {
     model,
-    temperature: 0.4,
-    max_completion_tokens: 1024,
+    temperature: limits.temperature,
+    max_completion_tokens: limits.maxTokens,
     messages: [
       { role: "system", content: system },
       { role: "user", content: `Факты:\n${prompt}` },
@@ -149,16 +185,27 @@ async function groq(
   prompt: string,
   apiKey: string,
   system: string,
+  kind: BriefKind,
+  limits: GenLimits,
 ): Promise<{ text: string | null; detail: string }> {
   const preferred = resolveGroqModel(process.env.GROQ_MODEL);
-  const first = await groqOnce(prompt, apiKey, preferred, system);
-  if (first.text) return { text: first.text, detail: "" };
-  if ((first.status === 400 || first.status === 404) && preferred !== GROQ_FALLBACK) {
-    const second = await groqOnce(prompt, apiKey, GROQ_FALLBACK, system);
-    if (second.text) return { text: second.text, detail: "" };
+  const first = await groqOnce(prompt, apiKey, preferred, system, limits);
+  const firstText = settleModelText(first.text, kind);
+  if (firstText) return { text: firstText, detail: "" };
+  const retryModel =
+    (first.status === 400 || first.status === 404 || (Boolean(first.text) && kind === "backlog")) &&
+    preferred !== GROQ_FALLBACK;
+  if (retryModel) {
+    const second = await groqOnce(prompt, apiKey, GROQ_FALLBACK, system, limits);
+    const secondText = settleModelText(second.text, kind);
+    if (secondText) return { text: secondText, detail: "" };
+    if ((first.text || second.text) && kind === "backlog") {
+      return { text: null, detail: "backlog_parse" };
+    }
     const status = second.status || first.status;
     return { text: null, detail: status && status !== 200 ? `groq_${status}` : "groq_empty" };
   }
+  if (first.text && kind === "backlog") return { text: null, detail: "backlog_parse" };
   return {
     text: null,
     detail: first.status && first.status !== 200 ? `groq_${first.status}` : "groq_empty",
@@ -181,11 +228,21 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ ok: false, error: "bad_json" }, { status: 400 });
   }
-  const payload = body as { facts?: unknown; stamp?: unknown; locale?: unknown };
+  const payload = body as {
+    facts?: unknown;
+    stamp?: unknown;
+    locale?: unknown;
+    kind?: unknown;
+  };
   const facts = typeof payload.facts === "string" ? payload.facts.trim() : "";
   const stamp = typeof payload.stamp === "string" ? payload.stamp.trim() : "";
   const locale: LocaleId = isLocale(payload.locale) ? payload.locale : "ru";
-  const system = systemPrompt(locale);
+  const kind: BriefKind = payload.kind === "backlog" ? "backlog" : "brief";
+  const limits: GenLimits =
+    kind === "backlog"
+      ? { temperature: 0.2, maxTokens: 360 }
+      : { temperature: 0.2, maxTokens: 480 };
+  const system = briefSystemPrompt(locale, kind);
   if (!facts || facts.length > 4000 || !stamp || stamp.length > 64) {
     return NextResponse.json({ ok: false, error: "invalid_brief" }, { status: 400 });
   }
@@ -209,11 +266,11 @@ export async function POST(req: Request) {
   }
 
   const result = geminiKey
-    ? await gemini(facts, geminiKey, system)
-    : await groq(facts, groqKey as string, system);
+    ? await gemini(facts, geminiKey, system, kind, limits)
+    : await groq(facts, groqKey as string, system, kind, limits);
 
   if (!result.text && geminiKey && groqKey) {
-    const fallback = await groq(facts, groqKey, system);
+    const fallback = await groq(facts, groqKey, system, kind, limits);
     if (fallback.text) {
       if (redisConfigured()) await cacheBrief(validated.user.id, stamp, fallback.text);
       return NextResponse.json({ ok: true, text: fallback.text });

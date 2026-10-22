@@ -1,8 +1,12 @@
+import { backlogId } from "./brief";
 import { normalizeFeelings } from "./feelings";
 import { sanitizeTags } from "./tags";
 import {
   emptyNotify,
   emptyStore,
+  type BacklogItem,
+  type BacklogPriority,
+  type BacklogSource,
   type CheckinSlot,
   type EntrySource,
   type JournalEntry,
@@ -92,7 +96,46 @@ function normalizeWeekPrep(raw: unknown): WeekPrep | null {
     next.briefText = prep.briefText;
     next.briefStamp = prep.briefStamp;
   }
+  const backlog = normalizeBacklog(prep);
+  if (backlog) {
+    next.backlog = backlog.backlog;
+    next.backlogStamp = backlog.backlogStamp;
+    next.backlogSource = backlog.backlogSource;
+  }
   return next;
+}
+
+function isBacklogPriority(value: unknown): value is BacklogPriority {
+  return value === "high" || value === "mid" || value === "low";
+}
+
+function normalizeBacklog(
+  prep: Record<string, unknown>,
+): Pick<WeekPrep, "backlog" | "backlogStamp" | "backlogSource"> | null {
+  if (typeof prep.backlogStamp !== "string" || !prep.backlogStamp) return null;
+  if (!Array.isArray(prep.backlog)) return null;
+  const items: BacklogItem[] = [];
+  for (const row of prep.backlog) {
+    if (items.length >= 7) break;
+    const item = asRecord(row);
+    if (!item || typeof item.text !== "string" || !isBacklogPriority(item.priority)) continue;
+    const text = item.text.replace(/\s+/g, " ").trim();
+    if (!text) continue;
+    const id = typeof item.id === "string" && item.id ? item.id : backlogId(text);
+    items.push({
+      id,
+      text: text.slice(0, 120),
+      priority: item.priority,
+      done: item.done === true,
+    });
+  }
+  if (items.length === 0) return null;
+  const backlogSource: BacklogSource = prep.backlogSource === "model" ? "model" : "rules";
+  return {
+    backlog: items,
+    backlogStamp: prep.backlogStamp,
+    backlogSource,
+  };
 }
 
 function normalizePlan(raw: unknown): SessionPlan | null {

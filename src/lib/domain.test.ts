@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildRuleBrief } from "./brief";
+import { buildRuleBacklog, buildRuleBrief, mergeBacklog, parseModelBacklog } from "./brief";
 import {
   localeFromTelegram,
   resolveAppGreetingLocale,
@@ -18,7 +18,7 @@ import { nextWeeklyOccurrence } from "./session-plan";
 import { suggestTags } from "./tags";
 import type { ThemeParams } from "@twa-dev/types";
 import { applyTelegramTheme, panelColor } from "./telegram";
-import { resolveGroqModel, textFromGeminiParts } from "../app/api/brief/route";
+import { briefSystemPrompt, resolveGroqModel, textFromGeminiParts } from "../app/api/brief/route";
 import { therapyWindow } from "./session-summary";
 import { emptyStore, type JournalEntry, type SessionNote } from "./types";
 import {
@@ -154,6 +154,117 @@ describe("brief", () => {
     });
     assert.match(text, /старая запись про маму/);
     assert.match(text, /сегодня: обида на подругу/);
+    assert.doesNotMatch(text, /пока пустое/);
+  });
+});
+
+describe("backlog", () => {
+  it("puts a carried theme, a repeated heavy feeling, and a talk line first", () => {
+    const items = buildRuleBacklog({
+      weekEntries: [
+        note({
+          id: "1",
+          body: "Снова мама и дедлайн на работе",
+          feelings: ["тревожно"],
+          tags: ["мама", "работа"],
+        }),
+        note({
+          id: "2",
+          date: "2026-10-10",
+          body: "опять не сплю",
+          feelings: ["тревожно", "радость"],
+          tags: ["работа"],
+        }),
+      ],
+      prevEntries: [
+        note({
+          id: "0",
+          date: "2026-10-02",
+          body: "мама",
+          tags: ["мама"],
+        }),
+      ],
+      talkNotes: "про дедлайн",
+    });
+    assert.deepEqual(
+      items.map((item) => `${item.priority}:${item.text}`),
+      ["high:про дедлайн", "high:Снова: мама", "high:тревожно — 2", "mid:работа — 2"],
+    );
+    assert.equal(items.some((item) => item.text.includes("радость")), false);
+  });
+
+  it("strips a json fence and drops a bad priority", () => {
+    const parsed = parseModelBacklog(
+      '```json\n[{"text":"разговор с мамой","priority":"mid"},{"text":"мимо","priority":"urgent"}]\n```',
+    );
+    assert.deepEqual(parsed, [{ text: "разговор с мамой", priority: "mid" }]);
+    assert.equal(parseModelBacklog('[{"text":"мимо","priority":"urgent"}]'), null);
+  });
+
+  it("keeps a checked item when the text matches", () => {
+    const merged = mergeBacklog(
+      [
+        { text: "Про дедлайн", priority: "high" },
+        { text: "работа — 2", priority: "mid" },
+      ],
+      [{ text: "про дедлайн", done: true }],
+    );
+    assert.equal(merged[0].done, true);
+    assert.equal(merged[0].priority, "high");
+    assert.equal(merged[1].done, false);
+  });
+
+  it("keeps a stored checklist and drops one without a stamp", () => {
+    const kept = normalizeStore({
+      version: 2,
+      entries: [],
+      sessions: [],
+      weekPreps: [
+        {
+          weekKey: "since:2026-10-08",
+          talkNotes: "про дедлайн",
+          updatedAt: "2026-10-14T00:00:00.000Z",
+          briefText: "— тревожно — 2",
+          briefStamp: "abc:ru",
+          backlog: [
+            { id: "x", text: "про дедлайн", priority: "high", done: true },
+            { text: "плохо", priority: "urgent", done: true },
+          ],
+          backlogStamp: "b:abc:ru",
+          backlogSource: "model",
+        },
+      ],
+    });
+    assert.ok(kept);
+    assert.equal(kept.weekPreps[0].talkNotes, "про дедлайн");
+    assert.equal(kept.weekPreps[0].briefText, "— тревожно — 2");
+    assert.equal(kept.weekPreps[0].backlogSource, "model");
+    assert.deepEqual(kept.weekPreps[0].backlog, [
+      { id: "x", text: "про дедлайн", priority: "high", done: true },
+    ]);
+
+    const dropped = normalizeStore({
+      version: 2,
+      entries: [],
+      sessions: [],
+      weekPreps: [
+        {
+          weekKey: "since:2026-10-08",
+          talkNotes: "",
+          updatedAt: "2026-10-14T00:00:00.000Z",
+          backlog: [{ id: "x", text: "про дедлайн", priority: "high", done: false }],
+        },
+      ],
+    });
+    assert.ok(dropped);
+    assert.equal(dropped.weekPreps[0].backlog, undefined);
+  });
+
+  it("asks the model for dated facts and a json checklist", () => {
+    const brief = briefSystemPrompt("ru", "brief");
+    assert.equal(brief.includes("три коротких"), false);
+    assert.match(brief, /датой или числом повторов/);
+    assert.match(briefSystemPrompt("en", "backlog"), /JSON/);
   });
 });
 
