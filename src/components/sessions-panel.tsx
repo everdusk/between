@@ -93,9 +93,6 @@ export function SessionsPanel({
         <h2 className="font-display text-2xl tracking-tight text-foreground sm:text-3xl">
           {t("sessionsTitle")}
         </h2>
-        <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
-          {t("sessionsLead")}
-        </p>
       </div>
 
       <SessionRhythm

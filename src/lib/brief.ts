@@ -60,14 +60,13 @@ export type BriefCopy = {
   entries: string;
   today: string;
   say: string;
-  talkEmpty: string;
   feeling?: (feeling: Feeling) => string;
   day?: (dateKey: string) => string;
 };
 
 const RU_BRIEF: BriefCopy = {
   empty:
-    "За эту неделю ещё нет записей. Бриф соберётся из заметок, отметок и поля «говорить на сеансе».",
+    "Записей за эту неделю нет.",
   most: "Чаще всего: {main}.",
   mostPast: "Чаще всего: {main}. {compared}.",
   past: "{feeling} на прошлой неделе было {count}",
@@ -75,8 +74,7 @@ const RU_BRIEF: BriefCopy = {
   carried: "С прошлой недели повторяется: {list}.",
   entries: "Записи:",
   today: "сегодня",
-  say: "Сказать на сеансе: {talk}",
-  talkEmpty: "Поле «говорить на сеансе» пока пустое.",
+  say: "К сеансу: {talk}",
 };
 
 /** Every note with text. Older lines drop first if the week is long; today stays. */
