@@ -102,7 +102,22 @@ function normalizeWeekPrep(raw: unknown): WeekPrep | null {
     next.backlogStamp = backlog.backlogStamp;
     next.backlogSource = backlog.backlogSource;
   }
+  const hidden = normalizeHidden(prep.backlogHidden);
+  if (hidden) next.backlogHidden = hidden;
   return next;
+}
+
+function normalizeHidden(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const hidden: string[] = [];
+  for (const row of raw) {
+    if (typeof row !== "string") continue;
+    const text = row.replace(/\s+/g, " ").trim();
+    if (!text || hidden.includes(text)) continue;
+    hidden.push(text.slice(0, 120));
+    if (hidden.length >= 30) break;
+  }
+  return hidden.length > 0 ? hidden : undefined;
 }
 
 function isBacklogPriority(value: unknown): value is BacklogPriority {
@@ -117,18 +132,20 @@ function normalizeBacklog(
   const userOwned = prep.backlogSource === "user";
   const items: BacklogItem[] = [];
   for (const row of prep.backlog) {
-    if (items.length >= (userOwned ? USER_BACKLOG_CAP : 7)) break;
+    if (items.length >= USER_BACKLOG_CAP) break;
     const item = asRecord(row);
     if (!item || typeof item.text !== "string" || !isBacklogPriority(item.priority)) continue;
     const text = item.text.replace(/\s+/g, " ").trim();
     if (!text) continue;
     const id = typeof item.id === "string" && item.id ? item.id : backlogId(text);
-    items.push({
+    const next: BacklogItem = {
       id,
       text: text.slice(0, 120),
       priority: item.priority,
       done: item.done === true,
-    });
+    };
+    if (item.origin === "user" || item.origin === "auto") next.origin = item.origin;
+    items.push(next);
   }
   if (userOwned) {
     return {

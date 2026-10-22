@@ -394,44 +394,6 @@ export function topicsOverlap(a: string, b: string): boolean {
   return false;
 }
 
-export function openBacklogText(items: BacklogItem[]): string {
-  return items
-    .filter((item) => !item.done)
-    .map((item) => item.text)
-    .join("\n");
-}
-
-/** Lines the person wrote, plus topics they already marked as said. Generated leftovers stay out. */
-export function seedUserBacklog(input: {
-  talkNotes: string;
-  previous?: BacklogItem[];
-}): BacklogItem[] {
-  const items: BacklogItem[] = [];
-
-  function add(text: string, done: boolean) {
-    const clean = clipTopic(text);
-    if (clean.length < 2) return;
-    const index = items.findIndex((item) => topicsOverlap(item.text, clean));
-    if (index >= 0) {
-      if (done) items[index] = { ...items[index], done: true };
-      return;
-    }
-    if (items.length >= USER_BACKLOG_CAP) return;
-    items.push({
-      id: backlogId(clean),
-      text: clean,
-      priority: "high",
-      done,
-    });
-  }
-
-  for (const line of input.talkNotes.split(/[\n;]+/)) add(line, false);
-  for (const item of input.previous ?? []) {
-    if (item.done) add(item.text, true);
-  }
-  return items;
-}
-
 export function appendBacklogItem(
   items: BacklogItem[],
   text: string,
@@ -441,15 +403,51 @@ export function appendBacklogItem(
   if (items.some((item) => topicsOverlap(item.text, clean))) return null;
   return [
     ...items,
-    { id: backlogId(clean), text: clean, priority: "high", done: false },
+    { id: backlogId(clean), text: clean, priority: "high", done: false, origin: "user" },
   ];
 }
 
-export function backlogSuggestions(
-  generated: BacklogItem[],
-  owned: { text: string }[],
-): BacklogItem[] {
-  return generated
-    .filter((item) => !owned.some((row) => topicsOverlap(row.text, item.text)))
-    .slice(0, 5);
+/**
+ * The list is the generated topics, plus lines the person wrote.
+ * A check survives a reworded line. A removed generated line stays removed.
+ * `handwritten` treats older items without an origin as lines the person kept.
+ */
+export function fillBacklog(input: {
+  generated: { text: string; priority: BacklogPriority }[];
+  previous?: BacklogItem[];
+  hidden?: string[];
+  handwritten?: boolean;
+}): BacklogItem[] {
+  const previous = input.previous ?? [];
+  const hidden = input.hidden ?? [];
+  const userItems: BacklogItem[] = [];
+  for (const item of previous) {
+    const origin = item.origin ?? (input.handwritten ? "user" : undefined);
+    if (origin !== "user") continue;
+    if (userItems.some((row) => topicsOverlap(row.text, item.text))) continue;
+    if (userItems.length >= USER_BACKLOG_CAP) break;
+    userItems.push({ ...item, origin: "user" });
+  }
+
+  const autos: BacklogItem[] = [];
+  for (const item of input.generated) {
+    const text = clipTopic(item.text);
+    if (text.length < 2) continue;
+    if (hidden.some((row) => topicsOverlap(row, text))) continue;
+    if (userItems.some((row) => topicsOverlap(row.text, text))) continue;
+    if (autos.some((row) => topicsOverlap(row.text, text))) continue;
+    const said = previous.some((row) => row.done && topicsOverlap(row.text, text));
+    autos.push({
+      id: backlogId(text),
+      text,
+      priority: item.priority,
+      done: said,
+      origin: "auto",
+    });
+    if (autos.length >= 7) break;
+  }
+
+  return [...userItems, ...autos].sort(
+    (a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority],
+  );
 }

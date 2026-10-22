@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { openBacklogText } from "@/lib/brief";
 import { createId, weekKey } from "@/lib/dates";
 import { isFeeling } from "@/lib/feelings";
 import { fetchJournal, mergeStores, putJournal } from "@/lib/journal-api";
@@ -255,20 +254,21 @@ export function useTherapyStore(options?: {
       backlog: BacklogItem[],
       backlogStamp: string,
       backlogSource: BacklogSource,
+      backlogHidden: string[] = [],
     ) => {
       const now = new Date().toISOString();
       const current = storeRef.current;
       const existing = current.weekPreps.find((prep) => prep.weekKey === key);
-      const talkNotes = openBacklogText(backlog);
       const next: WeekPrep = existing
-        ? { ...existing, updatedAt: now, backlog, backlogStamp, backlogSource, talkNotes }
+        ? { ...existing, updatedAt: now, backlog, backlogStamp, backlogSource, backlogHidden }
         : {
             weekKey: key,
-            talkNotes,
+            talkNotes: "",
             updatedAt: now,
             backlog,
             backlogStamp,
             backlogSource,
+            backlogHidden,
           };
       const weekPreps = existing
         ? current.weekPreps.map((prep) => (prep.weekKey === key ? next : prep))

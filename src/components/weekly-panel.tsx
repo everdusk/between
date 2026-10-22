@@ -62,6 +62,7 @@ interface WeeklyPanelProps {
     backlog: BacklogItem[],
     backlogStamp: string,
     backlogSource: BacklogSource,
+    backlogHidden: string[],
   ) => boolean;
   initData?: string;
   disabled?: boolean;
@@ -209,7 +210,10 @@ export function WeeklyPanel({
         weekKey={key}
         weekEntries={weekEntries}
         prevEntries={prevEntries}
+        talkNotes={talkNotes}
+        todayKey={todayKey}
         prep={prep}
+        initData={initData}
         disabled={disabled}
         onSave={onSaveBacklog}
       />

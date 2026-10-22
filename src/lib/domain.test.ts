@@ -2,12 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   appendBacklogItem,
-  backlogSuggestions,
   buildRuleBacklog,
   buildRuleBrief,
+  fillBacklog,
   mergeBacklog,
   parseModelBacklog,
-  seedUserBacklog,
 } from "./brief";
 import {
   localeFromTelegram,
@@ -257,29 +256,7 @@ describe("backlog", () => {
     );
   });
 
-  it("keeps written lines and topics already marked said", () => {
-    const items = seedUserBacklog({
-      talkNotes: "про дедлайн\nразговор с мамой",
-      previous: [
-        { id: "1", text: "про дедлайн", priority: "high", done: true },
-        { id: "2", text: "пт: опять не сплю", priority: "mid", done: false },
-        { id: "3", text: "стыдно за ужин", priority: "mid", done: true },
-      ],
-    });
-    assert.deepEqual(
-      items.map((item) => `${item.done}:${item.text}`),
-      ["true:про дедлайн", "false:разговор с мамой", "true:стыдно за ужин"],
-    );
-  });
-
-  it("adds a line and skips a repeat", () => {
-    const first = appendBacklogItem([], "про дедлайн");
-    assert.equal(first?.[0].text, "про дедлайн");
-    assert.equal(first?.[0].done, false);
-    assert.equal(appendBacklogItem(first ?? [], "Про дедлайн"), null);
-  });
-
-  it("hides a note line that is already on the list", () => {
+  it("fills the list from notes and keeps a handwritten line and a check", () => {
     const generated = buildRuleBacklog({
       weekEntries: [
         note({
@@ -292,11 +269,67 @@ describe("backlog", () => {
       prevEntries: [],
       talkNotes: "",
     });
-    const suggestions = backlogSuggestions(generated, [{ text: "опять не сплю" }]);
+    const items = fillBacklog({
+      generated,
+      previous: [
+        { id: "u", text: "разговор с мамой", priority: "high", done: false, origin: "user" },
+        { id: "a", text: generated[0].text, priority: "mid", done: true, origin: "auto" },
+      ],
+    });
+    assert.equal(items.some((item) => item.text === "разговор с мамой" && item.origin === "user"), true);
     assert.equal(
-      suggestions.some((item) => item.text.includes("опять не сплю")),
-      false,
+      items.some((item) => item.text === generated[0].text && item.done && item.origin === "auto"),
+      true,
     );
+  });
+
+  it("leaves a removed note out when the list rebuilds", () => {
+    const generated = buildRuleBacklog({
+      weekEntries: [
+        note({
+          id: "1",
+          body: "опять не сплю",
+          feelings: ["тревожно"],
+          tags: ["сон"],
+        }),
+      ],
+      prevEntries: [],
+      talkNotes: "",
+    });
+    const items = fillBacklog({ generated, hidden: [generated[0].text] });
+    assert.deepEqual(items, []);
+  });
+
+  it("keeps an older handwritten list and still adds the note", () => {
+    const generated = buildRuleBacklog({
+      weekEntries: [
+        note({
+          id: "1",
+          body: "опять не сплю",
+          feelings: ["тревожно"],
+          tags: ["сон"],
+        }),
+      ],
+      prevEntries: [],
+      talkNotes: "",
+    });
+    const items = fillBacklog({
+      generated,
+      handwritten: true,
+      previous: [{ id: "u", text: "разговор с мамой", priority: "high", done: true }],
+    });
+    assert.equal(
+      items.some((item) => item.text === "разговор с мамой" && item.done && item.origin === "user"),
+      true,
+    );
+    assert.equal(items.some((item) => item.origin === "auto"), true);
+  });
+
+  it("adds a line and skips a repeat", () => {
+    const first = appendBacklogItem([], "про дедлайн");
+    assert.equal(first?.[0].text, "про дедлайн");
+    assert.equal(first?.[0].origin, "user");
+    assert.equal(appendBacklogItem(first ?? [], "Про дедлайн"), null);
   });
 
   it("keeps a checked item when the text matches", () => {
