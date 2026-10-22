@@ -154,7 +154,14 @@ function normalizeBacklog(
       backlogSource: "user",
     };
   }
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    if (prep.backlogSource !== "model") return null;
+    return {
+      backlog: [],
+      backlogStamp: prep.backlogStamp,
+      backlogSource: "model",
+    };
+  }
   const backlogSource: BacklogSource = prep.backlogSource === "model" ? "model" : "rules";
   return {
     backlog: items,

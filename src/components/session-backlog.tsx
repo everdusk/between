@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   appendBacklogItem,
+  backlogContext,
+  backlogPassages,
   briefStamp,
-  buildRuleBacklog,
-  buildRuleBrief,
   fillBacklog,
   parseModelBacklog,
   topicsOverlap,
@@ -57,18 +57,25 @@ export function SessionBacklog({
 }: SessionBacklogProps) {
   const { t, locale, feeling } = useI18n();
   const [draft, setDraft] = useState("");
-  const day = (key: string) => formatDayLabel(key, locale);
-  const rules = useMemo(
+  const day = useCallback((key: string) => formatDayLabel(key, locale), [locale]);
+  const passages = useMemo(
+    () => backlogPassages({ weekEntries, talkNotes, day }),
+    [weekEntries, talkNotes, day],
+  );
+  const context = useMemo(
     () =>
-      buildRuleBacklog({
+      backlogContext({
         weekEntries,
         prevEntries,
         talkNotes,
-        day: (key) => formatDayLabel(key, locale),
+        todayKey,
+        today: t("briefToday"),
+        feeling,
+        day,
       }),
-    [weekEntries, prevEntries, talkNotes, locale],
+    [weekEntries, prevEntries, talkNotes, todayKey, t, feeling, day],
   );
-  const modelStamp = `b2:${briefStamp(weekEntries, talkNotes)}:${locale}`;
+  const modelStamp = `b3:${briefStamp(weekEntries, talkNotes)}:${locale}`;
   const settled =
     prep?.backlogStamp === modelStamp &&
     (prep.backlogSource === "model" || prep.backlogSource === "rules");
@@ -77,8 +84,10 @@ export function SessionBacklog({
   const hidden = prep?.backlogHidden;
   const generated = useMemo(
     () =>
-      usingModel ? (prep?.backlog ?? []).filter((item) => item.origin !== "user") : rules,
-    [usingModel, prep?.backlog, rules],
+      settled
+        ? (prep?.backlog ?? []).filter((item) => item.origin !== "user")
+        : passages,
+    [settled, prep?.backlog, passages],
   );
   const items = useMemo(
     () =>
@@ -90,65 +99,59 @@ export function SessionBacklog({
       }),
     [generated, prep?.backlog, hidden, handwritten],
   );
+  const hasNotes =
+    weekEntries.some((entry) => entry.body.trim().length > 0) || talkNotes.trim().length > 0;
 
-  const rulesRef = useRef(rules);
+  const passagesRef = useRef(passages);
   const previousRef = useRef(prep?.backlog);
   const hiddenRef = useRef(hidden ?? []);
   const handwrittenRef = useRef(handwritten);
-  const factsRef = useRef("");
-  const facts = buildRuleBrief({
-    weekEntries,
-    prevEntries,
-    talkNotes,
-    todayKey,
-    copy: {
-      empty: t("briefEmpty"),
-      most: t("briefMost"),
-      mostPast: t("briefMostPast"),
-      past: t("briefPast"),
-      themes: t("briefThemes"),
-      carried: t("briefCarriedLine"),
-      entries: t("briefEntries"),
-      today: t("briefToday"),
-      say: t("briefSay"),
-      talkEmpty: t("briefTalkEmpty"),
-      feeling,
-      day,
-    },
-  });
+  const contextRef = useRef(context);
   useLayoutEffect(() => {
-    rulesRef.current = rules;
+    passagesRef.current = passages;
     previousRef.current = prep?.backlog;
     hiddenRef.current = hidden ?? [];
     handwrittenRef.current = handwritten;
-    factsRef.current = facts;
-  }, [rules, prep?.backlog, hidden, handwritten, facts]);
+    contextRef.current = context;
+  }, [passages, prep?.backlog, hidden, handwritten, context]);
 
   const attemptRef = useRef<string | null>(null);
-  const rulesSignature = rules.map((item) => item.text).join("\n");
 
   useEffect(() => {
-    if (settled || !initData || !rulesSignature) return;
+    if (settled || !initData || !context.trim()) return;
     if (attemptRef.current === modelStamp) return;
     attemptRef.current = modelStamp;
     let cancelled = false;
     void (async () => {
-      const result = await requestBrief(initData, factsRef.current, modelStamp, locale, "backlog");
+      const result = await requestBrief(
+        initData,
+        contextRef.current,
+        modelStamp,
+        locale,
+        "backlog",
+      );
       if (cancelled) return;
-      const parsed = result.ok && result.text ? parseModelBacklog(result.text) : null;
+      const ranked =
+        result.ok && result.text != null ? parseModelBacklog(result.text) : null;
       const next = fillBacklog({
-        generated: parsed ?? rulesRef.current,
+        generated: ranked ?? passagesRef.current,
         previous: previousRef.current,
         hidden: hiddenRef.current,
         handwritten: handwrittenRef.current,
       });
-      onSave(weekKey, next, modelStamp, parsed ? "model" : "rules", hiddenRef.current);
+      onSave(
+        weekKey,
+        next,
+        modelStamp,
+        ranked !== null ? "model" : "rules",
+        hiddenRef.current,
+      );
     })();
     return () => {
       cancelled = true;
       if (attemptRef.current === modelStamp) attemptRef.current = null;
     };
-  }, [settled, initData, rulesSignature, modelStamp, locale, weekKey, onSave]);
+  }, [settled, initData, context, modelStamp, locale, weekKey, onSave]);
 
   const hiddenList = hidden ?? [];
 
@@ -184,7 +187,14 @@ export function SessionBacklog({
     mid: t("backlogMid"),
     low: t("backlogLow"),
   };
-  const refreshing = Boolean(initData && !settled && rulesSignature);
+  const refreshing = Boolean(initData && !settled && context.trim());
+  const groups = usingModel
+    ? ORDER.map((priority) => ({
+        key: priority,
+        label: labels[priority],
+        rows: items.filter((item) => item.priority === priority),
+      })).filter((group) => group.rows.length > 0)
+    : [{ key: "notes", label: null as string | null, rows: items }];
 
   return (
     <section className="space-y-3" aria-labelledby="session-backlog-title">
@@ -196,17 +206,18 @@ export function SessionBacklog({
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("backlogEmpty")}</p>
+        <p className="text-sm text-muted-foreground">
+          {usingModel && hasNotes ? t("backlogNone") : t("backlogEmpty")}
+        </p>
       ) : (
         <div className="space-y-4">
-          {ORDER.map((priority) => {
-            const group = items.filter((item) => item.priority === priority);
-            if (group.length === 0) return null;
-            return (
-              <div key={priority} className="space-y-2">
-                <p className="text-xs text-muted-foreground">{labels[priority]}</p>
+          {groups.map((group) => (
+              <div key={group.key} className="space-y-2">
+                {group.label ? (
+                  <p className="text-xs text-muted-foreground">{group.label}</p>
+                ) : null}
                 <ul className="space-y-2">
-                  {group.map((item) => (
+                  {group.rows.map((item) => (
                     <li
                       key={item.id}
                       className="flex items-start gap-3 rounded-2xl border border-border/60 bg-card/70 px-3 py-2.5"
@@ -253,8 +264,7 @@ export function SessionBacklog({
                   ))}
                 </ul>
               </div>
-            );
-          })}
+          ))}
         </div>
       )}
 

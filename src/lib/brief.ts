@@ -248,14 +248,124 @@ function isSessionMaterial(entry: JournalEntry): boolean {
   return entry.tags.some((tag) => !MUNDANE_TAGS.has(tag));
 }
 
-/** Model leftovers like «еда — 2» and a joyful meal are not topics. */
+/** A label with a count is not an episode. A meal, a feeling word, or a repeated tag is not noise by itself. */
 export function isBacklogNoise(text: string): boolean {
   const clean = text.trim().toLowerCase().replace(/ё/g, "е").replace(/^снова:\s*/, "");
   if (/^(еда|радость|спокойно)(?:\s*[—:-]\s*\d+)?$/.test(clean)) return true;
-  if (/^[\p{L}]{2,24}\s*[—-]\s*\d+$/u.test(clean)) return true;
-  const meal = /(вкусно|поела|поел|поели)/.test(clean);
-  const hard = /(тревог|стыд|зл|тяжел|напряж|груст|устал|пусто|вин|обид|страш|плак|бессон|дедлайн|мама|пап|работ)/.test(clean);
-  return meal && !hard;
+  return /^[\p{L}]{2,24}\s*[—-]\s*\d+$/u.test(clean);
+}
+
+const CONTEXT_LIMIT = 3500;
+
+const RU_CONTEXT = {
+  week: "Заметки этого интервала:",
+  earlier:
+    "Прошлый интервал, только как фон. Тему из него не заводи, если в текущих заметках этого нет:",
+  said: "Человек сам записал к сеансу:",
+  today: "сегодня",
+};
+
+function chronological(entries: JournalEntry[]): JournalEntry[] {
+  return entries
+    .filter((entry) => entry.body.trim())
+    .sort(
+      (a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt),
+    );
+}
+
+function formatNoteLine(
+  entry: JournalEntry,
+  todayKey: string | undefined,
+  copy: {
+    today: string;
+    feeling?: (feeling: Feeling) => string;
+    day?: (dateKey: string) => string;
+  },
+): string {
+  const when =
+    entry.date === todayKey ? copy.today : (copy.day?.(entry.date) ?? formatDayLabel(entry.date));
+  const feelings =
+    entry.feelings.length > 0
+      ? ` (${entry.feelings.map((feeling) => copy.feeling?.(feeling) ?? feeling).join(", ")})`
+      : "";
+  return `${when}${feelings}: ${noteExcerpt(entry.body)}`;
+}
+
+/**
+ * The week as written. No tag counts and no ranking.
+ * The model reads this and decides what weighs enough for a session.
+ */
+export function backlogContext(input: {
+  weekEntries: JournalEntry[];
+  prevEntries: JournalEntry[];
+  talkNotes: string;
+  todayKey?: string;
+  today?: string;
+  feeling?: (feeling: Feeling) => string;
+  day?: (dateKey: string) => string;
+}): string {
+  const copy = {
+    ...RU_CONTEXT,
+    today: input.today ?? RU_CONTEXT.today,
+    feeling: input.feeling,
+    day: input.day,
+  };
+  const week = chronological(input.weekEntries).map((entry) =>
+    formatNoteLine(entry, input.todayKey, copy),
+  );
+  const earlier = chronological(input.prevEntries).map((entry) =>
+    formatNoteLine(entry, undefined, copy),
+  );
+  const said = input.talkNotes
+    .split(/[\n;]+/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter((line) => line.length >= 2);
+
+  const blocks = () => {
+    const parts: string[] = [];
+    if (week.length > 0) parts.push(`${copy.week}\n${week.join("\n")}`);
+    if (earlier.length > 0) parts.push(`${copy.earlier}\n${earlier.join("\n")}`);
+    if (said.length > 0) parts.push(`${copy.said}\n${said.join("\n")}`);
+    return parts;
+  };
+  const size = () => blocks().join("\n\n").length;
+  while (size() > CONTEXT_LIMIT && earlier.length > 0) earlier.shift();
+  while (size() > CONTEXT_LIMIT && week.length > 1) week.shift();
+  if (size() > CONTEXT_LIMIT && week.length === 1 && week[0].length > 80) {
+    const overflow = size() - CONTEXT_LIMIT;
+    week[0] = `${week[0].slice(0, Math.max(40, week[0].length - overflow - 1)).trimEnd()}…`;
+  }
+  return blocks().join("\n\n");
+}
+
+/** Notes in the order they were written, before the model has ranked them. */
+export function backlogPassages(input: {
+  weekEntries: JournalEntry[];
+  talkNotes: string;
+  day?: (dateKey: string) => string;
+}): BacklogDraft[] {
+  const drafts: BacklogDraft[] = [];
+  const seen = new Set<string>();
+  function add(text: string) {
+    const clean = clipTopic(text);
+    if (clean.length < 2 || seen.has(clean.toLowerCase())) return;
+    seen.add(clean.toLowerCase());
+    drafts.push({ text: clean, priority: "mid" });
+  }
+
+  const said = input.talkNotes
+    .split(/[\n;]+/)
+    .map((line) => line.trim())
+    .filter((line) => line.length >= 2);
+  for (const line of said) add(line);
+
+  const notes = chronological(input.weekEntries);
+  const room = Math.max(0, 7 - drafts.length);
+  for (const entry of notes.slice(-room)) {
+    const when = input.day?.(entry.date) ?? formatDayLabel(entry.date);
+    add(`${when}: ${topicExcerpt(entry.body)}`);
+  }
+  return drafts.slice(0, 7);
 }
 
 export function buildRuleBacklog(input: {
@@ -352,7 +462,6 @@ export function parseModelBacklog(raw: string): BacklogDraft[] | null {
     drafts.push({ text: clean, priority: record.priority as BacklogPriority });
     if (drafts.length >= 7) break;
   }
-  if (drafts.length === 0) return null;
   return sortDrafts(drafts);
 }
 
