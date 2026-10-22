@@ -57,6 +57,8 @@ export type BacklogPriority = "high" | "mid" | "low";
 export interface BacklogItem {
   id: string;
   text: string;
+  /** Short factual description: the person's episodes, with dates. */
+  detail?: string;
   priority: BacklogPriority;
   done: boolean;
 }

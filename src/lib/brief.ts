@@ -202,10 +202,38 @@ export function feelingsLabel(feelings: Feeling[]): string {
 
 export type BacklogDraft = {
   text: string;
+  detail?: string;
   priority: BacklogPriority;
 };
 
+export type BacklogCopy = {
+  own: string;
+  carried: string;
+  feeling?: (feeling: Feeling) => string;
+};
+
+const RU_BACKLOG: BacklogCopy = {
+  own: "Сами вынесли на сеанс.",
+  carried: "На прошлой неделе это уже было.",
+};
+
 const LIGHT: ReadonlySet<Feeling> = new Set(["радость", "спокойно"]);
+
+/** Sharp enough to open the session ahead of a merely familiar theme. */
+const ACUTE: ReadonlySet<Feeling> = new Set(["стыд", "пусто", "тяжело"]);
+
+const FEELING_WEIGHT: Record<Feeling, number> = {
+  стыд: 90,
+  пусто: 80,
+  тяжело: 70,
+  тревожно: 50,
+  злость: 45,
+  грусть: 40,
+  напряжение: 30,
+  усталость: 20,
+  спокойно: 0,
+  радость: 0,
+};
 
 /** A tasty meal is not a session topic. Appetite and overeating still are, via the note text. */
 const MUNDANE_TAGS = new Set(["еда"]);
@@ -225,12 +253,6 @@ function clipTopic(text: string): string {
   const clean = text.replace(/\s+/g, " ").trim();
   if (clean.length <= 80) return clean;
   return `${clean.slice(0, 77).trimEnd()}…`;
-}
-
-function topicExcerpt(body: string): string {
-  const clean = body.replace(/\s+/g, " ").trim();
-  const sentence = clean.split(/(?<=[.!?…])\s+/)[0] ?? clean;
-  return clipTopic(sentence);
 }
 
 function sortDrafts(items: BacklogDraft[]): BacklogDraft[] {
@@ -258,64 +280,222 @@ export function isBacklogNoise(text: string): boolean {
   return meal && !hard;
 }
 
+function capitalizeTopic(text: string): string {
+  const clean = text.trim();
+  if (!clean) return clean;
+  return clean.charAt(0).toLocaleUpperCase("ru") + clean.slice(1);
+}
+
+function episodeExcerpt(body: string): string {
+  const clean = body.replace(/\s+/g, " ").trim();
+  const sentence = clean.split(/(?<=[.!?…])\s+/)[0] ?? clean;
+  if (sentence.length <= 120) return sentence;
+  return `${sentence.slice(0, 117).trimEnd()}…`;
+}
+
+function joinSentences(parts: string[]): string {
+  return parts.reduce((acc, part) => {
+    if (!acc) return part;
+    const sep = /[.!?…]$/.test(acc) ? " " : ". ";
+    return `${acc}${sep}${part}`;
+  }, "");
+}
+
+function capDetail(text: string): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= 240) return clean;
+  return `${clean.slice(0, 237).trimEnd()}…`;
+}
+
+function primaryTag(entry: JournalEntry): string | null {
+  return entry.tags.find((tag) => !MUNDANE_TAGS.has(tag)) ?? null;
+}
+
+function heaviestHardFeeling(entry: JournalEntry): Feeling | null {
+  let best: Feeling | null = null;
+  let weight = 0;
+  for (const feeling of entry.feelings) {
+    if (LIGHT.has(feeling)) continue;
+    const next = FEELING_WEIGHT[feeling] ?? 0;
+    if (next > weight) {
+      weight = next;
+      best = feeling;
+    }
+  }
+  return best;
+}
+
+type TopicNote = { entry: JournalEntry; when: string; excerpt: string };
+
+type TopicCluster = {
+  title: string;
+  notes: TopicNote[];
+  acute: boolean;
+  carried: boolean;
+  hard: boolean;
+  latest: string;
+};
+
+function clusterScore(cluster: TopicCluster): number {
+  let score = 0;
+  if (cluster.acute) score += 1000;
+  if (cluster.carried || cluster.notes.length >= 2) score += 400;
+  if (cluster.hard) score += 100;
+  score += Math.min(cluster.notes.length, 3);
+  return score;
+}
+
+function clusterPriority(cluster: TopicCluster): BacklogPriority {
+  if (cluster.acute || cluster.carried || cluster.notes.length >= 2) return "high";
+  if (cluster.hard) return "mid";
+  return "low";
+}
+
+function clusterDetail(cluster: TopicCluster, copy: BacklogCopy): string {
+  const ranked = [...cluster.notes].sort((a, b) => {
+    const acuteA = a.entry.feelings.some((feeling) => ACUTE.has(feeling)) ? 1 : 0;
+    const acuteB = b.entry.feelings.some((feeling) => ACUTE.has(feeling)) ? 1 : 0;
+    if (acuteA !== acuteB) return acuteB - acuteA;
+    return (
+      b.entry.date.localeCompare(a.entry.date) ||
+      b.entry.createdAt.localeCompare(a.entry.createdAt)
+    );
+  });
+  const picked = ranked
+    .slice(0, 2)
+    .sort(
+      (a, b) =>
+        a.entry.date.localeCompare(b.entry.date) ||
+        a.entry.createdAt.localeCompare(b.entry.createdAt),
+    );
+  const parts = picked.map((note) => `${note.when}: ${note.excerpt}`);
+  if (cluster.carried) parts.push(copy.carried);
+  return capDetail(joinSentences(parts));
+}
+
 export function buildRuleBacklog(input: {
   weekEntries: JournalEntry[];
   prevEntries: JournalEntry[];
   talkNotes: string;
   day?: (dateKey: string) => string;
+  copy?: BacklogCopy;
 }): BacklogItem[] {
+  const copy = input.copy ?? RU_BACKLOG;
+  const whenOf = (dateKey: string) => input.day?.(dateKey) ?? formatDayLabel(dateKey);
   const drafts: BacklogDraft[] = [];
   const seen = new Set<string>();
 
-  function add(text: string, priority: BacklogPriority, min = 4) {
-    const clean = clipTopic(text);
-    if (clean.length < min) return;
-    const key = clean.toLowerCase();
-    if (seen.has(key)) return;
+  for (const line of input.talkNotes.split(/[\n;]+/)) {
+    const text = clipTopic(line);
+    if (text.length < 4) continue;
+    const key = text.toLowerCase();
+    if (seen.has(key)) continue;
     seen.add(key);
-    drafts.push({ text: clean, priority });
+    drafts.push({ text, detail: copy.own, priority: "high" });
   }
 
-  for (const line of input.talkNotes.split(/[\n;]+/)) add(line, "high");
-
-  const tags = tagCounts(input.weekEntries);
-  const carried = new Set(
-    persistentTags(tags, tagCounts(input.prevEntries)).filter((tag) => !MUNDANE_TAGS.has(tag)),
+  const carriedTags = new Set(
+    input.prevEntries.flatMap((entry) => entry.tags).filter((tag) => !MUNDANE_TAGS.has(tag)),
   );
-  const repeatedTags = new Set(
-    tags.filter((item) => item.count >= 2 && !MUNDANE_TAGS.has(item.tag)).map((item) => item.tag),
-  );
-  const repeatedFeelings = new Set(
-    feelingCounts(input.weekEntries)
-      .filter((item) => !LIGHT.has(item.feeling) && item.count >= 2)
-      .map((item) => item.feeling),
+  const carriedFeelings = new Set(
+    input.prevEntries.flatMap((entry) => entry.feelings).filter((feeling) => !LIGHT.has(feeling)),
   );
 
-  const notes = input.weekEntries
+  const clusters = new Map<string, TopicCluster>();
+  const material = input.weekEntries
     .filter(isSessionMaterial)
-    .map((entry) => {
-      const repeated =
-        entry.feelings.some((feeling) => repeatedFeelings.has(feeling)) ||
-        entry.tags.some((tag) => repeatedTags.has(tag) || carried.has(tag));
-      const when = input.day?.(entry.date) ?? formatDayLabel(entry.date);
-      return {
-        text: `${when}: ${topicExcerpt(entry.body)}`,
-        priority: (repeated ? "high" : "mid") as BacklogPriority,
-        date: entry.date,
-      };
-    })
-    .sort((a, b) => b.date.localeCompare(a.date) || PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority]);
+    .sort(
+      (a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt),
+    );
 
-  for (const note of notes) add(note.text, note.priority, 2);
+  for (const entry of material) {
+    const tag = primaryTag(entry);
+    const feeling = heaviestHardFeeling(entry);
+    const key = tag ? `tag:${tag}` : feeling ? `feeling:${feeling}` : null;
+    if (!key) continue;
+    const title = tag
+      ? capitalizeTopic(tag)
+      : capitalizeTopic(copy.feeling?.(feeling!) ?? feeling!);
+    const note: TopicNote = {
+      entry,
+      when: whenOf(entry.date),
+      excerpt: episodeExcerpt(entry.body),
+    };
+    const existing = clusters.get(key);
+    if (existing) {
+      existing.notes.push(note);
+      if (entry.date > existing.latest) existing.latest = entry.date;
+      if (entry.feelings.some((item) => ACUTE.has(item))) existing.acute = true;
+      if (entry.feelings.some((item) => !LIGHT.has(item))) existing.hard = true;
+      continue;
+    }
+    clusters.set(key, {
+      title,
+      notes: [note],
+      acute: entry.feelings.some((item) => ACUTE.has(item)),
+      carried: tag ? carriedTags.has(tag) : Boolean(feeling && carriedFeelings.has(feeling)),
+      hard: entry.feelings.some((item) => !LIGHT.has(item)),
+      latest: entry.date,
+    });
+  }
 
-  return sortDrafts(drafts)
-    .slice(0, 7)
-    .map((item) => ({
-      id: backlogId(item.text),
-      text: item.text,
-      priority: item.priority,
-      done: false,
-    }));
+  const topics = [...clusters.values()].sort((a, b) => {
+    const byScore = clusterScore(b) - clusterScore(a);
+    if (byScore !== 0) return byScore;
+    const byDate = b.latest.localeCompare(a.latest);
+    if (byDate !== 0) return byDate;
+    return a.title.localeCompare(b.title, "ru");
+  });
+
+  for (const topic of topics) {
+    const key = topic.title.toLowerCase();
+    const detail = clusterDetail(topic, copy);
+    const talk = drafts.find((item) => item.text.toLowerCase() === key);
+    if (talk) {
+      talk.detail = capDetail(joinSentences([talk.detail ?? copy.own, detail]));
+      continue;
+    }
+    if (seen.has(key)) continue;
+    seen.add(key);
+    drafts.push({ text: topic.title, detail, priority: clusterPriority(topic) });
+  }
+
+  const capped = drafts.slice(0, 7);
+  if (capped.length > 0 && capped[0].priority !== "high") {
+    capped[0] = { ...capped[0], priority: "high" };
+  }
+
+  return capped.map((item) => ({
+    id: backlogId(item.text),
+    text: item.text,
+    ...(item.detail ? { detail: item.detail } : {}),
+    priority: item.priority,
+    done: false,
+  }));
+}
+
+const PRIORITY_ORDER: BacklogPriority[] = ["high", "mid", "low"];
+
+/** Numbered handoff a person can paste to a therapist, grouped by priority. */
+export function formatBacklogHandoff(
+  items: BacklogItem[],
+  labels: Record<BacklogPriority, string>,
+  title: string,
+): string {
+  const lines: string[] = [title, ""];
+  let number = 1;
+  for (const priority of PRIORITY_ORDER) {
+    const group = items.filter((item) => item.priority === priority);
+    if (group.length === 0) continue;
+    lines.push(labels[priority]);
+    for (const item of group) {
+      lines.push(`${number}. ${item.text}`);
+      if (item.detail?.trim()) lines.push(item.detail.trim());
+      lines.push("");
+      number += 1;
+    }
+  }
+  return lines.join("\n").trim();
 }
 
 const BACKLOG_PRIORITIES = new Set<BacklogPriority>(["high", "mid", "low"]);
@@ -339,7 +519,7 @@ export function parseModelBacklog(raw: string): BacklogDraft[] | null {
   const seen = new Set<string>();
   for (const row of data) {
     if (!row || typeof row !== "object") continue;
-    const record = row as { text?: unknown; priority?: unknown };
+    const record = row as { text?: unknown; detail?: unknown; priority?: unknown };
     if (typeof record.text !== "string") continue;
     if (typeof record.priority !== "string" || !BACKLOG_PRIORITIES.has(record.priority as BacklogPriority)) {
       continue;
@@ -349,7 +529,15 @@ export function parseModelBacklog(raw: string): BacklogDraft[] | null {
     const key = clean.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
-    drafts.push({ text: clean, priority: record.priority as BacklogPriority });
+    const detail =
+      typeof record.detail === "string"
+        ? record.detail.replace(/\s+/g, " ").trim().slice(0, 240)
+        : "";
+    drafts.push({
+      text: clean,
+      ...(detail ? { detail } : {}),
+      priority: record.priority as BacklogPriority,
+    });
     if (drafts.length >= 7) break;
   }
   if (drafts.length === 0) return null;
@@ -368,6 +556,7 @@ export function mergeBacklog(
   return incoming.slice(0, 7).map((item) => ({
     id: backlogId(item.text),
     text: item.text,
+    ...(item.detail ? { detail: item.detail } : {}),
     priority: item.priority,
     done: done.has(item.text.trim().toLowerCase()),
   }));

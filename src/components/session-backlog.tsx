@@ -2,10 +2,12 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useI18n } from "@/components/locale-provider";
+import { Button } from "@/components/ui/button";
 import {
   briefStamp,
   buildRuleBacklog,
   buildRuleBrief,
+  formatBacklogHandoff,
   mergeBacklog,
   parseModelBacklog,
   type BacklogDraft,
@@ -78,19 +80,26 @@ export function SessionBacklog({
   };
 
   const day = (key: string) => formatDayLabel(key, locale);
+  const backlogCopy = {
+    own: t("backlogOwn"),
+    carried: t("backlogCarried"),
+    feeling,
+  };
   const savedRules = buildRuleBacklog({
     weekEntries,
     prevEntries,
     talkNotes: savedTalk,
     day,
+    copy: backlogCopy,
   });
   const liveRules = buildRuleBacklog({
     weekEntries,
     prevEntries,
     talkNotes,
     day,
+    copy: backlogCopy,
   });
-  const modelStamp = `b2:${briefStamp(weekEntries, savedTalk)}:${locale}`;
+  const modelStamp = `b3:${briefStamp(weekEntries, savedTalk)}:${locale}`;
   const draftDirty = talkNotes.trim() !== savedTalk.trim();
   const stored =
     prep?.backlogStamp === modelStamp && prep.backlog && prep.backlog.length > 0
@@ -196,6 +205,7 @@ export function SessionBacklog({
     mid: t("backlogMid"),
     low: t("backlogLow"),
   };
+  const [copyState, setCopyState] = useState<"idle" | "ok" | "fail">("idle");
 
   function toggle(item: BacklogItem) {
     if (disabled) return;
@@ -217,13 +227,62 @@ export function SessionBacklog({
     }
   }
 
+  async function handleCopy() {
+    const text = formatBacklogHandoff(items, labels, t("backlogHandoffTitle"));
+    let ok = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      }
+    } catch {
+      ok = false;
+    }
+    if (!ok) {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch {
+        ok = false;
+      }
+    }
+    setCopyState(ok ? "ok" : "fail");
+    window.setTimeout(() => setCopyState("idle"), 2000);
+  }
+
   return (
     <section className="space-y-3" aria-labelledby="session-backlog-title">
-      <div className="space-y-1">
-        <h3 id="session-backlog-title" className="font-display text-lg text-foreground">
-          {t("backlogTitle")}
-        </h3>
-        <p className="text-sm text-muted-foreground">{t("backlogLead")}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h3 id="session-backlog-title" className="font-display text-lg text-foreground">
+            {t("backlogTitle")}
+          </h3>
+          <p className="text-sm text-muted-foreground">{t("backlogLead")}</p>
+        </div>
+        {items.length > 0 && (
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="min-w-[12.5rem]"
+            onClick={() => void handleCopy()}
+            aria-live="polite"
+          >
+            {copyState === "ok"
+              ? t("copied")
+              : copyState === "fail"
+                ? t("copyFail")
+                : t("copyForTherapist")}
+          </Button>
+        )}
       </div>
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("backlogEmpty")}</p>
@@ -252,13 +311,25 @@ export function SessionBacklog({
                           disabled={disabled}
                           onChange={() => toggle(item)}
                         />
-                        <span
-                          className={cn(
-                            "text-sm leading-relaxed text-foreground/90",
-                            item.done && "text-muted-foreground line-through",
+                        <span className="min-w-0 space-y-1">
+                          <span
+                            className={cn(
+                              "block text-sm leading-relaxed text-foreground/90",
+                              item.done && "text-muted-foreground line-through",
+                            )}
+                          >
+                            {item.text}
+                          </span>
+                          {item.detail && (
+                            <span
+                              className={cn(
+                                "block text-sm leading-relaxed text-muted-foreground",
+                                item.done && "line-through",
+                              )}
+                            >
+                              {item.detail}
+                            </span>
                           )}
-                        >
-                          {item.text}
                         </span>
                       </label>
                     </li>
