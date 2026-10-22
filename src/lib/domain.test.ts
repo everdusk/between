@@ -854,7 +854,6 @@ describe("languages", () => {
         entries: "Notes:",
         today: "today",
         say: "Say: {talk}",
-        talkEmpty: "Nothing to say yet.",
         feeling: (feeling) => feelingLabel("en", feeling),
       },
     });

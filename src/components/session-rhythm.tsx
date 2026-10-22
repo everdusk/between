@@ -11,7 +11,7 @@ import {
   nextWeeklyOccurrence,
   onceSessionDate,
 } from "@/lib/session-plan";
-import { DEFAULT_TIME_ZONE, type NotifyPrefs, type SessionPlan } from "@/lib/types";
+import type { NotifyPrefs, SessionPlan } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface SessionRhythmProps {
@@ -20,14 +20,6 @@ interface SessionRhythmProps {
   onSavePlan: (plan: Omit<SessionPlan, "updatedAt">) => boolean;
   onSaveNotify: (prefs: Pick<NotifyPrefs, "moodPolls" | "eveningNudge">) => boolean;
   disabled?: boolean;
-}
-
-function deviceZoneLabel(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULT_TIME_ZONE;
-  } catch {
-    return DEFAULT_TIME_ZONE;
-  }
 }
 
 export function SessionRhythm(props: SessionRhythmProps) {
@@ -57,7 +49,6 @@ function SessionRhythmForm({
   const [time, setTime] = useState(plan?.time || "17:00");
   const [weekday, setWeekday] = useState(plan?.weekday ?? 3);
   const [savedFlash, setSavedFlash] = useState(false);
-  const zone = deviceZoneLabel();
   const preview = plan ? planPreview(plan, locale, t) : t("noSchedule");
 
   function handleSave(event: React.FormEvent) {
@@ -161,9 +152,6 @@ function SessionRhythmForm({
 
       <div className="space-y-3">
         <h3 className="font-display text-lg text-foreground">{t("botReminders")}</h3>
-        <p className="text-sm text-muted-foreground">
-          {t("remindersBody", { zone, fallback: DEFAULT_TIME_ZONE })}
-        </p>
         <label className="flex items-start gap-2 text-sm text-foreground">
           <input
             type="checkbox"

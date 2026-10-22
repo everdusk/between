@@ -129,7 +129,6 @@ export function WeeklyPanel({
       entries: t("briefEntries"),
       today: t("briefToday"),
       say: t("briefSay"),
-      talkEmpty: t("briefTalkEmpty"),
       feeling,
       day: (key) => formatDayLabel(key, locale),
     },

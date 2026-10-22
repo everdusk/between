@@ -199,14 +199,6 @@ export function SessionPrepSummary({
                   </li>
                 ))}
               </ul>
-              {summary.entryCount > summary.highlights.length && (
-                <p className="text-xs text-muted-foreground">
-                  {t("highlightsNote", {
-                    shown: summary.highlights.length,
-                    total: summary.entryCount,
-                  })}
-                </p>
-              )}
             </div>
           )}
 

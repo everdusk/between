@@ -117,9 +117,6 @@ export function JournalPanel({
         <h2 className="font-display text-2xl tracking-tight text-foreground sm:text-3xl">
           {t("journalTitle")}
         </h2>
-        <p className="max-w-prose text-sm leading-relaxed text-muted-foreground sm:text-base">
-          {t("journalLead")}
-        </p>
       </div>
 
       <div className="space-y-2">
@@ -219,7 +216,6 @@ export function JournalPanel({
           <h3 className="font-display text-lg text-foreground">
             {editingId ? t("editEntry") : t("newEntry")}
           </h3>
-          <p className="text-sm text-muted-foreground">{t("entryHint")}</p>
         </div>
 
         <div className="space-y-2">
@@ -241,7 +237,6 @@ export function JournalPanel({
 
         <div className="space-y-2">
           <Label htmlFor="journal-tag">{t("themes")}</Label>
-          <p className="text-xs text-muted-foreground">{t("themesHint")}</p>
           {tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {tags.map((tag) => (
