@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   appendBacklogItem,
+  backlogContext,
+  backlogPassages,
   buildRuleBacklog,
   buildRuleBrief,
   fillBacklog,
@@ -246,13 +248,18 @@ describe("backlog", () => {
       '```json\n[{"text":"разговор с мамой","priority":"mid"},{"text":"мимо","priority":"urgent"}]\n```',
     );
     assert.deepEqual(parsed, [{ text: "разговор с мамой", priority: "mid" }]);
-    assert.equal(parseModelBacklog('[{"text":"мимо","priority":"urgent"}]'), null);
-    assert.equal(parseModelBacklog('[{"text":"еда — 2","priority":"mid"}]'), null);
+    assert.deepEqual(parseModelBacklog("[]"), []);
+    assert.equal(parseModelBacklog("не список"), null);
+    assert.deepEqual(parseModelBacklog('[{"text":"мимо","priority":"urgent"}]'), []);
+    assert.deepEqual(parseModelBacklog('[{"text":"еда — 2","priority":"mid"}]'), []);
     assert.deepEqual(
       parseModelBacklog(
-        '[{"text":"вкусно поела","priority":"high"},{"text":"разговор с мамой про дедлайн","priority":"mid"}]',
+        '[{"text":"вкусно поела","priority":"low"},{"text":"разговор с мамой про дедлайн","priority":"mid"}]',
       ),
-      [{ text: "разговор с мамой про дедлайн", priority: "mid" }],
+      [
+        { text: "разговор с мамой про дедлайн", priority: "mid" },
+        { text: "вкусно поела", priority: "low" },
+      ],
     );
   });
 
@@ -408,14 +415,133 @@ describe("backlog", () => {
     assert.ok(keptEmpty);
     assert.deepEqual(keptEmpty.weekPreps[0].backlog, []);
     assert.equal(keptEmpty.weekPreps[0].backlogSource, "user");
+
+    const nothing = normalizeStore({
+      version: 2,
+      entries: [],
+      sessions: [],
+      weekPreps: [
+        {
+          weekKey: "since:2026-10-08",
+          talkNotes: "",
+          updatedAt: "2026-10-14T00:00:00.000Z",
+          backlog: [],
+          backlogStamp: "b3:abc:ru",
+          backlogSource: "model",
+        },
+      ],
+    });
+    assert.ok(nothing);
+    assert.deepEqual(nothing.weekPreps[0].backlog, []);
+    assert.equal(nothing.weekPreps[0].backlogSource, "model");
   });
 
-  it("asks the model for dated facts and a json checklist", () => {
+  it("asks the model to rank by what happened, not by trigger words", () => {
     const brief = briefSystemPrompt("ru", "brief");
     assert.equal(brief.includes("три коротких"), false);
     assert.match(brief, /датой или числом повторов/);
-    assert.match(briefSystemPrompt("ru", "backlog"), /вкусно поела/);
+    const backlog = briefSystemPrompt("ru", "backlog");
+    assert.match(backlog, /по тому, что произошло/);
+    assert.match(backlog, /Не поднимай тему только потому/);
+    assert.equal(backlog.includes("вкусно поела"), false);
     assert.match(briefSystemPrompt("en", "backlog"), /JSON/);
+  });
+
+  it("sends the note text and does not rank a meal by its tag", () => {
+    const text = backlogContext({
+      weekEntries: [
+        note({
+          id: "1",
+          body: "вкусно поела и весь вечер было легко",
+          feelings: ["радость"],
+          tags: ["еда"],
+        }),
+        note({
+          id: "2",
+          date: "2026-10-10",
+          body: "Снова мама и дедлайн на работе",
+          feelings: ["тревожно"],
+          tags: ["мама", "работа"],
+        }),
+      ],
+      prevEntries: [
+        note({
+          id: "0",
+          date: "2026-10-02",
+          body: "мама звонила и я молчала",
+          tags: ["мама"],
+        }),
+      ],
+      talkNotes: "про дедлайн",
+      todayKey: "2026-10-10",
+    });
+    assert.match(text, /вкусно поела и весь вечер было легко/);
+    assert.match(text, /Снова мама и дедлайн на работе/);
+    assert.match(text, /мама звонила и я молчала/);
+    assert.match(text, /про дедлайн/);
+    assert.match(text, /только как фон/);
+    assert.equal(text.includes("×"), false);
+    assert.equal(text.includes("Чаще всего"), false);
+    assert.equal(text.includes("Темы:"), false);
+
+    const passages = backlogPassages({
+      weekEntries: [
+        note({
+          id: "meal",
+          body: "вкусно поела и радуюсь",
+          feelings: ["радость"],
+          tags: ["еда"],
+        }),
+        note({
+          id: "meal2",
+          date: "2026-10-10",
+          body: "еще раз вкусно поела",
+          feelings: ["радость"],
+          tags: ["еда"],
+        }),
+        note({
+          id: "hard",
+          date: "2026-10-11",
+          body: "стыдно, что переела за ужином",
+          feelings: ["стыд"],
+          tags: ["еда"],
+        }),
+      ],
+      talkNotes: "",
+    });
+    assert.deepEqual(
+      passages.map((item) => item.priority),
+      ["mid", "mid", "mid"],
+    );
+    assert.match(passages.map((item) => item.text).join("\n"), /вкусно поела и радуюсь/);
+    assert.match(passages.map((item) => item.text).join("\n"), /стыдно, что переела/);
+  });
+
+  it("keeps the latest note when the week is long", () => {
+    const weekEntries = Array.from({ length: 20 }, (_, index) => {
+      const day = String((index % 28) + 1).padStart(2, "0");
+      const month = index < 10 ? "09" : "10";
+      return note({
+        id: `n${index}`,
+        date: `2026-${month}-${day}`,
+        body: `эпизод ${index} ${"слово ".repeat(40)}`,
+      });
+    });
+    const text = backlogContext({
+      weekEntries,
+      prevEntries: [
+        note({
+          id: "old",
+          date: "2026-08-01",
+          body: `старый фон ${"давно ".repeat(80)}`,
+        }),
+      ],
+      talkNotes: "",
+    });
+    assert.ok(text.length <= 3500);
+    assert.match(text, /эпизод 19/);
+    assert.equal(text.includes("эпизод 0 "), false);
+    assert.equal(text.includes("старый фон"), false);
   });
 });
 
