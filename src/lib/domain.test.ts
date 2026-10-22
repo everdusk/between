@@ -20,7 +20,7 @@ import type { ThemeParams } from "@twa-dev/types";
 import { applyTelegramTheme, panelColor } from "./telegram";
 import { briefSystemPrompt, resolveGroqModel, textFromGeminiParts } from "../app/api/brief/route";
 import { formatDayLabel } from "./dates";
-import { therapyWindow } from "./session-summary";
+import { buildPeriodSummary, therapyWindow } from "./session-summary";
 import { emptyStore, type JournalEntry, type SessionNote } from "./types";
 import {
   daysPhrase,
@@ -717,5 +717,28 @@ describe("therapy week", () => {
     assert.equal(period.days[0], "2026-10-10");
     assert.equal(period.days.at(-1), "2026-10-14");
     assert.deepEqual(period.previousDays, []);
+  });
+});
+
+describe("summary copy", () => {
+  it("includes every note after the session, not only the highlighted edges", () => {
+    const long = "длинная запись ".repeat(20).trim();
+    const bodies = ["один", "два", "три", "четыре", "пять", "шесть", long];
+    const entries = bodies.map((body, index) =>
+      note({
+        id: `n${index}`,
+        date: `2020-01-${String(index + 2).padStart(2, "0")}`,
+        body,
+        feelings: index === 0 ? ["радость"] : index === 3 ? ["тяжело"] : ["тревожно"],
+      }),
+    );
+    entries.push(note({ id: "before", date: "2019-12-20", body: "до сеанса" }));
+    const summary = buildPeriodSummary(entries, [session("2020-01-01")]);
+    assert.ok(summary);
+    assert.equal(summary.entries.length, 7);
+    assert.ok(summary.highlights.length < summary.entries.length);
+    for (const body of bodies) assert.equal(summary.plainText.includes(body), true);
+    assert.equal(summary.plainText.includes("до сеанса"), false);
+    assert.equal(summary.plainText.includes("…"), false);
   });
 });

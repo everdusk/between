@@ -264,14 +264,15 @@ function copyText(
         .join(", ")}`,
     );
   }
-  if (summary.highlights.length > 0) {
-    lines.push(t("keyMoments"));
-    for (const highlight of summary.highlights) {
-      const names = highlight.feelingsLabel
-        ? ` — ${labelFeelings(highlight.feelingsLabel, feeling)}`
-        : "";
-      lines.push(`• ${formatDayLabel(highlight.date, locale)}${names}`);
-      lines.push(`  ${highlight.excerpt}`);
+  if (summary.entries.length > 0) {
+    lines.push(t("briefEntries"));
+    for (const entry of summary.entries) {
+      const names =
+        entry.feelings.length > 0
+          ? ` — ${entry.feelings.map((item) => feeling(item)).join(", ")}`
+          : "";
+      lines.push(`• ${formatDayLabel(entry.date, locale)}${names}`);
+      for (const line of entry.body.trim().split("\n")) lines.push(`  ${line}`);
     }
   }
   return lines.join("\n");
