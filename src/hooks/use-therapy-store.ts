@@ -228,27 +228,6 @@ export function useTherapyStore(options?: {
     [persist],
   );
 
-  const saveWeekPrep = useCallback(
-    (key: string, talkNotes: string) => {
-      const now = new Date().toISOString();
-      const current = storeRef.current;
-      const existing = current.weekPreps.find((prep) => prep.weekKey === key);
-      let weekPreps: WeekPrep[];
-      if (existing) {
-        weekPreps = current.weekPreps.map((prep) =>
-          prep.weekKey === key ? { ...prep, talkNotes, updatedAt: now } : prep,
-        );
-      } else {
-        weekPreps = [
-          ...current.weekPreps,
-          { weekKey: key, talkNotes, updatedAt: now },
-        ];
-      }
-      return persist({ ...current, weekPreps });
-    },
-    [persist],
-  );
-
   const saveBrief = useCallback(
     (key: string, briefText: string, briefStamp: string, talkNotes: string) => {
       const now = new Date().toISOString();
@@ -275,12 +254,13 @@ export function useTherapyStore(options?: {
       backlog: BacklogItem[],
       backlogStamp: string,
       backlogSource: BacklogSource,
+      backlogHidden: string[] = [],
     ) => {
       const now = new Date().toISOString();
       const current = storeRef.current;
       const existing = current.weekPreps.find((prep) => prep.weekKey === key);
       const next: WeekPrep = existing
-        ? { ...existing, updatedAt: now, backlog, backlogStamp, backlogSource }
+        ? { ...existing, updatedAt: now, backlog, backlogStamp, backlogSource, backlogHidden }
         : {
             weekKey: key,
             talkNotes: "",
@@ -288,6 +268,7 @@ export function useTherapyStore(options?: {
             backlog,
             backlogStamp,
             backlogSource,
+            backlogHidden,
           };
       const weekPreps = existing
         ? current.weekPreps.map((prep) => (prep.weekKey === key ? next : prep))
@@ -381,7 +362,6 @@ export function useTherapyStore(options?: {
     resetCorrupted,
     upsertEntry,
     deleteEntry,
-    saveWeekPrep,
     saveBrief,
     saveBacklog,
     saveSessionPlan,

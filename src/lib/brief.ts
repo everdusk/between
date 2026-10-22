@@ -372,3 +372,82 @@ export function mergeBacklog(
     done: done.has(item.text.trim().toLowerCase()),
   }));
 }
+
+export const USER_BACKLOG_CAP = 20;
+
+function topicCore(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/\s+/g, " ")
+    .replace(/^[^:]{1,40}:\s*/, "");
+}
+
+export function topicsOverlap(a: string, b: string): boolean {
+  const left = topicCore(a);
+  const right = topicCore(b);
+  if (!left || !right) return false;
+  if (left === right) return true;
+  if (left.length >= 8 && right.includes(left)) return true;
+  if (right.length >= 8 && left.includes(right)) return true;
+  return false;
+}
+
+export function appendBacklogItem(
+  items: BacklogItem[],
+  text: string,
+): BacklogItem[] | null {
+  const clean = clipTopic(text);
+  if (clean.length < 2 || items.length >= USER_BACKLOG_CAP) return null;
+  if (items.some((item) => topicsOverlap(item.text, clean))) return null;
+  return [
+    ...items,
+    { id: backlogId(clean), text: clean, priority: "high", done: false, origin: "user" },
+  ];
+}
+
+/**
+ * The list is the generated topics, plus lines the person wrote.
+ * A check survives a reworded line. A removed generated line stays removed.
+ * `handwritten` treats older items without an origin as lines the person kept.
+ */
+export function fillBacklog(input: {
+  generated: { text: string; priority: BacklogPriority }[];
+  previous?: BacklogItem[];
+  hidden?: string[];
+  handwritten?: boolean;
+}): BacklogItem[] {
+  const previous = input.previous ?? [];
+  const hidden = input.hidden ?? [];
+  const userItems: BacklogItem[] = [];
+  for (const item of previous) {
+    const origin = item.origin ?? (input.handwritten ? "user" : undefined);
+    if (origin !== "user") continue;
+    if (userItems.some((row) => topicsOverlap(row.text, item.text))) continue;
+    if (userItems.length >= USER_BACKLOG_CAP) break;
+    userItems.push({ ...item, origin: "user" });
+  }
+
+  const autos: BacklogItem[] = [];
+  for (const item of input.generated) {
+    const text = clipTopic(item.text);
+    if (text.length < 2) continue;
+    if (hidden.some((row) => topicsOverlap(row, text))) continue;
+    if (userItems.some((row) => topicsOverlap(row.text, text))) continue;
+    if (autos.some((row) => topicsOverlap(row.text, text))) continue;
+    const said = previous.some((row) => row.done && topicsOverlap(row.text, text));
+    autos.push({
+      id: backlogId(text),
+      text,
+      priority: item.priority,
+      done: said,
+      origin: "auto",
+    });
+    if (autos.length >= 7) break;
+  }
+
+  return [...userItems, ...autos].sort(
+    (a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority],
+  );
+}

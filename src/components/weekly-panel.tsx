@@ -4,8 +4,6 @@ import { useState } from "react";
 import { useI18n } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { SessionBacklog } from "@/components/session-backlog";
 import { SessionPrepSummary } from "@/components/session-prep-summary";
 import { WeekSpectrum } from "@/components/week-spectrum";
@@ -53,7 +51,6 @@ interface WeeklyPanelProps {
   entries: JournalEntry[];
   sessions: SessionNote[];
   weekPreps: WeekPrep[];
-  onSavePrep: (weekKey: string, talkNotes: string) => boolean;
   onSaveBrief: (
     weekKey: string,
     briefText: string,
@@ -65,6 +62,7 @@ interface WeeklyPanelProps {
     backlog: BacklogItem[],
     backlogStamp: string,
     backlogSource: BacklogSource,
+    backlogHidden: string[],
   ) => boolean;
   initData?: string;
   disabled?: boolean;
@@ -74,7 +72,6 @@ export function WeeklyPanel({
   entries,
   sessions,
   weekPreps,
-  onSavePrep,
   onSaveBrief,
   onSaveBacklog,
   initData,
@@ -90,9 +87,7 @@ export function WeeklyPanel({
   const prep =
     weekPreps.find((item) => item.weekKey === key) ??
     weekPreps.find((item) => item.weekKey === weekKey(now));
-  const [talkDraft, setTalkDraft] = useState<string | null>(null);
-  const talkNotes = talkDraft ?? prep?.talkNotes ?? "";
-  const [savedFlash, setSavedFlash] = useState(false);
+  const talkNotes = prep?.talkNotes ?? "";
   const [briefPhase, setBriefPhase] = useState<
     "idle" | "loading" | "local" | "plain" | "failed"
   >("idle");
@@ -142,15 +137,6 @@ export function WeeklyPanel({
   const stamp = `${briefStamp(weekEntries, talkNotes)}:${locale}`;
   const modelText = prep?.briefStamp === stamp ? prep.briefText : undefined;
 
-  function handleSave() {
-    const ok = onSavePrep(key, talkNotes.trim());
-    if (ok) {
-      setTalkDraft(null);
-      setSavedFlash(true);
-      window.setTimeout(() => setSavedFlash(false), 1800);
-    }
-  }
-
   async function formulate() {
     setBriefPhase("loading");
     setBriefNote(null);
@@ -168,7 +154,6 @@ export function WeeklyPanel({
       return;
     }
     onSaveBrief(key, result.text, stamp, talkNotes.trim());
-    setTalkDraft(null);
     setBriefPhase("idle");
   }
 
@@ -226,7 +211,6 @@ export function WeeklyPanel({
         weekEntries={weekEntries}
         prevEntries={prevEntries}
         talkNotes={talkNotes}
-        savedTalk={prep?.talkNotes ?? ""}
         todayKey={todayKey}
         prep={prep}
         initData={initData}
@@ -329,32 +313,6 @@ export function WeeklyPanel({
         })}
       </ul>
 
-      <div className="space-y-3 rounded-3xl border border-border/60 bg-card/70 p-4 sm:p-5">
-        <div className="space-y-1">
-          <Label htmlFor="talk-notes" className="font-display text-lg">
-            {t("talkLabel")}
-          </Label>
-          <p className="text-sm text-muted-foreground">{t("talkHint")}</p>
-        </div>
-        <Textarea
-          id="talk-notes"
-          value={talkNotes}
-          disabled={disabled}
-          onChange={(event) => setTalkDraft(event.target.value)}
-          placeholder={t("talkPlaceholder")}
-          className="min-h-28 resize-y"
-        />
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="button" disabled={disabled} onClick={handleSave}>
-            {t("saveNote")}
-          </Button>
-          {savedFlash && (
-            <span className="animate-in fade-in text-sm text-primary duration-500">
-              {t("saved")}
-            </span>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

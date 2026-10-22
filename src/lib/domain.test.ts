@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildRuleBacklog, buildRuleBrief, mergeBacklog, parseModelBacklog } from "./brief";
+import {
+  appendBacklogItem,
+  buildRuleBacklog,
+  buildRuleBrief,
+  fillBacklog,
+  mergeBacklog,
+  parseModelBacklog,
+} from "./brief";
 import {
   localeFromTelegram,
   resolveAppGreetingLocale,
@@ -249,6 +256,82 @@ describe("backlog", () => {
     );
   });
 
+  it("fills the list from notes and keeps a handwritten line and a check", () => {
+    const generated = buildRuleBacklog({
+      weekEntries: [
+        note({
+          id: "1",
+          body: "опять не сплю",
+          feelings: ["тревожно"],
+          tags: ["сон"],
+        }),
+      ],
+      prevEntries: [],
+      talkNotes: "",
+    });
+    const items = fillBacklog({
+      generated,
+      previous: [
+        { id: "u", text: "разговор с мамой", priority: "high", done: false, origin: "user" },
+        { id: "a", text: generated[0].text, priority: "mid", done: true, origin: "auto" },
+      ],
+    });
+    assert.equal(items.some((item) => item.text === "разговор с мамой" && item.origin === "user"), true);
+    assert.equal(
+      items.some((item) => item.text === generated[0].text && item.done && item.origin === "auto"),
+      true,
+    );
+  });
+
+  it("leaves a removed note out when the list rebuilds", () => {
+    const generated = buildRuleBacklog({
+      weekEntries: [
+        note({
+          id: "1",
+          body: "опять не сплю",
+          feelings: ["тревожно"],
+          tags: ["сон"],
+        }),
+      ],
+      prevEntries: [],
+      talkNotes: "",
+    });
+    const items = fillBacklog({ generated, hidden: [generated[0].text] });
+    assert.deepEqual(items, []);
+  });
+
+  it("keeps an older handwritten list and still adds the note", () => {
+    const generated = buildRuleBacklog({
+      weekEntries: [
+        note({
+          id: "1",
+          body: "опять не сплю",
+          feelings: ["тревожно"],
+          tags: ["сон"],
+        }),
+      ],
+      prevEntries: [],
+      talkNotes: "",
+    });
+    const items = fillBacklog({
+      generated,
+      handwritten: true,
+      previous: [{ id: "u", text: "разговор с мамой", priority: "high", done: true }],
+    });
+    assert.equal(
+      items.some((item) => item.text === "разговор с мамой" && item.done && item.origin === "user"),
+      true,
+    );
+    assert.equal(items.some((item) => item.origin === "auto"), true);
+  });
+
+  it("adds a line and skips a repeat", () => {
+    const first = appendBacklogItem([], "про дедлайн");
+    assert.equal(first?.[0].text, "про дедлайн");
+    assert.equal(first?.[0].origin, "user");
+    assert.equal(appendBacklogItem(first ?? [], "Про дедлайн"), null);
+  });
+
   it("keeps a checked item when the text matches", () => {
     const merged = mergeBacklog(
       [
@@ -306,6 +389,25 @@ describe("backlog", () => {
     });
     assert.ok(dropped);
     assert.equal(dropped.weekPreps[0].backlog, undefined);
+
+    const keptEmpty = normalizeStore({
+      version: 2,
+      entries: [],
+      sessions: [],
+      weekPreps: [
+        {
+          weekKey: "since:2026-10-08",
+          talkNotes: "",
+          updatedAt: "2026-10-14T00:00:00.000Z",
+          backlog: [],
+          backlogStamp: "user",
+          backlogSource: "user",
+        },
+      ],
+    });
+    assert.ok(keptEmpty);
+    assert.deepEqual(keptEmpty.weekPreps[0].backlog, []);
+    assert.equal(keptEmpty.weekPreps[0].backlogSource, "user");
   });
 
   it("asks the model for dated facts and a json checklist", () => {

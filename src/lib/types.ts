@@ -54,15 +54,19 @@ export interface SessionNote {
 
 export type BacklogPriority = "high" | "mid" | "low";
 
+/** auto — taken from notes; user — written by hand and kept beside the generated list. */
+export type BacklogOrigin = "auto" | "user";
+
 export interface BacklogItem {
   id: string;
   text: string;
   priority: BacklogPriority;
   done: boolean;
+  origin?: BacklogOrigin;
 }
 
-/** rules — checklist from the notes; model — the same list tightened by a free model. */
-export type BacklogSource = "rules" | "model";
+/** rules — old generated list; model — the same list tightened by a model; user — lines the person wrote or kept. */
+export type BacklogSource = "rules" | "model" | "user";
 
 export interface WeekPrep {
   weekKey: string;
@@ -73,6 +77,8 @@ export interface WeekPrep {
   backlog?: BacklogItem[];
   backlogStamp?: string;
   backlogSource?: BacklogSource;
+  /** Generated lines the person removed. They stay out when the list rebuilds. */
+  backlogHidden?: string[];
 }
 
 /** 0 = Monday … 6 = Sunday */

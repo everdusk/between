@@ -63,7 +63,6 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
     resetCorrupted,
     upsertEntry,
     deleteEntry,
-    saveWeekPrep,
     saveBrief,
     saveBacklog,
     saveSessionPlan,
@@ -208,7 +207,6 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                     entries={store.entries}
                     sessions={store.sessions}
                     weekPreps={store.weekPreps}
-                    onSavePrep={saveWeekPrep}
                     onSaveBrief={saveBrief}
                     onSaveBacklog={saveBacklog}
                     initData={telegram.inTelegram ? telegram.initData : ""}
