@@ -274,7 +274,7 @@ export async function POST(req: Request) {
     kind === "backlog"
       ? { temperature: 0.2, maxTokens: 700 }
       : kind === "themes"
-        ? { temperature: 0.1, maxTokens: 800 }
+        ? { temperature: 0.1, maxTokens: 2000 }
         : { temperature: 0.2, maxTokens: 480 };
   const system = briefSystemPrompt(locale, kind);
   if (!facts || facts.length > 4000 || !stamp || stamp.length > 64) {

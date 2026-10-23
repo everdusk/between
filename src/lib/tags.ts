@@ -160,7 +160,7 @@ export function parseModelThemes(raw: string): ThemeAssignment[] | null {
   return assignments;
 }
 
-export function themeContext(
+function themeLines(
   entries: JournalEntry[],
   options?: {
     todayKey?: string;
@@ -168,13 +168,13 @@ export function themeContext(
     feeling?: (feeling: Feeling) => string;
     day?: (dateKey: string) => string;
   },
-): string {
+): string[] {
   const notes = entries
     .filter((entry) => entry.body.trim())
     .sort(
       (a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt),
     );
-  const lines = notes.map((entry) => {
+  return notes.map((entry) => {
     const when =
       options?.todayKey && entry.date === options.todayKey
         ? (options.today ?? "сегодня")
@@ -186,11 +186,51 @@ export function themeContext(
     const body = entry.body.replace(/\s+/g, " ").trim();
     return `id: ${entry.id}\n${when}${feelings}: ${body}`;
   });
+}
+
+function fitThemeLine(line: string): string {
+  if (line.length <= THEME_CONTEXT_LIMIT) return line;
+  return `${line.slice(0, Math.max(40, THEME_CONTEXT_LIMIT - 1)).trimEnd()}…`;
+}
+
+/** Every note, split so each request stays within the model limit. Nothing is dropped. */
+export function themeContextChunks(
+  entries: JournalEntry[],
+  options?: {
+    todayKey?: string;
+    today?: string;
+    feeling?: (feeling: Feeling) => string;
+    day?: (dateKey: string) => string;
+  },
+): string[] {
+  const chunks: string[][] = [];
+  let current: string[] = [];
+  const lengthOf = (items: string[]) => items.join("\n\n").length;
+  for (const line of themeLines(entries, options).map(fitThemeLine)) {
+    if (current.length > 0 && lengthOf([...current, line]) > THEME_CONTEXT_LIMIT) {
+      chunks.push(current);
+      current = [];
+    }
+    current.push(line);
+  }
+  if (current.length > 0) chunks.push(current);
+  return chunks.map((items) => items.join("\n\n"));
+}
+
+export function themeContext(
+  entries: JournalEntry[],
+  options?: {
+    todayKey?: string;
+    today?: string;
+    feeling?: (feeling: Feeling) => string;
+    day?: (dateKey: string) => string;
+  },
+): string {
+  const lines = themeLines(entries, options);
   const size = () => lines.join("\n\n").length;
   while (size() > THEME_CONTEXT_LIMIT && lines.length > 1) lines.shift();
   if (size() > THEME_CONTEXT_LIMIT && lines.length === 1 && lines[0].length > 80) {
-    const overflow = size() - THEME_CONTEXT_LIMIT;
-    lines[0] = `${lines[0].slice(0, Math.max(40, lines[0].length - overflow - 1)).trimEnd()}…`;
+    lines[0] = fitThemeLine(lines[0]);
   }
   return lines.join("\n\n");
 }

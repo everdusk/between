@@ -128,6 +128,12 @@
     mix-blend-mode: soft-light;
     opacity: 0.06;
   }
+  /* The native calendar glyph follows the page scheme. Telegram dark theme
+     leaves the page in a light scheme, so the glyph stays black. */
+  html[data-telegram-theme="dark"] input[type="date"],
+  html[data-telegram-theme="dark"] input[type="time"] {
+    color-scheme: dark;
+  }
 }
 
 @utility font-display {

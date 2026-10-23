@@ -30,6 +30,7 @@ import {
   shownEntryTags,
   suggestTags,
   themeContext,
+  themeContextChunks,
 } from "./tags";
 import type { ThemeParams } from "@twa-dev/types";
 import { applyTelegramTheme, panelColor } from "./telegram";
@@ -178,6 +179,21 @@ describe("tags", () => {
     assert.match(text, /снилось детство/);
     assert.equal(text.includes("еда"), false);
     assert.equal(text.includes("дом"), false);
+  });
+
+  it("sends every note in the week, split when the text is long", () => {
+    const entries = Array.from({ length: 12 }, (_, index) =>
+      note({
+        id: `n${index}`,
+        date: `2026-10-${String(index + 1).padStart(2, "0")}`,
+        body: `запись ${index} ${"слово ".repeat(80)}`,
+      }),
+    );
+    const chunks = themeContextChunks(entries);
+    assert.ok(chunks.length > 1);
+    for (const chunk of chunks) assert.ok(chunk.length <= 3500);
+    const joined = chunks.join("\n");
+    for (const entry of entries) assert.match(joined, new RegExp(`id: ${entry.id}`));
   });
 });
 
