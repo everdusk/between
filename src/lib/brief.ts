@@ -1,6 +1,7 @@
 import { formatDayLabel } from "./dates";
 import { formatFeelings } from "./feelings";
 import { fill } from "./i18n";
+import { shownEntryTags } from "./tags";
 import type { BacklogItem, BacklogPriority, Feeling, JournalEntry } from "./types";
 
 export type FeelingCount = { feeling: Feeling; count: number };
@@ -146,8 +147,13 @@ export function buildRuleBrief(input: {
   const notes = input.weekEntries.filter((entry) => entry.body.trim());
   const feelings = feelingCounts(input.weekEntries);
   const prevFeelings = feelingCounts(input.prevEntries);
-  const tags = tagCounts(input.weekEntries);
-  const carried = persistentTags(tags, tagCounts(input.prevEntries));
+  const tags = tagCounts(
+    input.weekEntries.map((entry) => ({ ...entry, tags: shownEntryTags(entry) })),
+  );
+  const carried = persistentTags(
+    tags,
+    tagCounts(input.prevEntries.map((entry) => ({ ...entry, tags: shownEntryTags(entry) }))),
+  );
   const talk = input.talkNotes.trim();
 
   if (notes.length === 0 && feelings.length === 0 && !talk) {

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useI18n } from "@/components/locale-provider";
-import { Badge } from "@/components/ui/badge";
+import { badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SessionBacklog } from "@/components/session-backlog";
 import { WeekSpectrum } from "@/components/week-spectrum";
@@ -19,9 +19,9 @@ import {
   briefStamp,
   buildRuleBrief,
   entriesOnDates,
-  persistentTags,
   tagCounts,
 } from "@/lib/brief";
+import { parseModelThemes, shownEntryTags, themeContext } from "@/lib/tags";
 import { feelingFill } from "@/lib/spectrum";
 import { requestBrief } from "@/lib/journal-api";
 import type { BacklogItem, BacklogSource, JournalEntry, SessionNote, WeekPrep } from "@/lib/types";
@@ -63,6 +63,12 @@ interface WeeklyPanelProps {
     backlogSource: BacklogSource,
     backlogHidden: string[],
   ) => boolean;
+  onSaveThemes: (
+    updates: { id: string; updatedAt: string; themes: string[] }[],
+    weekKey: string,
+    themeStamp: string,
+    themeSource: "model" | "rules",
+  ) => boolean;
   initData?: string;
   disabled?: boolean;
 }
@@ -73,6 +79,7 @@ export function WeeklyPanel({
   weekPreps,
   onSaveBrief,
   onSaveBacklog,
+  onSaveThemes,
   initData,
   disabled,
 }: WeeklyPanelProps) {
@@ -92,6 +99,7 @@ export function WeeklyPanel({
   >("idle");
   const [briefNote, setBriefNote] = useState<string | null>(null);
   const [focusDay, setFocusDay] = useState<string | null>(null);
+  const [themeFilter, setThemeFilter] = useState<string | null>(null);
 
   const byDate = new Map<string, JournalEntry[]>();
   for (const day of days) byDate.set(day, []);
@@ -106,10 +114,12 @@ export function WeeklyPanel({
   const weekEntries = days.flatMap((day) => byDate.get(day) ?? []);
   const prevEntries = entriesOnDates(entries, prevDays);
 
-  const weekTags = tagCounts(weekEntries);
+  const weekTags = tagCounts(
+    weekEntries.map((entry) => ({ ...entry, tags: shownEntryTags(entry) })),
+  );
+  const activeTheme = weekTags.some((item) => item.tag === themeFilter) ? themeFilter : null;
   const selectedDay =
     focusDay && days.includes(focusDay) ? focusDay : latestNotedDay(days, byDate, todayKey);
-  const carried = persistentTags(weekTags, tagCounts(prevEntries));
   const noteDays = days.filter((day) =>
     (byDate.get(day) ?? []).some((entry) => entry.body.trim()),
   ).length;
@@ -134,6 +144,60 @@ export function WeeklyPanel({
   });
   const stamp = `${briefStamp(weekEntries, talkNotes)}:${locale}`;
   const modelText = prep?.briefStamp === stamp ? prep.briefText : undefined;
+  const themeStamp = `t1:${briefStamp(
+    weekEntries.filter((entry) => entry.body.trim()),
+    "",
+  )}`;
+  const themesSettled =
+    prep?.themeStamp === themeStamp &&
+    (prep.themeSource === "model" || prep.themeSource === "rules");
+  const themeFacts = themeContext(weekEntries, {
+    todayKey,
+    today: t("briefToday"),
+    feeling,
+    day: (day) => formatDayLabel(day, locale),
+  });
+  const themeFactsRef = useRef(themeFacts);
+  const sentRef = useRef<{ id: string; updatedAt: string }[]>([]);
+  useLayoutEffect(() => {
+    themeFactsRef.current = themeFacts;
+    sentRef.current = weekEntries
+      .filter((entry) => entry.body.trim())
+      .map((entry) => ({ id: entry.id, updatedAt: entry.updatedAt }));
+  }, [themeFacts, weekEntries]);
+  const themeAttempt = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (themesSettled || disabled || !initData || !themeFacts.trim()) return;
+    if (themeAttempt.current === themeStamp) return;
+    themeAttempt.current = themeStamp;
+    let cancelled = false;
+    void (async () => {
+      const result = await requestBrief(
+        initData,
+        themeFactsRef.current,
+        themeStamp,
+        locale,
+        "themes",
+      );
+      if (cancelled) return;
+      const parsed = result.ok && result.text != null ? parseModelThemes(result.text) : null;
+      const sent = sentRef.current;
+      if (!parsed || (parsed.length === 0 && sent.length > 0)) {
+        onSaveThemes([], key, themeStamp, "rules");
+        return;
+      }
+      const found = new Map(parsed.map((row) => [row.id, row.themes]));
+      const updates = sent
+        .filter((item) => found.has(item.id))
+        .map((item) => ({ ...item, themes: found.get(item.id) ?? [] }));
+      onSaveThemes(updates, key, themeStamp, updates.length > 0 || sent.length === 0 ? "model" : "rules");
+    })();
+    return () => {
+      cancelled = true;
+      if (themeAttempt.current === themeStamp) themeAttempt.current = null;
+    };
+  }, [themesSettled, disabled, initData, themeFacts, themeStamp, locale, key, onSaveThemes]);
 
   async function formulate() {
     setBriefPhase("loading");
@@ -184,26 +248,6 @@ export function WeeklyPanel({
         }}
       />
 
-      {(carried.length > 0 || weekTags.length > 0) && (
-        <section className="space-y-2">
-          {carried.length > 0 && (
-            <p className="text-sm text-foreground/90">
-              {t("carried", { list: carried.join(", ") })}
-            </p>
-          )}
-          {weekTags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {weekTags.slice(0, 8).map((item) => (
-                <Badge key={item.tag} className="font-normal">
-                  {item.tag}
-                  <span className="ml-1.5 text-primary-foreground/70">×{item.count}</span>
-                </Badge>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
-
       <SessionBacklog
         weekKey={key}
         weekEntries={weekEntries}
@@ -248,9 +292,36 @@ export function WeeklyPanel({
         </div>
       </section>
 
+      {weekTags.length > 0 && (
+        <div className="flex flex-wrap gap-2" aria-label={t("themes")}>
+          {weekTags.map((item) => {
+            const pressed = activeTheme === item.tag;
+            return (
+              <button
+                key={item.tag}
+                type="button"
+                aria-pressed={pressed}
+                onClick={() =>
+                  setThemeFilter((current) => (current === item.tag ? null : item.tag))
+                }
+                className={cn(badgeVariants({ variant: pressed ? "default" : "outline" }), "font-normal")}
+              >
+                {item.tag}
+                <span className={cn("ml-1.5", pressed ? "text-primary-foreground/70" : "text-muted-foreground")}>
+                  ×{item.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       <ul className="space-y-2">
         {days.map((day) => {
-          const list = byDate.get(day) ?? [];
+          const list = (byDate.get(day) ?? []).filter(
+            (entry) => !activeTheme || shownEntryTags(entry).includes(activeTheme),
+          );
+          if (activeTheme && list.length === 0) return null;
           const tone = list.find((entry) => entry.feelings.length > 0)?.feelings[0];
           return (
             <li
@@ -291,12 +362,19 @@ export function WeeklyPanel({
                           {entry.body}
                         </p>
                       )}
-                      {entry.tags.length > 0 && (
+                      {shownEntryTags(entry).length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
-                          {entry.tags.map((tag) => (
-                            <Badge key={tag} variant="outline" className="font-normal">
+                          {shownEntryTags(entry).map((tag) => (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() =>
+                                setThemeFilter((current) => (current === tag ? null : tag))
+                              }
+                              className={cn(badgeVariants({ variant: "outline" }), "font-normal")}
+                            >
                               {tag}
-                            </Badge>
+                            </button>
                           ))}
                         </div>
                       )}

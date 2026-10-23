@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 import { createId, weekKey } from "@/lib/dates";
 import { isFeeling } from "@/lib/feelings";
 import { fetchJournal, mergeStores, putJournal } from "@/lib/journal-api";
-import { sanitizeTags } from "@/lib/tags";
+import { applyThemePass, isTherapyTheme, sanitizeTags, splitTags } from "@/lib/tags";
 import { clearStore, loadStore, saveStore } from "@/lib/storage";
 import {
   emptyStore,
@@ -175,6 +175,7 @@ export function useTherapyStore(options?: {
       body: string;
       feelings: Feeling[];
       tags: string[];
+      themeHidden?: string[];
     }) => {
       const now = new Date().toISOString();
       const current = storeRef.current;
@@ -182,7 +183,14 @@ export function useTherapyStore(options?: {
         ? current.entries.find((entry) => entry.id === input.id)
         : undefined;
       const feelings = input.feelings.filter(isFeeling).slice(0, 6);
-      const tags = sanitizeTags(input.tags);
+      const userTags = sanitizeTags(input.tags);
+      const themeHidden = sanitizeTags(input.themeHidden ?? []).filter(
+        (tag) => isTherapyTheme(tag) && !userTags.includes(tag),
+      );
+      const auto = (existing ? splitTags(existing).auto : []).filter(
+        (tag) => !themeHidden.includes(tag),
+      );
+      const tags = sanitizeTags([...auto, ...userTags]);
       let entries: JournalEntry[];
       if (existing) {
         entries = current.entries.map((entry) =>
@@ -193,6 +201,9 @@ export function useTherapyStore(options?: {
                 body: input.body,
                 feelings,
                 tags,
+                autoThemes: auto,
+                userTags,
+                themeHidden: themeHidden.length > 0 ? themeHidden : undefined,
                 updatedAt: now,
               }
             : entry,
@@ -207,6 +218,9 @@ export function useTherapyStore(options?: {
             body: input.body,
             feelings,
             tags,
+            autoThemes: auto,
+            userTags,
+            themeHidden: themeHidden.length > 0 ? themeHidden : undefined,
             source: "app",
           },
           ...current.entries,
@@ -274,6 +288,33 @@ export function useTherapyStore(options?: {
         ? current.weekPreps.map((prep) => (prep.weekKey === key ? next : prep))
         : [...current.weekPreps, next];
       return persist({ ...current, weekPreps });
+    },
+    [persist],
+  );
+
+  const saveThemes = useCallback(
+    (
+      updates: { id: string; updatedAt: string; themes: string[] }[],
+      key: string,
+      themeStamp: string,
+      themeSource: "model" | "rules",
+    ) => {
+      const now = new Date().toISOString();
+      const current = storeRef.current;
+      const byId = new Map(updates.map((item) => [item.id, item]));
+      const entries = current.entries.map((entry) => {
+        const update = byId.get(entry.id);
+        if (!update || update.updatedAt !== entry.updatedAt) return entry;
+        return applyThemePass(entry, update.themes);
+      });
+      const existing = current.weekPreps.find((prep) => prep.weekKey === key);
+      const next: WeekPrep = existing
+        ? { ...existing, updatedAt: now, themeStamp, themeSource }
+        : { weekKey: key, talkNotes: "", updatedAt: now, themeStamp, themeSource };
+      const weekPreps = existing
+        ? current.weekPreps.map((prep) => (prep.weekKey === key ? next : prep))
+        : [...current.weekPreps, next];
+      return persist({ ...current, entries, weekPreps });
     },
     [persist],
   );
@@ -364,6 +405,7 @@ export function useTherapyStore(options?: {
     deleteEntry,
     saveBrief,
     saveBacklog,
+    saveThemes,
     saveSessionPlan,
     saveNotify,
     upsertSession,

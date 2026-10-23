@@ -65,6 +65,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
     deleteEntry,
     saveBrief,
     saveBacklog,
+    saveThemes,
     saveSessionPlan,
     saveNotify,
     upsertSession,
@@ -209,6 +210,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                     weekPreps={store.weekPreps}
                     onSaveBrief={saveBrief}
                     onSaveBacklog={saveBacklog}
+                    onSaveThemes={saveThemes}
                     initData={telegram.inTelegram ? telegram.initData : ""}
                     disabled={disabled}
                   />

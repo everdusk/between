@@ -24,7 +24,13 @@ import { digestAction } from "./digest";
 import { mergeStores } from "./journal-api";
 import { normalizeStore } from "./migrate";
 import { nextWeeklyOccurrence } from "./session-plan";
-import { suggestTags } from "./tags";
+import {
+  applyThemePass,
+  parseModelThemes,
+  shownEntryTags,
+  suggestTags,
+  themeContext,
+} from "./tags";
 import type { ThemeParams } from "@twa-dev/types";
 import { applyTelegramTheme, panelColor } from "./telegram";
 import { briefSystemPrompt, resolveGroqModel, textFromGeminiParts } from "../app/api/brief/route";
@@ -102,15 +108,76 @@ describe("merge", () => {
 });
 
 describe("tags", () => {
-  it("reads themes from the text and skips the bot label", () => {
-    assert.deepEqual(
-      suggestTags("Говорила с мамой про работу, опять бессонница"),
-      ["мама", "работа", "сон"],
-    );
+  it("does not turn a meal, a parent, or a place into a tag", () => {
+    assert.deepEqual(suggestTags("Говорила с мамой про работу, опять бессонница"), []);
     assert.deepEqual(suggestTags("просто другой день"), []);
     assert.deepEqual(suggestTags("бот"), []);
     assert.deepEqual(suggestTags("вкусно поела и радуюсь"), []);
-    assert.deepEqual(suggestTags("пропал аппетит, вчера переела"), ["еда"]);
+    assert.deepEqual(suggestTags("пропал аппетит, вчера переела"), []);
+  });
+
+  it("keeps a handwritten line and drops a meal label when themes are read", () => {
+    const entry = note({
+      id: "1",
+      body: "вкусно поела, а вечером стыдно перед мамой",
+      tags: ["еда", "дом", "отношения", "илья"],
+      updatedAt: "2026-10-16T10:00:00.000Z",
+    });
+    const next = applyThemePass(entry, ["стыд", "еда", "семья", "нет такой"]);
+    assert.deepEqual(next.tags, ["стыд", "семья", "илья"]);
+    assert.deepEqual(next.autoThemes, ["стыд", "семья"]);
+    assert.deepEqual(next.userTags, ["илья"]);
+    assert.equal(next.updatedAt, entry.updatedAt);
+    assert.deepEqual(shownEntryTags(entry), ["отношения", "илья"]);
+  });
+
+  it("leaves a theme the person removed", () => {
+    const entry = note({
+      id: "1",
+      body: "стыдно",
+      tags: ["илья"],
+      userTags: ["стыд"],
+      themeHidden: ["тело"],
+    });
+    const next = applyThemePass(entry, ["тело", "стыд"]);
+    assert.deepEqual(next.autoThemes, ["стыд"]);
+    assert.deepEqual(next.tags, ["стыд"]);
+    assert.deepEqual(next.themeHidden, ["тело"]);
+  });
+
+  it("reads themes from the model and ignores a meal label", () => {
+    assert.deepEqual(
+      parseModelThemes('```json\n[{"id":"a","themes":["еда","детство","детство"]},{"id":"b","themes":[]}]\n```'),
+      [
+        { id: "a", themes: ["детство"] },
+        { id: "b", themes: [] },
+      ],
+    );
+    assert.equal(parseModelThemes("не json"), null);
+    assert.deepEqual(parseModelThemes("[]"), []);
+  });
+
+  it("sends the note text and not its old tags", () => {
+    const text = themeContext([
+      note({
+        id: "meal",
+        body: "вкусно поела и радуюсь",
+        tags: ["еда", "дом"],
+        feelings: ["радость"],
+      }),
+      note({
+        id: "dream",
+        date: "2026-10-19",
+        body: "снилось детство и квартира родителей",
+        tags: ["дом"],
+      }),
+    ]);
+    assert.match(text, /id: meal/);
+    assert.match(text, /вкусно поела и радуюсь/);
+    assert.match(text, /id: dream/);
+    assert.match(text, /снилось детство/);
+    assert.equal(text.includes("еда"), false);
+    assert.equal(text.includes("дом"), false);
   });
 });
 
@@ -122,7 +189,7 @@ describe("brief", () => {
           id: "1",
           body: "Снова мама и дедлайн на работе",
           feelings: ["тревожно", "тревожно"],
-          tags: ["мама", "работа"],
+          tags: ["семья", "работа"],
         }),
       ],
       prevEntries: [
@@ -131,13 +198,13 @@ describe("brief", () => {
           date: "2026-10-02",
           body: "мама",
           feelings: ["тревожно"],
-          tags: ["мама"],
+          tags: ["семья"],
         }),
       ],
       talkNotes: "про дедлайн",
     });
     assert.match(text, /тревожно — 2/);
-    assert.match(text, /С прошлой недели повторяется: мама/);
+    assert.match(text, /С прошлой недели повторяется: семья/);
     assert.match(text, /про дедлайн/);
     assert.match(text, /Записи:\n/);
     assert.match(text, /Снова мама и дедлайн на работе/);
@@ -445,6 +512,11 @@ describe("backlog", () => {
     assert.match(backlog, /Не поднимай тему только потому/);
     assert.equal(backlog.includes("вкусно поела"), false);
     assert.match(briefSystemPrompt("en", "backlog"), /JSON/);
+    const themes = briefSystemPrompt("ru", "themes");
+    assert.match(themes, /не по отдельным словам/);
+    assert.match(themes, /еда/);
+    assert.match(themes, /самооценка/);
+    assert.match(themes, /не больше трёх/);
   });
 
   it("sends the note text and does not rank a meal by its tag", () => {

@@ -61,7 +61,18 @@ function normalizeEntry(raw: unknown): JournalEntry | null {
     source,
   };
   if (slot) next.slot = slot;
+  const autoThemes = tagList(entry.autoThemes);
+  const userTags = tagList(entry.userTags);
+  const themeHidden = tagList(entry.themeHidden);
+  if (autoThemes) next.autoThemes = autoThemes;
+  if (userTags) next.userTags = userTags;
+  if (themeHidden && themeHidden.length > 0) next.themeHidden = themeHidden;
   return next;
+}
+
+function tagList(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  return sanitizeTags(raw.filter((tag): tag is string => typeof tag === "string"));
 }
 
 function normalizeSession(raw: unknown): SessionNote | null {
@@ -104,6 +115,14 @@ function normalizeWeekPrep(raw: unknown): WeekPrep | null {
   }
   const hidden = normalizeHidden(prep.backlogHidden);
   if (hidden) next.backlogHidden = hidden;
+  if (
+    (prep.themeSource === "model" || prep.themeSource === "rules") &&
+    typeof prep.themeStamp === "string" &&
+    prep.themeStamp
+  ) {
+    next.themeStamp = prep.themeStamp;
+    next.themeSource = prep.themeSource;
+  }
   return next;
 }
 

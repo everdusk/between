@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseModelBacklog } from "@/lib/brief";
+import { parseModelThemes, THERAPY_THEMES } from "@/lib/tags";
 import { isLocale, modelLanguageName, type LocaleId } from "@/lib/i18n";
 import {
   cacheBrief,
@@ -10,11 +11,26 @@ import {
 import { validateInitData } from "@/lib/telegram-auth";
 import { todayInTimeZone } from "@/lib/zoned";
 
-export type BriefKind = "brief" | "backlog";
+export type BriefKind = "brief" | "backlog" | "themes";
+
+function settlesJson(kind: BriefKind): boolean {
+  return kind === "backlog" || kind === "themes";
+}
 
 type GenLimits = { temperature: number; maxTokens: number };
 
 export function briefSystemPrompt(locale: LocaleId, kind: BriefKind = "brief"): string {
+  if (kind === "themes") {
+    return [
+      "Для каждой заметки выбери темы психотерапии, о которых она на самом деле.",
+      `Темы только из списка: ${THERAPY_THEMES.join(", ")}.`,
+      "Решай по смыслу заметки, не по отдельным словам. Слово еда, дом, друзья, мама или сон само по себе не тема.",
+      "Быт, место, вкусный ужин и пересказ сна не размечай. Если за этим видна тема из списка — поставь её, не больше трёх.",
+      "Отметка чувства в скобках не делает тему. Нет подходящей темы — themes: [].",
+      "Не выдумывай темы вне списка. Без совета, без диагноза, без утешения.",
+      "Верни только JSON-массив без markdown. На каждую заметку один объект {\"id\":\"...\",\"themes\":[\"...\"]}. id скопируй как в фактах.",
+    ].join(" ");
+  }
   if (kind === "backlog") {
     const lang =
       locale === "ru"
@@ -53,6 +69,11 @@ export function briefSystemPrompt(locale: LocaleId, kind: BriefKind = "brief"): 
 function settleModelText(raw: string | null, kind: BriefKind): string | null {
   if (!raw) return null;
   if (kind === "brief") return raw;
+  if (kind === "themes") {
+    const parsed = parseModelThemes(raw);
+    if (parsed === null) return null;
+    return JSON.stringify(parsed);
+  }
   const parsed = parseModelBacklog(raw);
   if (parsed === null) return null;
   return JSON.stringify(parsed);
@@ -130,12 +151,14 @@ async function gemini(
     const second = await geminiOnce(prompt, apiKey, "gemini-2.0-flash", false, system, limits);
     const secondText = settleModelText(second.text, kind);
     if (secondText) return { text: secondText, detail: "" };
-    if ((first.text || second.text) && kind === "backlog") {
-      return { text: null, detail: "backlog_parse" };
+    if ((first.text || second.text) && settlesJson(kind)) {
+      return { text: null, detail: kind === "themes" ? "themes_parse" : "backlog_parse" };
     }
     return { text: null, detail: geminiDetail(second.status || first.status) };
   }
-  if (first.text && kind === "backlog") return { text: null, detail: "backlog_parse" };
+  if (first.text && settlesJson(kind)) {
+    return { text: null, detail: kind === "themes" ? "themes_parse" : "backlog_parse" };
+  }
   return { text: null, detail: geminiDetail(first.status) };
 }
 
@@ -199,19 +222,21 @@ async function groq(
   const firstText = settleModelText(first.text, kind);
   if (firstText) return { text: firstText, detail: "" };
   const retryModel =
-    (first.status === 400 || first.status === 404 || (Boolean(first.text) && kind === "backlog")) &&
+    (first.status === 400 || first.status === 404 || (Boolean(first.text) && settlesJson(kind))) &&
     preferred !== GROQ_FALLBACK;
   if (retryModel) {
     const second = await groqOnce(prompt, apiKey, GROQ_FALLBACK, system, limits);
     const secondText = settleModelText(second.text, kind);
     if (secondText) return { text: secondText, detail: "" };
-    if ((first.text || second.text) && kind === "backlog") {
-      return { text: null, detail: "backlog_parse" };
+    if ((first.text || second.text) && settlesJson(kind)) {
+      return { text: null, detail: kind === "themes" ? "themes_parse" : "backlog_parse" };
     }
     const status = second.status || first.status;
     return { text: null, detail: status && status !== 200 ? `groq_${status}` : "groq_empty" };
   }
-  if (first.text && kind === "backlog") return { text: null, detail: "backlog_parse" };
+  if (first.text && settlesJson(kind)) {
+    return { text: null, detail: kind === "themes" ? "themes_parse" : "backlog_parse" };
+  }
   return {
     text: null,
     detail: first.status && first.status !== 200 ? `groq_${first.status}` : "groq_empty",
@@ -243,11 +268,14 @@ export async function POST(req: Request) {
   const facts = typeof payload.facts === "string" ? payload.facts.trim() : "";
   const stamp = typeof payload.stamp === "string" ? payload.stamp.trim() : "";
   const locale: LocaleId = isLocale(payload.locale) ? payload.locale : "ru";
-  const kind: BriefKind = payload.kind === "backlog" ? "backlog" : "brief";
+  const kind: BriefKind =
+    payload.kind === "backlog" ? "backlog" : payload.kind === "themes" ? "themes" : "brief";
   const limits: GenLimits =
     kind === "backlog"
       ? { temperature: 0.2, maxTokens: 700 }
-      : { temperature: 0.2, maxTokens: 480 };
+      : kind === "themes"
+        ? { temperature: 0.1, maxTokens: 800 }
+        : { temperature: 0.2, maxTokens: 480 };
   const system = briefSystemPrompt(locale, kind);
   if (!facts || facts.length > 4000 || !stamp || stamp.length > 64) {
     return NextResponse.json({ ok: false, error: "invalid_brief" }, { status: 400 });
