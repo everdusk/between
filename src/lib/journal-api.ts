@@ -72,7 +72,7 @@ export async function requestBrief(
   facts: string,
   stamp: string,
   locale: LocaleId = "ru",
-  kind: "brief" | "backlog" = "brief",
+  kind: "brief" | "backlog" | "themes" = "brief",
 ): Promise<
   | { ok: true; text: string | null; reason?: string }
   | { ok: false; error: string }

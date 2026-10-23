@@ -38,6 +38,12 @@ export interface JournalEntry {
   body: string;
   feelings: Feeling[];
   tags: string[];
+  /** Themes read from the note. Replaced when the note is read again. */
+  autoThemes?: string[];
+  /** Lines the person typed. They stay when themes are read again. */
+  userTags?: string[];
+  /** Therapy themes the person took off this note. */
+  themeHidden?: string[];
   source: EntrySource;
   slot?: CheckinSlot;
 }
@@ -79,6 +85,8 @@ export interface WeekPrep {
   backlogSource?: BacklogSource;
   /** Generated lines the person removed. They stay out when the list rebuilds. */
   backlogHidden?: string[];
+  themeStamp?: string;
+  themeSource?: "model" | "rules";
 }
 
 /** 0 = Monday … 6 = Sunday */

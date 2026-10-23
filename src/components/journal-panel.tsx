@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { formatLongDate, formatTime, toDateKey } from "@/lib/dates";
-import { sanitizeTags, suggestTags } from "@/lib/tags";
+import { isTherapyTheme, sanitizeTags, shownEntryTags, splitTags } from "@/lib/tags";
 import type { Feeling, JournalEntry } from "@/lib/types";
 
 interface JournalPanelProps {
@@ -20,6 +20,7 @@ interface JournalPanelProps {
     body: string;
     feelings: Feeling[];
     tags: string[];
+    themeHidden?: string[];
   }) => boolean;
   onDelete: (id: string) => boolean;
   disabled?: boolean;
@@ -38,7 +39,8 @@ export function JournalPanel({
   const [feelings, setFeelings] = useState<Feeling[]>([]);
   const [body, setBody] = useState("");
   const [manual, setManual] = useState<string[]>([]);
-  const [dismissed, setDismissed] = useState<string[]>([]);
+  const [auto, setAuto] = useState<string[]>([]);
+  const [hidden, setHidden] = useState<string[]>([]);
   const [tagDraft, setTagDraft] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
 
@@ -50,29 +52,26 @@ export function JournalPanel({
     [entries, date],
   );
 
-  const tags = useMemo(() => {
-    const auto = suggestTags(body).filter(
-      (tag) => !dismissed.includes(tag) && !manual.includes(tag),
-    );
-    return sanitizeTags([...manual, ...auto]);
-  }, [body, dismissed, manual]);
+  const tags = sanitizeTags([...auto, ...manual]);
 
   function resetForm() {
     setEditingId(null);
     setFeelings([]);
     setBody("");
     setManual([]);
-    setDismissed([]);
+    setAuto([]);
+    setHidden([]);
     setTagDraft("");
   }
 
   function startEdit(entry: JournalEntry) {
-    const suggested = suggestTags(entry.body);
+    const parts = splitTags(entry);
     setEditingId(entry.id);
     setFeelings(entry.feelings);
     setBody(entry.body);
-    setManual(entry.tags.filter((tag) => !suggested.includes(tag)));
-    setDismissed(suggested.filter((tag) => !entry.tags.includes(tag)));
+    setManual(parts.user);
+    setAuto(parts.auto);
+    setHidden(parts.hidden);
     setTagDraft("");
   }
 
@@ -80,16 +79,16 @@ export function JournalPanel({
     const [tag] = sanitizeTags([raw]);
     if (!tag) return;
     setManual((current) => (current.includes(tag) ? current : [...current, tag]));
-    setDismissed((current) => current.filter((item) => item !== tag));
+    setHidden((current) => current.filter((item) => item !== tag));
     setTagDraft("");
   }
 
   function removeTag(tag: string) {
-    if (manual.includes(tag)) {
-      setManual((current) => current.filter((item) => item !== tag));
-      return;
+    if (isTherapyTheme(tag)) {
+      setHidden((current) => (current.includes(tag) ? current : [...current, tag]));
     }
-    setDismissed((current) => (current.includes(tag) ? current : [...current, tag]));
+    setAuto((current) => current.filter((item) => item !== tag));
+    setManual((current) => current.filter((item) => item !== tag));
   }
 
   function handleSubmit(event: React.FormEvent) {
@@ -100,7 +99,8 @@ export function JournalPanel({
       date,
       body: body.trim(),
       feelings,
-      tags,
+      tags: manual,
+      themeHidden: hidden,
     });
     if (ok) {
       setSavedFlash(true);
@@ -172,9 +172,9 @@ export function JournalPanel({
                       {entry.body}
                     </p>
                   )}
-                  {entry.tags.length > 0 && (
+                  {shownEntryTags(entry).length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
-                      {entry.tags.map((tag) => (
+                      {shownEntryTags(entry).map((tag) => (
                         <Badge key={tag} variant="outline" className="font-normal">
                           {tag}
                         </Badge>
