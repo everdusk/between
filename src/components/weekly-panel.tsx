@@ -21,7 +21,7 @@ import {
   entriesOnDates,
   tagCounts,
 } from "@/lib/brief";
-import { parseModelThemes, shownEntryTags, themeContext } from "@/lib/tags";
+import { parseModelThemes, shownEntryTags, themeContextChunks } from "@/lib/tags";
 import { feelingFill } from "@/lib/spectrum";
 import { requestBrief } from "@/lib/journal-api";
 import type { BacklogItem, BacklogSource, JournalEntry, SessionNote, WeekPrep } from "@/lib/types";
@@ -144,60 +144,63 @@ export function WeeklyPanel({
   });
   const stamp = `${briefStamp(weekEntries, talkNotes)}:${locale}`;
   const modelText = prep?.briefStamp === stamp ? prep.briefText : undefined;
-  const themeStamp = `t1:${briefStamp(
+  const themeStamp = `t2:${briefStamp(
     weekEntries.filter((entry) => entry.body.trim()),
     "",
   )}`;
-  const themesSettled =
-    prep?.themeStamp === themeStamp &&
-    (prep.themeSource === "model" || prep.themeSource === "rules");
-  const themeFacts = themeContext(weekEntries, {
+  const themesSettled = prep?.themeStamp === themeStamp && prep.themeSource === "model";
+  const themeChunks = themeContextChunks(weekEntries, {
     todayKey,
     today: t("briefToday"),
     feeling,
     day: (day) => formatDayLabel(day, locale),
   });
-  const themeFactsRef = useRef(themeFacts);
+  const themeChunkKey = themeChunks.join("\u0000");
+  const themeChunksRef = useRef(themeChunks);
   const sentRef = useRef<{ id: string; updatedAt: string }[]>([]);
   useLayoutEffect(() => {
-    themeFactsRef.current = themeFacts;
+    themeChunksRef.current = themeChunks;
     sentRef.current = weekEntries
       .filter((entry) => entry.body.trim())
       .map((entry) => ({ id: entry.id, updatedAt: entry.updatedAt }));
-  }, [themeFacts, weekEntries]);
+  }, [themeChunkKey, themeChunks, weekEntries]);
   const themeAttempt = useRef<string | null>(null);
 
   useEffect(() => {
-    if (themesSettled || disabled || !initData || !themeFacts.trim()) return;
+    if (themesSettled || disabled || !initData || !themeChunkKey) return;
     if (themeAttempt.current === themeStamp) return;
     themeAttempt.current = themeStamp;
     let cancelled = false;
     void (async () => {
-      const result = await requestBrief(
-        initData,
-        themeFactsRef.current,
-        themeStamp,
-        locale,
-        "themes",
-      );
-      if (cancelled) return;
-      const parsed = result.ok && result.text != null ? parseModelThemes(result.text) : null;
-      const sent = sentRef.current;
-      if (!parsed || (parsed.length === 0 && sent.length > 0)) {
-        onSaveThemes([], key, themeStamp, "rules");
-        return;
+      const found = new Map<string, string[]>();
+      const chunks = themeChunksRef.current;
+      for (let index = 0; index < chunks.length; index += 1) {
+        const result = await requestBrief(
+          initData,
+          chunks[index],
+          `${themeStamp}:${index}`,
+          locale,
+          "themes",
+        );
+        if (cancelled) return;
+        const parsed = result.ok && result.text != null ? parseModelThemes(result.text) : null;
+        if (!parsed) return;
+        for (const row of parsed) found.set(row.id, row.themes);
       }
-      const found = new Map(parsed.map((row) => [row.id, row.themes]));
-      const updates = sent
-        .filter((item) => found.has(item.id))
-        .map((item) => ({ ...item, themes: found.get(item.id) ?? [] }));
-      onSaveThemes(updates, key, themeStamp, updates.length > 0 || sent.length === 0 ? "model" : "rules");
+      const sent = sentRef.current;
+      if (sent.some((item) => !found.has(item.id))) return;
+      onSaveThemes(
+        sent.map((item) => ({ ...item, themes: found.get(item.id) ?? [] })),
+        key,
+        themeStamp,
+        "model",
+      );
     })();
     return () => {
       cancelled = true;
       if (themeAttempt.current === themeStamp) themeAttempt.current = null;
     };
-  }, [themesSettled, disabled, initData, themeFacts, themeStamp, locale, key, onSaveThemes]);
+  }, [themesSettled, disabled, initData, themeChunkKey, themeStamp, locale, key, onSaveThemes]);
 
   async function formulate() {
     setBriefPhase("loading");
