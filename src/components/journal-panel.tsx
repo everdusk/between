@@ -5,6 +5,7 @@ import { FeelingPicker } from "@/components/feeling-picker";
 import { useI18n } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ThemeDateInput } from "@/components/theme-date-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -121,7 +122,7 @@ export function JournalPanel({
 
       <div className="space-y-2">
         <Label htmlFor="journal-date">{t("date")}</Label>
-        <Input
+        <ThemeDateInput
           id="journal-date"
           type="date"
           value={date}
@@ -132,7 +133,6 @@ export function JournalPanel({
             resetForm();
           }}
           required
-          className="w-auto"
         />
         <p className="text-xs text-muted-foreground">{formatLongDate(date, locale)}</p>
       </div>

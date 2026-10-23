@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useI18n } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { ThemeDateInput } from "@/components/theme-date-input";
 import { Label } from "@/components/ui/label";
 import { formatLongDate, toDateKey, weekdayLong, weekdayShort } from "@/lib/dates";
 import {
@@ -92,14 +92,13 @@ function SessionRhythmForm({
         {mode === "once" ? (
           <div className="space-y-2">
             <Label htmlFor="plan-date">{t("date")}</Label>
-            <Input
+            <ThemeDateInput
               id="plan-date"
               type="date"
               value={date}
               disabled={disabled}
               onChange={(event) => setDate(event.target.value)}
               required
-              className="w-auto"
             />
           </div>
         ) : (
@@ -129,14 +128,13 @@ function SessionRhythmForm({
 
         <div className="space-y-2">
           <Label htmlFor="plan-time">{t("time")}</Label>
-          <Input
+          <ThemeDateInput
             id="plan-time"
             type="time"
             value={time}
             disabled={disabled}
             onChange={(event) => setTime(event.target.value)}
             required
-            className="w-auto"
           />
         </div>
 
