@@ -33,7 +33,7 @@ import {
   themeContextChunks,
 } from "./tags";
 import type { ThemeParams } from "@twa-dev/types";
-import { applyTelegramTheme, panelColor } from "./telegram";
+import { applyTelegramTheme, panelColor, schemeFromColor } from "./telegram";
 import { briefSystemPrompt, resolveGroqModel, textFromGeminiParts } from "../app/api/brief/route";
 import { formatDayLabel } from "./dates";
 import { buildPeriodSummary, therapyWindow } from "./session-summary";
@@ -764,6 +764,12 @@ describe("telegram theme", () => {
     assert.equal(props.get("--muted"), "#2c2c2e");
     assert.equal(props.get("--secondary-foreground"), "#ffffff");
     assert.equal(props.get("--accent-foreground"), "#ffffff");
+  });
+
+  it("picks the calendar scheme from the custom background", () => {
+    assert.equal(schemeFromColor("#2a1838"), "dark");
+    assert.equal(schemeFromColor("#f7f1e8"), "light");
+    assert.equal(schemeFromColor("purple"), null);
   });
 
   it("does not paint dark text on a light panel", () => {

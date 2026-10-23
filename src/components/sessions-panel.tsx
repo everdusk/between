@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { ThemeDateInput } from "@/components/theme-date-input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
@@ -107,7 +107,7 @@ export function SessionsPanel({
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="space-y-2">
             <Label htmlFor="session-date">{t("sessionDate")}</Label>
-            <Input
+            <ThemeDateInput
               id="session-date"
               type="date"
               value={form.date}
@@ -117,7 +117,6 @@ export function SessionsPanel({
                 setForm((f) => ({ ...f, date: e.target.value }))
               }
               required
-              className="w-auto"
             />
           </div>
           {editingId && (

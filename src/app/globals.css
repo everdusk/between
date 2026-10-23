@@ -128,12 +128,6 @@
     mix-blend-mode: soft-light;
     opacity: 0.06;
   }
-  /* The native calendar glyph follows the page scheme. Telegram dark theme
-     leaves the page in a light scheme, so the glyph stays black. */
-  html[data-telegram-theme="dark"] input[type="date"],
-  html[data-telegram-theme="dark"] input[type="time"] {
-    color-scheme: dark;
-  }
 }
 
 @utility font-display {
@@ -189,6 +183,25 @@
 .loading-bar {
   animation: loading-slide 1.1s ease-in-out infinite;
 }
+
+.theme-date-input input,
+.theme-date-input input::-webkit-datetime-edit,
+.theme-date-input input::-webkit-datetime-edit-fields-wrapper,
+.theme-date-input input::-webkit-datetime-edit-text,
+.theme-date-input input::-webkit-datetime-edit-month-field,
+.theme-date-input input::-webkit-datetime-edit-day-field,
+.theme-date-input input::-webkit-datetime-edit-year-field,
+.theme-date-input input::-webkit-datetime-edit-hour-field,
+.theme-date-input input::-webkit-datetime-edit-minute-field,
+.theme-date-input input::-webkit-datetime-edit-ampm-field {
+  color: var(--foreground);
+  -webkit-text-fill-color: currentcolor;
+}
+
+.theme-date-input input::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+
 
 @keyframes loading-slide {
   0% {

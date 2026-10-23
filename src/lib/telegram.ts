@@ -27,6 +27,19 @@ function channel(hex: string, start: number): number {
   return Number.parseInt(hex.slice(start, start + 2), 16);
 }
 
+/** Telegram's light/dark flag ignores a custom palette. The background decides. */
+export function schemeFromColor(color: string | undefined): "light" | "dark" | null {
+  const match = /^#([\da-f]{6})$/i.exec(color?.trim() ?? "");
+  if (!match) return null;
+  const hex = match[1];
+  const luminance =
+    (0.2126 * channel(hex, 0) +
+      0.7152 * channel(hex, 2) +
+      0.0722 * channel(hex, 4)) /
+    255;
+  return luminance > 0.55 ? "light" : "dark";
+}
+
 /** Light panel colors in a dark Telegram theme make white labels disappear. */
 export function panelColor(
   theme: ThemeParams,
@@ -50,6 +63,10 @@ export function panelColor(
 export function applyTelegramTheme(theme: ThemeParams, colorScheme: "light" | "dark") {
   const root = document.documentElement;
   root.dataset.telegramTheme = colorScheme;
+  root.style.setProperty(
+    "color-scheme",
+    schemeFromColor(theme.bg_color) ?? colorScheme,
+  );
 
   const set = (name: string, value: string | undefined) => {
     if (value) root.style.setProperty(name, value);
@@ -99,6 +116,7 @@ export function applyViewportHeight(height: number) {
 export function clearTelegramThemeOverrides() {
   const root = document.documentElement;
   delete root.dataset.telegramTheme;
+  root.style.removeProperty("color-scheme");
   const keys = [
     "--tg-bg-color",
     "--tg-text-color",
