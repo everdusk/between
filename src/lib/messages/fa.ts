@@ -89,7 +89,7 @@ export const fa: Catalog = {
   briefBadKey: "کلید مدل پذیرفته نشد.",
   briefTunnelKey: "کلید باید از aitunnel.ru باشد و با sk-aitunnel- شروع شود.",
   briefTunnelRejected: "AI Tunnel کلید را نپذیرفت. دوباره در AITUNNEL_API_KEY بگذار، بدون گیومه، و دوباره منتشر کن.",
-  briefTunnelForbidden: "AI Tunnel درخواست را رد کرد. محدودیت IP را بردار و مدل deepseek-v4.1-flash-1017 را مجاز کن.",
+  briefTunnelForbidden: "AI Tunnel درخواست را رد کرد. محدودیت IP را بردار و مدل ~deepseek/deepseek-v4-flash-latest را مجاز کن.",
   briefLocal: "بیرون Telegram — از یادداشت‌ها.",
   briefFail: "جمع نشد. یادداشت‌ها پایین است.",
   briefPlain: "مدل جواب نداد{reason}.",

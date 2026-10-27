@@ -89,7 +89,7 @@ export const id: Catalog = {
   briefBadKey: "Kunci model ditolak.",
   briefTunnelKey: "Kuncinya dari aitunnel.ru dan diawali sk-aitunnel-.",
   briefTunnelRejected: "AI Tunnel menolak kunci. Tempel lagi ke AITUNNEL_API_KEY, tanpa tanda kutip, lalu deploy ulang.",
-  briefTunnelForbidden: "AI Tunnel menolak permintaan. Jangan batasi IP, dan izinkan model deepseek-v4.1-flash-1017.",
+  briefTunnelForbidden: "AI Tunnel menolak permintaan. Jangan batasi IP, dan izinkan model ~deepseek/deepseek-v4-flash-latest.",
   briefLocal: "Di luar Telegram — dari catatan.",
   briefFail: "Tidak tersusun. Catatan ada di bawah.",
   briefPlain: "Model tidak menjawab{reason}.",

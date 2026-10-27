@@ -89,7 +89,7 @@ export const tr: Catalog = {
   briefBadKey: "Model anahtarı kabul edilmedi.",
   briefTunnelKey: "Anahtar aitunnel.ru'dan olmalı ve sk-aitunnel- ile başlamalı.",
   briefTunnelRejected: "AI Tunnel anahtarı kabul etmedi. Tırnaksız olarak AITUNNEL_API_KEY'e yeniden yapıştır ve yeniden dağıt.",
-  briefTunnelForbidden: "AI Tunnel isteği reddetti. IP sınırı olmasın ve deepseek-v4.1-flash-1017 modeline izin verilsin.",
+  briefTunnelForbidden: "AI Tunnel isteği reddetti. IP sınırı olmasın ve ~deepseek/deepseek-v4-flash-latest modeline izin verilsin.",
   briefLocal: "Telegram dışında — notlardan.",
   briefFail: "Oluşmadı. Aşağıda notlar.",
   briefPlain: "Model yanıt vermedi{reason}.",

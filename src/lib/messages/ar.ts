@@ -89,7 +89,7 @@ export const ar: Catalog = {
   briefBadKey: "رُفض مفتاح النموذج.",
   briefTunnelKey: "المفتاح من aitunnel.ru ويبدأ بـ sk-aitunnel-.",
   briefTunnelRejected: "رفض AI Tunnel المفتاح. الصقيه من جديد في AITUNNEL_API_KEY بلا علامات تنصيص، ثم أعد النشر.",
-  briefTunnelForbidden: "رفض AI Tunnel الطلب. اتركي عنوان IP مفتوحًا واسمحي بالنموذج deepseek-v4.1-flash-1017.",
+  briefTunnelForbidden: "رفض AI Tunnel الطلب. اتركي عنوان IP مفتوحًا واسمحي بالنموذج ~deepseek/deepseek-v4-flash-latest.",
   briefLocal: "خارج Telegram — من الملاحظات.",
   briefFail: "لم يُجمع. الملاحظات أدناه.",
   briefPlain: "لم يجب النموذج{reason}.",

@@ -866,8 +866,9 @@ describe("model budget", () => {
 
 describe("aitunnel model", () => {
   it("defaults to DeepSeek V4.1 Flash and keeps an override", () => {
-    assert.equal(resolveAitunnelModel(undefined), "deepseek-v4.1-flash-1017");
-    assert.equal(resolveAitunnelModel("  "), "deepseek-v4.1-flash-1017");
+    assert.equal(resolveAitunnelModel(undefined), "~deepseek/deepseek-v4-flash-latest");
+    assert.equal(resolveAitunnelModel("  "), "~deepseek/deepseek-v4-flash-latest");
+    assert.equal(resolveAitunnelModel("deepseek-v4.1-flash-1017"), "~deepseek/deepseek-v4-flash-latest");
     assert.equal(resolveAitunnelModel("deepseek-v4.1-flash"), "deepseek-v4.1-flash");
   });
 

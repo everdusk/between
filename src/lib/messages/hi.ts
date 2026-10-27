@@ -89,7 +89,7 @@ export const hi: Catalog = {
   briefBadKey: "मॉडल की कुंजी नहीं मानी गई.",
   briefTunnelKey: "कुंजी aitunnel.ru की हो और sk-aitunnel- से शुरू हो.",
   briefTunnelRejected: "AI Tunnel ने कुंजी नहीं मानी. उसे बिना उद्धरण के AITUNNEL_API_KEY में फिर चिपकाओ और फिर से तैनात करो.",
-  briefTunnelForbidden: "AI Tunnel ने अनुरोध ठुकराया. IP सीमा हटाओ और मॉडल deepseek-v4.1-flash-1017 की अनुमति दो.",
+  briefTunnelForbidden: "AI Tunnel ने अनुरोध ठुकराया. IP सीमा हटाओ और मॉडल ~deepseek/deepseek-v4-flash-latest की अनुमति दो.",
   briefLocal: "Telegram के बाहर — नोटों से.",
   briefFail: "नहीं बना. नोट नीचे हैं.",
   briefPlain: "मॉडल ने जवाब नहीं दिया{reason}.",

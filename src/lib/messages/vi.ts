@@ -89,7 +89,7 @@ export const vi: Catalog = {
   briefBadKey: "Khóa mô hình bị từ chối.",
   briefTunnelKey: "Khóa phải từ aitunnel.ru và bắt đầu bằng sk-aitunnel-.",
   briefTunnelRejected: "AI Tunnel không nhận khóa. Dán lại vào AITUNNEL_API_KEY, không có ngoặc kép, rồi triển khai lại.",
-  briefTunnelForbidden: "AI Tunnel từ chối yêu cầu. Đừng giới hạn IP và hãy cho phép model deepseek-v4.1-flash-1017.",
+  briefTunnelForbidden: "AI Tunnel từ chối yêu cầu. Đừng giới hạn IP và hãy cho phép model ~deepseek/deepseek-v4-flash-latest.",
   briefLocal: "Ngoài Telegram — theo ghi chép.",
   briefFail: "Không gom được. Ghi chép ở dưới.",
   briefPlain: "Mô hình không trả lời{reason}.",

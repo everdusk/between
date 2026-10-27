@@ -89,7 +89,7 @@ export const uk: Catalog = {
   briefBadKey: "Ключ моделі не прийнято.",
   briefTunnelKey: "Потрібен ключ з кабінету aitunnel.ru. Він починається з sk-aitunnel-.",
   briefTunnelRejected: "AI Tunnel не визнав ключ. Скопіюй його знову в AITUNNEL_API_KEY, без лапок, і зроби Redeploy.",
-  briefTunnelForbidden: "AI Tunnel відхилив запит. У ключа не має бути обмеження за IP, а модель deepseek-v4.1-flash-1017 має бути дозволена.",
+  briefTunnelForbidden: "AI Tunnel відхилив запит. У ключа не має бути обмеження за IP, а модель ~deepseek/deepseek-v4-flash-latest має бути дозволена.",
   briefLocal: "Поза Telegram — за записами.",
   briefFail: "Не зібралося. Нижче — за записами.",
   briefPlain: "Модель не відповіла{reason}.",

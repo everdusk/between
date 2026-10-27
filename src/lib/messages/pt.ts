@@ -89,7 +89,7 @@ export const pt: Catalog = {
   briefBadKey: "A chave do modelo não vale.",
   briefTunnelKey: "A chave é do aitunnel.ru e começa com sk-aitunnel-.",
   briefTunnelRejected: "O AI Tunnel recusou a chave. Cole de novo em AITUNNEL_API_KEY, sem aspas, e faça redeploy.",
-  briefTunnelForbidden: "O AI Tunnel recusou o pedido. A chave não pode limitar o IP e tem de permitir deepseek-v4.1-flash-1017.",
+  briefTunnelForbidden: "O AI Tunnel recusou o pedido. A chave não pode limitar o IP e tem de permitir ~deepseek/deepseek-v4-flash-latest.",
   briefLocal: "Fora do Telegram — pelas notas.",
   briefFail: "Não montou. Abaixo, as notas.",
   briefPlain: "O modelo não respondeu{reason}.",
