@@ -8,6 +8,7 @@ import {
   buildSessionBrief,
   clipPattern,
   dismissTheme,
+  modelRequestStamp,
   openThemes,
   parseJudgeVerdict,
   sameProblemTitle,
@@ -148,6 +149,17 @@ describe("theme judge", () => {
     assert.equal(nextShame?.count, 0);
     assert.equal(nextMom?.count, 1);
     assert.equal(result.state.links.filter((link) => link.entryId === "e9").length, 1);
+  });
+
+  it("opens a theme from a heavy mark when the model skips the note", () => {
+    const result = applyVerdict(
+      { themes: [], links: [] },
+      entry("e4", "Всё нормально", ["тревожно"]),
+      verdict({ relevant: false, intensity: 1, confidence: 0.2, newTheme: null, quote: "Всё нормально" }),
+    );
+    assert.equal(result.state.themes.length, 1);
+    assert.equal(result.state.themes[0].title, "Всё нормально");
+    assert.ok(result.state.themes[0].peakIntensity >= 8);
   });
 
   it("creates a theme from a calm sentence when the person marked high anxiety", () => {
@@ -405,6 +417,16 @@ describe("session brief", () => {
     );
     assert.equal(parsed?.newTheme, "стыд за детское");
     assert.equal(parseJudgeVerdict('{"relevant":"yes"}'), null);
+    const loose = parseJudgeVerdict(
+      '{"relevant":"true","match_theme":null,"intensity":"8","new_theme":null,"confidence":"0.8","quote":"","reason":""}',
+    );
+    assert.equal(loose?.relevant, true);
+    assert.equal(loose?.intensity, 8);
+    const stamp = modelRequestStamp(
+      "j",
+      "2:6f1d1c6a-7b8e-4a1c-9d2e-123456789abc:2026-10-27T21:37:04.000Z",
+    );
+    assert.ok(stamp.length <= 64);
   });
 
   it("keeps an open theme that came back out of the discussed block", () => {

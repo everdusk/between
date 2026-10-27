@@ -180,10 +180,11 @@ export async function takeBriefAttempt(
   userId: number | string,
   dateKey: string,
   limit = 8,
+  bucket = "",
 ): Promise<boolean> {
   const redis = getRedis();
   if (!redis) return true;
-  const key = briefCountKey(userId, dateKey);
+  const key = bucket ? `${briefCountKey(userId, dateKey)}:${bucket}` : briefCountKey(userId, dateKey);
   const count = await redis.incr(key);
   if (count === 1) await redis.expire(key, 60 * 60 * 48);
   return count <= limit;

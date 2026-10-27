@@ -15,6 +15,7 @@ import {
   judgeFacts,
   mergeThemes,
   judgeStamp,
+  modelRequestStamp,
   parseDedupHit,
   parseJudgeVerdict,
   pendingJudgeEntries,
@@ -175,7 +176,18 @@ export function useTherapyStore(options?: {
   const judgeRun = useRef<string | null>(null);
   const judgeTries = useRef<Record<string, number>>({});
   const judgeTimer = useRef<number | null>(null);
+  const judgeAlive = useRef(true);
   const [judgeNudge, setJudgeNudge] = useState(0);
+  useEffect(() => {
+    judgeAlive.current = true;
+    return () => {
+      judgeAlive.current = false;
+      if (judgeTimer.current !== null) {
+        window.clearTimeout(judgeTimer.current);
+        judgeTimer.current = null;
+      }
+    };
+  }, []);
   useEffect(() => {
     if (!hydrated || !initData) return;
     const today = toDateKey();
@@ -186,17 +198,22 @@ export function useTherapyStore(options?: {
     const stamp = judgeStamp(entry);
     if (judgeRun.current === stamp) return;
     judgeRun.current = stamp;
-    let cancelled = false;
     void (async () => {
       const facts = judgeFacts(themesForJudge(storeRef.current.themes ?? []), entry);
-      const result = await requestBrief(initData, facts, `j:${stamp}`, locale, "judge");
-      if (cancelled) return;
+      const result = await requestBrief(
+        initData,
+        facts,
+        modelRequestStamp("j", stamp),
+        locale,
+        "judge",
+      );
+      if (!judgeAlive.current || judgeRun.current !== stamp) return;
       const verdict = result.ok && result.text ? parseJudgeVerdict(result.text) : null;
       if (!verdict) {
         const tries = (judgeTries.current[stamp] ?? 0) + 1;
         judgeTries.current[stamp] = tries;
         judgeRun.current = null;
-        if (!cancelled && tries < 3) {
+        if (judgeAlive.current && tries < 6) {
           if (judgeTimer.current !== null) window.clearTimeout(judgeTimer.current);
           judgeTimer.current = window.setTimeout(() => {
             judgeTimer.current = null;
@@ -223,18 +240,19 @@ export function useTherapyStore(options?: {
         const dedup = await requestBrief(
           initData,
           dedupFacts(theme, others),
-          `d:${stamp}:${pass}`,
+          modelRequestStamp("d", stamp, pass),
           locale,
           "dedup",
         );
-        if (cancelled) return;
+        if (!judgeAlive.current || judgeRun.current !== stamp) return;
         const hit = dedup.ok && dedup.text ? parseDedupHit(dedup.text) : null;
         if (!hit || hit.confidence < 0.85 || hit.themeId === focus) break;
         state = mergeThemes(state, hit.themeId, focus, hit.title);
         focus = hit.themeId;
       }
-      if (cancelled) return;
+      if (!judgeAlive.current || judgeRun.current !== stamp) return;
       const latest = storeRef.current;
+      judgeRun.current = null;
       persist({
         ...latest,
         themes: state.themes,
@@ -242,14 +260,6 @@ export function useTherapyStore(options?: {
         judgeSettled: [...new Set([...(latest.judgeSettled ?? []), stamp])].slice(-400),
       });
     })();
-    return () => {
-      cancelled = true;
-      if (judgeRun.current === stamp) judgeRun.current = null;
-      if (judgeTimer.current !== null) {
-        window.clearTimeout(judgeTimer.current);
-        judgeTimer.current = null;
-      }
-    };
   }, [hydrated, initData, judgeNudge, locale, persist, store.entries, store.judgeSettled, store.sessions]);
 
   const resetCorrupted = useCallback(() => {
