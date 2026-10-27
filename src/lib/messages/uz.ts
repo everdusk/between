@@ -177,4 +177,13 @@ export const uz: Catalog = {
   botPollDay: "Kun. Qandaysiz?",
   botPollEvening: "Kechqurun. Qandaysiz?",
   botNudge: "Bugun uchun yozuv bormi?",
+  todayTitle: "Bugun",
+  nextSession: "Keyingi seans",
+  inDays: "{days} ichida",
+  weekDaysNoted: "yozuvli kunlar",
+  streakCaption: "ketma-ket",
+  sections: "Bo‘limlar",
+  calendarPrev: "Oldingi oy",
+  calendarNext: "Keyingi oy",
+  calendarMarked: "Yozuv bor",
 };

@@ -35,7 +35,7 @@ import {
 import type { ThemeParams } from "@twa-dev/types";
 import { applyTelegramTheme, panelColor, schemeFromColor } from "./telegram";
 import { briefSystemPrompt, resolveGroqModel, textFromGeminiParts } from "../app/api/brief/route";
-import { formatDayLabel } from "./dates";
+import { formatDayLabel, formatMonthTitle, monthCells, shiftMonth } from "./dates";
 import { buildPeriodSummary, therapyWindow } from "./session-summary";
 import { emptyStore, type JournalEntry, type SessionNote } from "./types";
 import {
@@ -1080,5 +1080,19 @@ describe("summary copy", () => {
     for (const body of bodies) assert.equal(summary.plainText.includes(body), true);
     assert.equal(summary.plainText.includes("до сеанса"), false);
     assert.equal(summary.plainText.includes("…"), false);
+  });
+});
+
+describe("entry calendar", () => {
+  it("starts the month on Monday and names it in the nominative", () => {
+    const cells = monthCells("2026-10-27");
+    assert.equal(cells[0], null);
+    assert.equal(cells[3], "2026-10-01");
+    assert.equal(cells.filter((cell) => cell !== null).length, 31);
+    assert.equal(cells.length % 7, 0);
+    assert.equal(shiftMonth("2026-10-27", -1), "2026-09-01");
+    assert.equal(shiftMonth("2026-01-15", -1), "2025-12-01");
+    assert.equal(formatMonthTitle("2026-10-01"), "октябрь 2026");
+    assert.equal(formatDayLabel("2026-10-01").startsWith("чт"), true);
   });
 });

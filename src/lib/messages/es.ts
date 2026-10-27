@@ -178,4 +178,13 @@ export const es: Catalog = {
   botPollDay: "Día. ¿Cómo estás?",
   botPollEvening: "Noche. ¿Cómo estás?",
   botNudge: "¿Hay una nota de hoy?",
+  todayTitle: "Hoy",
+  nextSession: "Próxima sesión",
+  inDays: "en {days}",
+  weekDaysNoted: "días con notas",
+  streakCaption: "seguidos",
+  sections: "Secciones",
+  calendarPrev: "Mes anterior",
+  calendarNext: "Mes siguiente",
+  calendarMarked: "Hay una nota",
 };

@@ -178,4 +178,13 @@ export const id: Catalog = {
   botPollDay: "Siang. Bagaimana Anda?",
   botPollEvening: "Sore. Bagaimana Anda?",
   botNudge: "Ada catatan untuk hari ini?",
+  todayTitle: "Hari ini",
+  nextSession: "Sesi berikutnya",
+  inDays: "dalam {days}",
+  weekDaysNoted: "hari dengan catatan",
+  streakCaption: "berturut-turut",
+  sections: "Bagian",
+  calendarPrev: "Bulan lalu",
+  calendarNext: "Bulan depan",
+  calendarMarked: "Ada catatan",
 };

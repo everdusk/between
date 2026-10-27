@@ -1,6 +1,7 @@
 "use client";
 
 import { useI18n } from "@/components/locale-provider";
+import { feelingFill } from "@/lib/spectrum";
 import { PICKER_FEELINGS, type Feeling } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -37,14 +38,22 @@ export function FeelingPicker({ value, onChange, disabled }: FeelingPickerProps)
             aria-pressed={active}
             onClick={() => toggle(feeling)}
             className={cn(
-              "rounded-full border px-3 py-1.5 text-sm transition-colors",
-              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
+              "inline-flex h-10 items-center gap-2 rounded-full border pr-4 pl-3 text-sm transition-[background-color,color,border-color,transform] duration-200 select-none",
+              "focus-visible:ring-4 focus-visible:ring-ring/25 focus-visible:outline-none active:scale-[0.97]",
               "disabled:opacity-50",
               active
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border/80 bg-background/70 text-foreground hover:bg-accent/60",
+                ? "border-transparent bg-foreground text-background shadow-[0_10px_24px_-14px_var(--foreground)]"
+                : "border-[color:var(--glass-border)] bg-background/55 text-foreground hover:bg-background/85",
             )}
           >
+            <span
+              aria-hidden
+              className={cn(
+                "size-2.5 shrink-0 rounded-full ring-2 transition-shadow",
+                active ? "ring-background/30" : "ring-transparent",
+              )}
+              style={{ background: feelingFill(feeling) }}
+            />
             {feelingLabel(feeling)}
           </button>
         );

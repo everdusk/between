@@ -178,4 +178,13 @@ export const pt: Catalog = {
   botPollDay: "Tarde. Como você está?",
   botPollEvening: "Noite. Como você está?",
   botNudge: "Tem uma nota de hoje?",
+  todayTitle: "Hoje",
+  nextSession: "Próxima sessão",
+  inDays: "em {days}",
+  weekDaysNoted: "dias com notas",
+  streakCaption: "seguidos",
+  sections: "Seções",
+  calendarPrev: "Mês anterior",
+  calendarNext: "Próximo mês",
+  calendarMarked: "Tem nota",
 };

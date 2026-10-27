@@ -177,4 +177,13 @@ export const ar: Catalog = {
   botPollDay: "نهار. كيف الحال؟",
   botPollEvening: "مساء. كيف الحال؟",
   botNudge: "هل هناك ملاحظة لليوم؟",
+  todayTitle: "اليوم",
+  nextSession: "الجلسة القادمة",
+  inDays: "بعد {days}",
+  weekDaysNoted: "أيام فيها ملاحظات",
+  streakCaption: "متتالية",
+  sections: "الأقسام",
+  calendarPrev: "الشهر السابق",
+  calendarNext: "الشهر التالي",
+  calendarMarked: "يوجد ملاحظة",
 };

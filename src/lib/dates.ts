@@ -65,6 +65,21 @@ export function dateKeysBetween(startKey: string, endKey: string): string[] {
 }
 
 const WEEKDAY_SHORT = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"];
+const MONTHS_NOMINATIVE = [
+  "январь",
+  "февраль",
+  "март",
+  "апрель",
+  "май",
+  "июнь",
+  "июль",
+  "август",
+  "сентябрь",
+  "октябрь",
+  "ноябрь",
+  "декабрь",
+];
+
 const MONTHS_GENITIVE = [
   "января",
   "февраля",
@@ -179,6 +194,36 @@ export function trailingDateKeys(days: number, from = new Date()): string[] {
     keys.push(toDateKey(date));
   }
   return keys;
+}
+
+export function monthStartKey(key: string): string {
+  return `${key.slice(0, 7)}-01`;
+}
+
+export function shiftMonth(key: string, delta: number): string {
+  const date = parseDateKey(monthStartKey(key));
+  date.setMonth(date.getMonth() + delta);
+  return toDateKey(date);
+}
+
+/** Monday-first month. `null` pads the leading and trailing weekdays. */
+export function monthCells(key: string): (string | null)[] {
+  const first = parseDateKey(monthStartKey(key));
+  const lead = first.getDay() === 0 ? 6 : first.getDay() - 1;
+  const count = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  const cells: (string | null)[] = Array.from({ length: lead }, () => null);
+  for (let day = 1; day <= count; day += 1) {
+    cells.push(toDateKey(new Date(first.getFullYear(), first.getMonth(), day)));
+  }
+  while (cells.length % 7 !== 0) cells.push(null);
+  return cells;
+}
+
+export function formatMonthTitle(key: string, locale?: string): string {
+  const date = parseDateKey(monthStartKey(key));
+  const tag = intlTag(locale);
+  if (!tag) return `${MONTHS_NOMINATIVE[date.getMonth()]} ${date.getFullYear()}`;
+  return new Intl.DateTimeFormat(tag, { month: "long", year: "numeric" }).format(date);
 }
 
 export function createId(): string {
