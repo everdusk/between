@@ -151,6 +151,17 @@ describe("theme judge", () => {
     assert.equal(result.state.links.filter((link) => link.entryId === "e9").length, 1);
   });
 
+  it("opens a theme from a long note the model marked calm", () => {
+    const body = "Спокойно записала, как после сеанса снова стало стыдно за то, что снизила градус.";
+    const result = applyVerdict(
+      { themes: [], links: [] },
+      entry("e8", body, ["спокойно"]),
+      verdict({ relevant: false, intensity: 2, confidence: 0.3, newTheme: null, quote: "" }),
+    );
+    assert.equal(result.state.themes.length, 1);
+    assert.ok(result.state.themes[0].title.startsWith("Спокойно записала"));
+  });
+
   it("opens a theme from a heavy mark when the model skips the note", () => {
     const result = applyVerdict(
       { themes: [], links: [] },

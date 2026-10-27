@@ -37,6 +37,7 @@ export function briefSystemPrompt(locale: LocaleId, kind: BriefKind = "brief"): 
       "Если relevant=false, new_theme=null.",
       "«Всё нормально» при высокой отметке тревоги — relevant=true, решает интенсивность.",
       "Отметка тяжело, стыд, пусто, тревожно, злость, грусть или напряжение значит relevant=true и intensity не ниже 8. Если match_theme=null, new_theme обязателен.",
+      "Спокойная отметка при длинном тяжёлом тексте — relevant=true, intensity ставь по тексту, не по отметке.",
       "Разовый мелкий негатив без повторяющегося паттерна — relevant=false.",
       "quote — дословная фраза из записи, не длиннее 140 символов, не пересказ. Ничего не выдумывать.",
       "confidence — 0–1. reason — одно предложение.",
