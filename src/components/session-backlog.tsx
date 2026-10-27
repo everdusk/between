@@ -1,32 +1,49 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Plus, X } from "lucide-react";
+import { Check, ChevronDown, Plus, X } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDayLabel } from "@/lib/dates";
-import type { SessionTheme } from "@/lib/types";
+import type { JournalEntry, SessionTheme, ThemeLink } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface SessionBacklogProps {
   themes: SessionTheme[];
+  entries: JournalEntry[];
+  links: ThemeLink[];
   refreshing?: boolean;
   disabled?: boolean;
   onDiscuss: (id: string, discussed: boolean) => void;
   onDismiss: (id: string) => void;
   onAdd: (title: string) => void;
+  onOpenNote?: (date: string) => void;
+}
+
+function notesForTheme(theme: SessionTheme, entries: JournalEntry[], links: ThemeLink[]): JournalEntry[] {
+  const ids = new Set<string>();
+  for (const link of links) {
+    if (link.themeId === theme.id) ids.add(link.entryId);
+  }
+  for (const quote of theme.quotes) ids.add(quote.entryId);
+  return entries
+    .filter((entry) => ids.has(entry.id))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 }
 
 export function SessionBacklog({
   themes,
+  entries,
+  links,
   refreshing,
   disabled,
   onDiscuss,
   onDismiss,
   onAdd,
+  onOpenNote,
 }: SessionBacklogProps) {
-  const { t, locale, count } = useI18n();
+  const { t, locale, count, feeling } = useI18n();
   const [draft, setDraft] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -65,6 +82,7 @@ export function SessionBacklog({
           {themes.map((theme) => {
             const said = theme.status === "discussed";
             const open = openId === theme.id;
+            const notes = notesForTheme(theme, entries, links);
             return (
             <li key={theme.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
               <button
@@ -83,37 +101,60 @@ export function SessionBacklog({
               <div className="min-w-0 flex-1 space-y-1">
                 <button
                   type="button"
-                  className="block w-full text-start"
+                  className="flex w-full items-start gap-2 text-start"
+                  aria-expanded={open}
                   onClick={() => setOpenId(open ? null : theme.id)}
                 >
-                  <span className={cn("block text-sm leading-relaxed", said ? "text-muted-foreground" : "text-foreground/90")}>
-                    {theme.title}
-                  </span>
-                  <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span className="rounded-full bg-foreground/[0.06] px-2 py-0.5">
-                      ×{count(theme.count, "note")}
+                  <span className="min-w-0 flex-1">
+                    <span className={cn("block text-sm leading-relaxed", said ? "text-muted-foreground" : "text-foreground/90")}>
+                      {theme.title}
                     </span>
-                    <span>{formatDayLabel(theme.lastSeen, locale)}</span>
+                    <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span className="rounded-full bg-foreground/[0.06] px-2 py-0.5">
+                        ×{count(theme.count, "note")}
+                      </span>
+                      <span>{formatDayLabel(theme.lastSeen, locale)}</span>
+                    </span>
                   </span>
+                  <ChevronDown
+                    aria-hidden
+                    className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
+                  />
                 </button>
-                {open && theme.quotes.length > 0 && (
-                  <div className="space-y-1 pt-1">
-                    {theme.quotes.map((quote) => (
-                      <button
-                        key={`${quote.entryId}:${quote.text}`}
-                        type="button"
-                        className="block text-start text-sm text-foreground/80 underline-offset-4 hover:underline"
-                        onClick={() => {
-                          document.getElementById(`week-day-${quote.date}`)?.scrollIntoView({
-                            behavior: "smooth",
-                            block: "nearest",
-                          });
-                        }}
-                      >
-                        {formatDayLabel(quote.date, locale)}: {quote.text}
-                      </button>
-                    ))}
-                  </div>
+                {open && (
+                  <ul className="space-y-2 pt-2">
+                    {notes.length === 0 ? (
+                      <li className="text-sm text-muted-foreground">{t("backlogNoNotes")}</li>
+                    ) : (
+                      notes.map((entry) => (
+                        <li key={entry.id}>
+                          <button
+                            type="button"
+                            className="block w-full rounded-2xl bg-foreground/[0.04] px-3 py-2 text-start"
+                            onClick={() => {
+                              onOpenNote?.(entry.date);
+                              document.getElementById(`week-day-${entry.date}`)?.scrollIntoView({
+                                behavior: "smooth",
+                                block: "nearest",
+                              });
+                            }}
+                          >
+                            <span className="text-xs text-muted-foreground">
+                              {formatDayLabel(entry.date, locale)}
+                              {entry.feelings.length > 0
+                                ? ` · ${entry.feelings.map((item) => feeling(item)).join(", ")}`
+                                : ""}
+                            </span>
+                            {entry.body.trim() && (
+                              <span className="mt-1 block whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+                                {entry.body}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      ))
+                    )}
+                  </ul>
                 )}
               </div>
               <Button
