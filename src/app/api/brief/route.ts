@@ -231,6 +231,34 @@ export function resolveGroqModel(configured: string | undefined): string {
   return name;
 }
 
+export const AITUNNEL_MODEL = "deepseek-v4.1-flash-1017";
+
+export function resolveAitunnelModel(configured: string | undefined): string {
+  const name = configured?.trim();
+  return name || AITUNNEL_MODEL;
+}
+
+export function textFromChatMessage(message: { content?: unknown } | undefined): string {
+  const content = message?.content;
+  if (typeof content === "string") return content.trim();
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((part) => {
+      if (typeof part === "string") return part;
+      if (part && typeof part === "object" && typeof (part as { text?: unknown }).text === "string") {
+        return (part as { text: string }).text;
+      }
+      return "";
+    })
+    .join("")
+    .trim();
+}
+
+function aitunnelBase(): string {
+  const raw = process.env.AITUNNEL_BASE_URL?.trim() || "https://api.aitunnel.ru/v1";
+  return raw.replace(/\/+$/, "");
+}
+
 async function groqOnce(
   prompt: string,
   apiKey: string,
@@ -298,6 +326,81 @@ async function groq(
   };
 }
 
+async function aitunnelOnce(
+  prompt: string,
+  apiKey: string,
+  model: string,
+  system: string,
+  limits: GenLimits,
+  extras: boolean,
+  json: boolean,
+): Promise<{ text: string | null; status: number }> {
+  const body: Record<string, unknown> = {
+    model,
+    temperature: limits.temperature,
+    max_tokens: extras ? limits.maxTokens + 800 : limits.maxTokens,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: `Факты:\n${prompt}` },
+    ],
+  };
+  if (extras) {
+    body.reasoning = { effort: "low" };
+    if (json) body.response_format = { type: "json_object" };
+  }
+
+  const res = await fetch(`${aitunnelBase()}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) return { text: null, status: res.status };
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: unknown } }[];
+  };
+  const text = textFromChatMessage(data.choices?.[0]?.message);
+  return { text: text || null, status: res.status };
+}
+
+async function aitunnel(
+  prompt: string,
+  apiKey: string,
+  system: string,
+  kind: BriefKind,
+  limits: GenLimits,
+): Promise<{ text: string | null; detail: string }> {
+  const model = resolveAitunnelModel(process.env.AITUNNEL_MODEL);
+  const json = kind === "judge" || kind === "dedup";
+  const first = await aitunnelOnce(prompt, apiKey, model, system, limits, true, json);
+  const firstText = settleModelText(first.text, kind);
+  if (firstText) return { text: firstText, detail: "" };
+  if (first.status === 401 || first.status === 403) {
+    return { text: null, detail: `aitunnel_${first.status}` };
+  }
+  const retry =
+    first.status === 400 || first.status === 422 || (!first.text && first.status === 200);
+  if (retry) {
+    const second = await aitunnelOnce(prompt, apiKey, model, system, limits, false, false);
+    const secondText = settleModelText(second.text, kind);
+    if (secondText) return { text: secondText, detail: "" };
+    if ((first.text || second.text) && settlesJson(kind)) {
+      return { text: null, detail: kind === "themes" ? "themes_parse" : "backlog_parse" };
+    }
+    const status = second.status || first.status;
+    return { text: null, detail: status && status !== 200 ? `aitunnel_${status}` : "aitunnel_empty" };
+  }
+  if (first.text && settlesJson(kind)) {
+    return { text: null, detail: kind === "themes" ? "themes_parse" : "backlog_parse" };
+  }
+  return {
+    text: null,
+    detail: first.status && first.status !== 200 ? `aitunnel_${first.status}` : "aitunnel_empty",
+  };
+}
+
 export async function POST(req: Request) {
   const initData = req.headers.get("x-telegram-init-data");
   if (!initData) {
@@ -348,9 +451,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "invalid_brief" }, { status: 400 });
   }
 
+  const tunnelKey = process.env.AITUNNEL_API_KEY?.trim();
   const geminiKey = process.env.GEMINI_API_KEY?.trim();
   const groqKey = process.env.GROQ_API_KEY?.trim();
-  if (!geminiKey && !groqKey) {
+  if (!tunnelKey && !geminiKey && !groqKey) {
     return NextResponse.json({ ok: true, text: null, reason: "no_model" });
   }
 
@@ -369,11 +473,13 @@ export async function POST(req: Request) {
     }
   }
 
-  const result = geminiKey
-    ? await gemini(facts, geminiKey, system, kind, limits)
-    : await groq(facts, groqKey as string, system, kind, limits);
+  const result = tunnelKey
+    ? await aitunnel(facts, tunnelKey, system, kind, limits)
+    : geminiKey
+      ? await gemini(facts, geminiKey, system, kind, limits)
+      : await groq(facts, groqKey as string, system, kind, limits);
 
-  if (!result.text && geminiKey && groqKey) {
+  if (!result.text && !tunnelKey && geminiKey && groqKey) {
     const fallback = await groq(facts, groqKey, system, kind, limits);
     if (fallback.text) {
       if (redisConfigured()) await cacheBrief(validated.user.id, stamp, fallback.text);

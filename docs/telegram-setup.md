@@ -22,7 +22,8 @@
 | `TELEGRAM_WEBHOOK_SECRET` | рекомендуется | секрет webhook (см. ниже) |
 | `NEXT_PUBLIC_APP_URL` | опционально | `https://between-rouge.vercel.app` (кнопка Mini App в ответах) |
 | `CRON_SECRET` | да, для опросов | секрет почасового вызова `/api/telegram/digest` |
-| `GEMINI_API_KEY` или `GROQ_API_KEY` | нет | кнопка «Сформулировать текст». Без ключа бриф собирается правилами |
+| `AITUNNEL_API_KEY` | нет | бриф, судья тем и паттерн. Модель `deepseek-v4.1-flash-1017` через `https://api.aitunnel.ru/v1/`. Если ключ задан, Gemini и Groq не вызываются |
+| `GEMINI_API_KEY` или `GROQ_API_KEY` | нет | запасной путь, только когда `AITUNNEL_API_KEY` пуст. Без любого ключа бриф собирается правилами |
 | `WEEK_STAR_PRICE` | нет | цена вкладки «Неделя» в Stars после 14 дней. Целое 1–10000, иначе 150 |
 | `WEEK_EXEMPT_USER_IDS` | нет | дополнительные Telegram id через запятую, которым «Неделя» остаётся открытой без Stars. `@aliatorovskaia` уже в списке в коде |
 
