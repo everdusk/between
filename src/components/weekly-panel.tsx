@@ -29,7 +29,7 @@ import {
   rankedThemes,
   type BriefCopy,
 } from "@/lib/themes";
-import type { JournalEntry, SessionNote, SessionTheme, WeekPrep } from "@/lib/types";
+import type { JournalEntry, SessionNote, SessionTheme, ThemeLink, WeekPrep } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { MessageKey } from "@/lib/messages";
 
@@ -56,6 +56,7 @@ interface WeeklyPanelProps {
   sessions: SessionNote[];
   weekPreps: WeekPrep[];
   themes: SessionTheme[];
+  themeLinks: ThemeLink[];
   judgeSettled: string[];
   onDiscussTheme: (id: string, discussed: boolean) => void;
   onDismissTheme: (id: string) => void;
@@ -76,6 +77,7 @@ export function WeeklyPanel({
   sessions,
   weekPreps,
   themes,
+  themeLinks,
   judgeSettled,
   onDiscussTheme,
   onDismissTheme,
@@ -322,11 +324,14 @@ export function WeeklyPanel({
 
       <SessionBacklog
         themes={[...agenda, ...said]}
+        entries={entries}
+        links={themeLinks}
         refreshing={Boolean(initData) && judging}
         disabled={disabled}
         onDiscuss={onDiscussTheme}
         onDismiss={onDismissTheme}
         onAdd={onAddTheme}
+        onOpenNote={setFocusDay}
       />
 
       <section className="ink relative overflow-hidden rounded-3xl p-5 sm:p-6">

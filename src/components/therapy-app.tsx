@@ -210,6 +210,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                     sessions={store.sessions}
                     weekPreps={store.weekPreps}
                     themes={store.themes ?? []}
+                    themeLinks={store.themeLinks ?? []}
                     judgeSettled={store.judgeSettled ?? []}
                     onDiscussTheme={setThemeDiscussed}
                     onDismissTheme={dismissSessionTheme}
