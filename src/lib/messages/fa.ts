@@ -183,4 +183,7 @@ export const fa: Catalog = {
   weekDaysNoted: "روزهای دارای یادداشت",
   streakCaption: "پیاپی",
   sections: "بخش‌ها",
+  calendarPrev: "ماه قبل",
+  calendarNext: "ماه بعد",
+  calendarMarked: "یادداشت دارد",
 };

@@ -183,4 +183,7 @@ export const uz: Catalog = {
   weekDaysNoted: "yozuvli kunlar",
   streakCaption: "ketma-ket",
   sections: "Bo‘limlar",
+  calendarPrev: "Oldingi oy",
+  calendarNext: "Keyingi oy",
+  calendarMarked: "Yozuv bor",
 };

@@ -184,4 +184,7 @@ export const id: Catalog = {
   weekDaysNoted: "hari dengan catatan",
   streakCaption: "berturut-turut",
   sections: "Bagian",
+  calendarPrev: "Bulan lalu",
+  calendarNext: "Bulan depan",
+  calendarMarked: "Ada catatan",
 };

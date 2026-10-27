@@ -183,4 +183,7 @@ export const vi: Catalog = {
   weekDaysNoted: "ngày có ghi chép",
   streakCaption: "liên tiếp",
   sections: "Mục",
+  calendarPrev: "Tháng trước",
+  calendarNext: "Tháng sau",
+  calendarMarked: "Có ghi chép",
 };

@@ -185,4 +185,7 @@ export const uk: Catalog = {
   weekDaysNoted: "днів із записами",
   streakCaption: "поспіль",
   sections: "Розділи",
+  calendarPrev: "Попередній місяць",
+  calendarNext: "Наступний місяць",
+  calendarMarked: "Є запис",
 };

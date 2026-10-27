@@ -189,4 +189,7 @@ export const en: Catalog = {
   weekDaysNoted: "days with notes",
   streakCaption: "in a row",
   sections: "Sections",
+  calendarPrev: "Previous month",
+  calendarNext: "Next month",
+  calendarMarked: "Has a note",
 };

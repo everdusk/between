@@ -184,4 +184,7 @@ export const es: Catalog = {
   weekDaysNoted: "días con notas",
   streakCaption: "seguidos",
   sections: "Secciones",
+  calendarPrev: "Mes anterior",
+  calendarNext: "Mes siguiente",
+  calendarMarked: "Hay una nota",
 };

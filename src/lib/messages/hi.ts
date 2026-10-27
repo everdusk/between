@@ -184,4 +184,7 @@ export const hi: Catalog = {
   weekDaysNoted: "नोट वाले दिन",
   streakCaption: "लगातार",
   sections: "अनुभाग",
+  calendarPrev: "पिछला महीना",
+  calendarNext: "अगला महीना",
+  calendarMarked: "नोट है",
 };

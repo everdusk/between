@@ -184,4 +184,7 @@ export const tr: Catalog = {
   weekDaysNoted: "notlu gün",
   streakCaption: "üst üste",
   sections: "Bölümler",
+  calendarPrev: "Önceki ay",
+  calendarNext: "Sonraki ay",
+  calendarMarked: "Not var",
 };

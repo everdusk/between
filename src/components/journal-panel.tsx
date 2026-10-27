@@ -2,15 +2,15 @@
 
 import { useMemo, useRef, useState } from "react";
 import { Bot, Check, Pencil, Trash2, X } from "lucide-react";
+import { EntryCalendar } from "@/components/entry-calendar";
 import { FeelingPicker } from "@/components/feeling-picker";
 import { useI18n } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ThemeDateInput } from "@/components/theme-date-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { addDays, formatDayLabel, formatLongDate, formatTime, toDateKey } from "@/lib/dates";
+import { addDays, formatDayLabel, formatTime, toDateKey } from "@/lib/dates";
 import { feelingFill } from "@/lib/spectrum";
 import { isTherapyTheme, sanitizeTags, shownEntryTags, splitTags } from "@/lib/tags";
 import type { Feeling, JournalEntry } from "@/lib/types";
@@ -28,6 +28,19 @@ interface JournalPanelProps {
   }) => boolean;
   onDelete: (id: string) => boolean;
   disabled?: boolean;
+}
+
+/** First feeling of the day, or null when the notes carry no feeling. */
+function dayMarks(entries: JournalEntry[]): Map<string, Feeling | null> {
+  const marks = new Map<string, Feeling | null>();
+  const sorted = [...entries].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  for (const entry of sorted) {
+    const feeling = entry.feelings[0] ?? null;
+    const current = marks.get(entry.date);
+    if (current === undefined) marks.set(entry.date, feeling);
+    else if (current === null && feeling) marks.set(entry.date, feeling);
+  }
+  return marks;
 }
 
 /** Days in a row with at least one note, ending today or yesterday. */
@@ -69,6 +82,7 @@ export function JournalPanel({
     [entries, date],
   );
   const streak = useMemo(() => noteStreak(entries, today), [entries, today]);
+  const marks = useMemo(() => dayMarks(entries), [entries]);
 
   const tags = sanitizeTags([...auto, ...manual]);
 
@@ -146,20 +160,16 @@ export function JournalPanel({
         </div>
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <ThemeDateInput
+          <EntryCalendar
             id="journal-date"
-            type="date"
-            aria-label={t("date")}
-            display={formatLongDate(date, locale)}
             value={date}
             max={today}
+            marks={marks}
             disabled={disabled}
-            onChange={(event) => {
-              if (!event.target.value) return;
-              setDate(event.target.value);
+            onChange={(next) => {
+              setDate(next);
               resetForm();
             }}
-            required
           />
         </div>
 

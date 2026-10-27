@@ -188,6 +188,9 @@ export const ru = {
   weekDaysNoted: "дней с записями",
   streakCaption: "подряд",
   sections: "Разделы",
+  calendarPrev: "Предыдущий месяц",
+  calendarNext: "Следующий месяц",
+  calendarMarked: "Есть запись",
 } as const;
 
 export type Catalog = { [K in keyof typeof ru]: string };

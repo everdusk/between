@@ -183,4 +183,7 @@ export const ar: Catalog = {
   weekDaysNoted: "أيام فيها ملاحظات",
   streakCaption: "متتالية",
   sections: "الأقسام",
+  calendarPrev: "الشهر السابق",
+  calendarNext: "الشهر التالي",
+  calendarMarked: "يوجد ملاحظة",
 };
