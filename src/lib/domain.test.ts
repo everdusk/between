@@ -33,7 +33,8 @@ import {
   themeContextChunks,
 } from "./tags";
 import type { ThemeParams } from "@twa-dev/types";
-import { applyTelegramTheme, panelColor, schemeFromColor } from "./telegram";
+import { applyTelegramSafeArea, applyTelegramTheme, panelColor, schemeFromColor } from "./telegram";
+import { sheetShouldDismiss } from "./sheet";
 import { briefSystemPrompt, resolveGroqModel, textFromGeminiParts } from "../app/api/brief/route";
 import { formatDayLabel, formatMonthTitle, monthCells, shiftMonth } from "./dates";
 import { buildPeriodSummary, therapyWindow } from "./session-summary";
@@ -799,6 +800,37 @@ describe("telegram theme", () => {
       "light",
     );
     assert.equal(day, "#f2f2f7");
+  });
+
+  it("writes Telegram's bottom inset for the dock", () => {
+    const props = new Map<string, string>();
+    const previous = globalThis.document;
+    globalThis.document = {
+      documentElement: {
+        dataset: {},
+        style: {
+          setProperty(name: string, value: string) {
+            props.set(name, value);
+          },
+          removeProperty(name: string) {
+            props.delete(name);
+          },
+        },
+      },
+    } as unknown as Document;
+
+    applyTelegramSafeArea({ bottom: 34 }, { bottom: 0 });
+    globalThis.document = previous;
+    assert.equal(props.get("--tg-safe-area-bottom"), "34px");
+    assert.equal(props.has("--tg-content-safe-area-bottom"), false);
+  });
+});
+
+describe("sheet dismiss", () => {
+  it("closes after a long drag or a fast flick", () => {
+    assert.equal(sheetShouldDismiss(80, 0), true);
+    assert.equal(sheetShouldDismiss(20, 0.8), true);
+    assert.equal(sheetShouldDismiss(20, 0.1), false);
   });
 });
 

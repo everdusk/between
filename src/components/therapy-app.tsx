@@ -228,7 +228,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
               </TabsContent>
             </div>
 
-            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-[max(1.25rem,env(safe-area-inset-bottom),var(--tg-safe-area-bottom,0px))]">
               <TabsList
                 variant="dock"
                 aria-label={t("sections")}
@@ -237,7 +237,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                 {SECTIONS.map((id) => {
                   const Icon = SECTION_ICON[id];
                   return (
-                    <TabsTrigger key={id} value={id} className="h-11 flex-1 px-3">
+                    <TabsTrigger key={id} value={id} className="flex-1 px-3">
                       <Icon aria-hidden />
                       <span>{t(SECTION_KEY[id])}</span>
                     </TabsTrigger>
