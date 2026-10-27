@@ -33,6 +33,9 @@ import type { JournalEntry, SessionNote, SessionTheme, ThemeLink, WeekPrep } fro
 import { cn } from "@/lib/utils";
 import type { MessageKey } from "@/lib/messages";
 
+const themeGaveUp = new Set<string>();
+const patternGaveUp = new Set<string>();
+
 function briefFailure(
   reason: string | undefined,
   t: (key: MessageKey, vars?: Record<string, string | number | undefined>) => string,
@@ -188,6 +191,7 @@ export function WeeklyPanel({
 
   useEffect(() => {
     if (themesSettled || disabled || !initData || !themeChunkKey) return;
+    if (themeGaveUp.has(themeStamp)) return;
     if (themeAttempt.current === themeStamp) return;
     themeAttempt.current = themeStamp;
     let cancelled = false;
@@ -204,7 +208,10 @@ export function WeeklyPanel({
         );
         if (cancelled) return;
         const parsed = result.ok && result.text != null ? parseModelThemes(result.text) : null;
-        if (!parsed) return;
+        if (!parsed) {
+          themeGaveUp.add(themeStamp);
+          return;
+        }
         for (const row of parsed) found.set(row.id, row.themes);
       }
       const sent = sentRef.current;
@@ -225,6 +232,7 @@ export function WeeklyPanel({
   const patternAttempt = useRef<string | null>(null);
   useEffect(() => {
     if (!initData || disabled || agenda.length === 0 || prep?.patternStamp === patternStamp) return;
+    if (patternGaveUp.has(patternStamp)) return;
     if (patternAttempt.current === patternStamp) return;
     patternAttempt.current = patternStamp;
     let cancelled = false;
@@ -236,7 +244,11 @@ export function WeeklyPanel({
         locale,
         "pattern",
       );
-      if (cancelled || !result.ok || !result.text) return;
+      if (cancelled) return;
+      if (!result.ok || !result.text) {
+        patternGaveUp.add(patternStamp);
+        return;
+      }
       onSavePattern(key, clipPattern(sessionBrief.words, result.text), patternStamp);
     })();
     return () => {

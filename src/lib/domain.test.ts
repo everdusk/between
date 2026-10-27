@@ -37,6 +37,7 @@ import { applyTelegramSafeArea, applyTelegramTheme, panelColor, schemeFromColor 
 import { sheetShouldDismiss } from "./sheet";
 import {
   briefSystemPrompt,
+  modelBudget,
   resolveAitunnelModel,
   resolveGroqModel,
   textFromChatMessage,
@@ -837,6 +838,16 @@ describe("sheet dismiss", () => {
     assert.equal(sheetShouldDismiss(80, 0), true);
     assert.equal(sheetShouldDismiss(20, 0.8), true);
     assert.equal(sheetShouldDismiss(20, 0.1), false);
+  });
+});
+
+describe("model budget", () => {
+  it("keeps the formulate button off the theme counter", () => {
+    assert.equal(modelBudget("pattern").bucket, "pattern");
+    assert.equal(modelBudget("themes").bucket, "themes");
+    assert.notEqual(modelBudget("pattern").bucket, modelBudget("themes").bucket);
+    assert.equal(modelBudget("judge").bucket, modelBudget("dedup").bucket);
+    assert.ok(modelBudget("pattern").limit >= 8);
   });
 });
 
