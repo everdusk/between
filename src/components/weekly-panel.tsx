@@ -140,6 +140,9 @@ export function WeeklyPanel({
     },
   };
   const agenda = rankedThemes(themes, todayKey, sessionDates);
+  const said = themes
+    .filter((theme) => theme.status === "discussed" && !theme.dismissed)
+    .sort((a, b) => b.lastSeen.localeCompare(a.lastSeen) || a.title.localeCompare(b.title));
   const sessionBrief = buildSessionBrief({
     themes,
     entries: weekEntries,
@@ -318,7 +321,7 @@ export function WeeklyPanel({
       </div>
 
       <SessionBacklog
-        themes={agenda}
+        themes={[...agenda, ...said]}
         refreshing={Boolean(initData) && judging}
         disabled={disabled}
         onDiscuss={onDiscussTheme}
