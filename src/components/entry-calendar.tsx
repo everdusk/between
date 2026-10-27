@@ -95,9 +95,9 @@ export function EntryCalendar({
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            className="w-full max-w-lg px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] outline-none animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out"
+            className="w-full max-w-lg outline-none animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out"
           >
-            <div className="glass-strong rounded-3xl px-3 pt-3 pb-4">
+            <div className="glass-strong rounded-t-3xl px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
               <div aria-hidden className="mx-auto mb-3 h-1 w-9 rounded-full bg-foreground/15" />
               <div className="flex items-center justify-between gap-2">
                 <Button
