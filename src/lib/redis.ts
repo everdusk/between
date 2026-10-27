@@ -180,19 +180,6 @@ function briefCountRedisKey(userId: number | string, dateKey: string, bucket = "
   return bucket ? `${base}:${bucket}` : base;
 }
 
-export async function briefAttemptsUsed(
-  userId: number | string,
-  dateKey: string,
-  bucket = "",
-): Promise<number> {
-  const redis = getRedis();
-  if (!redis) return 0;
-  const raw = await redis.get<number | string | null>(briefCountRedisKey(userId, dateKey, bucket));
-  if (typeof raw === "number" && Number.isFinite(raw)) return raw;
-  if (typeof raw === "string" && raw.trim() && Number.isFinite(Number(raw))) return Number(raw);
-  return 0;
-}
-
 /** Returns false when the user already used this bucket's daily model budget. */
 export async function takeBriefAttempt(
   userId: number | string,

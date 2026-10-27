@@ -7,6 +7,8 @@ import {
   briefWordLimit,
   buildSessionBrief,
   clipPattern,
+  patternAlreadyCurrent,
+  patternKey,
   dismissTheme,
   modelRequestStamp,
   openThemes,
@@ -482,5 +484,22 @@ describe("session brief", () => {
     const once = addManualTheme([], "про дедлайн", "2026-10-27");
     const twice = addManualTheme(once, "про дедлайн", "2026-10-27");
     assert.equal(twice.length, 1);
+  });
+
+  it("skips formulate when the theme stamp and the saved text are unchanged", () => {
+    const theme = {
+      id: "mom",
+      updatedAt: "2026-10-24T00:00:00.000Z",
+      count: 2,
+      status: "active",
+    } as SessionTheme;
+    const stamp = patternKey([theme], "ru");
+    assert.equal(patternKey([theme], "ru"), stamp);
+    assert.equal(patternAlreadyCurrent(stamp, stamp, "Тревога перед звонком."), true);
+    assert.equal(patternAlreadyCurrent(stamp, stamp, ""), false);
+    assert.equal(patternAlreadyCurrent(undefined, stamp, "Тревога перед звонком."), false);
+    const moved = patternKey([{ ...theme, count: 3 }], "ru");
+    assert.notEqual(moved, stamp);
+    assert.equal(patternAlreadyCurrent(stamp, moved, "Тревога перед звонком."), false);
   });
 });

@@ -771,6 +771,15 @@ export function patternKey(themes: SessionTheme[], locale: string): string {
   return `p:${(hash >>> 0).toString(36)}:${locale}`;
 }
 
+/** The saved brief already matches these themes, so the button must not call the model. */
+export function patternAlreadyCurrent(
+  savedStamp: string | undefined,
+  stamp: string,
+  text: string,
+): boolean {
+  return Boolean(text) && savedStamp === stamp;
+}
+
 export function patternFacts(themes: SessionTheme[]): string {
   return JSON.stringify(
     themes.slice(0, 4).map((theme) => ({
