@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CalendarDays, ChevronDown, Languages, PenLine, Waves } from "lucide-react";
 import { JournalPanel } from "@/components/journal-panel";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import { SessionsPanel } from "@/components/sessions-panel";
@@ -14,7 +15,6 @@ import { LOCALES } from "@/lib/i18n";
 import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
-import { cn } from "@/lib/utils";
 
 const SECTIONS = ["journal", "week", "sessions"] as const;
 
@@ -24,6 +24,12 @@ const SECTION_KEY = {
   journal: "tabJournal",
   week: "tabWeek",
   sessions: "tabSessions",
+} as const;
+
+const SECTION_ICON = {
+  journal: PenLine,
+  week: Waves,
+  sessions: CalendarDays,
 } as const;
 
 export function TherapyApp() {
@@ -81,6 +87,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
   const greeting = !telegram.ready
     ? translate(greetingLocale, "loading")
     : translate(greetingLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
+  const localeLabel = LOCALES.find((item) => item.id === locale)?.label ?? locale;
 
   return (
     <div
@@ -100,51 +107,56 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
         <div className="atmosphere-grain" />
       </div>
 
-      <header className="relative z-10 border-b border-border/40 bg-background/40 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-4 py-3 sm:px-5">
+      <header className="relative z-10">
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-2 sm:px-6">
           <div className="min-w-0">
-            <p className="font-display text-xl tracking-tight text-foreground">
+            <p className="font-display text-[1.375rem] leading-none tracking-tight text-foreground">
               Between
             </p>
-            <p className="truncate text-xs text-muted-foreground">{greeting}</p>
+            <p className="mt-1.5 truncate text-xs text-muted-foreground">{greeting}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <label className="sr-only" htmlFor="app-language">
-              {t("language")}
-            </label>
-            <select
-              id="app-language"
-              aria-label={t("language")}
-              value={locale}
-              onChange={(event) => {
-                const next = LOCALES.find((item) => item.id === event.target.value);
-                if (next) setLocale(next.id);
-              }}
-              className="max-w-36 rounded-md border border-border/70 bg-background/70 px-2 py-1 text-xs text-foreground"
-            >
-              {LOCALES.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
             {!telegram.inTelegram && telegram.ready && (
-              <span className="shrink-0 rounded-md border border-border/70 bg-background/70 px-2 py-1 text-[0.65rem] font-medium uppercase tracking-wide text-muted-foreground">
+              <span className="eyebrow hidden rounded-full border border-[color:var(--glass-border)] bg-background/50 px-2.5 py-2 text-muted-foreground sm:inline-flex">
                 localhost
               </span>
             )}
+            <span className="glass relative inline-flex h-9 items-center gap-1.5 rounded-full pr-2.5 pl-3 text-xs font-medium text-foreground has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-ring/25">
+              <Languages aria-hidden className="size-3.5 opacity-70" />
+              <span className="max-w-24 truncate">{localeLabel}</span>
+              <ChevronDown aria-hidden className="size-3 opacity-50" />
+              <label className="sr-only" htmlFor="app-language">
+                {t("language")}
+              </label>
+              <select
+                id="app-language"
+                aria-label={t("language")}
+                value={locale}
+                onChange={(event) => {
+                  const next = LOCALES.find((item) => item.id === event.target.value);
+                  if (next) setLocale(next.id);
+                }}
+                className="native-overlay"
+              >
+                {LOCALES.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </span>
           </div>
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-lg flex-1 px-4 py-4 sm:px-5 sm:py-6">
+      <main className="relative z-10 mx-auto w-full max-w-lg flex-1 px-4 pt-3 pb-4 sm:px-5">
         {status === "loading" && (
           <div
-            className="rounded-2xl border border-border/60 bg-background/55 px-5 py-10 text-center backdrop-blur-sm"
+            className="glass rounded-3xl px-6 py-14 text-center"
             role="status"
           >
-            <div className="mx-auto mb-3 h-1.5 w-24 overflow-hidden rounded-full bg-primary/15">
-              <div className="loading-bar h-full w-1/2 rounded-full bg-primary/60" />
+            <div className="mx-auto mb-4 h-1 w-28 overflow-hidden rounded-full bg-foreground/[0.08]">
+              <div className="loading-bar h-full w-1/2 rounded-full bg-primary/70" />
             </div>
             <p className="text-sm text-muted-foreground">{t("loadingEntries")}</p>
           </div>
@@ -152,14 +164,14 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
 
         {status === "error" && (
           <div
-            className="rounded-2xl border border-destructive/30 bg-destructive/5 px-5 py-6"
+            className="glass rounded-3xl border-destructive/20 px-6 py-7"
             role="alert"
           >
-            <p className="font-medium text-foreground">{t("dataError")}</p>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="font-display text-xl text-foreground">{t("dataError")}</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               {localizeStorageError(error, t)}
             </p>
-            <Button className="mt-4" variant="secondary" onClick={resetCorrupted}>
+            <Button className="mt-5" variant="secondary" onClick={resetCorrupted}>
               {t("startOver")}
             </Button>
           </div>
@@ -169,25 +181,11 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
           <Tabs
             value={section}
             onValueChange={(v) => setSection(v as SectionId)}
-            className="gap-4"
+            className="gap-0"
           >
-            <TabsList className="h-auto w-full justify-stretch gap-1 bg-background/55 p-1.5 backdrop-blur-sm">
-              {SECTIONS.map((id) => (
-                <TabsTrigger
-                  key={id}
-                  value={id}
-                  className="flex-1 px-3 py-2 data-active:shadow-none"
-                >
-                  {t(SECTION_KEY[id])}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
             <div
-              className={cn(
-                "rounded-2xl border border-border/50 bg-background/65 p-4 shadow-[0_24px_60px_-40px_oklch(0.35_0.04_175_/_0.45)] backdrop-blur-md sm:p-6",
-                "animate-in fade-in slide-in-from-bottom-1 duration-400",
-              )}
+              key={section}
+              className="animate-in fade-in slide-in-from-bottom-2 duration-500 ease-out"
             >
               <TabsContent value="journal" className="mt-0 outline-none">
                 <JournalPanel
@@ -229,11 +227,29 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                 />
               </TabsContent>
             </div>
+
+            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+              <TabsList
+                variant="dock"
+                aria-label={t("sections")}
+                className="pointer-events-auto w-full max-w-sm justify-stretch"
+              >
+                {SECTIONS.map((id) => {
+                  const Icon = SECTION_ICON[id];
+                  return (
+                    <TabsTrigger key={id} value={id} className="h-11 flex-1 px-3">
+                      <Icon aria-hidden />
+                      <span>{t(SECTION_KEY[id])}</span>
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+            </div>
           </Tabs>
         )}
       </main>
 
-      <footer className="relative z-10 px-4 py-4 text-center text-[0.7rem] leading-relaxed text-muted-foreground">
+      <footer className="relative z-10 px-4 pb-28 text-center text-[0.6875rem] leading-relaxed tracking-wide text-muted-foreground/80">
         Between
         {syncLabel === "cloud"
           ? ` · ${t("syncCloud")}`

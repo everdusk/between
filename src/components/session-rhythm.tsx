@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Check } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import { ThemeDateInput } from "@/components/theme-date-input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { formatLongDate, toDateKey, weekdayLong, weekdayShort } from "@/lib/dates";
 import {
   isSessionTime,
@@ -63,97 +65,114 @@ function SessionRhythmForm({
   }
 
   return (
-    <section className="space-y-5 border-b border-border/70 pb-6">
-      <div className="space-y-1">
-        <h3 className="font-display text-lg text-foreground">{t("whenSession")}</h3>
-        <p className="text-sm text-muted-foreground">{preview}</p>
-      </div>
-
-      <form onSubmit={handleSave} className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant={mode === "once" ? "default" : "outline"}
-            disabled={disabled}
-            onClick={() => setMode("once")}
-          >
-            {t("nextDate")}
-          </Button>
-          <Button
-            type="button"
-            variant={mode === "weekly" ? "default" : "outline"}
-            disabled={disabled}
-            onClick={() => setMode("weekly")}
-          >
-            {t("everyWeek")}
-          </Button>
+    <>
+      <section className="glass rounded-3xl p-5 sm:p-6">
+        <div className="space-y-1.5">
+          <h3 className="font-display text-xl tracking-tight text-foreground">{t("whenSession")}</h3>
+          <p className="text-sm text-muted-foreground">{preview}</p>
         </div>
 
-        {mode === "once" ? (
-          <div className="space-y-2">
-            <Label htmlFor="plan-date">{t("date")}</Label>
+        <form onSubmit={handleSave} className="mt-5 space-y-5">
+          <div
+            role="radiogroup"
+            aria-label={t("whenSession")}
+            className="grid grid-cols-2 gap-1 rounded-full bg-foreground/[0.06] p-1"
+          >
+            {(["once", "weekly"] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                role="radio"
+                aria-checked={mode === item}
+                disabled={disabled}
+                onClick={() => setMode(item)}
+                className={cn(
+                  "h-9 rounded-full text-sm font-medium transition-[background-color,color,box-shadow] duration-200 focus-visible:ring-4 focus-visible:ring-ring/25 focus-visible:outline-none",
+                  mode === item
+                    ? "bg-card text-foreground shadow-[0_1px_2px_oklch(0_0_0_/_0.06)]"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {item === "once" ? t("nextDate") : t("everyWeek")}
+              </button>
+            ))}
+          </div>
+
+          {mode === "once" ? (
+            <div className="space-y-3">
+              <Label htmlFor="plan-date">{t("date")}</Label>
+              <ThemeDateInput
+                id="plan-date"
+                type="date"
+                display={formatLongDate(date, locale)}
+                value={date}
+                disabled={disabled}
+                onChange={(event) => {
+                  if (event.target.value) setDate(event.target.value);
+                }}
+                required
+              />
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Label>{t("day")}</Label>
+              <div className="grid grid-cols-7 gap-1.5">
+                {WEEKDAY_KEYS.map((key, index) => (
+                  <button
+                    key={key}
+                    type="button"
+                    disabled={disabled}
+                    aria-pressed={weekday === index}
+                    onClick={() => setWeekday(index)}
+                    className={cn(
+                      "h-11 rounded-2xl border text-sm font-medium capitalize transition-[background-color,color,transform] duration-200 active:scale-[0.96] focus-visible:ring-4 focus-visible:ring-ring/25 focus-visible:outline-none",
+                      weekday === index
+                        ? "border-transparent bg-foreground text-background shadow-[0_10px_24px_-14px_var(--foreground)]"
+                        : "border-[color:var(--glass-border)] bg-background/55 text-foreground hover:bg-background/85",
+                    )}
+                  >
+                    {weekdayShort(key, locale)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <Label htmlFor="plan-time">{t("time")}</Label>
             <ThemeDateInput
-              id="plan-date"
-              type="date"
-              value={date}
+              id="plan-time"
+              type="time"
+              display={time}
+              value={time}
               disabled={disabled}
-              onChange={(event) => setDate(event.target.value)}
+              onChange={(event) => {
+                if (event.target.value) setTime(event.target.value);
+              }}
               required
             />
           </div>
-        ) : (
-          <div className="space-y-2">
-            <Label>{t("day")}</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {WEEKDAY_KEYS.map((key, index) => (
-                <button
-                  key={key}
-                  type="button"
-                  disabled={disabled}
-                  aria-pressed={weekday === index}
-                  onClick={() => setWeekday(index)}
-                  className={cn(
-                    "rounded-md border px-2.5 py-1.5 text-sm",
-                    weekday === index
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border/80 bg-background/70",
-                  )}
-                >
-                  {weekdayShort(key, locale)}
-                </button>
-              ))}
-            </div>
+
+          <div className="flex items-center gap-3 pt-1">
+            <Button type="submit" variant="secondary" disabled={disabled || !isSessionTime(time)}>
+              {t("saveSchedule")}
+            </Button>
+            {savedFlash && (
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary animate-in fade-in zoom-in-95 duration-300">
+                <Check aria-hidden className="size-4" />
+                {t("saved")}
+              </span>
+            )}
           </div>
-        )}
+        </form>
+      </section>
 
-        <div className="space-y-2">
-          <Label htmlFor="plan-time">{t("time")}</Label>
-          <ThemeDateInput
-            id="plan-time"
-            type="time"
-            value={time}
-            disabled={disabled}
-            onChange={(event) => setTime(event.target.value)}
-            required
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={disabled || !isSessionTime(time)}>
-            {t("saveSchedule")}
-          </Button>
-          {savedFlash && (
-            <span className="text-sm text-primary">{t("saved")}</span>
-          )}
-        </div>
-      </form>
-
-      <div className="space-y-3">
-        <h3 className="font-display text-lg text-foreground">{t("botReminders")}</h3>
-        <label className="flex items-start gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            className="mt-1"
+      <section className="glass rounded-3xl p-5 sm:p-6">
+        <h3 className="font-display text-xl tracking-tight text-foreground">{t("botReminders")}</h3>
+        <div className="mt-3 divide-y divide-[color:var(--glass-border)]">
+          <Switch
+            className="py-3.5"
+            label={t("pollToggle")}
             checked={notify.moodPolls}
             disabled={disabled}
             onChange={(event) =>
@@ -163,12 +182,9 @@ function SessionRhythmForm({
               })
             }
           />
-          {t("pollToggle")}
-        </label>
-        <label className="flex items-start gap-2 text-sm text-foreground">
-          <input
-            type="checkbox"
-            className="mt-1"
+          <Switch
+            className="py-3.5"
+            label={t("nudgeToggle")}
             checked={notify.eveningNudge}
             disabled={disabled}
             onChange={(event) =>
@@ -178,10 +194,9 @@ function SessionRhythmForm({
               })
             }
           />
-          {t("nudgeToggle")}
-        </label>
-      </div>
-    </section>
+        </div>
+      </section>
+    </>
   );
 }
 

@@ -65,35 +65,34 @@ export function WeekSpectrum({
 
   return (
     <section
-      className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/80 p-4 shadow-[0_18px_50px_-36px_oklch(0.35_0.04_175_/_0.55)] sm:p-5"
+      className="glass-strong relative overflow-hidden rounded-3xl p-5 sm:p-6"
       aria-labelledby="week-spectrum-title"
     >
       {lead && (
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-16 -left-10 size-48 rounded-full blur-3xl"
-          style={{ background: feelingFill(lead), opacity: 0.28 }}
+          className="pointer-events-none absolute -top-24 -end-16 size-64 rounded-full blur-3xl"
+          style={{ background: feelingFill(lead), opacity: 0.22 }}
         />
       )}
 
-      <div className="relative space-y-4">
-        <div className="space-y-1">
-          <p
-            id="week-spectrum-title"
-            className="text-[0.68rem] font-medium tracking-[0.16em] text-muted-foreground uppercase"
-          >
+      <div className="relative space-y-6">
+        <div className="space-y-2">
+          <p id="week-spectrum-title" className="eyebrow text-muted-foreground">
             {t("spectrumLabel")}
           </p>
-          <p className="font-display text-3xl tracking-tight text-foreground">{title}</p>
+          <p className="font-display text-[2.125rem] leading-[1.05] tracking-tight text-foreground sm:text-[2.5rem]">
+            {title}
+          </p>
           {title !== headline && (
-            <p className="text-sm text-muted-foreground">{headline}</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">{headline}</p>
           )}
         </div>
 
         {spectrum.shares.length > 0 && (
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             <div
-              className="flex h-3 gap-1"
+              className="flex h-2.5 gap-1"
               role="img"
               aria-label={spectrum.shares
                 .map((share) => `${feeling(share.feeling)} ${share.count}`)
@@ -111,22 +110,27 @@ export function WeekSpectrum({
                 />
               ))}
             </div>
-            {spectrum.shares.length > 1 && (
-              <p className="text-[0.7rem] text-muted-foreground">{t("spectrumAxis")}</p>
-            )}
-            <ul className="flex flex-wrap gap-x-3 gap-y-1.5">
-              {spectrum.shares.map((share) => (
-                <li key={share.feeling} className="flex items-center gap-1.5 text-xs text-foreground">
-                  <span
-                    aria-hidden
-                    className="size-2 shrink-0 rounded-full"
-                    style={{ background: feelingFill(share.feeling) }}
-                  />
-                  <span>{feeling(share.feeling)}</span>
-                  <span className="text-muted-foreground">{share.count}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <ul className="flex flex-wrap gap-x-3 gap-y-1.5">
+                {spectrum.shares.map((share) => (
+                  <li
+                    key={share.feeling}
+                    className="flex items-center gap-1.5 text-xs text-foreground"
+                  >
+                    <span
+                      aria-hidden
+                      className="size-2 shrink-0 rounded-full"
+                      style={{ background: feelingFill(share.feeling) }}
+                    />
+                    <span>{feeling(share.feeling)}</span>
+                    <span className="tabular text-muted-foreground">{share.count}</span>
+                  </li>
+                ))}
+              </ul>
+              {spectrum.shares.length > 1 && (
+                <p className="text-[0.6875rem] text-muted-foreground/80">{t("spectrumAxis")}</p>
+              )}
+            </div>
           </div>
         )}
 
@@ -151,20 +155,20 @@ export function WeekSpectrum({
                 aria-label={label}
                 onClick={() => onSelect(day.key)}
                 className={cn(
-                  "flex min-w-11 flex-1 basis-0 flex-col items-center gap-1.5 rounded-2xl p-1 transition-colors",
-                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-                  selectedDay && "bg-background/80",
-                  isFuture && day.slices.length === 0 && "opacity-45",
+                  "flex min-w-11 flex-1 basis-0 flex-col items-center gap-2 rounded-2xl p-1 transition-[background-color,transform] duration-200 active:scale-[0.97]",
+                  "focus-visible:ring-4 focus-visible:ring-ring/25 focus-visible:outline-none",
+                  selectedDay && "bg-foreground/[0.05]",
+                  isFuture && day.slices.length === 0 && "opacity-40",
                 )}
               >
                 <span
                   className={cn(
-                    "flex h-24 w-full flex-col gap-0.5 overflow-hidden rounded-2xl p-1 sm:h-28",
+                    "flex h-24 w-full flex-col gap-0.5 overflow-hidden rounded-xl p-1 transition-shadow sm:h-28",
                     day.slices.length === 0
-                      ? "border border-dashed border-border/80 bg-background/35"
+                      ? "border border-dashed border-[color:var(--glass-border)] bg-background/30"
                       : "bg-background/55",
-                    selectedDay && "ring-2 ring-primary/45",
-                    isToday && !selectedDay && "ring-1 ring-primary/25",
+                    selectedDay && "ring-2 ring-foreground/60",
+                    isToday && !selectedDay && "ring-1 ring-primary/35",
                   )}
                 >
                   {day.slices.map((slice) => (
@@ -192,7 +196,7 @@ export function WeekSpectrum({
                   >
                     {weekdayShort(day.key, locale)}
                   </span>
-                  <span className="mt-0.5 text-[0.65rem] text-muted-foreground">
+                  <span className="tabular mt-1 text-[0.65rem] text-muted-foreground">
                     {Number(day.key.slice(8))}
                   </span>
                 </span>
@@ -244,20 +248,35 @@ function DayReading({
   const preview = withText.slice(0, 2);
 
   return (
-    <div className="rounded-2xl bg-background/55 px-3 py-3">
-      <p className="font-display text-lg tracking-tight text-foreground">
-        {formatDayLabel(dayKey, locale)}
-      </p>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {slices.length === 0
-          ? emptyDay
-          : feelings.length > 0
-            ? feelings.map((item) => feeling(item)).join(", ")
-            : noFeeling}
-        {slices.length > 1 ? ` · ${count(slices.length, "note")}` : ""}
-      </p>
+    <div className="rounded-2xl bg-foreground/[0.04] px-4 py-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <p className="font-display text-lg tracking-tight text-foreground">
+          {formatDayLabel(dayKey, locale)}
+        </p>
+        {slices.length > 1 && (
+          <p className="text-xs text-muted-foreground">{count(slices.length, "note")}</p>
+        )}
+      </div>
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-muted-foreground">
+        {slices.length === 0 ? (
+          <span>{emptyDay}</span>
+        ) : feelings.length > 0 ? (
+          feelings.map((item) => (
+            <span key={item} className="inline-flex items-center gap-1.5">
+              <span
+                aria-hidden
+                className="size-1.5 rounded-full"
+                style={{ background: feelingFill(item) }}
+              />
+              {feeling(item)}
+            </span>
+          ))
+        ) : (
+          <span>{noFeeling}</span>
+        )}
+      </div>
       {preview.length > 0 && (
-        <ul className="mt-2 space-y-1.5">
+        <ul className="mt-3 space-y-2 border-t border-[color:var(--glass-border)] pt-3">
           {preview.map((entry) => (
             <li key={entry.id} className="text-sm leading-relaxed text-foreground/90">
               {excerpt(entry.body)}

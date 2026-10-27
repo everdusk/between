@@ -177,4 +177,10 @@ export const vi: Catalog = {
   botPollDay: "Trưa. Bạn thế nào?",
   botPollEvening: "Tối. Bạn thế nào?",
   botNudge: "Hôm nay có ghi chép chưa?",
+  todayTitle: "Hôm nay",
+  nextSession: "Buổi tiếp theo",
+  inDays: "sau {days}",
+  weekDaysNoted: "ngày có ghi chép",
+  streakCaption: "liên tiếp",
+  sections: "Mục",
 };

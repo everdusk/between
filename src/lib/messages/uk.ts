@@ -179,4 +179,10 @@ export const uk: Catalog = {
   botPollEvening: "Вечір. Як ви?",
   botNudge:
     "Є нотатка за сьогодні?",
+  todayTitle: "Сьогодні",
+  nextSession: "Найближчий сеанс",
+  inDays: "через {days}",
+  weekDaysNoted: "днів із записами",
+  streakCaption: "поспіль",
+  sections: "Розділи",
 };

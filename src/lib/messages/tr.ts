@@ -178,4 +178,10 @@ export const tr: Catalog = {
   botPollDay: "Gün. Nasılsınız?",
   botPollEvening: "Akşam. Nasılsınız?",
   botNudge: "Bugün için not var mı?",
+  todayTitle: "Bugün",
+  nextSession: "Sıradaki seans",
+  inDays: "{days} sonra",
+  weekDaysNoted: "notlu gün",
+  streakCaption: "üst üste",
+  sections: "Bölümler",
 };

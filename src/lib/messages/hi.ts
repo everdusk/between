@@ -178,4 +178,10 @@ export const hi: Catalog = {
   botPollDay: "दिन. आप कैसे हैं?",
   botPollEvening: "शाम. आप कैसे हैं?",
   botNudge: "आज का नोट है?",
+  todayTitle: "आज",
+  nextSession: "अगला सेशन",
+  inDays: "{days} में",
+  weekDaysNoted: "नोट वाले दिन",
+  streakCaption: "लगातार",
+  sections: "अनुभाग",
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Sparkles } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
 import { badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -83,7 +84,7 @@ export function WeeklyPanel({
   initData,
   disabled,
 }: WeeklyPanelProps) {
-  const { t, locale, feeling, slot } = useI18n();
+  const { t, locale, feeling, slot, count } = useI18n();
   const now = new Date();
   const todayKey = toDateKey(now);
   const period = therapyWindow(sessions, entries, todayKey);
@@ -222,19 +223,20 @@ export function WeeklyPanel({
     setBriefPhase("idle");
   }
 
+  const notesPhrase = count(weekEntries.length, "note");
+  const notesSpace = notesPhrase.indexOf(" ");
+
   return (
-    <div className="space-y-8">
-      <div className="space-y-1">
-        <h2 className="font-display text-2xl tracking-tight text-foreground sm:text-3xl">
-          {t("weekTitle")}
-        </h2>
-        <p className="text-sm text-muted-foreground sm:text-base">
+    <div className="space-y-4">
+      <div className="space-y-2 px-2 pt-1 pb-1">
+        <p className="eyebrow text-muted-foreground">{t("weekTitle")}</p>
+        <h2 className="font-display text-[2.125rem] leading-[1.05] tracking-tight text-foreground sm:text-[2.5rem]">
           {period.last && days.length === 0
             ? t("afterSessionLead", { date: formatLongDate(period.last.date, locale) })
             : t("weekLead", {
                 range: formatDateSpan(days[0] ?? todayKey, days[days.length - 1] ?? todayKey, locale),
               })}
-        </p>
+        </h2>
       </div>
 
       <WeekSpectrum
@@ -251,6 +253,24 @@ export function WeeklyPanel({
         }}
       />
 
+      <div className="grid grid-cols-2 gap-4">
+        <div className="glass rounded-3xl p-5">
+          <p className="tabular font-display text-[2rem] leading-none text-foreground">
+            {noteDays}
+            <span className="ms-1 font-sans text-base text-muted-foreground">/ {days.length}</span>
+          </p>
+          <p className="mt-2 text-xs leading-snug text-muted-foreground">{t("weekDaysNoted")}</p>
+        </div>
+        <div className="glass rounded-3xl p-5">
+          <p className="tabular font-display text-[2rem] leading-none text-foreground">
+            {notesSpace > 0 ? notesPhrase.slice(0, notesSpace) : notesPhrase}
+          </p>
+          <p className="mt-2 text-xs leading-snug text-muted-foreground">
+            {notesSpace > 0 ? notesPhrase.slice(notesSpace + 1) : ""}
+          </p>
+        </div>
+      </div>
+
       <SessionBacklog
         weekKey={key}
         weekEntries={weekEntries}
@@ -263,98 +283,126 @@ export function WeeklyPanel({
         onSave={onSaveBacklog}
       />
 
-      <section className="space-y-3 rounded-3xl border border-border/60 bg-card/70 p-4 sm:p-5">
-        <div className="space-y-1">
-          <h3 className="font-display text-lg text-foreground">{t("briefTitle")}</h3>
-          <p className="text-sm text-muted-foreground">
-            {t("briefStats", {
-              days: noteDays,
-              total: days.length,
-              count: weekEntries.length,
-            })}
+      <section className="ink relative overflow-hidden rounded-3xl p-5 sm:p-6">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-20 -end-20 size-56 rounded-full bg-ink-foreground/[0.06] blur-2xl"
+        />
+        <div className="relative space-y-4">
+          <div className="space-y-1.5">
+            <p className="eyebrow text-ink-muted">{t("briefTitle")}</p>
+            <p className="text-sm text-ink-muted">
+              {t("briefStats", {
+                days: noteDays,
+                total: days.length,
+                count: weekEntries.length,
+              })}
+            </p>
+          </div>
+          <p className="whitespace-pre-wrap text-[0.9375rem] leading-relaxed text-ink-foreground/95">
+            {modelText || rules}
           </p>
-        </div>
-        <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
-          {modelText || rules}
-        </p>
-        {modelText && (
-          <p className="text-xs text-muted-foreground">{t("briefModel")}</p>
-        )}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={disabled || briefPhase === "loading"}
-            onClick={() => void formulate()}
-          >
-            {briefPhase === "loading" ? t("formulating") : t("formulate")}
-          </Button>
-          {briefNote && (
-            <p className="text-sm text-muted-foreground">{briefNote}</p>
-          )}
+          {modelText && <p className="text-xs text-ink-muted">{t("briefModel")}</p>}
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Button
+              type="button"
+              variant="secondary"
+              className="bg-ink-foreground/12 text-ink-foreground hover:bg-ink-foreground/20"
+              disabled={disabled || briefPhase === "loading"}
+              onClick={() => void formulate()}
+            >
+              <Sparkles aria-hidden />
+              {briefPhase === "loading" ? t("formulating") : t("formulate")}
+            </Button>
+            {briefNote && <p className="text-sm text-ink-muted">{briefNote}</p>}
+          </div>
         </div>
       </section>
 
       {weekTags.length > 0 && (
-        <div className="flex flex-wrap gap-2" aria-label={t("themes")}>
-          {weekTags.map((item) => {
-            const pressed = activeTheme === item.tag;
-            return (
-              <button
-                key={item.tag}
-                type="button"
-                aria-pressed={pressed}
-                onClick={() =>
-                  setThemeFilter((current) => (current === item.tag ? null : item.tag))
-                }
-                className={cn(badgeVariants({ variant: pressed ? "default" : "outline" }), "font-normal")}
-              >
-                {item.tag}
-                <span className={cn("ml-1.5", pressed ? "text-primary-foreground/70" : "text-muted-foreground")}>
-                  ×{item.count}
-                </span>
-              </button>
-            );
-          })}
+        <div className="space-y-3 px-2 pt-3">
+          <p className="eyebrow text-muted-foreground">{t("themes")}</p>
+          <div className="flex flex-wrap gap-2" aria-label={t("themes")}>
+            {weekTags.map((item) => {
+              const pressed = activeTheme === item.tag;
+              return (
+                <button
+                  key={item.tag}
+                  type="button"
+                  aria-pressed={pressed}
+                  onClick={() =>
+                    setThemeFilter((current) => (current === item.tag ? null : item.tag))
+                  }
+                  className={cn(
+                    "inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm transition-[background-color,color,transform] duration-200 active:scale-[0.97]",
+                    pressed
+                      ? "border-transparent bg-foreground text-background"
+                      : "border-[color:var(--glass-border)] bg-background/55 text-foreground hover:bg-background/85",
+                  )}
+                >
+                  {item.tag}
+                  <span
+                    className={cn(
+                      "tabular text-xs",
+                      pressed ? "text-background/70" : "text-muted-foreground",
+                    )}
+                  >
+                    {item.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      <ul className="space-y-2">
+      <ul className="space-y-2 px-1 pt-2">
         {days.map((day) => {
           const list = (byDate.get(day) ?? []).filter(
             (entry) => !activeTheme || shownEntryTags(entry).includes(activeTheme),
           );
           if (activeTheme && list.length === 0) return null;
           const tone = list.find((entry) => entry.feelings.length > 0)?.feelings[0];
+          const selected = day === selectedDay;
           return (
             <li
               key={day}
               id={`week-day-${day}`}
               className={cn(
-                "grid gap-2 rounded-2xl px-3 py-3 sm:grid-cols-[7.5rem_1fr] sm:gap-6",
-                day === selectedDay
-                  ? "bg-primary/10 ring-1 ring-primary/25"
-                  : list.length === 0 && "opacity-55",
+                "scroll-mt-4 rounded-3xl px-4 py-4 transition-colors",
+                selected ? "glass" : list.length === 0 && "opacity-50",
               )}
             >
-              <div className="flex items-start gap-2 text-sm font-medium text-foreground">
-                {tone && (
-                  <span
-                    aria-hidden
-                    className="mt-1 size-2 shrink-0 rounded-full"
-                    style={{ background: feelingFill(tone) }}
-                  />
+              <div className="flex items-center gap-2.5">
+                <span
+                  aria-hidden
+                  className="size-2 shrink-0 rounded-full"
+                  style={{ background: tone ? feelingFill(tone) : "transparent", boxShadow: tone ? undefined : "inset 0 0 0 1.5px var(--border)" }}
+                />
+                <span
+                  className={cn(
+                    "text-sm font-medium",
+                    day === todayKey ? "text-foreground" : "text-foreground/85",
+                  )}
+                >
+                  {formatDayLabel(day, locale)}
+                </span>
+                {day === todayKey && (
+                  <span className="eyebrow rounded-full bg-primary/10 px-2 py-1 text-[0.6rem] text-primary">
+                    {t("todayTitle")}
+                  </span>
                 )}
-                <span>{formatDayLabel(day, locale)}</span>
               </div>
               {list.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("noEntry")}</p>
+                <p className="mt-2 ps-[1.1rem] text-sm text-muted-foreground">{t("noEntry")}</p>
               ) : (
-                <ul className="space-y-3">
+                <ul className="mt-3 space-y-4 border-s border-[color:var(--glass-border)] ps-5 ms-[0.2rem]">
                   {list.map((entry) => (
                     <li key={entry.id} className="space-y-1.5">
-                      <p className="text-xs text-muted-foreground">
-                        {formatTime(entry.createdAt, locale)}
+                      <p className="tabular text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground/80">
+                          {formatTime(entry.createdAt, locale)}
+                        </span>
                         {entry.slot ? ` · ${slot(entry.slot)}` : ""}
                         {entry.feelings.length > 0
                           ? ` · ${entry.feelings.map((item) => feeling(item)).join(", ")}`
@@ -366,7 +414,7 @@ export function WeeklyPanel({
                         </p>
                       )}
                       {shownEntryTags(entry).length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1.5 pt-0.5">
                           {shownEntryTags(entry).map((tag) => (
                             <button
                               key={tag}
@@ -389,7 +437,6 @@ export function WeeklyPanel({
           );
         })}
       </ul>
-
     </div>
   );
 }

@@ -177,4 +177,10 @@ export const fa: Catalog = {
   botPollDay: "روز. حالتان چطور است؟",
   botPollEvening: "شب. حالتان چطور است؟",
   botNudge: "برای امروز یادداشتی هست؟",
+  todayTitle: "امروز",
+  nextSession: "جلسه بعدی",
+  inDays: "تا {days} دیگر",
+  weekDaysNoted: "روزهای دارای یادداشت",
+  streakCaption: "پیاپی",
+  sections: "بخش‌ها",
 };

@@ -182,6 +182,12 @@ export const ru = {
   botPollEvening: "Вечер. Как вы?",
   botNudge:
     "Есть заметка за сегодня?",
+  todayTitle: "Сегодня",
+  nextSession: "Ближайший сеанс",
+  inDays: "через {days}",
+  weekDaysNoted: "дней с записями",
+  streakCaption: "подряд",
+  sections: "Разделы",
 } as const;
 
 export type Catalog = { [K in keyof typeof ru]: string };

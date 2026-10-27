@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
+import { Lock, Star } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import {
@@ -140,59 +141,76 @@ export function WeekTab({
   if (!access) {
     if (failedOpen) return <>{children}</>;
     return (
-      <p className="py-10 text-center text-sm text-muted-foreground" role="status">
-        {t("opening")}
-      </p>
+      <div className="glass rounded-3xl px-6 py-14 text-center" role="status">
+        <div className="mx-auto mb-4 h-1 w-28 overflow-hidden rounded-full bg-foreground/[0.08]">
+          <div className="loading-bar h-full w-1/2 rounded-full bg-primary/70" />
+        </div>
+        <p className="text-sm text-muted-foreground">{t("opening")}</p>
+      </div>
     );
   }
 
   if (access.status === "locked") {
     return (
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h2 className="font-display text-2xl tracking-tight text-foreground sm:text-3xl">
-            {t("weekTitle")}
-          </h2>
-          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-            {t("paywallBody", { price: access.starPrice })}
-          </p>
+      <div className="space-y-4">
+        <div className="space-y-2 px-2 pt-1 pb-1">
+          <p className="eyebrow text-muted-foreground">{t("weekTitle")}</p>
         </div>
-        <Button
-          type="button"
-          disabled={!inTelegram || paying}
-          onClick={() => void pay()}
-        >
-          {paying
-            ? t("paying")
-            : inTelegram
-              ? t("payStars", { price: access.starPrice })
-              : t("payInTelegram")}
-        </Button>
-        {payError && (
-          <p className="text-sm text-muted-foreground" role="alert">
-            {payError}
-          </p>
-        )}
-      </section>
+        <section className="ink relative overflow-hidden rounded-3xl p-6 sm:p-7">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-24 -end-16 size-64 rounded-full bg-ink-foreground/[0.07] blur-2xl"
+          />
+          <div className="relative space-y-6">
+            <div className="flex size-11 items-center justify-center rounded-2xl bg-ink-foreground/10">
+              <Lock aria-hidden className="size-5 text-ink-foreground" />
+            </div>
+            <p className="font-display text-[1.5rem] leading-snug tracking-tight text-ink-foreground">
+              {t("paywallBody", { price: access.starPrice })}
+            </p>
+            <div className="space-y-3">
+              <Button
+                type="button"
+                size="lg"
+                className="w-full bg-ink-foreground text-ink hover:bg-ink-foreground/90"
+                disabled={!inTelegram || paying}
+                onClick={() => void pay()}
+              >
+                <Star aria-hidden />
+                {paying
+                  ? t("paying")
+                  : inTelegram
+                    ? t("payStars", { price: access.starPrice })
+                    : t("payInTelegram")}
+              </Button>
+              {payError && (
+                <p className="text-sm text-ink-muted" role="alert">
+                  {payError}
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
     );
   }
 
   const showIntro = !access.introSeen && (access.status === "trial" || access.status === "new");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {showIntro && (
-        <section className="space-y-4 rounded-3xl border border-border/60 bg-card/70 p-4 sm:p-5">
+        <section className="glass flex flex-col gap-5 rounded-3xl p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <p className="text-sm leading-relaxed text-foreground/90 sm:text-base">
             {t("intro", { price: access.starPrice })}
           </p>
-          <Button type="button" onClick={() => void dismissIntro()}>
+          <Button type="button" variant="ink" className="shrink-0" onClick={() => void dismissIntro()}>
             {t("introOk")}
           </Button>
         </section>
       )}
       {access.status === "trial" && access.introSeen && (
-        <p className="text-sm text-muted-foreground">
+        <p className="px-2 text-xs text-muted-foreground">
           {t("trialLine", {
             days: count(access.daysLeft, "day"),
             price: access.starPrice,

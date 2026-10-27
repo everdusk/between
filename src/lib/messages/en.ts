@@ -183,4 +183,10 @@ export const en: Catalog = {
   botPollDay: "Afternoon. How are you?",
   botPollEvening: "Evening. How are you?",
   botNudge: "A note for today?",
+  todayTitle: "Today",
+  nextSession: "Next session",
+  inDays: "in {days}",
+  weekDaysNoted: "days with notes",
+  streakCaption: "in a row",
+  sections: "Sections",
 };
