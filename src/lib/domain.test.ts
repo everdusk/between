@@ -41,6 +41,7 @@ import { emptyStore, type JournalEntry, type SessionNote } from "./types";
 import {
   daysPhrase,
   describeWeekAccess,
+  isWeekAccessExempt,
   emptyWeekAccess,
   grantWeekPaidUntil,
   markWeekIntroSeen,
@@ -858,6 +859,24 @@ describe("week access", () => {
     assert.equal(renewed.paidUntil, paid.paidUntil);
     const later = grantWeekPaidUntil(paid, "2026-12-08T12:00:00.000Z");
     assert.equal(later.paidUntil, "2026-12-08T12:00:00.000Z");
+  });
+
+  it("keeps an exempt account on the week after the trial", () => {
+    const opened = openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - TRIAL_MS));
+    assert.equal(describeWeekAccess(opened, now).status, "locked");
+    const exempt = describeWeekAccess(opened, now, 150, { exempt: true });
+    assert.equal(exempt.status, "paid");
+    assert.equal(exempt.introSeen, true);
+    assert.equal(exempt.daysLeft, 0);
+
+    assert.equal(isWeekAccessExempt({ id: 1, username: "@OdinzRage" }), true);
+    assert.equal(isWeekAccessExempt({ id: 1, username: " odinzrage " }), true);
+    assert.equal(isWeekAccessExempt({ id: 7 }), false);
+    assert.equal(isWeekAccessExempt({ id: 7, username: "other" }), false);
+    assert.equal(isWeekAccessExempt({ id: 0, username: "odinzrage" }), false);
+    assert.equal(isWeekAccessExempt({ id: 42 }, "7, nope 42"), true);
+    assert.equal(isWeekAccessExempt({ id: 42 }, ""), false);
+    assert.equal(isWeekAccessExempt({ id: 42 }, "12.5"), false);
   });
 
   it("counts days and falls back to 150 stars", () => {
