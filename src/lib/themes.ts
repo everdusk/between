@@ -205,8 +205,14 @@ export function applyVerdict(
   userId = "local",
 ): { state: ThemeState; touchedId: string | null } {
   const marked = feelingIntensity(entry.feelings);
-  const charged = marked >= CREATE_INTENSITY;
-  const intensity = clamp(Math.round(Math.max(verdict.intensity, charged ? marked : 0)), 1, 10);
+  const heavy = marked >= CREATE_INTENSITY;
+  const substantial = entry.body.replace(/\s+/g, " ").trim().length >= 40;
+  const charged = heavy || substantial;
+  const intensity = clamp(
+    Math.round(Math.max(verdict.intensity, heavy ? marked : substantial ? CREATE_INTENSITY : 0)),
+    1,
+    10,
+  );
   const confidence = clamp(
     charged ? Math.max(verdict.confidence, CREATE_CONFIDENCE) : verdict.confidence,
     0,
