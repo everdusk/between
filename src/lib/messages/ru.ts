@@ -91,7 +91,7 @@ export const ru = {
   briefTunnelRejected:
     "AI Tunnel не признал ключ. Скопируй его заново в AITUNNEL_API_KEY, без кавычек, и сделай Redeploy.",
   briefTunnelForbidden:
-    "AI Tunnel отклонил запрос. У ключа не должно быть ограничения по IP, а модель deepseek-v4.1-flash-1017 должна быть разрешена.",
+    "AI Tunnel отклонил запрос. У ключа не должно быть ограничения по IP, а модель ~deepseek/deepseek-v4-flash-latest должна быть разрешена.",
   briefLocal: "Вне Telegram — по записям.",
   briefFail: "Не собралось. Ниже — по записям.",
   briefPlain: "Модель не ответила{reason}.",

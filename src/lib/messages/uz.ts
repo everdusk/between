@@ -89,7 +89,7 @@ export const uz: Catalog = {
   briefBadKey: "Model kaliti qabul qilinmadi.",
   briefTunnelKey: "Kalit aitunnel.ru dan bo'lishi va sk-aitunnel- bilan boshlanishi kerak.",
   briefTunnelRejected: "AI Tunnel kalitni qabul qilmadi. Uni qo'shtirnoqsiz AITUNNEL_API_KEY ga qayta qo'y va qayta joyla.",
-  briefTunnelForbidden: "AI Tunnel so'rovni rad etdi. IP cheklovi bo'lmasin va deepseek-v4.1-flash-1017 modeliga ruxsat berilsin.",
+  briefTunnelForbidden: "AI Tunnel so'rovni rad etdi. IP cheklovi bo'lmasin va ~deepseek/deepseek-v4-flash-latest modeliga ruxsat berilsin.",
   briefLocal: "Telegramdan tashqari — yozuvlardan.",
   briefFail: "Yig‘ilmadi. Yozuvlar pastda.",
   briefPlain: "Model javob bermadi{reason}.",

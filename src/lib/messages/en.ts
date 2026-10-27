@@ -93,7 +93,7 @@ export const en: Catalog = {
   briefTunnelRejected:
     "AI Tunnel rejected the key. Paste it again into AITUNNEL_API_KEY, without quotes, and redeploy.",
   briefTunnelForbidden:
-    "AI Tunnel refused the request. The key must allow every IP, and the model deepseek-v4.1-flash-1017 must be allowed.",
+    "AI Tunnel refused the request. The key must allow every IP, and the model ~deepseek/deepseek-v4-flash-latest must be allowed.",
   briefLocal: "Outside Telegram — from the notes.",
   briefFail: "Could not write it. Notes are below.",
   briefPlain: "The model did not answer{reason}.",

@@ -240,11 +240,17 @@ export function resolveGroqModel(configured: string | undefined): string {
   return name;
 }
 
-export const AITUNNEL_MODEL = "deepseek-v4.1-flash-1017";
+export const AITUNNEL_MODEL = "~deepseek/deepseek-v4-flash-latest";
+
+const RETIRED_AITUNNEL_MODELS = new Set([
+  "deepseek-v4.1-flash-1017",
+  "deepseek/deepseek-v4.1-flash-1017",
+]);
 
 export function resolveAitunnelModel(configured: string | undefined): string {
   const name = configured?.trim();
-  return name || AITUNNEL_MODEL;
+  if (!name || RETIRED_AITUNNEL_MODELS.has(name)) return AITUNNEL_MODEL;
+  return name;
 }
 
 /** Vercel values often keep quotes, a Bearer prefix, or a line break from the paste. */
