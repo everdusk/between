@@ -277,20 +277,48 @@ function clipProviderMessage(raw: string): string {
   return text.length > 160 ? `${text.slice(0, 157)}…` : text;
 }
 
-export function textFromChatMessage(message: { content?: unknown } | undefined): string {
-  const content = message?.content;
-  if (typeof content === "string") return content.trim();
-  if (!Array.isArray(content)) return "";
-  return content
-    .map((part) => {
-      if (typeof part === "string") return part;
-      if (part && typeof part === "object" && typeof (part as { text?: unknown }).text === "string") {
-        return (part as { text: string }).text;
-      }
-      return "";
-    })
-    .join("")
-    .trim();
+function readLooseText(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) {
+    const visible = value
+      .filter((part) => {
+        if (!part || typeof part !== "object") return true;
+        const row = part as { type?: unknown; thought?: unknown };
+        return row.thought !== true && row.type !== "reasoning" && row.type !== "thinking";
+      })
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (part && typeof part === "object" && typeof (part as { text?: unknown }).text === "string") {
+          return (part as { text: string }).text;
+        }
+        return "";
+      })
+      .join("")
+      .trim();
+    if (visible) return visible;
+  }
+  if (value && typeof value === "object" && typeof (value as { content?: unknown }).content === "string") {
+    return (value as { content: string }).content.trim();
+  }
+  return "";
+}
+
+/** DeepSeek often leaves content empty and puts the answer in reasoning. */
+export function textFromChatMessage(
+  message: { content?: unknown; reasoning?: unknown; reasoning_content?: unknown } | undefined,
+  prose = false,
+): string {
+  const content = readLooseText(message?.content);
+  if (content) return content;
+  const thought = readLooseText(message?.reasoning) || readLooseText(message?.reasoning_content);
+  if (!thought) return "";
+  if (!prose || thought.length < 700) return thought;
+  const parts = thought
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const last = parts[parts.length - 1] ?? thought;
+  return last.length >= 20 ? last : thought;
 }
 
 function aitunnelBase(): string {
@@ -370,21 +398,22 @@ async function aitunnelOnce(
   apiKey: string,
   model: string,
   system: string,
+  kind: BriefKind,
   limits: GenLimits,
-  extras: boolean,
-  json: boolean,
+  direct: boolean,
 ): Promise<{ text: string | null; status: number; message: string }> {
+  const json = kind === "judge" || kind === "dedup";
   const body: Record<string, unknown> = {
     model,
     temperature: limits.temperature,
-    max_tokens: extras ? limits.maxTokens + 800 : limits.maxTokens,
+    max_tokens: Math.max(limits.maxTokens, direct ? 2048 : 4096),
     messages: [
       { role: "system", content: system },
       { role: "user", content: `Факты:\n${prompt}` },
     ],
   };
-  if (extras) {
-    body.reasoning = { effort: "low" };
+  if (direct) {
+    body.reasoning = { effort: "none" };
     if (json) body.response_format = { type: "json_object" };
   }
 
@@ -407,9 +436,10 @@ async function aitunnelOnce(
     return { text: null, status: res.status, message };
   }
   const data = (await res.json()) as {
-    choices?: { message?: { content?: unknown } }[];
+    choices?: { message?: { content?: unknown; reasoning?: unknown; reasoning_content?: unknown } }[];
   };
-  const text = textFromChatMessage(data.choices?.[0]?.message);
+  const prose = kind === "brief" || kind === "pattern";
+  const text = textFromChatMessage(data.choices?.[0]?.message, prose);
   return { text: text || null, status: res.status, message: "" };
 }
 
@@ -421,8 +451,7 @@ async function aitunnel(
   limits: GenLimits,
 ): Promise<{ text: string | null; detail: string }> {
   const model = resolveAitunnelModel(process.env.AITUNNEL_MODEL);
-  const json = kind === "judge" || kind === "dedup";
-  const first = await aitunnelOnce(prompt, apiKey, model, system, limits, true, json);
+  const first = await aitunnelOnce(prompt, apiKey, model, system, kind, limits, true);
   const firstText = settleModelText(first.text, kind);
   if (firstText) return { text: firstText, detail: "" };
   if (first.status === 401 || first.status === 403) {
@@ -432,7 +461,7 @@ async function aitunnel(
   const retry =
     first.status === 400 || first.status === 422 || (!first.text && first.status === 200);
   if (retry) {
-    const second = await aitunnelOnce(prompt, apiKey, model, system, limits, false, false);
+    const second = await aitunnelOnce(prompt, apiKey, model, system, kind, limits, false);
     const secondText = settleModelText(second.text, kind);
     if (secondText) return { text: secondText, detail: "" };
     if ((first.text || second.text) && settlesJson(kind)) {

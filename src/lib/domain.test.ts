@@ -879,6 +879,19 @@ describe("aitunnel model", () => {
       "один два",
     );
     assert.equal(textFromChatMessage({ content: null }), "");
+    assert.equal(
+      textFromChatMessage({ content: null, reasoning_content: "Повторяется тревога перед звонком." }),
+      "Повторяется тревога перед звонком.",
+    );
+    assert.equal(
+      textFromChatMessage({
+        content: [{ type: "reasoning", text: "думаю" }, { type: "text", text: "готовый абзац" }],
+        reasoning: "думаю ещё",
+      }),
+      "готовый абзац",
+    );
+    const thought = `${"размышление ".repeat(80)}\n\nКороткий вывод о повторе.`;
+    assert.equal(textFromChatMessage({ content: "", reasoning: thought }, true), "Короткий вывод о повторе.");
   });
 });
 
