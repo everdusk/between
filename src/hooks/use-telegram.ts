@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { WebApp } from "@twa-dev/types";
 import {
+  applyTelegramSafeArea,
   applyTelegramTheme,
   applyViewportHeight,
   clearTelegramThemeOverrides,
@@ -47,6 +48,11 @@ export function useTelegram(): TelegramSession {
       }));
     };
 
+    const onSafeArea = () => {
+      if (!webApp || cancelled) return;
+      applyTelegramSafeArea(webApp.safeAreaInset, webApp.contentSafeAreaInset);
+    };
+
     function syncFromWebApp(wa: WebApp, inTelegram: boolean) {
       if (cancelled) return;
       const user = wa.initDataUnsafe?.user ?? null;
@@ -86,11 +92,14 @@ export function useTelegram(): TelegramSession {
           } catch {
             // Older clients may not support header/background colors
           }
+          applyTelegramSafeArea(webApp.safeAreaInset, webApp.contentSafeAreaInset);
         }
 
         syncFromWebApp(webApp, inTelegram);
         webApp.onEvent("themeChanged", onTheme);
         webApp.onEvent("viewportChanged", onViewport);
+        webApp.onEvent("safeAreaChanged", onSafeArea);
+        webApp.onEvent("contentSafeAreaChanged", onSafeArea);
       })
       .catch(() => {
         if (!cancelled) {
@@ -107,6 +116,8 @@ export function useTelegram(): TelegramSession {
       if (webApp) {
         webApp.offEvent("themeChanged", onTheme);
         webApp.offEvent("viewportChanged", onViewport);
+        webApp.offEvent("safeAreaChanged", onSafeArea);
+        webApp.offEvent("contentSafeAreaChanged", onSafeArea);
       }
       clearTelegramThemeOverrides();
     };

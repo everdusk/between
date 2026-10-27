@@ -113,6 +113,39 @@ export function applyViewportHeight(height: number) {
   );
 }
 
+function telegramWebApp(): WebApp | undefined {
+  if (typeof window === "undefined") return undefined;
+  return (window as unknown as { Telegram?: { WebApp?: WebApp } }).Telegram?.WebApp;
+}
+
+/** Stop Telegram from treating a downward drag as “close the Mini App”. */
+export function setTelegramVerticalSwipes(enabled: boolean) {
+  const webApp = telegramWebApp();
+  if (!webApp) return;
+  try {
+    if (enabled) webApp.enableVerticalSwipes();
+    else webApp.disableVerticalSwipes();
+  } catch {
+    // Bot API older than 7.7 has no vertical-swipe switch.
+  }
+}
+
+export function applyTelegramSafeArea(
+  safe?: { bottom?: number } | null,
+  content?: { bottom?: number } | null,
+) {
+  const root = document.documentElement;
+  const bottom = Math.max(safe?.bottom ?? 0, 0);
+  const contentBottom = Math.max(content?.bottom ?? 0, 0);
+  if (bottom) root.style.setProperty("--tg-safe-area-bottom", `${bottom}px`);
+  else root.style.removeProperty("--tg-safe-area-bottom");
+  if (contentBottom) {
+    root.style.setProperty("--tg-content-safe-area-bottom", `${contentBottom}px`);
+  } else {
+    root.style.removeProperty("--tg-content-safe-area-bottom");
+  }
+}
+
 export function clearTelegramThemeOverrides() {
   const root = document.documentElement;
   delete root.dataset.telegramTheme;
@@ -128,6 +161,8 @@ export function clearTelegramThemeOverrides() {
     "--tg-section-bg-color",
     "--tg-link-color",
     "--tg-viewport-stable-height",
+    "--tg-safe-area-bottom",
+    "--tg-content-safe-area-bottom",
     "--background",
     "--foreground",
     "--muted-foreground",

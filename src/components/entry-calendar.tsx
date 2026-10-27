@@ -13,7 +13,9 @@ import {
   shiftMonth,
   weekdayShort,
 } from "@/lib/dates";
+import { sheetShouldDismiss } from "@/lib/sheet";
 import { feelingFill } from "@/lib/spectrum";
+import { setTelegramVerticalSwipes } from "@/lib/telegram";
 import type { Feeling } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +39,26 @@ interface EntryCalendarProps {
   onChange: (value: string) => void;
 }
 
+type DragState = {
+  pointerId: number;
+  startY: number;
+  lastY: number;
+  lastTime: number;
+  velocity: number;
+  offset: number;
+  active: boolean;
+};
+
+const IDLE_DRAG: DragState = {
+  pointerId: -1,
+  startY: 0,
+  lastY: 0,
+  lastTime: 0,
+  velocity: 0,
+  offset: 0,
+  active: false,
+};
+
 export function EntryCalendar({
   id,
   value,
@@ -50,7 +72,9 @@ export function EntryCalendar({
   const titleId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLButtonElement>(null);
   const selectedRef = useRef<HTMLButtonElement>(null);
+  const dragRef = useRef<DragState>(IDLE_DRAG);
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(value);
 
@@ -59,20 +83,91 @@ export function EntryCalendar({
     const trigger = triggerRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    setTelegramVerticalSwipes(false);
     const frame = requestAnimationFrame(() => {
       (selectedRef.current ?? dialogRef.current)?.focus();
     });
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") setOpen(false);
     }
+    function onTouchMove(event: TouchEvent) {
+      if (event.cancelable) event.preventDefault();
+    }
     document.addEventListener("keydown", onKey);
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
     return () => {
       cancelAnimationFrame(frame);
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", onKey);
+      document.removeEventListener("touchmove", onTouchMove);
+      setTelegramVerticalSwipes(true);
       trigger?.focus();
     };
   }, [open]);
+
+  function resetSheetPosition() {
+    const sheet = dialogRef.current;
+    const overlay = overlayRef.current;
+    if (sheet) {
+      sheet.style.transition = "transform 200ms ease-out";
+      sheet.style.transform = "translateY(0)";
+    }
+    if (overlay) {
+      overlay.style.transition = "opacity 200ms ease-out";
+      overlay.style.opacity = "1";
+    }
+  }
+
+  function onSheetPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("button")) return;
+    dragRef.current = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      lastY: event.clientY,
+      lastTime: event.timeStamp,
+      velocity: 0,
+      offset: 0,
+      active: true,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function onSheetPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (!drag.active || event.pointerId !== drag.pointerId) return;
+    const offset = Math.max(0, event.clientY - drag.startY);
+    const elapsed = event.timeStamp - drag.lastTime;
+    if (elapsed > 0) drag.velocity = (event.clientY - drag.lastY) / elapsed;
+    drag.lastY = event.clientY;
+    drag.lastTime = event.timeStamp;
+    drag.offset = offset;
+    const sheet = dialogRef.current;
+    if (sheet) {
+      sheet.style.transition = "none";
+      sheet.style.transform = `translateY(${offset}px)`;
+    }
+    const overlay = overlayRef.current;
+    if (overlay) {
+      overlay.style.transition = "none";
+      overlay.style.opacity = String(Math.max(0.12, 1 - offset / 420));
+    }
+  }
+
+  function onSheetPointerEnd(event: React.PointerEvent<HTMLDivElement>) {
+    const drag = dragRef.current;
+    if (!drag.active || event.pointerId !== drag.pointerId) return;
+    drag.active = false;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (sheetShouldDismiss(drag.offset, drag.velocity)) {
+      setOpen(false);
+      return;
+    }
+    resetSheetPosition();
+  }
 
   const cells = monthCells(visible);
   const canNext = visible.slice(0, 7) < max.slice(0, 7);
@@ -80,8 +175,9 @@ export function EntryCalendar({
   const sheet =
     open &&
     createPortal(
-      <div className="fixed inset-0 z-40">
+      <div className="fixed inset-0 z-40 overscroll-none">
         <button
+          ref={overlayRef}
           type="button"
           aria-label={t("cancel")}
           className="absolute inset-0 bg-black/50 animate-in fade-in duration-200"
@@ -95,10 +191,16 @@ export function EntryCalendar({
             aria-modal="true"
             aria-labelledby={titleId}
             tabIndex={-1}
-            className="w-full max-w-lg outline-none animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out"
+            className="w-full max-w-lg touch-none outline-none animate-in fade-in slide-in-from-bottom-4 duration-300 ease-out"
+            onPointerDown={onSheetPointerDown}
+            onPointerMove={onSheetPointerMove}
+            onPointerUp={onSheetPointerEnd}
+            onPointerCancel={onSheetPointerEnd}
           >
-            <div className="glass-strong rounded-t-3xl px-4 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-              <div aria-hidden className="mx-auto mb-3 h-1 w-9 rounded-full bg-foreground/15" />
+            <div className="glass-strong rounded-t-3xl px-4 pt-1 pb-[max(1.25rem,env(safe-area-inset-bottom),var(--tg-safe-area-bottom,0px))]">
+              <div className="flex cursor-grab justify-center py-3 active:cursor-grabbing">
+                <div aria-hidden className="h-1 w-10 rounded-full bg-foreground/20" />
+              </div>
               <div className="flex items-center justify-between gap-2">
                 <Button
                   type="button"
