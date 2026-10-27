@@ -16,16 +16,20 @@ import {
   weekKey,
 } from "@/lib/dates";
 import { therapyWeekKey, therapyWindow } from "@/lib/session-summary";
-import {
-  briefStamp,
-  buildRuleBrief,
-  entriesOnDates,
-  tagCounts,
-} from "@/lib/brief";
+import { briefStamp, tagCounts } from "@/lib/brief";
 import { parseModelThemes, shownEntryTags, themeContextChunks } from "@/lib/tags";
 import { feelingFill } from "@/lib/spectrum";
 import { requestBrief } from "@/lib/journal-api";
-import type { BacklogItem, BacklogSource, JournalEntry, SessionNote, WeekPrep } from "@/lib/types";
+import {
+  buildSessionBrief,
+  clipPattern,
+  patternFacts,
+  patternKey,
+  pendingJudgeEntries,
+  rankedThemes,
+  type BriefCopy,
+} from "@/lib/themes";
+import type { JournalEntry, SessionNote, SessionTheme, WeekPrep } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { MessageKey } from "@/lib/messages";
 
@@ -51,19 +55,12 @@ interface WeeklyPanelProps {
   entries: JournalEntry[];
   sessions: SessionNote[];
   weekPreps: WeekPrep[];
-  onSaveBrief: (
-    weekKey: string,
-    briefText: string,
-    briefStamp: string,
-    talkNotes: string,
-  ) => boolean;
-  onSaveBacklog: (
-    weekKey: string,
-    backlog: BacklogItem[],
-    backlogStamp: string,
-    backlogSource: BacklogSource,
-    backlogHidden: string[],
-  ) => boolean;
+  themes: SessionTheme[];
+  judgeSettled: string[];
+  onDiscussTheme: (id: string, discussed: boolean) => void;
+  onDismissTheme: (id: string) => void;
+  onAddTheme: (title: string) => void;
+  onSavePattern: (weekKey: string, patternText: string, patternStamp: string) => boolean;
   onSaveThemes: (
     updates: { id: string; updatedAt: string; themes: string[] }[],
     weekKey: string,
@@ -78,8 +75,12 @@ export function WeeklyPanel({
   entries,
   sessions,
   weekPreps,
-  onSaveBrief,
-  onSaveBacklog,
+  themes,
+  judgeSettled,
+  onDiscussTheme,
+  onDismissTheme,
+  onAddTheme,
+  onSavePattern,
   onSaveThemes,
   initData,
   disabled,
@@ -89,12 +90,10 @@ export function WeeklyPanel({
   const todayKey = toDateKey(now);
   const period = therapyWindow(sessions, entries, todayKey);
   const days = period.days;
-  const prevDays = period.previousDays;
   const key = therapyWeekKey(period.last);
   const prep =
     weekPreps.find((item) => item.weekKey === key) ??
     weekPreps.find((item) => item.weekKey === weekKey(now));
-  const talkNotes = prep?.talkNotes ?? "";
   const [briefPhase, setBriefPhase] = useState<
     "idle" | "loading" | "local" | "plain" | "failed"
   >("idle");
@@ -113,7 +112,6 @@ export function WeeklyPanel({
   }
 
   const weekEntries = days.flatMap((day) => byDate.get(day) ?? []);
-  const prevEntries = entriesOnDates(entries, prevDays);
 
   const weekTags = tagCounts(
     weekEntries.map((entry) => ({ ...entry, tags: shownEntryTags(entry) })),
@@ -124,27 +122,41 @@ export function WeeklyPanel({
   const noteDays = days.filter((day) =>
     (byDate.get(day) ?? []).some((entry) => entry.body.trim()),
   ).length;
-  const rules = buildRuleBrief({
-    weekEntries,
-    prevEntries,
-    talkNotes,
-    todayKey,
-    copy: {
-      empty: t("briefEmpty"),
-      most: t("briefMost"),
-      mostPast: t("briefMostPast"),
-      past: t("briefPast"),
-      themes: t("briefThemes"),
-      carried: t("briefCarriedLine"),
-      entries: t("briefEntries"),
-      today: t("briefToday"),
-      say: t("briefSay"),
-      feeling,
-      day: (key) => formatDayLabel(key, locale),
+  const sessionDates = sessions.map((session) => session.date);
+  const briefCopy: BriefCopy = {
+    header: t("briefHeader"),
+    headerOpen: t("briefHeaderOpen"),
+    moodUp: t("moodUp"),
+    moodDown: t("moodDown"),
+    moodFlat: t("moodFlat"),
+    anomaly: t("briefAnomaly"),
+    discussed: t("briefDiscussedTitle"),
+    returned: t("briefReturned"),
+    mark: {
+      new: t("themeNew"),
+      returned: t("themeBack"),
+      week2: t("themeWeek2"),
+      week3: t("themeWeek3"),
     },
+  };
+  const agenda = rankedThemes(themes, todayKey, sessionDates);
+  const sessionBrief = buildSessionBrief({
+    themes,
+    entries: weekEntries,
+    sessionDates,
+    lastSession: period.last,
+    todayKey,
+    copy: briefCopy,
+    dayLabel: (date) => formatDayLabel(date, locale),
+    longDate: (date) => formatLongDate(date, locale),
+    feelingLabel: feeling,
+    entryPhrase: (amount) => count(amount, "note"),
+    dayPhrase: (amount) => count(amount, "day"),
   });
-  const stamp = `${briefStamp(weekEntries, talkNotes)}:${locale}`;
-  const modelText = prep?.briefStamp === stamp ? prep.briefText : undefined;
+  const patternStamp = patternKey(agenda, locale);
+  const patternText =
+    prep?.patternStamp === patternStamp ? clipPattern(sessionBrief.words, prep.patternText ?? "") : "";
+  const judging = pendingJudgeEntries(weekEntries, judgeSettled, days).length > 0;
   const themeStamp = `t2:${briefStamp(
     weekEntries.filter((entry) => entry.body.trim()),
     "",
@@ -203,6 +215,38 @@ export function WeeklyPanel({
     };
   }, [themesSettled, disabled, initData, themeChunkKey, themeStamp, locale, key, onSaveThemes]);
 
+  const patternAttempt = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initData || disabled || agenda.length === 0 || prep?.patternStamp === patternStamp) return;
+    if (patternAttempt.current === patternStamp) return;
+    patternAttempt.current = patternStamp;
+    let cancelled = false;
+    void (async () => {
+      const result = await requestBrief(
+        initData,
+        patternFacts(agenda),
+        patternStamp,
+        locale,
+        "pattern",
+      );
+      if (cancelled || !result.ok || !result.text) return;
+      onSavePattern(key, clipPattern(sessionBrief.words, result.text), patternStamp);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    agenda,
+    disabled,
+    initData,
+    key,
+    locale,
+    onSavePattern,
+    patternStamp,
+    prep?.patternStamp,
+    sessionBrief.words,
+  ]);
+
   async function formulate() {
     setBriefPhase("loading");
     setBriefNote(null);
@@ -211,15 +255,17 @@ export function WeeklyPanel({
       setBriefNote(t("briefLocal"));
       return;
     }
-    const result = await requestBrief(initData, rules, stamp, locale);
-    if (!result.ok || !result.text) {
-      setBriefPhase(result.ok ? "plain" : "failed");
-      setBriefNote(
-        result.ok ? briefFailure(result.reason, t) : t("briefFail"),
-      );
+    if (agenda.length === 0) {
+      setBriefPhase("idle");
       return;
     }
-    onSaveBrief(key, result.text, stamp, talkNotes.trim());
+    const result = await requestBrief(initData, patternFacts(agenda), patternStamp, locale, "pattern");
+    if (!result.ok || !result.text) {
+      setBriefPhase(result.ok ? "plain" : "failed");
+      setBriefNote(result.ok ? briefFailure(result.reason, t) : t("briefFail"));
+      return;
+    }
+    onSavePattern(key, clipPattern(sessionBrief.words, result.text), patternStamp);
     setBriefPhase("idle");
   }
 
@@ -272,15 +318,12 @@ export function WeeklyPanel({
       </div>
 
       <SessionBacklog
-        weekKey={key}
-        weekEntries={weekEntries}
-        prevEntries={prevEntries}
-        talkNotes={talkNotes}
-        todayKey={todayKey}
-        prep={prep}
-        initData={initData}
+        themes={agenda}
+        refreshing={Boolean(initData) && judging}
         disabled={disabled}
-        onSave={onSaveBacklog}
+        onDiscuss={onDiscussTheme}
+        onDismiss={onDismissTheme}
+        onAdd={onAddTheme}
       />
 
       <section className="ink relative overflow-hidden rounded-3xl p-5 sm:p-6">
@@ -299,10 +342,58 @@ export function WeeklyPanel({
               })}
             </p>
           </div>
-          <p className="whitespace-pre-wrap text-[0.9375rem] leading-relaxed text-ink-foreground/95">
-            {modelText || rules}
-          </p>
-          {modelText && <p className="text-xs text-ink-muted">{t("briefModel")}</p>}
+          <div className="space-y-4 text-[0.9375rem] leading-relaxed text-ink-foreground/95">
+            <p>{sessionBrief.header}</p>
+            {sessionBrief.mood && <p>{sessionBrief.mood}</p>}
+            {sessionBrief.anomalies.map((item) => (
+              <p key={item.date}>{t("briefAnomaly", { day: item.label, themes: item.themes })}</p>
+            ))}
+            {sessionBrief.themes.map((theme) => (
+              <div key={theme.id} className="space-y-1.5">
+                <p>
+                  {theme.title}
+                  <span className="text-ink-muted">
+                    {" "}
+                    · ×{theme.count}
+                    {theme.peak ? ` · ${theme.peak}` : ""} · {briefCopy.mark[theme.mark]}
+                  </span>
+                </p>
+                {theme.quotes.map((quote) => (
+                  <button
+                    key={`${quote.entryId}:${quote.text}`}
+                    type="button"
+                    className="block text-start text-ink-foreground/80 underline-offset-4 hover:underline"
+                    onClick={() => {
+                      setFocusDay(quote.date);
+                      document.getElementById(`week-day-${quote.date}`)?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "nearest",
+                      });
+                    }}
+                  >
+                    {formatDayLabel(quote.date, locale)}: {quote.text}
+                  </button>
+                ))}
+              </div>
+            ))}
+            {sessionBrief.discussed.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-ink-muted">{t("briefDiscussedTitle")}</p>
+                {sessionBrief.discussed.map((item) => (
+                  <p key={item.id}>
+                    {item.title}
+                    {item.reopened ? ` — ${t("briefReturned")}` : ""}
+                  </p>
+                ))}
+              </div>
+            )}
+            {patternText && (
+              <div className="space-y-1">
+                <p className="text-ink-muted">{t("briefPatternTitle")}</p>
+                <p>{patternText}</p>
+              </div>
+            )}
+          </div>
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <Button
               type="button"

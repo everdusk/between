@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseModelBacklog } from "@/lib/brief";
 import { parseModelThemes, THERAPY_THEMES } from "@/lib/tags";
+import { parseDedupHit, parseJudgeVerdict } from "@/lib/themes";
 import { isLocale, modelLanguageName, type LocaleId } from "@/lib/i18n";
 import {
   cacheBrief,
@@ -11,15 +12,55 @@ import {
 import { validateInitData } from "@/lib/telegram-auth";
 import { todayInTimeZone } from "@/lib/zoned";
 
-export type BriefKind = "brief" | "backlog" | "themes";
+export type BriefKind = "brief" | "backlog" | "themes" | "judge" | "dedup" | "pattern";
 
 function settlesJson(kind: BriefKind): boolean {
-  return kind === "backlog" || kind === "themes";
+  return kind === "backlog" || kind === "themes" || kind === "judge" || kind === "dedup";
 }
 
 type GenLimits = { temperature: number; maxTokens: number };
 
 export function briefSystemPrompt(locale: LocaleId, kind: BriefKind = "brief"): string {
+  const lang =
+    locale === "ru"
+      ? "Пиши по-русски."
+      : `Пиши на языке «${modelLanguageName(locale)}».`;
+  if (kind === "judge") {
+    return [
+      "Ты решаешь, относится ли одна запись дневника к подготовке к сеансу психотерапии.",
+      "Ответ — только один JSON-объект, без markdown.",
+      '{"relevant":true,"match_theme":null,"intensity":1,"new_theme":null,"confidence":0.5,"quote":"","reason":""}',
+      "relevant: быт без эмоционального заряда — false. intensity — заряд 1–10.",
+      "match_theme: id открытой темы, если это ТА ЖЕ проблема (тот же человек, ситуация или паттерн), иначе null.",
+      "Одна запись — максимум одна тема. «Мама звонила», «поругались про праздник», «мама обиделась» — одна тема.",
+      "new_theme: {\"title\":\"...\"} только если relevant=true и match_theme=null. title — паттерн, не событие: «конфликты с мамой из-за границ», не «поругалась из-за телефона».",
+      "Если relevant=false, new_theme=null.",
+      "«Всё нормально» при высокой отметке тревоги — relevant=true, решает интенсивность.",
+      "Разовый мелкий негатив без повторяющегося паттерна — relevant=false.",
+      "quote — дословная фраза из записи, не длиннее 140 символов, не пересказ. Ничего не выдумывать.",
+      "confidence — 0–1. reason — одно предложение.",
+      "Темы с dismissed не приходят во вход. Не предлагай их заново.",
+      lang,
+    ].join(" ");
+  }
+  if (kind === "dedup") {
+    return [
+      "Сравни одну тему с открытыми темами. Это одна и та же проблема, или нет?",
+      "Ответ — только JSON. Если нет: {\"same\":false}.",
+      "Если да: {\"same\":true,\"theme_id\":\"id соседа\",\"confidence\":0.9,\"title\":\"общий паттерн\"}.",
+      "theme_id скопируй из списка. title — паттерн по объединённым цитатам, не новый эпизод.",
+      "confidence ниже 0.85 не ставь, если сомневаешься: верни same=false.",
+      lang,
+    ].join(" ");
+  }
+  if (kind === "pattern") {
+    return [
+      "По JSON тем напиши 2 или 3 предложения: что здесь выглядит как повторяющийся паттерн.",
+      "Только то, что есть в JSON. Без совета, без диагноза, без утешения, без общих фраз вроде «вы испытывали разные эмоции».",
+      "Если паттерна не видно, верни пустую строку.",
+      lang,
+    ].join(" ");
+  }
   if (kind === "themes") {
     return [
       "Для каждой заметки выбери темы психотерапии, о которых она на самом деле.",
@@ -53,10 +94,6 @@ export function briefSystemPrompt(locale: LocaleId, kind: BriefKind = "brief"): 
       lang,
     ].join(" ");
   }
-  const lang =
-    locale === "ru"
-      ? "Пиши по-русски."
-      : `Пиши на языке «${modelLanguageName(locale)}». Названия состояний в фактах могут быть по-русски — в ответе передай их на языке ответа.`;
   return [
     "Ты собираешь факты к сеансу психотерапии.",
     "Используй только факты ниже. Не ставь диагнозы, не давай советов, не утешай, не интерпретируй и не выдумывай события.",
@@ -68,11 +105,23 @@ export function briefSystemPrompt(locale: LocaleId, kind: BriefKind = "brief"): 
 
 function settleModelText(raw: string | null, kind: BriefKind): string | null {
   if (!raw) return null;
-  if (kind === "brief") return raw;
+  if (kind === "brief" || kind === "pattern") return raw;
   if (kind === "themes") {
     const parsed = parseModelThemes(raw);
     if (parsed === null) return null;
     return JSON.stringify(parsed);
+  }
+  if (kind === "judge") {
+    const parsed = parseJudgeVerdict(raw);
+    return parsed ? JSON.stringify(parsed) : null;
+  }
+  if (kind === "dedup") {
+    const parsed = parseDedupHit(raw);
+    return JSON.stringify(
+      parsed
+        ? { same: true, theme_id: parsed.themeId, confidence: parsed.confidence, title: parsed.title }
+        : { same: false },
+    );
   }
   const parsed = parseModelBacklog(raw);
   if (parsed === null) return null;
@@ -269,13 +318,25 @@ export async function POST(req: Request) {
   const stamp = typeof payload.stamp === "string" ? payload.stamp.trim() : "";
   const locale: LocaleId = isLocale(payload.locale) ? payload.locale : "ru";
   const kind: BriefKind =
-    payload.kind === "backlog" ? "backlog" : payload.kind === "themes" ? "themes" : "brief";
+    payload.kind === "backlog" ||
+    payload.kind === "themes" ||
+    payload.kind === "judge" ||
+    payload.kind === "dedup" ||
+    payload.kind === "pattern"
+      ? payload.kind
+      : "brief";
   const limits: GenLimits =
     kind === "backlog"
       ? { temperature: 0.2, maxTokens: 700 }
       : kind === "themes"
         ? { temperature: 0.1, maxTokens: 2000 }
-        : { temperature: 0.2, maxTokens: 480 };
+        : kind === "judge"
+          ? { temperature: 0.1, maxTokens: 400 }
+          : kind === "dedup"
+            ? { temperature: 0.1, maxTokens: 220 }
+            : kind === "pattern"
+              ? { temperature: 0.2, maxTokens: 220 }
+              : { temperature: 0.2, maxTokens: 480 };
   const system = briefSystemPrompt(locale, kind);
   if (!facts || facts.length > 4000 || !stamp || stamp.length > 64) {
     return NextResponse.json({ ok: false, error: "invalid_brief" }, { status: 400 });

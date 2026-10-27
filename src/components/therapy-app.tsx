@@ -69,16 +69,19 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
     resetCorrupted,
     upsertEntry,
     deleteEntry,
-    saveBrief,
-    saveBacklog,
     saveThemes,
     saveSessionPlan,
     saveNotify,
     upsertSession,
     deleteSession,
+    setThemeDiscussed,
+    dismissSessionTheme,
+    addSessionTheme,
+    savePattern,
   } = useTherapyStore({
     initData: telegram.initData,
     inTelegram: telegram.inTelegram,
+    locale,
   });
 
   const [section, setSection] = useState<SectionId>("journal");
@@ -206,8 +209,12 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                     entries={store.entries}
                     sessions={store.sessions}
                     weekPreps={store.weekPreps}
-                    onSaveBrief={saveBrief}
-                    onSaveBacklog={saveBacklog}
+                    themes={store.themes ?? []}
+                    judgeSettled={store.judgeSettled ?? []}
+                    onDiscussTheme={setThemeDiscussed}
+                    onDismissTheme={dismissSessionTheme}
+                    onAddTheme={addSessionTheme}
+                    onSavePattern={savePattern}
                     onSaveThemes={saveThemes}
                     initData={telegram.inTelegram ? telegram.initData : ""}
                     disabled={disabled}

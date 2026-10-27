@@ -4,6 +4,8 @@ import {
   emptyNotify,
   type NotifyPrefs,
   type SessionPlan,
+  type SessionTheme,
+  type ThemeLink,
   type TherapyStore,
   type WeekPrep,
 } from "./types";
@@ -72,7 +74,7 @@ export async function requestBrief(
   facts: string,
   stamp: string,
   locale: LocaleId = "ru",
-  kind: "brief" | "backlog" | "themes" = "brief",
+  kind: "brief" | "backlog" | "themes" | "judge" | "dedup" | "pattern" = "brief",
 ): Promise<
   | { ok: true; text: string | null; reason?: string }
   | { ok: false; error: string }
@@ -146,6 +148,19 @@ function mergeNotify(a: NotifyPrefs, b: NotifyPrefs): NotifyPrefs {
   return newerThan(a.updatedAt, b.updatedAt) ? a : b;
 }
 
+function mergeThemes(left: SessionTheme[] = [], right: SessionTheme[] = []): SessionTheme[] {
+  return mergeById(left, right);
+}
+
+function mergeLinks(left: ThemeLink[] = [], right: ThemeLink[] = []): ThemeLink[] {
+  const map = new Map<string, ThemeLink>();
+  for (const link of [...left, ...right]) {
+    const prev = map.get(link.entryId);
+    if (!prev || link.confidence >= prev.confidence) map.set(link.entryId, link);
+  }
+  return [...map.values()];
+}
+
 /** Keep every note. Same id keeps the newer copy; different notes on one day stay separate. */
 export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
   return {
@@ -155,5 +170,8 @@ export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
     weekPreps: mergeWeekPreps(a.weekPreps, b.weekPreps),
     sessionPlan: mergePlan(a.sessionPlan, b.sessionPlan),
     notify: mergeNotify(a.notify, b.notify),
+    themes: mergeThemes(a.themes, b.themes),
+    themeLinks: mergeLinks(a.themeLinks, b.themeLinks),
+    judgeSettled: [...new Set([...(a.judgeSettled ?? []), ...(b.judgeSettled ?? [])])],
   };
 }
