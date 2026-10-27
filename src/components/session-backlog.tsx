@@ -28,6 +28,7 @@ export function SessionBacklog({
 }: SessionBacklogProps) {
   const { t, locale, count } = useI18n();
   const [draft, setDraft] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
 
   function add(text: string) {
     const clean = text.trim();
@@ -61,39 +62,60 @@ export function SessionBacklog({
         </p>
       ) : themes.length === 0 ? null : (
         <ul className="mt-5 divide-y divide-[color:var(--glass-border)]">
-          {themes.map((theme) => (
+          {themes.map((theme) => {
+            const said = theme.status === "discussed";
+            const open = openId === theme.id;
+            return (
             <li key={theme.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-              <label
+              <button
+                type="button"
+                disabled={disabled}
+                aria-pressed={said}
+                aria-label={t("backlogSaid")}
+                onClick={() => onDiscuss(theme.id, !said)}
                 className={cn(
-                  "group/row flex min-w-0 flex-1 cursor-pointer items-start gap-3",
-                  disabled && "cursor-not-allowed",
+                  "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-foreground/25 bg-background/40 transition-colors duration-200 focus-visible:ring-4 focus-visible:ring-ring/25",
+                  said && "border-foreground bg-foreground text-background",
                 )}
               >
-                <input
-                  type="checkbox"
-                  className="peer sr-only"
-                  checked={false}
-                  disabled={disabled}
-                  onChange={() => onDiscuss(theme.id, true)}
-                />
-                <span
-                  aria-hidden
-                  className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-foreground/25 bg-background/40 transition-colors duration-200 peer-focus-visible:ring-4 peer-focus-visible:ring-ring/25 group-hover/row:border-foreground/45"
+                <Check className={cn("size-3", said ? "opacity-100" : "opacity-0")} strokeWidth={3} />
+              </button>
+              <div className="min-w-0 flex-1 space-y-1">
+                <button
+                  type="button"
+                  className="block w-full text-start"
+                  onClick={() => setOpenId(open ? null : theme.id)}
                 >
-                  <Check className="size-3 opacity-0" strokeWidth={3} />
-                </span>
-                <span className="min-w-0 space-y-1">
-                  <span className="block text-sm leading-relaxed text-foreground/90">
+                  <span className={cn("block text-sm leading-relaxed", said ? "text-muted-foreground" : "text-foreground/90")}>
                     {theme.title}
                   </span>
-                  <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <span className="rounded-full bg-foreground/[0.06] px-2 py-0.5">
                       ×{count(theme.count, "note")}
                     </span>
                     <span>{formatDayLabel(theme.lastSeen, locale)}</span>
                   </span>
-                </span>
-              </label>
+                </button>
+                {open && theme.quotes.length > 0 && (
+                  <div className="space-y-1 pt-1">
+                    {theme.quotes.map((quote) => (
+                      <button
+                        key={`${quote.entryId}:${quote.text}`}
+                        type="button"
+                        className="block text-start text-sm text-foreground/80 underline-offset-4 hover:underline"
+                        onClick={() => {
+                          document.getElementById(`week-day-${quote.date}`)?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "nearest",
+                          });
+                        }}
+                      >
+                        {formatDayLabel(quote.date, locale)}: {quote.text}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <Button
                 type="button"
                 variant="ghost"
@@ -106,7 +128,8 @@ export function SessionBacklog({
                 <X aria-hidden />
               </Button>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
 
