@@ -23,6 +23,7 @@ import { requestBrief } from "@/lib/journal-api";
 import {
   buildSessionBrief,
   clipPattern,
+  patternAlreadyCurrent,
   patternFacts,
   patternKey,
   pendingJudgeEntries,
@@ -284,7 +285,7 @@ export function WeeklyPanel({
       setBriefPhase("idle");
       return;
     }
-    if (prep?.patternStamp === patternStamp && patternText) {
+    if (patternAlreadyCurrent(prep?.patternStamp, patternStamp, patternText)) {
       setBriefPhase("idle");
       return;
     }

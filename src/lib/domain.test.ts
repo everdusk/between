@@ -935,7 +935,7 @@ describe("week access", () => {
     assert.equal(describeWeekAccess(markWeekIntroSeen(opened), now).introSeen, true);
   });
 
-  it("locks the week after the fortnight and lets a later payment win", () => {
+  it("locks the week after seven days and lets a later payment win", () => {
     const opened = openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - TRIAL_MS));
     assert.equal(describeWeekAccess(opened, now).status, "locked");
 
