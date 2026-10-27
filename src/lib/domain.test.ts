@@ -36,8 +36,10 @@ import type { ThemeParams } from "@twa-dev/types";
 import { applyTelegramSafeArea, applyTelegramTheme, panelColor, schemeFromColor } from "./telegram";
 import { sheetShouldDismiss } from "./sheet";
 import {
+  aitunnelKeyProblem,
   briefSystemPrompt,
   modelBudget,
+  normalizeAitunnelKey,
   resolveAitunnelModel,
   resolveGroqModel,
   textFromChatMessage,
@@ -838,6 +840,17 @@ describe("sheet dismiss", () => {
     assert.equal(sheetShouldDismiss(80, 0), true);
     assert.equal(sheetShouldDismiss(20, 0.8), true);
     assert.equal(sheetShouldDismiss(20, 0.1), false);
+  });
+});
+
+describe("aitunnel key", () => {
+  it("strips quotes, a bearer prefix, and whitespace", () => {
+    assert.equal(normalizeAitunnelKey('  "sk-aitunnel-abc"  '), "sk-aitunnel-abc");
+    assert.equal(normalizeAitunnelKey("Bearer sk-aitunnel-abc"), "sk-aitunnel-abc");
+    assert.equal(normalizeAitunnelKey("sk-aitunnel-\nabc"), "sk-aitunnel-abc");
+    assert.equal(aitunnelKeyProblem("sk-aitunnel-abc"), null);
+    assert.equal(aitunnelKeyProblem("sk-deepseek-abc"), "shape");
+    assert.equal(aitunnelKeyProblem(""), "shape");
   });
 });
 

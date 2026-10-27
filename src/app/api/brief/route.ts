@@ -247,6 +247,30 @@ export function resolveAitunnelModel(configured: string | undefined): string {
   return name || AITUNNEL_MODEL;
 }
 
+/** Vercel values often keep quotes, a Bearer prefix, or a line break from the paste. */
+export function normalizeAitunnelKey(raw: string | undefined): string {
+  let key = raw?.trim() ?? "";
+  if (
+    (key.startsWith('"') && key.endsWith('"') && key.length >= 2) ||
+    (key.startsWith("'") && key.endsWith("'") && key.length >= 2)
+  ) {
+    key = key.slice(1, -1).trim();
+  }
+  return key.replace(/^Bearer\s+/i, "").replace(/\s+/g, "");
+}
+
+export function aitunnelKeyProblem(key: string): "shape" | null {
+  if (!key) return "shape";
+  if (!key.startsWith("sk-aitunnel-")) return "shape";
+  return null;
+}
+
+function clipProviderMessage(raw: string): string {
+  const text = raw.replace(/sk-[a-z0-9_-]+/gi, "sk-…").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  return text.length > 160 ? `${text.slice(0, 157)}…` : text;
+}
+
 export function textFromChatMessage(message: { content?: unknown } | undefined): string {
   const content = message?.content;
   if (typeof content === "string") return content.trim();
@@ -343,7 +367,7 @@ async function aitunnelOnce(
   limits: GenLimits,
   extras: boolean,
   json: boolean,
-): Promise<{ text: string | null; status: number }> {
+): Promise<{ text: string | null; status: number; message: string }> {
   const body: Record<string, unknown> = {
     model,
     temperature: limits.temperature,
@@ -366,12 +390,21 @@ async function aitunnelOnce(
     },
     body: JSON.stringify(body),
   });
-  if (!res.ok) return { text: null, status: res.status };
+  if (!res.ok) {
+    let message = "";
+    try {
+      const data = (await res.json()) as { error?: { message?: unknown } };
+      if (typeof data.error?.message === "string") message = clipProviderMessage(data.error.message);
+    } catch {
+      message = "";
+    }
+    return { text: null, status: res.status, message };
+  }
   const data = (await res.json()) as {
     choices?: { message?: { content?: unknown } }[];
   };
   const text = textFromChatMessage(data.choices?.[0]?.message);
-  return { text: text || null, status: res.status };
+  return { text: text || null, status: res.status, message: "" };
 }
 
 async function aitunnel(
@@ -387,7 +420,8 @@ async function aitunnel(
   const firstText = settleModelText(first.text, kind);
   if (firstText) return { text: firstText, detail: "" };
   if (first.status === 401 || first.status === 403) {
-    return { text: null, detail: `aitunnel_${first.status}` };
+    const detail = first.message ? `aitunnel_${first.status}:${first.message}` : `aitunnel_${first.status}`;
+    return { text: null, detail };
   }
   const retry =
     first.status === 400 || first.status === 422 || (!first.text && first.status === 200);
@@ -460,11 +494,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "invalid_brief" }, { status: 400 });
   }
 
-  const tunnelKey = process.env.AITUNNEL_API_KEY?.trim();
+  const tunnelConfigured = Boolean(process.env.AITUNNEL_API_KEY?.trim());
+  const tunnelKey = normalizeAitunnelKey(process.env.AITUNNEL_API_KEY);
   const geminiKey = process.env.GEMINI_API_KEY?.trim();
   const groqKey = process.env.GROQ_API_KEY?.trim();
-  if (!tunnelKey && !geminiKey && !groqKey) {
+  if (!tunnelConfigured && !geminiKey && !groqKey) {
     return NextResponse.json({ ok: true, text: null, reason: "no_model" });
+  }
+  if (tunnelConfigured && aitunnelKeyProblem(tunnelKey)) {
+    return NextResponse.json({
+      ok: true,
+      text: null,
+      reason: "model_failed",
+      detail: "aitunnel_key_shape",
+    });
   }
 
   const budget = modelBudget(kind);

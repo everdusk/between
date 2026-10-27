@@ -42,14 +42,20 @@ function briefFailure(
 ): string {
   if (reason === "limit") return t("briefLimit");
   if (reason === "no_model") return t("briefNoModel");
+  if (reason?.includes("aitunnel_key_shape")) return t("briefTunnelKey");
+  if (reason?.includes("aitunnel_403")) {
+    const marker = "aitunnel_403:";
+    const at = reason.indexOf(marker);
+    const note = at >= 0 ? reason.slice(at + marker.length).trim() : "";
+    return note ? `${t("briefTunnelForbidden")} ${note}` : t("briefTunnelForbidden");
+  }
+  if (reason?.includes("aitunnel_401")) return t("briefTunnelRejected");
   if (
     reason?.includes("gemini_400") ||
     reason?.includes("gemini_401") ||
     reason?.includes("gemini_403") ||
     reason?.includes("groq_401") ||
-    reason?.includes("groq_403") ||
-    reason?.includes("aitunnel_401") ||
-    reason?.includes("aitunnel_403")
+    reason?.includes("groq_403")
   ) {
     return t("briefBadKey");
   }
