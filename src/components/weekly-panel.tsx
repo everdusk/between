@@ -284,6 +284,10 @@ export function WeeklyPanel({
       setBriefPhase("idle");
       return;
     }
+    if (prep?.patternStamp === patternStamp && patternText) {
+      setBriefPhase("idle");
+      return;
+    }
     const result = await requestBrief(initData, patternFacts(agenda), patternStamp, locale, "pattern");
     if (!result.ok || !result.text) {
       setBriefPhase(result.ok ? "plain" : "failed");

@@ -855,12 +855,12 @@ describe("aitunnel key", () => {
 });
 
 describe("model budget", () => {
-  it("keeps the formulate button off the theme counter", () => {
-    assert.equal(modelBudget("pattern").bucket, "pattern");
-    assert.equal(modelBudget("themes").bucket, "themes");
-    assert.notEqual(modelBudget("pattern").bucket, modelBudget("themes").bucket);
-    assert.equal(modelBudget("judge").bucket, modelBudget("dedup").bucket);
-    assert.ok(modelBudget("pattern").limit >= 8);
+  it("keeps the formulate button on its own small daily cap", () => {
+    assert.deepEqual(modelBudget("pattern"), { limit: 8, bucket: "pattern" });
+    assert.deepEqual(modelBudget("themes"), { limit: 10, bucket: "themes" });
+    assert.deepEqual(modelBudget("judge"), { limit: 30, bucket: "judge" });
+    assert.deepEqual(modelBudget("dedup"), { limit: 30, bucket: "judge" });
+    assert.deepEqual(modelBudget("brief"), { limit: 8, bucket: "brief" });
   });
 });
 
@@ -921,7 +921,7 @@ describe("gemini text", () => {
 describe("week access", () => {
   const now = new Date("2026-10-09T12:00:00.000Z");
 
-  it("starts a 14-day trial on the first open and keeps the intro unread", () => {
+  it("starts a 7-day trial on the first open and keeps the intro unread", () => {
     const opened = openWeekAccess(emptyWeekAccess(), now);
     assert.equal(opened.openedAt, now.toISOString());
     assert.equal(opened.introSeen, false);
@@ -929,7 +929,7 @@ describe("week access", () => {
 
     const view = describeWeekAccess(opened, now, 150);
     assert.equal(view.status, "trial");
-    assert.equal(view.daysLeft, 14);
+    assert.equal(view.daysLeft, 7);
     assert.equal(view.starPrice, 150);
     assert.equal(view.introSeen, false);
     assert.equal(describeWeekAccess(markWeekIntroSeen(opened), now).introSeen, true);

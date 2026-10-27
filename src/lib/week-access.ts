@@ -1,4 +1,4 @@
-export const TRIAL_MS = 14 * 24 * 60 * 60 * 1000;
+export const TRIAL_MS = 7 * 24 * 60 * 60 * 1000;
 export const SUBSCRIPTION_PERIOD_SEC = 2_592_000;
 export const DEFAULT_STAR_PRICE = 150;
 export const WEEK_INVOICE_PAYLOAD = "between-week";
@@ -82,7 +82,7 @@ export function isWeekAccessExempt(
   return WEEK_ACCESS_EXEMPT_USERNAMES.some((name) => name.toLowerCase() === username);
 }
 
-/** Starts the free fortnight the first time «Неделя» is opened. */
+/** Starts the free week the first time «Неделя» is opened. */
 export function openWeekAccess(record: WeekAccessRecord, now: Date): WeekAccessRecord {
   if (record.openedAt) return record;
   return { ...record, openedAt: now.toISOString() };

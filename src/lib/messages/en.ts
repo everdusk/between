@@ -106,14 +106,14 @@ export const en: Catalog = {
   spectrumAxis: "Lighter on the left, heavier on the right",
   opening: "Opening…",
   paywallBody:
-    "The two free weeks are over. Then {price} Stars for 30 days. The journal stays free.",
+    "The free week is over. Then {price} Stars for 30 days. The journal stays free.",
   paying: "Opening payment…",
   payStars: "Pay {price} Stars",
   payInTelegram: "Payment in Telegram",
   payFail: "Could not open payment.",
   payPending: "Paid. Open Week again.",
   intro:
-    "Two weeks free. Then {price} Stars a month. The journal stays free.",
+    "One week free. Then {price} Stars a month. The journal stays free.",
   introOk: "Got it",
   trialLine: "Free for {days} more. Then {price} Stars a month.",
   dayOne: "day",

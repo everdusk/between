@@ -4,7 +4,6 @@ import { parseModelThemes, THERAPY_THEMES } from "@/lib/tags";
 import { parseDedupHit, parseJudgeVerdict } from "@/lib/themes";
 import { isLocale, modelLanguageName, type LocaleId } from "@/lib/i18n";
 import {
-  briefAttemptsUsed,
   cacheBrief,
   getCachedBrief,
   redisConfigured,
@@ -19,12 +18,12 @@ function settlesJson(kind: BriefKind): boolean {
   return kind === "backlog" || kind === "themes" || kind === "judge" || kind === "dedup";
 }
 
-/** Pattern (the formulate button) does not share a counter with theme labeling. */
+/** Daily stop per kind. A cached stamp does not count. */
 export function modelBudget(kind: BriefKind): { limit: number; bucket: string } {
-  if (kind === "judge" || kind === "dedup") return { limit: 80, bucket: "judge" };
-  if (kind === "themes") return { limit: 40, bucket: "themes" };
-  if (kind === "pattern") return { limit: 24, bucket: "pattern" };
-  return { limit: 12, bucket: "brief" };
+  if (kind === "judge" || kind === "dedup") return { limit: 30, bucket: "judge" };
+  if (kind === "themes") return { limit: 10, bucket: "themes" };
+  if (kind === "pattern") return { limit: 8, bucket: "pattern" };
+  return { limit: 8, bucket: "brief" };
 }
 
 type GenLimits = { temperature: number; maxTokens: number };
@@ -550,8 +549,8 @@ export async function POST(req: Request) {
   if (redisConfigured()) {
     const cached = await getCachedBrief(validated.user.id, stamp);
     if (cached) return NextResponse.json({ ok: true, text: cached, cached: true });
-    const used = await briefAttemptsUsed(validated.user.id, day, budget.bucket);
-    if (used >= budget.limit) {
+    const allowed = await takeBriefAttempt(validated.user.id, day, budget.limit, budget.bucket);
+    if (!allowed) {
       return NextResponse.json({ ok: true, text: null, reason: "limit" });
     }
   }
@@ -577,7 +576,6 @@ export async function POST(req: Request) {
   }
 
   if (redisConfigured()) {
-    await takeBriefAttempt(validated.user.id, day, budget.limit, budget.bucket);
     await cacheBrief(validated.user.id, stamp, text);
   }
   return NextResponse.json({ ok: true, text });
