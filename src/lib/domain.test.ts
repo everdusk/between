@@ -35,7 +35,13 @@ import {
 import type { ThemeParams } from "@twa-dev/types";
 import { applyTelegramSafeArea, applyTelegramTheme, panelColor, schemeFromColor } from "./telegram";
 import { sheetShouldDismiss } from "./sheet";
-import { briefSystemPrompt, resolveGroqModel, textFromGeminiParts } from "../app/api/brief/route";
+import {
+  briefSystemPrompt,
+  resolveAitunnelModel,
+  resolveGroqModel,
+  textFromChatMessage,
+  textFromGeminiParts,
+} from "../app/api/brief/route";
 import { formatDayLabel, formatMonthTitle, monthCells, shiftMonth } from "./dates";
 import { buildPeriodSummary, therapyWindow } from "./session-summary";
 import { emptyStore, type JournalEntry, type SessionNote } from "./types";
@@ -831,6 +837,23 @@ describe("sheet dismiss", () => {
     assert.equal(sheetShouldDismiss(80, 0), true);
     assert.equal(sheetShouldDismiss(20, 0.8), true);
     assert.equal(sheetShouldDismiss(20, 0.1), false);
+  });
+});
+
+describe("aitunnel model", () => {
+  it("defaults to DeepSeek V4.1 Flash and keeps an override", () => {
+    assert.equal(resolveAitunnelModel(undefined), "deepseek-v4.1-flash-1017");
+    assert.equal(resolveAitunnelModel("  "), "deepseek-v4.1-flash-1017");
+    assert.equal(resolveAitunnelModel("deepseek-v4.1-flash"), "deepseek-v4.1-flash");
+  });
+
+  it("reads the assistant text from a string or content parts", () => {
+    assert.equal(textFromChatMessage({ content: "  Привет  " }), "Привет");
+    assert.equal(
+      textFromChatMessage({ content: [{ type: "text", text: "один" }, { text: " два" }] }),
+      "один два",
+    );
+    assert.equal(textFromChatMessage({ content: null }), "");
   });
 });
 

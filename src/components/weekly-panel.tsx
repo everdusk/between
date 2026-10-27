@@ -44,7 +44,9 @@ function briefFailure(
     reason?.includes("gemini_401") ||
     reason?.includes("gemini_403") ||
     reason?.includes("groq_401") ||
-    reason?.includes("groq_403")
+    reason?.includes("groq_403") ||
+    reason?.includes("aitunnel_401") ||
+    reason?.includes("aitunnel_403")
   ) {
     return t("briefBadKey");
   }

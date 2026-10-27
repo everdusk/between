@@ -45,6 +45,7 @@ npm run dev
 - `UPSTASH_REDIS_REST_TOKEN`
 - `TELEGRAM_WEBHOOK_SECRET` (рекомендуется)
 - `NEXT_PUBLIC_APP_URL` (опционально)
+- `AITUNNEL_API_KEY` (опционально, DeepSeek V4.1 Flash для брифа и тем)
 
 ## Стек
 
