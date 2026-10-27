@@ -3,6 +3,15 @@ export const SUBSCRIPTION_PERIOD_SEC = 2_592_000;
 export const DEFAULT_STAR_PRICE = 150;
 export const WEEK_INVOICE_PAYLOAD = "between-week";
 
+/** Telegram accounts that keep «Неделя» open after the trial, without Stars. */
+export const WEEK_ACCESS_EXEMPT_USER_IDS: readonly number[] = [];
+export const WEEK_ACCESS_EXEMPT_USERNAMES: readonly string[] = ["aliatorovskaia"];
+
+export type WeekAccessIdentity = {
+  id: number;
+  username?: string;
+};
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export type WeekAccessRecord = {
@@ -50,6 +59,29 @@ export function starPriceFromEnv(raw: string | undefined): number {
   return price;
 }
 
+/** Extra numeric ids from `WEEK_EXEMPT_USER_IDS`, comma or space separated. */
+export function exemptUserIdsFromEnv(raw: string | undefined): number[] {
+  if (!raw?.trim()) return [];
+  const ids: number[] = [];
+  for (const part of raw.split(/[,\s]+/)) {
+    const id = Number(part);
+    if (Number.isInteger(id) && id > 0) ids.push(id);
+  }
+  return ids;
+}
+
+export function isWeekAccessExempt(
+  user: WeekAccessIdentity,
+  extraIdsRaw?: string,
+): boolean {
+  if (!Number.isInteger(user.id) || user.id <= 0) return false;
+  if (WEEK_ACCESS_EXEMPT_USER_IDS.includes(user.id)) return true;
+  if (exemptUserIdsFromEnv(extraIdsRaw).includes(user.id)) return true;
+  const username = user.username?.trim().replace(/^@/, "").toLowerCase();
+  if (!username) return false;
+  return WEEK_ACCESS_EXEMPT_USERNAMES.some((name) => name.toLowerCase() === username);
+}
+
 /** Starts the free fortnight the first time «Неделя» is opened. */
 export function openWeekAccess(record: WeekAccessRecord, now: Date): WeekAccessRecord {
   if (record.openedAt) return record;
@@ -76,6 +108,7 @@ export function describeWeekAccess(
   record: WeekAccessRecord,
   now: Date,
   starPrice = DEFAULT_STAR_PRICE,
+  options?: { exempt?: boolean },
 ): WeekAccessView {
   const openedMs = record.openedAt ? Date.parse(record.openedAt) : NaN;
   const paidMs = record.paidUntil ? Date.parse(record.paidUntil) : NaN;
@@ -85,7 +118,7 @@ export function describeWeekAccess(
   const inTrial = Number.isFinite(trialEndsMs) && nowMs < trialEndsMs;
 
   let status: WeekAccessStatus = "new";
-  if (paid) status = "paid";
+  if (options?.exempt || paid) status = "paid";
   else if (Number.isFinite(openedMs) && inTrial) status = "trial";
   else if (Number.isFinite(openedMs)) status = "locked";
 
@@ -97,7 +130,7 @@ export function describeWeekAccess(
     openedAt: record.openedAt,
     paidUntil: record.paidUntil,
     trialEndsAt: Number.isFinite(trialEndsMs) ? new Date(trialEndsMs).toISOString() : null,
-    introSeen: record.introSeen,
+    introSeen: options?.exempt ? true : record.introSeen,
     daysLeft,
     starPrice,
   };

@@ -3,9 +3,12 @@ import { loadWeekAccess, redisConfigured, saveWeekAccess } from "@/lib/redis";
 import { validateInitData } from "@/lib/telegram-auth";
 import {
   describeWeekAccess,
+  isWeekAccessExempt,
   markWeekIntroSeen,
   openWeekAccess,
   starPriceFromEnv,
+  type WeekAccessIdentity,
+  type WeekAccessRecord,
 } from "@/lib/week-access";
 
 function unauthorized() {
@@ -22,18 +25,20 @@ function authed(req: Request) {
   if (!initData) return { error: unauthorized() };
   const validated = validateInitData(initData);
   if (!validated) return { error: unauthorized() };
-  return { userId: validated.user.id };
+  return { user: validated.user };
 }
 
-function view(record: Parameters<typeof describeWeekAccess>[0]) {
-  return describeWeekAccess(record, new Date(), starPriceFromEnv(process.env.WEEK_STAR_PRICE));
+function view(record: WeekAccessRecord, user: WeekAccessIdentity) {
+  return describeWeekAccess(record, new Date(), starPriceFromEnv(process.env.WEEK_STAR_PRICE), {
+    exempt: isWeekAccessExempt(user, process.env.WEEK_EXEMPT_USER_IDS),
+  });
 }
 
 export async function GET(req: Request) {
   const auth = authed(req);
   if ("error" in auth) return auth.error;
-  const record = await loadWeekAccess(auth.userId);
-  return NextResponse.json({ ok: true, access: view(record) });
+  const record = await loadWeekAccess(auth.user.id);
+  return NextResponse.json({ ok: true, access: view(record, auth.user) });
 }
 
 export async function POST(req: Request) {
@@ -51,11 +56,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "bad_action" }, { status: 400 });
   }
 
-  const current = await loadWeekAccess(auth.userId);
+  const current = await loadWeekAccess(auth.user.id);
   const next =
     action === "open"
       ? openWeekAccess(current, new Date())
       : markWeekIntroSeen(current);
-  await saveWeekAccess(auth.userId, next);
-  return NextResponse.json({ ok: true, access: view(next) });
+  await saveWeekAccess(auth.user.id, next);
+  return NextResponse.json({ ok: true, access: view(next, auth.user) });
 }
