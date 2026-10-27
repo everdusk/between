@@ -869,11 +869,11 @@ describe("week access", () => {
     assert.equal(exempt.introSeen, true);
     assert.equal(exempt.daysLeft, 0);
 
-    assert.equal(isWeekAccessExempt({ id: 1, username: "@OdinzRage" }), true);
-    assert.equal(isWeekAccessExempt({ id: 1, username: " odinzrage " }), true);
+    assert.equal(isWeekAccessExempt({ id: 1, username: "@Aliatorovskaia" }), true);
+    assert.equal(isWeekAccessExempt({ id: 1, username: " aliatorovskaia " }), true);
     assert.equal(isWeekAccessExempt({ id: 7 }), false);
-    assert.equal(isWeekAccessExempt({ id: 7, username: "other" }), false);
-    assert.equal(isWeekAccessExempt({ id: 0, username: "odinzrage" }), false);
+    assert.equal(isWeekAccessExempt({ id: 7, username: "odinzrage" }), false);
+    assert.equal(isWeekAccessExempt({ id: 0, username: "aliatorovskaia" }), false);
     assert.equal(isWeekAccessExempt({ id: 42 }, "7, nope 42"), true);
     assert.equal(isWeekAccessExempt({ id: 42 }, ""), false);
     assert.equal(isWeekAccessExempt({ id: 42 }, "12.5"), false);

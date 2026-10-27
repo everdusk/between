@@ -24,7 +24,7 @@
 | `CRON_SECRET` | да, для опросов | секрет почасового вызова `/api/telegram/digest` |
 | `GEMINI_API_KEY` или `GROQ_API_KEY` | нет | кнопка «Сформулировать текст». Без ключа бриф собирается правилами |
 | `WEEK_STAR_PRICE` | нет | цена вкладки «Неделя» в Stars после 14 дней. Целое 1–10000, иначе 150 |
-| `WEEK_EXEMPT_USER_IDS` | нет | дополнительные Telegram id через запятую, которым «Неделя» остаётся открытой без Stars. `@odinzrage` уже в списке в коде |
+| `WEEK_EXEMPT_USER_IDS` | нет | дополнительные Telegram id через запятую, которым «Неделя» остаётся открытой без Stars. `@aliatorovskaia` уже в списке в коде |
 
 Создать Redis: [Upstash](https://upstash.com/) → Redis → REST API → скопировать URL и token в Vercel → Redeploy.
 
@@ -60,7 +60,7 @@ curl -sS "https://between-rouge.vercel.app/api/telegram/webhook"
 
 Первое открытие «Недели» запускает 14 дней бесплатно — и для новых людей, и для тех, кто уже пользовался дневником. Дальше спектр и бриф закрываются подпиской Telegram Stars на 30 дней. Цена — `WEEK_STAR_PRICE` в Vercel (по умолчанию 150). Дневник и «Сеансы» остаются бесплатными. Отмена подписки — в Telegram; доступ держится до конца оплаченного периода.
 
-Аккаунты из списка исключений этот замок не видят: `@odinzrage` задан в `WEEK_ACCESS_EXEMPT_USERNAMES`, дополнительные числовые id — в `WEEK_EXEMPT_USER_IDS`. Исключение сверяется с Telegram-логином в Mini App.
+Аккаунты из списка исключений этот замок не видят: `@aliatorovskaia` задан в `WEEK_ACCESS_EXEMPT_USERNAMES`, дополнительные числовые id — в `WEEK_EXEMPT_USER_IDS`. Исключение сверяется с Telegram-логином в Mini App.
 
 ## Чеклист BotFather
 

@@ -5,7 +5,7 @@ export const WEEK_INVOICE_PAYLOAD = "between-week";
 
 /** Telegram accounts that keep «Неделя» open after the trial, without Stars. */
 export const WEEK_ACCESS_EXEMPT_USER_IDS: readonly number[] = [];
-export const WEEK_ACCESS_EXEMPT_USERNAMES: readonly string[] = ["odinzrage"];
+export const WEEK_ACCESS_EXEMPT_USERNAMES: readonly string[] = ["aliatorovskaia"];
 
 export type WeekAccessIdentity = {
   id: number;
