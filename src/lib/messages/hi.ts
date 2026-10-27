@@ -81,7 +81,6 @@ export const hi: Catalog = {
   afterSessionLead: "{date} के बाद.",
   briefTitle: "सेशन के लिए ब्रीफ",
   briefStats: "{total} में {days} दिन · {count} नोट",
-  briefModel: "सिर्फ तथ्य.",
   formulate: "पाठ बनाएँ",
   formulating: "लिख रहे हैं…",
   noEntry: "कोई नोट नहीं",

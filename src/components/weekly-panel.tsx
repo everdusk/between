@@ -302,7 +302,6 @@ export function WeeklyPanel({
           <p className="whitespace-pre-wrap text-[0.9375rem] leading-relaxed text-ink-foreground/95">
             {modelText || rules}
           </p>
-          {modelText && <p className="text-xs text-ink-muted">{t("briefModel")}</p>}
           <div className="flex flex-wrap items-center gap-3 pt-1">
             <Button
               type="button"

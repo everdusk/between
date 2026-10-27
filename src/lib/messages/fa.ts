@@ -81,7 +81,6 @@ export const fa: Catalog = {
   afterSessionLead: "بعد از {date}.",
   briefTitle: "بریف جلسه",
   briefStats: "{days} از {total} روز · {count} یادداشت",
-  briefModel: "فقط واقعیت‌ها.",
   formulate: "متن را بنویس",
   formulating: "نوشته می‌شود…",
   noEntry: "یادداشتی نیست",

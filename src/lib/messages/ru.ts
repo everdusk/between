@@ -79,7 +79,6 @@ export const ru = {
   afterSessionLead: "После {date}.",
   briefTitle: "Бриф к сеансу",
   briefStats: "{days} из {total} дней · записей {count}",
-  briefModel: "Только факты.",
   formulate: "Сформулировать текст",
   formulating: "Собираю текст…",
   noEntry: "Нет записи",

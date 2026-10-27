@@ -81,7 +81,6 @@ export const vi: Catalog = {
   afterSessionLead: "Sau {date}.",
   briefTitle: "Brief cho buổi trị liệu",
   briefStats: "{days}/{total} ngày · {count} ghi chép",
-  briefModel: "Chỉ sự kiện.",
   formulate: "Viết thành đoạn",
   formulating: "Đang viết…",
   noEntry: "Không có ghi chép",

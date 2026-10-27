@@ -81,7 +81,6 @@ export const uz: Catalog = {
   afterSessionLead: "{date} dan keyin.",
   briefTitle: "Seans uchun brif",
   briefStats: "{total} kundan {days} · {count} yozuv",
-  briefModel: "Faqat faktlar.",
   formulate: "Matnni yozish",
   formulating: "Yozilmoqda…",
   noEntry: "Yozuv yo‘q",

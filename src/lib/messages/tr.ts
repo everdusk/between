@@ -81,7 +81,6 @@ export const tr: Catalog = {
   afterSessionLead: "{date} sonrası.",
   briefTitle: "Seans için brief",
   briefStats: "{total} günden {days} · {count} not",
-  briefModel: "Yalnızca olgular.",
   formulate: "Metni yaz",
   formulating: "Yazılıyor…",
   noEntry: "Kayıt yok",

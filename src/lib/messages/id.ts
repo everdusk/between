@@ -81,7 +81,6 @@ export const id: Catalog = {
   afterSessionLead: "Setelah {date}.",
   briefTitle: "Brief untuk sesi",
   briefStats: "{days} dari {total} hari · {count} catatan",
-  briefModel: "Hanya fakta.",
   formulate: "Tuliskan",
   formulating: "Menyusun…",
   noEntry: "Tidak ada catatan",

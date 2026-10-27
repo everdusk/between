@@ -81,7 +81,6 @@ export const es: Catalog = {
   afterSessionLead: "Después del {date}.",
   briefTitle: "Brief para la sesión",
   briefStats: "{days} de {total} días · {count} notas",
-  briefModel: "Solo hechos.",
   formulate: "Formular el texto",
   formulating: "Escribiendo…",
   noEntry: "Sin nota",

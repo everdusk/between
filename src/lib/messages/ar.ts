@@ -81,7 +81,6 @@ export const ar: Catalog = {
   afterSessionLead: "بعد {date}.",
   briefTitle: "موجز للجلسة",
   briefStats: "{days} من {total} أيام · {count} ملاحظات",
-  briefModel: "وقائع فقط.",
   formulate: "صياغة النص",
   formulating: "تُكتب الصياغة…",
   noEntry: "لا ملاحظة",

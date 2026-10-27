@@ -81,7 +81,6 @@ export const uk: Catalog = {
   afterSessionLead: "Після {date}.",
   briefTitle: "Бриф до сеансу",
   briefStats: "{days} із {total} днів · записів {count}",
-  briefModel: "Лише факти.",
   formulate: "Сформулювати текст",
   formulating: "Збираю текст…",
   noEntry: "Немає запису",
