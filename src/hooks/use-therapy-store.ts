@@ -1,9 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { createId, weekKey } from "@/lib/dates";
+import { createId, toDateKey, weekKey } from "@/lib/dates";
 import { isFeeling } from "@/lib/feelings";
-import { fetchJournal, mergeStores, putJournal } from "@/lib/journal-api";
+import { fetchJournal, mergeStores, putJournal, requestBrief } from "@/lib/journal-api";
+import type { LocaleId } from "@/lib/i18n";
+import { therapyWindow } from "@/lib/session-summary";
+import {
+  addManualTheme,
+  applyVerdict,
+  dedupFacts,
+  discussTheme,
+  dismissTheme,
+  judgeFacts,
+  mergeThemes,
+  judgeStamp,
+  parseDedupHit,
+  parseJudgeVerdict,
+  pendingJudgeEntries,
+  themesForJudge,
+} from "@/lib/themes";
 import { applyThemePass, isTherapyTheme, sanitizeTags, splitTags } from "@/lib/tags";
 import { clearStore, loadStore, saveStore } from "@/lib/storage";
 import {
@@ -44,9 +60,11 @@ function deviceTimeZone(): string | null {
 export function useTherapyStore(options?: {
   initData?: string;
   inTelegram?: boolean;
+  locale?: LocaleId;
 }) {
   const initData = options?.initData ?? "";
   const inTelegram = Boolean(options?.inTelegram && initData);
+  const locale = options?.locale ?? "ru";
 
   const hydrated = useSyncExternalStore(
     subscribe,
@@ -153,6 +171,86 @@ export function useTherapyStore(options?: {
     },
     [applyLocal],
   );
+
+  const judgeRun = useRef<string | null>(null);
+  const judgeTries = useRef<Record<string, number>>({});
+  const judgeTimer = useRef<number | null>(null);
+  const [judgeNudge, setJudgeNudge] = useState(0);
+  useEffect(() => {
+    if (!hydrated || !initData) return;
+    const today = toDateKey();
+    const period = therapyWindow(store.sessions, store.entries, today);
+    const pending = pendingJudgeEntries(store.entries, store.judgeSettled ?? [], period.days);
+    const entry = pending[0];
+    if (!entry) return;
+    const stamp = judgeStamp(entry);
+    if (judgeRun.current === stamp) return;
+    judgeRun.current = stamp;
+    let cancelled = false;
+    void (async () => {
+      const facts = judgeFacts(themesForJudge(storeRef.current.themes ?? []), entry);
+      const result = await requestBrief(initData, facts, `j:${stamp}`, locale, "judge");
+      if (cancelled) return;
+      const verdict = result.ok && result.text ? parseJudgeVerdict(result.text) : null;
+      if (!verdict) {
+        const tries = (judgeTries.current[stamp] ?? 0) + 1;
+        judgeTries.current[stamp] = tries;
+        judgeRun.current = null;
+        if (!cancelled && tries < 3) {
+          if (judgeTimer.current !== null) window.clearTimeout(judgeTimer.current);
+          judgeTimer.current = window.setTimeout(() => {
+            judgeTimer.current = null;
+            setJudgeNudge((n) => n + 1);
+          }, 8000);
+        }
+        return;
+      }
+      const applied = applyVerdict(
+        { themes: storeRef.current.themes ?? [], links: storeRef.current.themeLinks ?? [] },
+        entry,
+        verdict,
+      );
+      let state = applied.state;
+      let focus = applied.touchedId;
+      for (let pass = 0; pass < 2 && focus; pass += 1) {
+        const theme = state.themes.find(
+          (item) => item.id === focus && item.status === "active" && !item.dismissed,
+        );
+        const others = state.themes.filter(
+          (item) => item.id !== focus && item.status === "active" && !item.dismissed,
+        );
+        if (!theme || others.length === 0) break;
+        const dedup = await requestBrief(
+          initData,
+          dedupFacts(theme, others),
+          `d:${stamp}:${pass}`,
+          locale,
+          "dedup",
+        );
+        if (cancelled) return;
+        const hit = dedup.ok && dedup.text ? parseDedupHit(dedup.text) : null;
+        if (!hit || hit.confidence < 0.85 || hit.themeId === focus) break;
+        state = mergeThemes(state, hit.themeId, focus, hit.title);
+        focus = hit.themeId;
+      }
+      if (cancelled) return;
+      const latest = storeRef.current;
+      persist({
+        ...latest,
+        themes: state.themes,
+        themeLinks: state.links,
+        judgeSettled: [...new Set([...(latest.judgeSettled ?? []), stamp])].slice(-400),
+      });
+    })();
+    return () => {
+      cancelled = true;
+      if (judgeRun.current === stamp) judgeRun.current = null;
+      if (judgeTimer.current !== null) {
+        window.clearTimeout(judgeTimer.current);
+        judgeTimer.current = null;
+      }
+    };
+  }, [hydrated, initData, judgeNudge, locale, persist, store.entries, store.judgeSettled, store.sessions]);
 
   const resetCorrupted = useCallback(() => {
     const result = clearStore();
@@ -384,6 +482,55 @@ export function useTherapyStore(options?: {
     [persist],
   );
 
+  const setThemeDiscussed = useCallback(
+    (id: string, discussed: boolean) => {
+      const current = storeRef.current;
+      return persist({
+        ...current,
+        themes: discussTheme(current.themes ?? [], id, discussed),
+      });
+    },
+    [persist],
+  );
+
+  const dismissSessionTheme = useCallback(
+    (id: string) => {
+      const current = storeRef.current;
+      return persist({
+        ...current,
+        themes: dismissTheme(current.themes ?? [], id),
+      });
+    },
+    [persist],
+  );
+
+  const addSessionTheme = useCallback(
+    (title: string) => {
+      const current = storeRef.current;
+      return persist({
+        ...current,
+        themes: addManualTheme(current.themes ?? [], title, toDateKey()),
+      });
+    },
+    [persist],
+  );
+
+  const savePattern = useCallback(
+    (key: string, patternText: string, patternStamp: string) => {
+      const now = new Date().toISOString();
+      const current = storeRef.current;
+      const existing = current.weekPreps.find((prep) => prep.weekKey === key);
+      const next: WeekPrep = existing
+        ? { ...existing, updatedAt: now, patternText, patternStamp }
+        : { weekKey: key, talkNotes: "", updatedAt: now, patternText, patternStamp };
+      const weekPreps = existing
+        ? current.weekPreps.map((prep) => (prep.weekKey === key ? next : prep))
+        : [...current.weekPreps, next];
+      return persist({ ...current, weekPreps });
+    },
+    [persist],
+  );
+
   const deleteSession = useCallback(
     (id: string) => {
       const current = storeRef.current;
@@ -410,6 +557,10 @@ export function useTherapyStore(options?: {
     saveNotify,
     upsertSession,
     deleteSession,
+    setThemeDiscussed,
+    dismissSessionTheme,
+    addSessionTheme,
+    savePattern,
     refreshCloud: syncFromCloud,
   };
 }

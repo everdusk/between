@@ -1,5 +1,5 @@
 import { backlogId, USER_BACKLOG_CAP } from "./brief";
-import { normalizeFeelings } from "./feelings";
+import { isFeeling, normalizeFeelings } from "./feelings";
 import { sanitizeTags } from "./tags";
 import {
   emptyNotify,
@@ -7,6 +7,9 @@ import {
   type BacklogItem,
   type BacklogPriority,
   type BacklogSource,
+  type SessionTheme,
+  type ThemeLink,
+  type ThemeQuote,
   type CheckinSlot,
   type EntrySource,
   type JournalEntry,
@@ -106,6 +109,10 @@ function normalizeWeekPrep(raw: unknown): WeekPrep | null {
   if (typeof prep.briefText === "string" && prep.briefText && typeof prep.briefStamp === "string") {
     next.briefText = prep.briefText;
     next.briefStamp = prep.briefStamp;
+  }
+  if (typeof prep.patternText === "string" && prep.patternText && typeof prep.patternStamp === "string") {
+    next.patternText = prep.patternText;
+    next.patternStamp = prep.patternStamp;
   }
   const backlog = normalizeBacklog(prep);
   if (backlog) {
@@ -218,6 +225,84 @@ function normalizeNotify(raw: unknown): NotifyPrefs {
   };
 }
 
+function normalizeQuote(raw: unknown): ThemeQuote | null {
+  const quote = asRecord(raw);
+  if (!quote) return null;
+  if (typeof quote.entryId !== "string" || !quote.entryId) return null;
+  if (typeof quote.text !== "string" || !quote.text.trim()) return null;
+  if (typeof quote.date !== "string" || !DATE_RE.test(quote.date)) return null;
+  const intensity = typeof quote.intensity === "number" ? quote.intensity : 1;
+  return {
+    entryId: quote.entryId,
+    text: quote.text.replace(/\s+/g, " ").trim().slice(0, 140),
+    date: quote.date,
+    intensity: Math.min(10, Math.max(1, Math.round(intensity))),
+  };
+}
+
+function normalizeTheme(raw: unknown): SessionTheme | null {
+  const theme = asRecord(raw);
+  if (!theme) return null;
+  if (typeof theme.id !== "string" || !theme.id) return null;
+  if (typeof theme.title !== "string" || !theme.title.trim()) return null;
+  const status =
+    theme.status === "discussed" || theme.status === "archived" || theme.status === "active"
+      ? theme.status
+      : null;
+  if (!status) return null;
+  const quotes = Array.isArray(theme.quotes)
+    ? theme.quotes.map(normalizeQuote).filter((quote): quote is ThemeQuote => Boolean(quote)).slice(0, 8)
+    : [];
+  const peakFeeling =
+    typeof theme.peakFeeling === "string" && isFeeling(theme.peakFeeling)
+      ? theme.peakFeeling
+      : undefined;
+  const next: SessionTheme = {
+    id: theme.id,
+    userId: typeof theme.userId === "string" && theme.userId ? theme.userId : "local",
+    title: theme.title.replace(/\s+/g, " ").trim().slice(0, 80),
+    status,
+    count: typeof theme.count === "number" && theme.count >= 0 ? Math.round(theme.count) : quotes.length,
+    firstSeen:
+      typeof theme.firstSeen === "string" && DATE_RE.test(theme.firstSeen)
+        ? theme.firstSeen
+        : quotes[0]?.date ?? "1970-01-01",
+    lastSeen:
+      typeof theme.lastSeen === "string" && DATE_RE.test(theme.lastSeen)
+        ? theme.lastSeen
+        : quotes[quotes.length - 1]?.date ?? "1970-01-01",
+    peakIntensity:
+      typeof theme.peakIntensity === "number"
+        ? Math.min(10, Math.max(0, Math.round(theme.peakIntensity)))
+        : 0,
+    reopened: theme.reopened === true,
+    dismissed: theme.dismissed === true,
+    confidence: typeof theme.confidence === "number" ? Math.min(1, Math.max(0, theme.confidence)) : 0,
+    summary:
+      typeof theme.summary === "string" && theme.summary.trim()
+        ? theme.summary.replace(/\s+/g, " ").trim().slice(0, 120)
+        : theme.title.replace(/\s+/g, " ").trim().slice(0, 80),
+    quotes,
+    updatedAt: typeof theme.updatedAt === "string" ? theme.updatedAt : new Date(0).toISOString(),
+  };
+  if (peakFeeling) next.peakFeeling = peakFeeling;
+  if (theme.manual === true) next.manual = true;
+  return next;
+}
+
+function normalizeLink(raw: unknown): ThemeLink | null {
+  const link = asRecord(raw);
+  if (!link) return null;
+  if (typeof link.entryId !== "string" || !link.entryId) return null;
+  if (typeof link.themeId !== "string" || !link.themeId) return null;
+  const confidence = typeof link.confidence === "number" ? link.confidence : 0;
+  return {
+    entryId: link.entryId,
+    themeId: link.themeId,
+    confidence: Math.min(1, Math.max(0, confidence)),
+  };
+}
+
 /** Accept v1 (mood 1–5, tag «бот») and v2 stores. Returns null when the shape is unusable. */
 export function normalizeStore(value: unknown): TherapyStore | null {
   const store = asRecord(value);
@@ -240,6 +325,15 @@ export function normalizeStore(value: unknown): TherapyStore | null {
       .filter((prep): prep is WeekPrep => Boolean(prep)),
     sessionPlan: normalizePlan(store.sessionPlan),
     notify: normalizeNotify(store.notify),
+    themes: Array.isArray(store.themes)
+      ? store.themes.map(normalizeTheme).filter((theme): theme is SessionTheme => Boolean(theme)).slice(0, 40)
+      : [],
+    themeLinks: Array.isArray(store.themeLinks)
+      ? store.themeLinks.map(normalizeLink).filter((link): link is ThemeLink => Boolean(link)).slice(0, 400)
+      : [],
+    judgeSettled: Array.isArray(store.judgeSettled)
+      ? store.judgeSettled.filter((item): item is string => typeof item === "string" && item.length < 80).slice(0, 400)
+      : [],
   };
 }
 

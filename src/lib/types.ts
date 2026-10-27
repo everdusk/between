@@ -74,12 +74,56 @@ export interface BacklogItem {
 /** rules — old generated list; model — the same list tightened by a model; user — lines the person wrote or kept. */
 export type BacklogSource = "rules" | "model" | "user";
 
+export type SessionThemeStatus = "active" | "discussed" | "archived";
+
+export interface ThemeQuote {
+  entryId: string;
+  text: string;
+  date: string;
+  intensity: number;
+}
+
+/** Entry↔theme link. One entry belongs to at most one theme. */
+export interface ThemeLink {
+  entryId: string;
+  themeId: string;
+  confidence: number;
+}
+
+/**
+ * A therapy topic at pattern level. Notes never sit in the backlog themselves;
+ * the backlog is the list of these themes.
+ */
+export interface SessionTheme {
+  id: string;
+  userId: string;
+  title: string;
+  status: SessionThemeStatus;
+  count: number;
+  firstSeen: string;
+  lastSeen: string;
+  peakIntensity: number;
+  peakFeeling?: Feeling;
+  reopened: boolean;
+  dismissed: boolean;
+  confidence: number;
+  /** One line for the judge. Built from the title. */
+  summary: string;
+  quotes: ThemeQuote[];
+  /** Added by hand from the existing field. The judge does not recreate it. */
+  manual?: boolean;
+  updatedAt: string;
+}
+
 export interface WeekPrep {
   weekKey: string;
   talkNotes: string;
   updatedAt: string;
   briefText?: string;
   briefStamp?: string;
+  /** The one model paragraph in the brief. The rest is a template. */
+  patternText?: string;
+  patternStamp?: string;
   backlog?: BacklogItem[];
   backlogStamp?: string;
   backlogSource?: BacklogSource;
@@ -111,6 +155,10 @@ export interface TherapyStore {
   weekPreps: WeekPrep[];
   sessionPlan: SessionPlan | null;
   notify: NotifyPrefs;
+  themes: SessionTheme[];
+  themeLinks: ThemeLink[];
+  /** `${entryId}:${updatedAt}` already given to the judge, including “not a theme”. */
+  judgeSettled: string[];
 }
 
 export const STORAGE_KEY = "therapy-helper:v1";
@@ -129,5 +177,8 @@ export function emptyStore(): TherapyStore {
     weekPreps: [],
     sessionPlan: null,
     notify: emptyNotify(),
+    themes: [],
+    themeLinks: [],
+    judgeSettled: [],
   };
 }
