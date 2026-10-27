@@ -82,7 +82,7 @@ export const ru = {
   formulate: "Сформулировать текст",
   formulating: "Собираю текст…",
   noEntry: "Нет записи",
-  briefLimit: "На сегодня хватит. Ниже — по записям.",
+  briefLimit: "Лимит запросов на сегодня. Ниже — по записям.",
   briefNoModel:
     "Модель не подключена.",
   briefBadKey:

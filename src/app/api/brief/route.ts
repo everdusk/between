@@ -4,6 +4,7 @@ import { parseModelThemes, THERAPY_THEMES } from "@/lib/tags";
 import { parseDedupHit, parseJudgeVerdict } from "@/lib/themes";
 import { isLocale, modelLanguageName, type LocaleId } from "@/lib/i18n";
 import {
+  briefAttemptsUsed,
   cacheBrief,
   getCachedBrief,
   redisConfigured,
@@ -16,6 +17,14 @@ export type BriefKind = "brief" | "backlog" | "themes" | "judge" | "dedup" | "pa
 
 function settlesJson(kind: BriefKind): boolean {
   return kind === "backlog" || kind === "themes" || kind === "judge" || kind === "dedup";
+}
+
+/** Pattern (the formulate button) does not share a counter with theme labeling. */
+export function modelBudget(kind: BriefKind): { limit: number; bucket: string } {
+  if (kind === "judge" || kind === "dedup") return { limit: 80, bucket: "judge" };
+  if (kind === "themes") return { limit: 40, bucket: "themes" };
+  if (kind === "pattern") return { limit: 24, bucket: "pattern" };
+  return { limit: 12, bucket: "brief" };
 }
 
 type GenLimits = { temperature: number; maxTokens: number };
@@ -458,17 +467,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, text: null, reason: "no_model" });
   }
 
+  const budget = modelBudget(kind);
+  const day = todayInTimeZone(null);
   if (redisConfigured()) {
     const cached = await getCachedBrief(validated.user.id, stamp);
     if (cached) return NextResponse.json({ ok: true, text: cached, cached: true });
-    const clustering = kind === "judge" || kind === "dedup";
-    const allowed = await takeBriefAttempt(
-      validated.user.id,
-      todayInTimeZone(null),
-      clustering ? 80 : 8,
-      clustering ? "judge" : "",
-    );
-    if (!allowed) {
+    const used = await briefAttemptsUsed(validated.user.id, day, budget.bucket);
+    if (used >= budget.limit) {
       return NextResponse.json({ ok: true, text: null, reason: "limit" });
     }
   }
@@ -479,15 +484,12 @@ export async function POST(req: Request) {
       ? await gemini(facts, geminiKey, system, kind, limits)
       : await groq(facts, groqKey as string, system, kind, limits);
 
-  if (!result.text && !tunnelKey && geminiKey && groqKey) {
-    const fallback = await groq(facts, groqKey, system, kind, limits);
-    if (fallback.text) {
-      if (redisConfigured()) await cacheBrief(validated.user.id, stamp, fallback.text);
-      return NextResponse.json({ ok: true, text: fallback.text });
-    }
+  let text = result.text;
+  if (!text && !tunnelKey && geminiKey && groqKey) {
+    text = (await groq(facts, groqKey, system, kind, limits)).text;
   }
 
-  if (!result.text) {
+  if (!text) {
     return NextResponse.json({
       ok: true,
       text: null,
@@ -497,7 +499,8 @@ export async function POST(req: Request) {
   }
 
   if (redisConfigured()) {
-    await cacheBrief(validated.user.id, stamp, result.text);
+    await takeBriefAttempt(validated.user.id, day, budget.limit, budget.bucket);
+    await cacheBrief(validated.user.id, stamp, text);
   }
-  return NextResponse.json({ ok: true, text: result.text });
+  return NextResponse.json({ ok: true, text });
 }
