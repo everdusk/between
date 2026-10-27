@@ -182,6 +182,13 @@ function recountAll(themes: SessionTheme[], links: ThemeLink[]): SessionTheme[] 
   return themes.map((theme) => recount(theme, links));
 }
 
+function fallbackTitle(body: string): string {
+  const clean = body.replace(/\s+/g, " ").trim();
+  if (clean.length < 4) return "";
+  const sentence = (clean.split(/(?<=[.!?…])\s+/)[0] ?? clean).trim();
+  return sentence.slice(0, 80).trim();
+}
+
 function upsertQuote(theme: SessionTheme, quote: ThemeQuote | null): ThemeQuote[] {
   if (!quote) return theme.quotes;
   const without = theme.quotes.filter(
@@ -197,8 +204,15 @@ export function applyVerdict(
   now = new Date().toISOString(),
   userId = "local",
 ): { state: ThemeState; touchedId: string | null } {
-  const intensity = clamp(Math.round(verdict.intensity), 1, 10);
-  const confidence = clamp(verdict.confidence, 0, 1);
+  const marked = feelingIntensity(entry.feelings);
+  const charged = marked >= CREATE_INTENSITY;
+  const intensity = clamp(Math.round(Math.max(verdict.intensity, charged ? marked : 0)), 1, 10);
+  const confidence = clamp(
+    charged ? Math.max(verdict.confidence, CREATE_CONFIDENCE) : verdict.confidence,
+    0,
+    1,
+  );
+  const relevant = verdict.relevant || charged;
   const quoteText = verbatimQuote(entry.body, verdict.quote);
   const quote: ThemeQuote | null = quoteText
     ? { entryId: entry.id, text: quoteText, date: entry.date, intensity }
@@ -247,9 +261,10 @@ export function applyVerdict(
     return { state, touchedId: null };
   }
 
-  const title = verdict.newTheme?.replace(/\s+/g, " ").trim() ?? "";
+  const named = verdict.newTheme?.replace(/\s+/g, " ").trim() ?? "";
+  const title = named || (relevant && charged ? fallbackTitle(entry.body) : "");
   const canCreate =
-    verdict.relevant &&
+    relevant &&
     !verdict.matchTheme &&
     confidence >= CREATE_CONFIDENCE &&
     intensity >= CREATE_INTENSITY &&
@@ -444,8 +459,19 @@ export function addManualTheme(
   ];
 }
 
+/** Versioned so a note judged before charged feelings could open a theme is read again. */
 export function judgeStamp(entry: Pick<JournalEntry, "id" | "updatedAt">): string {
-  return `${entry.id}:${entry.updatedAt}`;
+  return `2:${entry.id}:${entry.updatedAt}`;
+}
+
+/** Short cache key. The raw id plus timestamp does not fit the brief stamp limit. */
+export function modelRequestStamp(prefix: string, entryStamp: string, pass = 0): string {
+  let hash = 5381;
+  const source = `${prefix}:${entryStamp}:${pass}`;
+  for (let index = 0; index < source.length; index += 1) {
+    hash = (hash * 33) ^ source.charCodeAt(index);
+  }
+  return `${prefix}:${(hash >>> 0).toString(36)}`;
 }
 
 export function pendingJudgeEntries(
@@ -481,12 +507,26 @@ function readJson(raw: string): unknown {
   }
 }
 
+function asBool(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  if (value === "true" || value === 1) return true;
+  if (value === "false" || value === 0) return false;
+  return null;
+}
+
+function asNum(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() && Number.isFinite(Number(value))) return Number(value);
+  return null;
+}
+
 export function parseJudgeVerdict(raw: string): JudgeVerdict | null {
   const data = readJson(raw);
   if (!data || typeof data !== "object") return null;
   const row = data as Record<string, unknown>;
-  if (typeof row.relevant !== "boolean") return null;
-  if (typeof row.confidence !== "number") return null;
+  const relevant = asBool(row.relevant);
+  const confidence = asNum(row.confidence);
+  if (relevant === null || confidence === null) return null;
   const matchRaw = typeof row.match_theme === "string" ? row.match_theme : row.matchTheme;
   const match = typeof matchRaw === "string" && matchRaw.trim() ? matchRaw.trim() : null;
   let title: string | null = null;
@@ -497,11 +537,11 @@ export function parseJudgeVerdict(raw: string): JudgeVerdict | null {
     if (typeof named === "string" && named.trim()) title = named.trim();
   }
   return {
-    relevant: row.relevant,
+    relevant,
     matchTheme: match,
-    intensity: typeof row.intensity === "number" ? row.intensity : 1,
+    intensity: asNum(row.intensity) ?? 1,
     newTheme: title,
-    confidence: row.confidence,
+    confidence,
     quote: typeof row.quote === "string" ? row.quote : "",
     reason: typeof row.reason === "string" ? row.reason : "",
   };

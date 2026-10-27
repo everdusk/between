@@ -36,6 +36,7 @@ export function briefSystemPrompt(locale: LocaleId, kind: BriefKind = "brief"): 
       "new_theme: {\"title\":\"...\"} только если relevant=true и match_theme=null. title — паттерн, не событие: «конфликты с мамой из-за границ», не «поругалась из-за телефона».",
       "Если relevant=false, new_theme=null.",
       "«Всё нормально» при высокой отметке тревоги — relevant=true, решает интенсивность.",
+      "Отметка тяжело, стыд, пусто, тревожно, злость, грусть или напряжение значит relevant=true и intensity не ниже 8. Если match_theme=null, new_theme обязателен.",
       "Разовый мелкий негатив без повторяющегося паттерна — relevant=false.",
       "quote — дословная фраза из записи, не длиннее 140 символов, не пересказ. Ничего не выдумывать.",
       "confidence — 0–1. reason — одно предложение.",
@@ -145,11 +146,13 @@ async function geminiOnce(
   thinking: boolean,
   system: string,
   limits: GenLimits,
+  json = false,
 ): Promise<{ text: string | null; status: number }> {
   const generationConfig: Record<string, unknown> = {
     maxOutputTokens: limits.maxTokens,
     temperature: limits.temperature,
   };
+  if (json) generationConfig.responseMimeType = "application/json";
   if (thinking) generationConfig.thinkingConfig = { thinkingBudget: 0 };
 
   const res = await fetch(
@@ -183,6 +186,7 @@ async function gemini(
   limits: GenLimits,
 ): Promise<{ text: string | null; detail: string }> {
   const preferred = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
+  const json = kind === "judge" || kind === "dedup";
   const first = await geminiOnce(
     prompt,
     apiKey,
@@ -190,6 +194,7 @@ async function gemini(
     !preferred.startsWith("gemini-2.0"),
     system,
     limits,
+    json,
   );
   const firstText = settleModelText(first.text, kind);
   if (firstText) return { text: firstText, detail: "" };
@@ -197,7 +202,7 @@ async function gemini(
     return { text: null, detail: geminiDetail(first.status) };
   }
   if (preferred !== "gemini-2.0-flash") {
-    const second = await geminiOnce(prompt, apiKey, "gemini-2.0-flash", false, system, limits);
+    const second = await geminiOnce(prompt, apiKey, "gemini-2.0-flash", false, system, limits, json);
     const secondText = settleModelText(second.text, kind);
     if (secondText) return { text: secondText, detail: "" };
     if ((first.text || second.text) && settlesJson(kind)) {
@@ -351,9 +356,12 @@ export async function POST(req: Request) {
   if (redisConfigured()) {
     const cached = await getCachedBrief(validated.user.id, stamp);
     if (cached) return NextResponse.json({ ok: true, text: cached, cached: true });
+    const clustering = kind === "judge" || kind === "dedup";
     const allowed = await takeBriefAttempt(
       validated.user.id,
       todayInTimeZone(null),
+      clustering ? 80 : 8,
+      clustering ? "judge" : "",
     );
     if (!allowed) {
       return NextResponse.json({ ok: true, text: null, reason: "limit" });

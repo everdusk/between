@@ -55,11 +55,11 @@ export function SessionBacklog({
         )}
       </div>
 
-      {themes.length === 0 ? (
+      {themes.length === 0 && !refreshing ? (
         <p className="mt-5 rounded-2xl border border-dashed border-[color:var(--glass-border)] px-4 py-5 text-center text-sm text-muted-foreground">
           {t("backlogEmpty")}
         </p>
-      ) : (
+      ) : themes.length === 0 ? null : (
         <ul className="mt-5 divide-y divide-[color:var(--glass-border)]">
           {themes.map((theme) => (
             <li key={theme.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
