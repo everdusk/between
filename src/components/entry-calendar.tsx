@@ -197,7 +197,7 @@ export function EntryCalendar({
             onPointerUp={onSheetPointerEnd}
             onPointerCancel={onSheetPointerEnd}
           >
-            <div className="glass-strong rounded-t-3xl ps-[max(1rem,var(--safe-left))] pe-[max(1rem,var(--safe-right))] pt-1 pb-[max(1.25rem,var(--safe-bottom))]">
+            <div className="glass-strong rounded-t-3xl pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pt-1 pb-[max(1.25rem,var(--safe-bottom))]">
               <div className="flex cursor-grab justify-center py-3 active:cursor-grabbing">
                 <div aria-hidden className="h-1 w-10 rounded-full bg-foreground/20" />
               </div>
