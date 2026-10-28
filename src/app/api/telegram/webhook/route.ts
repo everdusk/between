@@ -28,7 +28,7 @@ import {
   voiceNoteBody,
   voiceReplyPreview,
 } from "@/lib/voice";
-import { WEEK_INVOICE_PAYLOAD, grantWeekPaidUntil } from "@/lib/week-access";
+import { WEEK_INVOICE_PAYLOAD, grantWeekPaidUntil, isWeekAccessExempt, voiceNotesOpen } from "@/lib/week-access";
 
 type TelegramChat = { id: number; type?: string };
 type TelegramUser = {
@@ -202,6 +202,18 @@ async function handleVoice(
 
   if (!userId || !botToken() || !redisConfigured()) {
     await say(translate(reply, "botNotReady"));
+    return;
+  }
+
+  const access = await loadWeekAccess(userId);
+  const premium = voiceNotesOpen(access, new Date(), {
+    exempt: isWeekAccessExempt(
+      { id: userId, username: message.from?.username },
+      process.env.WEEK_EXEMPT_USER_IDS,
+    ),
+  });
+  if (!premium) {
+    await say(translate(reply, "botVoicePremium"));
     return;
   }
 

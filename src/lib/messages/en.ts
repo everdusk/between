@@ -187,7 +187,7 @@ export const en: Catalog = {
   moodFlat: "No clear shift in mood across the period.",
   botOpen: "Open Between",
   botHelp:
-    "Between is a journal for the session.\nAny text becomes a note for today.\nA voice note is saved as text too.",
+    "Between is a journal for the session.\nAny text becomes a note for today.\nVoice notes come with a paid Week, up to 10 a day. The free week does not include them.",
   botUnknown:
     "Send text and I will save a note.",
   botNotReady:
@@ -197,7 +197,9 @@ export const en: Catalog = {
   botVoiceEmpty: "I couldn't hear any words.",
   botVoiceFail: "I couldn't transcribe that. Send text instead.",
   botVoiceForbidden: "AI Tunnel refused the transcription. Allow the whisper-1 model for this key.",
-  botVoiceLimit: "That's enough voice notes for today. Send text.",
+  botVoiceLimit: "That's 10 voice notes for today. Send text.",
+  botVoicePremium:
+    "Voice notes come with a paid Week, up to 10 a day. The free week does not include them. Send text.",
   botVoiceNoKey: "Voice notes need the model key.",
   botSaveFail: "Did not save. Try again.",
   botCheckinNotReady: "I cannot save the mark right now.",

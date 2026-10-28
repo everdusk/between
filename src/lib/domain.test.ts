@@ -48,7 +48,13 @@ import {
 import { formatDayLabel, formatMonthTitle, monthCells, shiftMonth } from "./dates";
 import { buildPeriodSummary, entryInWindow, therapyWindow } from "./session-summary";
 import { emptyStore, type JournalEntry, type SessionNote, type SessionPlan } from "./types";
-import { transcriptFromResponse, voiceFileName, voiceNoteBody, voiceReplyPreview } from "./voice";
+import {
+  VOICE_DAILY_LIMIT,
+  transcriptFromResponse,
+  voiceFileName,
+  voiceNoteBody,
+  voiceReplyPreview,
+} from "./voice";
 import {
   daysPhrase,
   describeWeekAccess,
@@ -59,6 +65,7 @@ import {
   openWeekAccess,
   starPriceFromEnv,
   TRIAL_MS,
+  voiceNotesOpen,
 } from "./week-access";
 
 function note(partial: Partial<JournalEntry> & Pick<JournalEntry, "id" | "body">): JournalEntry {
@@ -794,6 +801,7 @@ describe("voice notes", () => {
     assert.equal(voiceNoteBody("сегодня тяжело", "к сеансу"), "к сеансу\nсегодня тяжело");
     assert.equal(voiceNoteBody("  только голос  "), "только голос");
     assert.equal(voiceReplyPreview("а".repeat(800)).length, 698);
+    assert.equal(VOICE_DAILY_LIMIT, 10);
     assert.equal(voiceFileName("voice/file_1.ogg", "audio/ogg"), "file_1.ogg");
     assert.equal(voiceFileName(undefined, "audio/mpeg"), "voice.mp3");
     assert.equal(voiceFileName("file", "audio/wav"), "voice.wav");
@@ -989,6 +997,8 @@ describe("week access", () => {
 
     const view = describeWeekAccess(opened, now, 150);
     assert.equal(view.status, "trial");
+    assert.equal(voiceNotesOpen(opened, now), false);
+    assert.equal(voiceNotesOpen(opened, now, { exempt: true }), true);
     assert.equal(view.daysLeft, 7);
     assert.equal(view.starPrice, 150);
     assert.equal(view.introSeen, false);
@@ -998,6 +1008,7 @@ describe("week access", () => {
   it("locks the week after seven days and lets a later payment win", () => {
     const opened = openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - TRIAL_MS));
     assert.equal(describeWeekAccess(opened, now).status, "locked");
+    assert.equal(voiceNotesOpen(opened, now), false);
 
     const during = describeWeekAccess(
       openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - TRIAL_MS + 60_000)),
@@ -1008,6 +1019,7 @@ describe("week access", () => {
 
     const paid = grantWeekPaidUntil(opened, "2026-11-08T12:00:00.000Z");
     assert.equal(describeWeekAccess(paid, now).status, "paid");
+    assert.equal(voiceNotesOpen(paid, now), true);
     const renewed = grantWeekPaidUntil(paid, "2026-11-01T12:00:00.000Z");
     assert.equal(renewed.paidUntil, paid.paidUntil);
     const later = grantWeekPaidUntil(paid, "2026-12-08T12:00:00.000Z");
@@ -1083,6 +1095,8 @@ describe("languages", () => {
       translate("ru", "botHelp").split("\n")[0],
       "Between — дневник к сеансу.",
     );
+    assert.match(translate("ru", "botHelp"), /до 10 в день/);
+    assert.match(translate("ru", "botHelp"), /Пробная неделя/);
     assert.match(pollText("morning"), /Утро/);
     assert.match(pollText("morning", "en"), /Morning/);
     const board = feelingKeyboard("morning", "en");

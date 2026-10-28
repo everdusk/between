@@ -180,7 +180,7 @@ export const pt: Catalog = {
   moodFlat: "O humor não mudou de forma clara.",
   botOpen: "Abrir Between",
   botHelp:
-    "Between é um diário para a sessão.\nQualquer texto vira uma nota de hoje.\nUm áudio também vira texto.",
+    "Between é um diário para a sessão.\nQualquer texto vira uma nota de hoje.\nO áudio vem com a Semana paga, até 10 por dia. A semana grátis não inclui.",
   botUnknown:
     "Escreva um texto e eu salvo como nota.",
   botNotReady:
@@ -190,7 +190,9 @@ export const pt: Catalog = {
   botVoiceEmpty: "Não ouvi palavras.",
   botVoiceFail: "Não consegui transcrever. Envie texto.",
   botVoiceForbidden: "O AI Tunnel recusou a transcrição. Permita o modelo whisper-1 na chave.",
-  botVoiceLimit: "Chega de áudios por hoje. Envie texto.",
+  botVoiceLimit: "Hoje já foram 10 áudios. Envie texto.",
+  botVoicePremium:
+    "Áudios vêm com a Semana paga, até 10 por dia. A semana grátis não inclui. Envie texto.",
   botVoiceNoKey: "Áudios precisam da chave do modelo.",
   botSaveFail: "Não salvou. Tente de novo.",
   botCheckinNotReady: "Agora não consigo salvar a marca.",

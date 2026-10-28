@@ -180,7 +180,7 @@ export const vi: Catalog = {
   moodFlat: "Tâm trạng không đổi rõ.",
   botOpen: "Mở Between",
   botHelp:
-    "Between là nhật ký cho buổi trị liệu.\nChữ nào cũng thành ghi chép hôm nay.\nTin nhắn thoại cũng được lưu thành chữ.",
+    "Between là nhật ký cho buổi trị liệu.\nChữ nào cũng thành ghi chép hôm nay.\nTin nhắn thoại có ở Tuần đã trả, tối đa 10 một ngày. Tuần miễn phí không gồm.",
   botUnknown: "Gửi chữ, tôi lưu thành ghi chép.",
   botNotReady:
     "Lúc này không lưu được.",
@@ -189,7 +189,9 @@ export const vi: Catalog = {
   botVoiceEmpty: "Không nghe thấy lời.",
   botVoiceFail: "Không chép được giọng nói. Hãy gửi chữ.",
   botVoiceForbidden: "AI Tunnel từ chối bản chép. Hãy cho phép mô hình whisper-1 trên khóa.",
-  botVoiceLimit: "Hôm nay đủ tin nhắn thoại rồi. Hãy gửi chữ.",
+  botVoiceLimit: "Hôm nay đã đủ 10 tin nhắn thoại. Hãy gửi chữ.",
+  botVoicePremium:
+    "Tin nhắn thoại có sau khi trả Tuần, tối đa 10 một ngày. Tuần miễn phí không gồm. Hãy gửi chữ.",
   botVoiceNoKey: "Tin nhắn thoại cần khóa mô hình.",
   botSaveFail: "Không lưu được. Thử lại.",
   botCheckinNotReady: "Lúc này không lưu được dấu.",

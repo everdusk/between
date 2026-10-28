@@ -180,7 +180,7 @@ export const tr: Catalog = {
   moodFlat: "Dönem boyunca ruh halinde belirgin bir kayma yok.",
   botOpen: "Between’i aç",
   botHelp:
-    "Between, seans için bir günlük.\nHer metin bugünün notu olur.\nSesli not da metin olarak kaydedilir.",
+    "Between, seans için bir günlük.\nHer metin bugünün notu olur.\nSesli not, ücretli Hafta ile gelir, günde 10’a kadar. Deneme haftası kapsamaz.",
   botUnknown:
     "Metin yazın, not olarak kaydederim.",
   botNotReady:
@@ -190,7 +190,9 @@ export const tr: Catalog = {
   botVoiceEmpty: "Söz duyulmadı.",
   botVoiceFail: "Ses çözülemedi. Metin yazın.",
   botVoiceForbidden: "AI Tunnel çözümü reddetti. Anahtarda whisper-1 modeline izin verin.",
-  botVoiceLimit: "Bugünlük sesli not yeter. Metin yazın.",
+  botVoiceLimit: "Bugün 10 sesli not doldu. Metin yazın.",
+  botVoicePremium:
+    "Sesli notlar ücretli Hafta ile gelir, günde 10’a kadar. Deneme haftası kapsamaz. Metin yazın.",
   botVoiceNoKey: "Sesli not için model anahtarı gerekir.",
   botSaveFail: "Kaydedilmedi. Yeniden deneyin.",
   botCheckinNotReady: "Şu an işareti kaydedemiyorum.",

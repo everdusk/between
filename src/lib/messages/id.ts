@@ -180,7 +180,7 @@ export const id: Catalog = {
   moodFlat: "Suasana tidak bergeser secara jelas.",
   botOpen: "Buka Between",
   botHelp:
-    "Between adalah jurnal untuk sesi.\nTeks apa pun menjadi catatan hari ini.\nCatatan suara juga disimpan sebagai teks.",
+    "Between adalah jurnal untuk sesi.\nTeks apa pun menjadi catatan hari ini.\nCatatan suara ada di Minggu berbayar, sampai 10 sehari. Minggu gratis tidak mencakupnya.",
   botUnknown:
     "Kirim teks, saya simpan sebagai catatan.",
   botNotReady:
@@ -190,7 +190,9 @@ export const id: Catalog = {
   botVoiceEmpty: "Tidak terdengar kata.",
   botVoiceFail: "Tidak bisa menyalin suara. Kirim teks.",
   botVoiceForbidden: "AI Tunnel menolak transkripsi. Izinkan model whisper-1 pada kunci.",
-  botVoiceLimit: "Catatan suara untuk hari ini sudah cukup. Kirim teks.",
+  botVoiceLimit: "Hari ini sudah 10 catatan suara. Kirim teks.",
+  botVoicePremium:
+    "Catatan suara ada di Minggu berbayar, sampai 10 sehari. Minggu gratis tidak mencakupnya. Kirim teks.",
   botVoiceNoKey: "Catatan suara butuh kunci model.",
   botSaveFail: "Tidak tersimpan. Coba lagi.",
   botCheckinNotReady: "Sekarang tidak bisa menyimpan tanda.",

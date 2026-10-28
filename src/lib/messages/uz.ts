@@ -180,7 +180,7 @@ export const uz: Catalog = {
   moodFlat: "Kayfiyatda aniq siljish yo‘q.",
   botOpen: "Between’ni ochish",
   botHelp:
-    "Between — seans uchun kundalik.\nHar qanday matn bugungi yozuv bo‘ladi.\nOvozli xabar ham matn bo‘lib saqlanadi.",
+    "Between — seans uchun kundalik.\nHar qanday matn bugungi yozuv bo‘ladi.\nOvozli xabar pullik Hafta bilan, kuniga 10 tagacha. Sinov haftasi kirmaydi.",
   botUnknown: "Matn yozing, yozuv qilib saqlayman.",
   botNotReady:
     "Hozir saqlay olmayman.",
@@ -189,7 +189,9 @@ export const uz: Catalog = {
   botVoiceEmpty: "Ovozda so‘z eshitilmadi.",
   botVoiceFail: "Ovozni o‘qib bo‘lmadi. Matn yozing.",
   botVoiceForbidden: "AI Tunnel transkripsiyani rad etdi. Kalitda whisper-1 modeliga ruxsat bering.",
-  botVoiceLimit: "Bugunga ovozli xabar yetarli. Matn yozing.",
+  botVoiceLimit: "Bugun 10 ta ovozli xabar bo‘ldi. Matn yozing.",
+  botVoicePremium:
+    "Ovozli xabarlar pullik Haftadan keyin, kuniga 10 tagacha. Sinov haftasi kirmaydi. Matn yozing.",
   botVoiceNoKey: "Ovozli xabar uchun model kaliti kerak.",
   botSaveFail: "Saqlanmadi. Yana urinib ko‘ring.",
   botCheckinNotReady: "Hozir belgini saqlay olmayman.",

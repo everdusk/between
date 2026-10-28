@@ -1,7 +1,7 @@
 import { normalizeAitunnelKey } from "@/app/api/brief/route";
 
 export const WHISPER_MODEL = "whisper-1";
-export const VOICE_DAILY_LIMIT = 30;
+export const VOICE_DAILY_LIMIT = 10;
 export const VOICE_BODY_MAX = 8000;
 const VOICE_BYTES_MAX = 20 * 1024 * 1024;
 
