@@ -745,13 +745,20 @@ function themeLine(theme: SessionTheme): string {
   return `${theme.id} | ${theme.title} | ${theme.summary} | ×${theme.count} | ${theme.lastSeen}${quotes ? ` | ${quotes}` : ""}`;
 }
 
+const JUDGE_FACT_LIMIT = 3800;
+
 export function judgeFacts(themes: SessionTheme[], entry: Pick<JournalEntry, "id" | "date" | "body" | "feelings">): string {
-  const open = themesForJudge(themes).map(themeLine).join("\n");
-  return [
-    open ? `Открытые темы:\n${open}` : "Открытых тем нет.",
+  const note = [
     `Запись ${entry.date}, отметка ${entry.feelings.join(", ") || "нет"}, интенсивность по отметке ${feelingIntensity(entry.feelings)}.`,
-    entry.body.trim(),
+    entry.body.trim().slice(0, 1200),
   ].join("\n\n");
+  const lines = themesForJudge(themes).map(themeLine);
+  while (lines.length > 0 && `Открытые темы:\n${lines.join("\n")}\n\n${note}`.length > JUDGE_FACT_LIMIT) {
+    lines.pop();
+  }
+  const open = lines.join("\n");
+  const text = [open ? `Открытые темы:\n${open}` : "Открытых тем нет.", note].join("\n\n");
+  return text.length > JUDGE_FACT_LIMIT ? text.slice(0, JUDGE_FACT_LIMIT) : text;
 }
 
 export function dedupFacts(theme: SessionTheme, others: SessionTheme[]): string {
@@ -780,7 +787,7 @@ export function patternAlreadyCurrent(
   return Boolean(text) && savedStamp === stamp;
 }
 
-/** One pattern call after the backlog has settled, and none while it is still moving. */
+/** One pattern call for the themes already on the week. A stuck judge must not hide it. */
 export function patternShouldRequest(input: {
   hasInitData: boolean;
   disabled: boolean;
@@ -792,7 +799,7 @@ export function patternShouldRequest(input: {
   gaveUp: boolean;
   inFlight: boolean;
 }): boolean {
-  if (!input.hasInitData || input.disabled || input.judging) return false;
+  if (!input.hasInitData || input.disabled) return false;
   if (input.themeCount === 0 || input.gaveUp || input.inFlight) return false;
   return !patternAlreadyCurrent(input.savedStamp, input.stamp, input.savedText);
 }

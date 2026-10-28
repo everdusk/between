@@ -80,6 +80,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
     dismissSessionTheme,
     addSessionTheme,
     savePattern,
+    judgeSkipped,
   } = useTherapyStore({
     initData: telegram.initData,
     inTelegram: telegram.inTelegram,
@@ -266,6 +267,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                     themes={store.themes ?? []}
                     themeLinks={store.themeLinks ?? []}
                     judgeSettled={store.judgeSettled ?? []}
+                    judgeSkipped={judgeSkipped}
                     onDiscussTheme={setThemeDiscussed}
                     onDismissTheme={dismissSessionTheme}
                     onAddTheme={addSessionTheme}

@@ -6,6 +6,7 @@ import { isLocale, modelLanguageName, type LocaleId } from "@/lib/i18n";
 import {
   cacheBrief,
   getCachedBrief,
+  getLatestBrief,
   redisConfigured,
   takeBriefAttempt,
 } from "@/lib/redis";
@@ -16,6 +17,13 @@ export type BriefKind = "brief" | "backlog" | "themes" | "judge" | "dedup" | "pa
 
 function settlesJson(kind: BriefKind): boolean {
   return kind === "backlog" || kind === "themes" || kind === "judge" || kind === "dedup";
+}
+
+/** A failed pattern or brief can still show the last paragraph we already wrote. */
+export function textAfterModelFailure(latest: string | null, kind: BriefKind): string | null {
+  if (kind !== "pattern" && kind !== "brief") return null;
+  const text = latest?.trim() ?? "";
+  return text ? text : null;
 }
 
 /** Daily stop per kind. A cached stamp does not count. */
@@ -487,6 +495,7 @@ export async function POST(req: Request) {
   if (!validated) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
+  const userId = validated.user.id;
 
   let body: unknown;
   try {
@@ -532,10 +541,22 @@ export async function POST(req: Request) {
   const tunnelKey = normalizeAitunnelKey(process.env.AITUNNEL_API_KEY);
   const geminiKey = process.env.GEMINI_API_KEY?.trim();
   const groqKey = process.env.GROQ_API_KEY?.trim();
+  async function remembered() {
+    if (!redisConfigured()) return null;
+    return textAfterModelFailure(await getLatestBrief(userId, kind), kind);
+  }
+  if (redisConfigured()) {
+    const cached = await getCachedBrief(userId, stamp);
+    if (cached) return NextResponse.json({ ok: true, text: cached, cached: true });
+  }
   if (!tunnelConfigured && !geminiKey && !groqKey) {
+    const earlier = await remembered();
+    if (earlier) return NextResponse.json({ ok: true, text: earlier, cached: true });
     return NextResponse.json({ ok: true, text: null, reason: "no_model" });
   }
   if (tunnelConfigured && aitunnelKeyProblem(tunnelKey)) {
+    const earlier = await remembered();
+    if (earlier) return NextResponse.json({ ok: true, text: earlier, cached: true });
     return NextResponse.json({
       ok: true,
       text: null,
@@ -547,10 +568,10 @@ export async function POST(req: Request) {
   const budget = modelBudget(kind);
   const day = todayInTimeZone(null);
   if (redisConfigured()) {
-    const cached = await getCachedBrief(validated.user.id, stamp);
-    if (cached) return NextResponse.json({ ok: true, text: cached, cached: true });
-    const allowed = await takeBriefAttempt(validated.user.id, day, budget.limit, budget.bucket);
+    const allowed = await takeBriefAttempt(userId, day, budget.limit, budget.bucket);
     if (!allowed) {
+      const earlier = await remembered();
+      if (earlier) return NextResponse.json({ ok: true, text: earlier, cached: true });
       return NextResponse.json({ ok: true, text: null, reason: "limit" });
     }
   }
@@ -567,6 +588,8 @@ export async function POST(req: Request) {
   }
 
   if (!text) {
+    const earlier = await remembered();
+    if (earlier) return NextResponse.json({ ok: true, text: earlier, cached: true });
     return NextResponse.json({
       ok: true,
       text: null,
@@ -576,7 +599,7 @@ export async function POST(req: Request) {
   }
 
   if (redisConfigured()) {
-    await cacheBrief(validated.user.id, stamp, text);
+    await cacheBrief(userId, stamp, text, kind);
   }
   return NextResponse.json({ ok: true, text });
 }
