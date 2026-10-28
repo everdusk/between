@@ -67,8 +67,9 @@ export const en: Catalog = {
   planOnceMissing: "Date and time needed.",
   planOncePast: "Already passed: {when}.",
   planOnceNext: "Next: {when}.",
-  planWeeklyMissing: "Day and time needed.",
-  planWeekly: "{day} at {time}. Next — {date}.",
+  planWeeklyMissing: "Pick at least one day.",
+  planWeekly: "{days}. Next — {date}.",
+  planSlot: "{day} at {time}",
   weekTitle: "Week",
   weekLead: "{range}",
   spectrumLabel: "Week spectrum",
@@ -186,12 +187,20 @@ export const en: Catalog = {
   moodFlat: "No clear shift in mood across the period.",
   botOpen: "Open Between",
   botHelp:
-    "Between is a journal for the session.\nAny text becomes a note for today.",
+    "Between is a journal for the session.\n\nThe journal is free. Any text here becomes a note for today. I can ask how you are in the morning, afternoon, and evening.\n\nWeek gathers the spectrum, the pattern, and topics for the session. The first 7 days after you open the tab are free. Then {price} Stars for 30 days.\n\nA voice note is saved as text only after Week is paid, up to 10 a day. The 7 free days do not include it.",
   botUnknown:
     "Send text and I will save a note.",
   botNotReady:
     "I cannot save right now.",
   botSaved: "Saved for today.",
+  botVoiceSaved: "Saved for today.\n\n{text}",
+  botVoiceEmpty: "I couldn't hear any words.",
+  botVoiceFail: "I couldn't transcribe that. Send text instead.",
+  botVoiceForbidden: "AI Tunnel refused the transcription. Allow the whisper-1 model for this key.",
+  botVoiceLimit: "That's 10 voice notes for today. Send text.",
+  botVoicePremium:
+    "Voice notes come with a paid Week, up to 10 a day. The free week does not include them. Send text.",
+  botVoiceNoKey: "Voice notes need the model key.",
   botSaveFail: "Did not save. Try again.",
   botCheckinNotReady: "I cannot save the mark right now.",
   botCheckinSaved: "Saved: {feeling}.",

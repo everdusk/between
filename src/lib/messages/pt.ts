@@ -67,8 +67,9 @@ export const pt: Catalog = {
   planOnceMissing: "Faltam data e hora.",
   planOncePast: "Já passou: {when}.",
   planOnceNext: "Próxima: {when}.",
-  planWeeklyMissing: "Faltam dia e hora.",
-  planWeekly: "{day} às {time}. Próxima — {date}.",
+  planWeeklyMissing: "Escolha pelo menos um dia.",
+  planWeekly: "{days}. Próxima — {date}.",
+  planSlot: "{day} às {time}",
   weekTitle: "Semana",
   weekLead: "{range}",
   spectrumLabel: "Espectro da semana",
@@ -179,12 +180,20 @@ export const pt: Catalog = {
   moodFlat: "O humor não mudou de forma clara.",
   botOpen: "Abrir Between",
   botHelp:
-    "Between é um diário para a sessão.\nQualquer texto vira uma nota de hoje.",
+    "Between é um diário para a sessão.\n\nO diário é grátis. Qualquer texto aqui vira uma nota de hoje. Posso perguntar como você está de manhã, à tarde e à noite.\n\nSemana junta o espectro, o padrão e os temas para a sessão. Os primeiros 7 dias depois de abrir a aba são grátis. Depois, {price} Stars por 30 dias.\n\nO áudio vira texto só com a Semana paga, até 10 por dia. Os 7 dias grátis não incluem.",
   botUnknown:
     "Escreva um texto e eu salvo como nota.",
   botNotReady:
     "Agora não consigo salvar.",
   botSaved: "Salva para hoje.",
+  botVoiceSaved: "Salva para hoje.\n\n{text}",
+  botVoiceEmpty: "Não ouvi palavras.",
+  botVoiceFail: "Não consegui transcrever. Envie texto.",
+  botVoiceForbidden: "O AI Tunnel recusou a transcrição. Permita o modelo whisper-1 na chave.",
+  botVoiceLimit: "Hoje já foram 10 áudios. Envie texto.",
+  botVoicePremium:
+    "Áudios vêm com a Semana paga, até 10 por dia. A semana grátis não inclui. Envie texto.",
+  botVoiceNoKey: "Áudios precisam da chave do modelo.",
   botSaveFail: "Não salvou. Tente de novo.",
   botCheckinNotReady: "Agora não consigo salvar a marca.",
   botCheckinSaved: "Salvo: {feeling}.",

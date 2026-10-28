@@ -3,20 +3,38 @@ import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale, type Local
 import { addCheckin, appendBotMessageToToday } from "@/lib/journal-server";
 import { feelingLabel, translate } from "@/lib/messages";
 import {
+  getUserTimezone,
   loadDeviceLocale,
   loadUserLocale,
   loadWeekAccess,
   redisConfigured,
   rememberDeviceLocale,
   saveWeekAccess,
+  takeBriefAttempt,
 } from "@/lib/redis";
 import { appUrl } from "@/lib/telegram-auth";
 import {
+  downloadTelegramFile,
   miniAppKeyboard,
   parseFeelingCallback,
   telegramRequest,
 } from "@/lib/telegram-bot";
-import { WEEK_INVOICE_PAYLOAD, grantWeekPaidUntil } from "@/lib/week-access";
+import { todayInTimeZone } from "@/lib/zoned";
+import {
+  VOICE_DAILY_LIMIT,
+  transcribeVoice,
+  voiceFileName,
+  voiceKeyReady,
+  voiceNoteBody,
+  voiceReplyPreview,
+} from "@/lib/voice";
+import {
+  WEEK_INVOICE_PAYLOAD,
+  grantWeekPaidUntil,
+  isWeekAccessExempt,
+  starPriceFromEnv,
+  voiceNotesOpen,
+} from "@/lib/week-access";
 
 type TelegramChat = { id: number; type?: string };
 type TelegramUser = {
@@ -31,9 +49,17 @@ type SuccessfulPayment = {
   invoice_payload?: string;
   subscription_expiration_date?: number;
 };
+type TelegramMedia = {
+  file_id: string;
+  mime_type?: string;
+  file_size?: number;
+};
 type TelegramMessage = {
   message_id: number;
   text?: string;
+  caption?: string;
+  voice?: TelegramMedia;
+  audio?: TelegramMedia;
   chat: TelegramChat;
   from?: TelegramUser;
   successful_payment?: SuccessfulPayment;
@@ -169,6 +195,89 @@ async function handlePayment(message: TelegramMessage) {
   });
 }
 
+async function handleVoice(
+  message: TelegramMessage,
+  media: TelegramMedia,
+  reply: LocaleId,
+  keyboard: ReturnType<typeof miniAppKeyboard>,
+) {
+  const chatId = message.chat.id;
+  const userId = message.from?.id;
+  const say = (text: string) =>
+    telegramRequest("sendMessage", { chat_id: chatId, text, reply_markup: keyboard });
+
+  if (!userId || !botToken() || !redisConfigured()) {
+    await say(translate(reply, "botNotReady"));
+    return;
+  }
+
+  const access = await loadWeekAccess(userId);
+  const premium = voiceNotesOpen(access, new Date(), {
+    exempt: isWeekAccessExempt(
+      { id: userId, username: message.from?.username },
+      process.env.WEEK_EXEMPT_USER_IDS,
+    ),
+  });
+  if (!premium) {
+    await say(translate(reply, "botVoicePremium"));
+    return;
+  }
+
+  if ((media.file_size ?? 0) > 20 * 1024 * 1024) {
+    await say(translate(reply, "botVoiceFail"));
+    return;
+  }
+
+  if (!voiceKeyReady()) {
+    await say(translate(reply, "botVoiceNoKey"));
+    return;
+  }
+
+  const file = await downloadTelegramFile(media.file_id);
+  if (!file.ok || file.bytes.byteLength === 0 || file.bytes.byteLength > 20 * 1024 * 1024) {
+    await say(translate(reply, "botVoiceFail"));
+    return;
+  }
+
+  const tz = await getUserTimezone(userId);
+  const allowed = await takeBriefAttempt(userId, todayInTimeZone(tz), VOICE_DAILY_LIMIT, "voice");
+  if (!allowed) {
+    await say(translate(reply, "botVoiceLimit"));
+    return;
+  }
+
+  const heard = await transcribeVoice({
+    bytes: file.bytes,
+    filename: voiceFileName(file.path, media.mime_type),
+    language: reply,
+  });
+  if (!heard.ok) {
+    const key =
+      heard.reason === "forbidden"
+        ? "botVoiceForbidden"
+        : heard.reason === "empty"
+          ? "botVoiceEmpty"
+          : heard.reason === "nokey"
+            ? "botVoiceNoKey"
+            : "botVoiceFail";
+    await say(translate(reply, key));
+    return;
+  }
+
+  const body = voiceNoteBody(heard.text, message.caption);
+  if (!body) {
+    await say(translate(reply, "botVoiceEmpty"));
+    return;
+  }
+
+  try {
+    await appendBotMessageToToday(userId, body);
+    await say(translate(reply, "botVoiceSaved", { text: voiceReplyPreview(body) }));
+  } catch {
+    await say(translate(reply, "botSaveFail"));
+  }
+}
+
 export async function POST(req: Request) {
   if (!verifyWebhookSecret(req)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
@@ -210,6 +319,12 @@ export async function POST(req: Request) {
   const userId = message.from?.id;
   const { reply, greeting } = await localesFor(message.from);
   const keyboard = miniAppKeyboard(appUrl(), reply);
+  const media = message.voice ?? message.audio;
+
+  if (media) {
+    await handleVoice(message, media, reply, keyboard);
+    return NextResponse.json({ ok: true });
+  }
 
   if (!text) {
     return NextResponse.json({ ok: true });
@@ -219,7 +334,9 @@ export async function POST(req: Request) {
   if (lower === "/start" || lower.startsWith("/start ") || lower === "/help") {
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: translate(greeting, "botHelp"),
+      text: translate(greeting, "botHelp", {
+        price: starPriceFromEnv(process.env.WEEK_STAR_PRICE),
+      }),
       reply_markup: miniAppKeyboard(appUrl(), greeting),
     });
     return NextResponse.json({ ok: true });

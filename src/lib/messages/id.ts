@@ -67,8 +67,9 @@ export const id: Catalog = {
   planOnceMissing: "Tanggal dan waktu belum ada.",
   planOncePast: "Sudah lewat: {when}.",
   planOnceNext: "Berikutnya: {when}.",
-  planWeeklyMissing: "Hari dan waktu belum ada.",
-  planWeekly: "{day} pukul {time}. Berikutnya — {date}.",
+  planWeeklyMissing: "Pilih setidaknya satu hari.",
+  planWeekly: "{days}. Berikutnya — {date}.",
+  planSlot: "{day} pukul {time}",
   weekTitle: "Minggu",
   weekLead: "{range}",
   spectrumLabel: "Spektrum minggu",
@@ -179,12 +180,20 @@ export const id: Catalog = {
   moodFlat: "Suasana tidak bergeser secara jelas.",
   botOpen: "Buka Between",
   botHelp:
-    "Between adalah jurnal untuk sesi.\nTeks apa pun menjadi catatan hari ini.",
+    "Between adalah jurnal untuk sesi.\n\nJurnalnya gratis. Teks apa pun di sini menjadi catatan hari ini. Saya bisa bertanya kabarmu pagi, siang, dan malam.\n\nMinggu mengumpulkan spektrum, pola, dan topik untuk sesi. 7 hari pertama setelah membuka tab gratis. Lalu {price} Stars untuk 30 hari.\n\nCatatan suara disimpan sebagai teks hanya setelah Minggu dibayar, sampai 10 sehari. 7 hari gratis tidak mencakupnya.",
   botUnknown:
     "Kirim teks, saya simpan sebagai catatan.",
   botNotReady:
     "Sekarang tidak bisa menyimpan.",
   botSaved: "Tersimpan untuk hari ini.",
+  botVoiceSaved: "Tersimpan untuk hari ini.\n\n{text}",
+  botVoiceEmpty: "Tidak terdengar kata.",
+  botVoiceFail: "Tidak bisa menyalin suara. Kirim teks.",
+  botVoiceForbidden: "AI Tunnel menolak transkripsi. Izinkan model whisper-1 pada kunci.",
+  botVoiceLimit: "Hari ini sudah 10 catatan suara. Kirim teks.",
+  botVoicePremium:
+    "Catatan suara ada di Minggu berbayar, sampai 10 sehari. Minggu gratis tidak mencakupnya. Kirim teks.",
+  botVoiceNoKey: "Catatan suara butuh kunci model.",
   botSaveFail: "Tidak tersimpan. Coba lagi.",
   botCheckinNotReady: "Sekarang tidak bisa menyimpan tanda.",
   botCheckinSaved: "Tersimpan: {feeling}.",

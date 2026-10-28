@@ -76,3 +76,26 @@ export async function telegramRequest(
   const result = await telegramCall<unknown>(method, body);
   return result.ok;
 }
+
+/** Downloads a voice or audio file. The bot token stays in the request URL and is not logged. */
+export async function downloadTelegramFile(
+  fileId: string,
+): Promise<{ ok: true; bytes: Uint8Array; path: string } | { ok: false }> {
+  const meta = await telegramCall<{ file_path?: string; file_size?: number }>("getFile", {
+    file_id: fileId,
+  });
+  if (!meta.ok || !meta.result.file_path) return { ok: false };
+  const token = process.env.BOT_TOKEN?.trim();
+  if (!token) return { ok: false };
+  try {
+    const res = await fetch(`https://api.telegram.org/file/bot${token}/${meta.result.file_path}`);
+    if (!res.ok) return { ok: false };
+    return {
+      ok: true,
+      bytes: new Uint8Array(await res.arrayBuffer()),
+      path: meta.result.file_path,
+    };
+  } catch {
+    return { ok: false };
+  }
+}

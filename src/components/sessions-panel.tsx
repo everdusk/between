@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeDateInput } from "@/components/theme-date-input";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/components/locale-provider";
 import { SessionRhythm } from "@/components/session-rhythm";
 import { dateKeysBetween, formatDayLabel, formatLongDate, toDateKey } from "@/lib/dates";
-import { nextWeeklyOccurrence, onceSessionDate } from "@/lib/session-plan";
+import { clockLabel, nextWeeklyOccurrence, onceSessionDate } from "@/lib/session-plan";
 import type { NotifyPrefs, SessionNote, SessionPlan } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -66,9 +66,17 @@ export function SessionsPanel({
   );
 
   const sorted = [...sessions].sort((a, b) => b.date.localeCompare(a.date));
-  const now = new Date();
+  const [now, setNow] = useState(() => new Date());
   const todayKey = toDateKey(now);
   const upcoming = upcomingSession(plan, now);
+  const upcomingAt = upcoming?.getTime() ?? null;
+  useEffect(() => {
+    if (upcomingAt === null) return;
+    const delay = upcomingAt - Date.now() + 1000;
+    if (delay <= 0 || delay > 8 * 24 * 60 * 60 * 1000) return;
+    const timer = window.setTimeout(() => setNow(new Date()), delay);
+    return () => window.clearTimeout(timer);
+  }, [upcomingAt]);
   const upcomingKey = upcoming ? toDateKey(upcoming) : null;
   const daysUntil = upcomingKey ? dateKeysBetween(todayKey, upcomingKey).length - 1 : null;
 
@@ -124,7 +132,7 @@ export function SessionsPanel({
               </p>
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <span className="tabular inline-flex h-8 items-center rounded-full bg-ink-foreground/12 px-3 text-sm font-medium text-ink-foreground">
-                  {plan?.time}
+                  {clockLabel(upcoming)}
                 </span>
                 <span className="inline-flex h-8 items-center rounded-full border border-ink-foreground/15 px-3 text-sm text-ink-muted">
                   {daysUntil === 0

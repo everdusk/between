@@ -1,6 +1,12 @@
-import { addDays, dateKeysBetween, formatDayLabel, formatLongDate, toDateKey } from "@/lib/dates";
+import { addDays, dateKeysBetween, formatDayLabel, formatLongDate, parseDateKey, toDateKey } from "@/lib/dates";
 import { feelingValence, formatFeelings } from "@/lib/feelings";
-import type { Feeling, JournalEntry, SessionNote } from "@/lib/types";
+import {
+  clockLabel,
+  nextWeeklyOccurrence,
+  previousWeeklyOccurrence,
+  weeklySlots,
+} from "@/lib/session-plan";
+import type { Feeling, JournalEntry, SessionNote, SessionPlan } from "@/lib/types";
 
 const EXCERPT_MAX = 180;
 
@@ -22,15 +28,51 @@ export function therapyWeekKey(session: SessionNote | null): string {
   return session ? `since:${session.date}` : "open";
 }
 
-/**
- * The therapy week runs from the day after the last session through today.
- * Without a session it runs from the first note through today, not from Monday.
- */
-export function therapyWindow(
+export type TherapyWindow = {
+  last: SessionNote | null;
+  days: string[];
+  previousDays: string[];
+  /** Notes at this instant still belong to the previous interval. */
+  startsAfter: Date | null;
+  /** Notes after this instant belong to the next interval. */
+  endsAt: Date | null;
+  weekKey: string;
+};
+
+export function entryInstant(entry: Pick<JournalEntry, "createdAt" | "date">): Date {
+  const parsed = new Date(entry.createdAt);
+  if (!Number.isNaN(parsed.getTime())) return parsed;
+  return parseDateKey(entry.date);
+}
+
+export function entryInWindow(
+  entry: Pick<JournalEntry, "createdAt" | "date">,
+  period: Pick<TherapyWindow, "days" | "startsAfter" | "endsAt">,
+): boolean {
+  if (!period.days.includes(entry.date)) return false;
+  const at = entryInstant(entry).getTime();
+  if (period.startsAfter && at <= period.startsAfter.getTime()) return false;
+  if (period.endsAt && at > period.endsAt.getTime()) return false;
+  return true;
+}
+
+function weekdayOf(date: Date): number {
+  return date.getDay() === 0 ? 6 : date.getDay() - 1;
+}
+
+function loggedBoundary(session: SessionNote, slots: { weekday: number; time: string }[]): Date {
+  const day = parseDateKey(session.date);
+  const slot = slots.find((item) => item.weekday === weekdayOf(day));
+  if (!slot) return new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 0, 0);
+  const [hour, minute] = slot.time.split(":").map(Number);
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute, 0, 0);
+}
+
+function dateOnlyWindow(
   sessions: SessionNote[],
   entries: JournalEntry[],
   todayKey: string,
-): { last: SessionNote | null; days: string[]; previousDays: string[] } {
+): TherapyWindow {
   const held = [...sessions]
     .filter((session) => session.date <= todayKey)
     .sort((a, b) => {
@@ -51,7 +93,56 @@ export function therapyWindow(
       );
   const previousDays =
     last && previous ? dateKeysBetween(addDays(previous.date, 1), last.date) : [];
-  return { last, days, previousDays };
+  return {
+    last,
+    days,
+    previousDays,
+    startsAfter: null,
+    endsAt: null,
+    weekKey: therapyWeekKey(last),
+  };
+}
+
+/**
+ * The therapy week runs from the day after the last session through today.
+ * A weekly schedule closes each chosen day at its time: Thursday 17:00 keeps
+ * earlier notes in the ending week and starts the next week after 17:00.
+ * Without a schedule it runs from the first note through today, not from Monday.
+ */
+export function therapyWindow(
+  sessions: SessionNote[],
+  entries: JournalEntry[],
+  todayKey: string,
+  now = new Date(),
+  plan: SessionPlan | null = null,
+): TherapyWindow {
+  const base = dateOnlyWindow(sessions, entries, todayKey);
+  const slots = weeklySlots(plan);
+  if (!plan || slots.length === 0) return base;
+
+  let startsAfter = previousWeeklyOccurrence(plan, now);
+  for (const session of sessions) {
+    if (session.date > todayKey) continue;
+    const boundary = loggedBoundary(session, slots);
+    const onSchedule = slots.some((slot) => slot.weekday === weekdayOf(parseDateKey(session.date)));
+    if (onSchedule && boundary.getTime() > now.getTime()) continue;
+    if (!startsAfter || boundary.getTime() > startsAfter.getTime()) startsAfter = boundary;
+  }
+  if (!startsAfter) return base;
+
+  const endsAt = nextWeeklyOccurrence(plan, new Date(startsAfter.getTime() + 60_000));
+  const onASlot = slots.some(
+    (slot) => slot.weekday === weekdayOf(startsAfter) && slot.time === clockLabel(startsAfter),
+  );
+  const startKey = onASlot ? toDateKey(startsAfter) : addDays(toDateKey(startsAfter), 1);
+  return {
+    last: base.last,
+    days: dateKeysBetween(startKey, todayKey),
+    previousDays: base.previousDays,
+    startsAfter,
+    endsAt,
+    weekKey: `since:${toDateKey(startsAfter)}T${clockLabel(startsAfter)}`,
+  };
 }
 
 function afterSession(entries: JournalEntry[], sessionDate: string): JournalEntry[] {

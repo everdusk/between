@@ -134,11 +134,19 @@ export interface WeekPrep {
 }
 
 /** 0 = Monday … 6 = Sunday */
+export interface SessionSlot {
+  weekday: number;
+  time: string;
+}
+
+/** 0 = Monday … 6 = Sunday. Weekly rhythm keeps one time on each chosen day. */
 export interface SessionPlan {
   mode: "once" | "weekly";
   date: string;
-  time: string; // HH:mm
+  time: string; // HH:mm of the one-off, or the first weekly day
   weekday: number;
+  /** Weekly days. Empty on older plans, which still use weekday + time. */
+  slots?: SessionSlot[];
   updatedAt: string;
 }
 

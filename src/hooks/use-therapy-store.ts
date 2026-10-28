@@ -5,7 +5,7 @@ import { createId, toDateKey, weekKey } from "@/lib/dates";
 import { isFeeling } from "@/lib/feelings";
 import { fetchJournal, mergeStores, putJournal, requestBrief } from "@/lib/journal-api";
 import type { LocaleId } from "@/lib/i18n";
-import { therapyWindow } from "@/lib/session-summary";
+import { entryInWindow, therapyWindow } from "@/lib/session-summary";
 import {
   addManualTheme,
   applyVerdict,
@@ -190,9 +190,14 @@ export function useTherapyStore(options?: {
   }, []);
   useEffect(() => {
     if (!hydrated || !initData) return;
-    const today = toDateKey();
-    const period = therapyWindow(store.sessions, store.entries, today);
-    const pending = pendingJudgeEntries(store.entries, store.judgeSettled ?? [], period.days);
+    const now = new Date();
+    const today = toDateKey(now);
+    const period = therapyWindow(store.sessions, store.entries, today, now, store.sessionPlan);
+    const pending = pendingJudgeEntries(
+      store.entries.filter((entry) => entryInWindow(entry, period)),
+      store.judgeSettled ?? [],
+      period.days,
+    );
     const entry = pending[0];
     if (!entry) return;
     const stamp = judgeStamp(entry);
@@ -260,7 +265,7 @@ export function useTherapyStore(options?: {
         judgeSettled: [...new Set([...(latest.judgeSettled ?? []), stamp])].slice(-400),
       });
     })();
-  }, [hydrated, initData, judgeNudge, locale, persist, store.entries, store.judgeSettled, store.sessions]);
+  }, [hydrated, initData, judgeNudge, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions]);
 
   const resetCorrupted = useCallback(() => {
     const result = clearStore();

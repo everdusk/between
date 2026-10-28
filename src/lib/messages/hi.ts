@@ -67,8 +67,9 @@ export const hi: Catalog = {
   planOnceMissing: "तारीख और समय चाहिए.",
   planOncePast: "बीत चुका: {when}.",
   planOnceNext: "अगला: {when}.",
-  planWeeklyMissing: "दिन और समय चाहिए.",
-  planWeekly: "{day} {time} पर. अगला — {date}.",
+  planWeeklyMissing: "कम से कम एक दिन चुनें.",
+  planWeekly: "{days}. अगला — {date}.",
+  planSlot: "{day} {time} पर",
   weekTitle: "हफ़्ता",
   weekLead: "{range}",
   spectrumLabel: "सप्ताह का स्पेक्ट्रम",
@@ -179,12 +180,20 @@ export const hi: Catalog = {
   moodFlat: "अवधि में मन में साफ बदलाव नहीं.",
   botOpen: "Between खोलें",
   botHelp:
-    "Between सेशन की डायरी है.\nकोई भी पाठ आज का नोट बन जाता है.",
+    "Between सेशन की डायरी है.\n\nडायरी मुफ़्त है. यहाँ कोई भी पाठ आज का नोट बन जाता है. सुबह, दिन और शाम पूछ सकता हूँ कि आप कैसे हैं.\n\n«सप्ताह» स्पेक्ट्रम, पैटर्न और सेशन के विषय समेटता है. टैब खोलने के पहले 7 दिन मुफ़्त हैं. फिर 30 दिन के लिए {price} Stars.\n\nवॉइस नोट भुगतान के बाद ही पाठ बनता है, दिन में 10 तक. मुफ़्त 7 दिन में यह नहीं है.",
   botUnknown:
     "पाठ भेजें, मैं नोट सहेज लूँगा.",
   botNotReady:
     "अभी सहेज नहीं सकता.",
   botSaved: "आज के लिए सहेज लिया.",
+  botVoiceSaved: "आज के लिए सहेजा.\n\n{text}",
+  botVoiceEmpty: "शब्द सुनाई नहीं दिए.",
+  botVoiceFail: "आवाज़ पढ़ नहीं सकी. पाठ भेजें.",
+  botVoiceForbidden: "AI Tunnel ने लिप्यंतरण मना किया. कुंजी में whisper-1 मॉडल की अनुमति दें.",
+  botVoiceLimit: "आज 10 वॉइस नोट हो चुके. पाठ भेजें.",
+  botVoicePremium:
+    "वॉइस नोट भुगतान वाले सप्ताह के साथ हैं, दिन में 10 तक. मुफ्त सप्ताह में ये नहीं हैं. पाठ भेजें.",
+  botVoiceNoKey: "वॉइस नोट के लिए मॉडल कुंजी चाहिए.",
   botSaveFail: "नहीं सहेजा. फिर कोशिश करें.",
   botCheckinNotReady: "अभी निशान नहीं सहेज सकता.",
   botCheckinSaved: "सहेजा: {feeling}.",

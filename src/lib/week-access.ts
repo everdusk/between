@@ -82,6 +82,17 @@ export function isWeekAccessExempt(
   return WEEK_ACCESS_EXEMPT_USERNAMES.some((name) => name.toLowerCase() === username);
 }
 
+/** Voice notes follow a paid «Неделя». The free trial does not open them. */
+export function voiceNotesOpen(
+  record: WeekAccessRecord,
+  now: Date,
+  options?: { exempt?: boolean },
+): boolean {
+  if (options?.exempt) return true;
+  const paidMs = record.paidUntil ? Date.parse(record.paidUntil) : NaN;
+  return Number.isFinite(paidMs) && paidMs > now.getTime();
+}
+
 /** Starts the free week the first time «Неделя» is opened. */
 export function openWeekAccess(record: WeekAccessRecord, now: Date): WeekAccessRecord {
   if (record.openedAt) return record;
