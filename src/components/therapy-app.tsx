@@ -144,7 +144,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
               Between
               {premium ? (
                 <span
-                  className="relative -top-[0.34em] ms-1.5 inline-block text-[0.82em] leading-none"
+                  className="relative -top-[3px] ms-1.5 inline-block text-[0.82em] leading-none"
                   role="img"
                   aria-label={t("premiumMark")}
                 >
