@@ -1,6 +1,8 @@
 import {
   describeWeekAccess,
+  emptyWeekAccess,
   normalizeWeekAccess,
+  type PremiumPlan,
   type WeekAccessRecord,
   type WeekAccessView,
 } from "./week-access";
@@ -10,10 +12,10 @@ const LOCAL_KEY = "between:week-access";
 export function readLocalWeekAccess(): WeekAccessRecord {
   try {
     const raw = window.localStorage.getItem(LOCAL_KEY);
-    if (!raw) return { openedAt: null, paidUntil: null, introSeen: false };
+    if (!raw) return emptyWeekAccess();
     return normalizeWeekAccess(JSON.parse(raw));
   } catch {
-    return { openedAt: null, paidUntil: null, introSeen: false };
+    return emptyWeekAccess();
   }
 }
 
@@ -70,11 +72,18 @@ export async function postWeekAccess(
   }
 }
 
-export async function createWeekInvoice(initData: string): Promise<string | null> {
+export async function createWeekInvoice(
+  initData: string,
+  plan: PremiumPlan,
+): Promise<string | null> {
   try {
     const res = await fetch("/api/week-invoice", {
       method: "POST",
-      headers: { "X-Telegram-Init-Data": initData },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Telegram-Init-Data": initData,
+      },
+      body: JSON.stringify({ plan }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { ok?: boolean; url?: unknown };

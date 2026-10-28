@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale, type LocaleId } from "@/lib/i18n";
 import { addCheckin, appendBotMessageToToday } from "@/lib/journal-server";
-import { feelingLabel, translate } from "@/lib/messages";
+import { countPhrase, feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
 import {
   getUserTimezone,
   loadDeviceLocale,
@@ -29,11 +29,12 @@ import {
   voiceReplyPreview,
 } from "@/lib/voice";
 import {
-  WEEK_INVOICE_PAYLOAD,
+  accessForUser,
   grantWeekPaidUntil,
-  isWeekAccessExempt,
+  paidUntilForPlan,
+  planDays,
+  planFromPayload,
   starPriceFromEnv,
-  voiceNotesOpen,
 } from "@/lib/week-access";
 
 type TelegramChat = { id: number; type?: string };
@@ -159,8 +160,7 @@ async function handleCallback(callback: TelegramCallback) {
 }
 
 async function handlePreCheckout(query: PreCheckoutQuery) {
-  const ours =
-    query.currency === "XTR" && query.invoice_payload === WEEK_INVOICE_PAYLOAD;
+  const ours = query.currency === "XTR" && planFromPayload(query.invoice_payload) !== null;
   const { reply } = await localesFor(query.from);
   await telegramRequest("answerPreCheckoutQuery", {
     pre_checkout_query_id: query.id,
@@ -173,14 +173,10 @@ async function handlePayment(message: TelegramMessage) {
   const payment = message.successful_payment;
   const userId = message.from?.id;
   if (!payment || !userId) return;
-  if (payment.currency !== "XTR" || payment.invoice_payload !== WEEK_INVOICE_PAYLOAD) return;
+  const plan = planFromPayload(payment.invoice_payload);
+  if (payment.currency !== "XTR" || !plan) return;
 
-  const untilSec = payment.subscription_expiration_date;
-  const paidUntil = new Date(
-    (typeof untilSec === "number" && untilSec > 0
-      ? untilSec
-      : Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60) * 1000,
-  ).toISOString();
+  const paidUntil = paidUntilForPlan(plan, new Date(), payment.subscription_expiration_date);
 
   if (redisConfigured()) {
     const current = await loadWeekAccess(userId);
@@ -190,7 +186,7 @@ async function handlePayment(message: TelegramMessage) {
   const { reply } = await localesFor(message.from);
   await telegramRequest("sendMessage", {
     chat_id: message.chat.id,
-    text: translate(reply, "botWeekPaid"),
+    text: translate(reply, "botWeekPaid", { days: countPhrase(reply, planDays(plan), "day") }),
     reply_markup: miniAppKeyboard(appUrl(), reply),
   });
 }
@@ -211,13 +207,15 @@ async function handleVoice(
     return;
   }
 
-  const access = await loadWeekAccess(userId);
-  const premium = voiceNotesOpen(access, new Date(), {
-    exempt: isWeekAccessExempt(
-      { id: userId, username: message.from?.username },
-      process.env.WEEK_EXEMPT_USER_IDS,
-    ),
-  });
+  const loaded = await loadWeekAccess(userId);
+  const resolved = accessForUser(
+    loaded,
+    { id: userId, username: message.from?.username },
+    process.env.WEEK_EXEMPT_USER_IDS,
+    new Date(),
+  );
+  if (resolved.changed) await saveWeekAccess(userId, resolved.record);
+  const premium = resolved.view.status === "paid";
   if (!premium) {
     await say(translate(reply, "botVoicePremium"));
     return;
@@ -338,6 +336,32 @@ export async function POST(req: Request) {
         price: starPriceFromEnv(process.env.WEEK_STAR_PRICE),
       }),
       reply_markup: miniAppKeyboard(appUrl(), greeting),
+    });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (lower === "/premium" || lower.startsWith("/premium ") || lower.startsWith("/premium@")) {
+    if (!userId || !botToken() || !redisConfigured()) {
+      await telegramRequest("sendMessage", {
+        chat_id: chatId,
+        text: translate(reply, "botNotReady"),
+        reply_markup: keyboard,
+      });
+      return NextResponse.json({ ok: true });
+    }
+    const loaded = await loadWeekAccess(userId);
+    const resolved = accessForUser(
+      loaded,
+      { id: userId, username: message.from?.username },
+      process.env.WEEK_EXEMPT_USER_IDS,
+      new Date(),
+      starPriceFromEnv(process.env.WEEK_STAR_PRICE),
+    );
+    if (resolved.changed) await saveWeekAccess(userId, resolved.record);
+    await telegramRequest("sendMessage", {
+      chat_id: chatId,
+      text: formatPremiumStatus(reply, resolved.view),
+      reply_markup: keyboard,
     });
     return NextResponse.json({ ok: true });
   }

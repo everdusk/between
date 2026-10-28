@@ -16,7 +16,7 @@ import {
   resolveBotLocale,
   resolveGreetingLocale,
 } from "./i18n";
-import { catalogsShareKeys, countPhrase, feelingLabel, translate } from "./messages";
+import { catalogsShareKeys, countPhrase, feelingLabel, formatPremiumStatus, translate } from "./messages";
 import { pollText } from "./digest";
 import { feelingKeyboard, parseFeelingCallback } from "./telegram-bot";
 import { buildWeekSpectrum, spectrumHeadline } from "./spectrum";
@@ -56,16 +56,23 @@ import {
   voiceReplyPreview,
 } from "./voice";
 import {
+  applyWhitelistGrant,
   daysPhrase,
   describeWeekAccess,
   isWeekAccessExempt,
   emptyWeekAccess,
   grantWeekPaidUntil,
   markWeekIntroSeen,
+  normalizeWeekAccess,
   openWeekAccess,
+  paidUntilForPlan,
+  planDays,
+  planFromPayload,
+  planPrice,
   starPriceFromEnv,
   TRIAL_MS,
   voiceNotesOpen,
+  whitelistSpan,
 } from "./week-access";
 
 function note(partial: Partial<JournalEntry> & Pick<JournalEntry, "id" | "body">): JournalEntry {
@@ -1042,6 +1049,83 @@ describe("week access", () => {
     assert.equal(isWeekAccessExempt({ id: 42 }, "7, nope 42"), true);
     assert.equal(isWeekAccessExempt({ id: 42 }, ""), false);
     assert.equal(isWeekAccessExempt({ id: 42 }, "12.5"), false);
+    assert.equal(whitelistSpan({ id: 1, username: "@Aliatorovskaia" }), "forever");
+    assert.equal(whitelistSpan({ id: 7, username: "odinzrage" }), null);
+
+    const forever = describeWeekAccess(opened, now, 150, { grant: "forever" });
+    assert.equal(forever.premium, "forever");
+    assert.equal(forever.premiumDaysLeft, 0);
+    assert.equal(formatPremiumStatus("ru", forever), "Премиум без срока.");
+  });
+
+  it("starts a finite whitelist at first sight and keeps voice closed on trial", () => {
+    const ancient = openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000));
+    assert.equal(describeWeekAccess(ancient, now, 150, { grant: "month" }).status, "locked");
+    assert.equal(voiceNotesOpen(ancient, now, { grant: "month" }), false);
+    assert.equal(voiceNotesOpen(openWeekAccess(emptyWeekAccess(), now), now), false);
+
+    const stamped = applyWhitelistGrant(ancient, "month", now);
+    assert.equal(stamped.changed, true);
+    assert.equal(stamped.record.grantFrom, now.toISOString());
+    assert.equal(applyWhitelistGrant(stamped.record, "month", new Date(now.getTime() + 1000)).changed, false);
+    assert.equal(
+      normalizeWeekAccess({ ...stamped.record, grantFrom: stamped.record.grantFrom }).grantFrom,
+      now.toISOString(),
+    );
+
+    const active = describeWeekAccess(stamped.record, now, 150, { grant: "month" });
+    assert.equal(active.status, "paid");
+    assert.equal(active.premium, "timed");
+    assert.equal(active.premiumDaysLeft, 30);
+    assert.equal(voiceNotesOpen(stamped.record, now, { grant: "month" }), true);
+    assert.equal(formatPremiumStatus("ru", active), "Премиум ещё 30 дней.");
+
+    const expiredAt = new Date(now.getTime() + 31 * 24 * 60 * 60 * 1000);
+    const expired = describeWeekAccess(stamped.record, expiredAt, 150, { grant: "month" });
+    assert.equal(expired.status, "locked");
+    assert.equal(expired.premium, "none");
+    assert.equal(voiceNotesOpen(stamped.record, expiredAt, { grant: "month" }), false);
+    assert.equal(formatPremiumStatus("ru", expired), "Премиума нет.");
+
+    const trial = describeWeekAccess(openWeekAccess(emptyWeekAccess(), now), now, 150);
+    assert.equal(trial.premium, "none");
+    assert.equal(formatPremiumStatus("ru", trial), "Премиума нет.\n«Неделя» ещё бесплатна 7 дней.");
+  });
+
+  it("prices three months at 20% off and a year at 50% off", () => {
+    assert.equal(planPrice(150, "month"), 150);
+    assert.equal(planPrice(150, "quarter"), 360);
+    assert.equal(planPrice(150, "year"), 900);
+    assert.equal(planPrice(100, "quarter"), 240);
+    assert.equal(planPrice(100, "year"), 600);
+    assert.equal(planDays("quarter"), 90);
+    assert.equal(planDays("year"), 365);
+    assert.equal(planFromPayload("between-week"), "month");
+    assert.equal(planFromPayload("between-week-quarter"), "quarter");
+    assert.equal(planFromPayload("between-week-year"), "year");
+    assert.equal(planFromPayload("other"), null);
+
+    const exp = Math.floor(now.getTime() / 1000) + 10 * 24 * 60 * 60;
+    assert.equal(paidUntilForPlan("month", now, exp), new Date(exp * 1000).toISOString());
+    assert.equal(
+      paidUntilForPlan("quarter", now, exp),
+      new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+    );
+    assert.equal(
+      paidUntilForPlan("year", now),
+      new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+    );
+
+    const paid = describeWeekAccess(
+      grantWeekPaidUntil(emptyWeekAccess(), new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString()),
+      now,
+      150,
+    );
+    assert.equal(paid.premiumDaysLeft, 5);
+    assert.equal(paid.prices.month, 150);
+    assert.equal(paid.prices.quarter, 360);
+    assert.equal(paid.prices.year, 900);
+    assert.equal(formatPremiumStatus("en", paid), "5 days of premium left.");
   });
 
   it("counts days and falls back to 150 stars", () => {

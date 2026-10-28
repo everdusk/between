@@ -16,6 +16,7 @@ import {
 import {
   markWeekIntroSeen,
   openWeekAccess,
+  type PremiumPlan,
   type WeekAccessView,
 } from "@/lib/week-access";
 
@@ -24,21 +25,27 @@ interface WeekTabProps {
   ready: boolean;
   inTelegram: boolean;
   initData: string;
+  onAccess?: (view: WeekAccessView) => void;
   children: ReactNode;
 }
+
+const PLANS = ["month", "quarter", "year"] as const satisfies readonly PremiumPlan[];
 
 export function WeekTab({
   active,
   ready,
   inTelegram,
   initData,
+  onAccess,
   children,
 }: WeekTabProps) {
   const { t, count } = useI18n();
   const [access, setAccess] = useState<WeekAccessView | null>(null);
   const [failedOpen, setFailedOpen] = useState(false);
-  const [paying, setPaying] = useState(false);
+  const [payingPlan, setPayingPlan] = useState<PremiumPlan | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
+  const onAccessRef = useRef(onAccess);
+  onAccessRef.current = onAccess;
   const alive = useRef(true);
 
   useEffect(() => {
@@ -48,6 +55,11 @@ export function WeekTab({
     };
   }, []);
 
+  function publish(view: WeekAccessView) {
+    setAccess(view);
+    onAccessRef.current?.(view);
+  }
+
   useLayoutEffect(() => {
     if (!active || !ready) return;
     if (inTelegram) return;
@@ -55,7 +67,7 @@ export function WeekTab({
     writeLocalWeekAccess(next);
     // Local preview has no server round-trip; apply it before paint.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read localStorage once the week tab is open
-    setAccess(localWeekView(next));
+    publish(localWeekView(next));
     setFailedOpen(false);
   }, [active, ready, inTelegram]);
 
@@ -74,7 +86,7 @@ export function WeekTab({
         setFailedOpen(true);
         return;
       }
-      setAccess(opened);
+      publish(opened);
       setFailedOpen(false);
     }
 
@@ -89,40 +101,40 @@ export function WeekTab({
     if (!inTelegram) {
       const next = markWeekIntroSeen(readLocalWeekAccess());
       writeLocalWeekAccess(next);
-      setAccess(localWeekView(next));
+      publish(localWeekView(next));
       return;
     }
     const seen = await postWeekAccess(initData, "seen");
     if (!alive.current) return;
-    setAccess(seen ?? { ...access, introSeen: true });
+    publish(seen ?? { ...access, introSeen: true });
   }
 
   async function refreshAfterPay() {
     const first = await fetchWeekAccess(initData);
     if (!alive.current) return;
     if (first && first.status !== "locked") {
-      setAccess(first);
-      setPaying(false);
+      publish(first);
+      setPayingPlan(null);
       return;
     }
     await new Promise((resolve) => window.setTimeout(resolve, 800));
     const second = await fetchWeekAccess(initData);
     if (!alive.current) return;
-    if (second) setAccess(second);
-    setPaying(false);
+    if (second) publish(second);
+    setPayingPlan(null);
     if (!second || second.status === "locked") {
       setPayError(t("payPending"));
     }
   }
 
-  async function pay() {
-    if (!inTelegram || !initData || paying) return;
-    setPaying(true);
+  async function pay(plan: PremiumPlan) {
+    if (!inTelegram || !initData || payingPlan) return;
+    setPayingPlan(plan);
     setPayError(null);
-    const url = await createWeekInvoice(initData);
+    const url = await createWeekInvoice(initData, plan);
     if (!alive.current) return;
     if (!url) {
-      setPaying(false);
+      setPayingPlan(null);
       setPayError(t("payFail"));
       return;
     }
@@ -133,9 +145,16 @@ export function WeekTab({
         void refreshAfterPay();
         return;
       }
-      setPaying(false);
+      setPayingPlan(null);
       if (status === "failed") setPayError(t("payFail"));
     });
+  }
+
+  function planLabel(plan: PremiumPlan, price: number) {
+    if (payingPlan === plan) return t("paying");
+    if (plan === "quarter") return t("payQuarter", { price });
+    if (plan === "year") return t("payYear", { price });
+    return t("payStars", { price });
   }
 
   if (!access) {
@@ -169,20 +188,20 @@ export function WeekTab({
               {t("paywallBody", { price: access.starPrice })}
             </p>
             <div className="space-y-3">
-              <Button
-                type="button"
-                size="lg"
-                className="w-full bg-ink-foreground text-ink hover:bg-ink-foreground/90"
-                disabled={!inTelegram || paying}
-                onClick={() => void pay()}
-              >
-                <Star aria-hidden />
-                {paying
-                  ? t("paying")
-                  : inTelegram
-                    ? t("payStars", { price: access.starPrice })
-                    : t("payInTelegram")}
-              </Button>
+              {PLANS.map((plan) => (
+                <Button
+                  key={plan}
+                  type="button"
+                  size="lg"
+                  className="w-full bg-ink-foreground text-ink hover:bg-ink-foreground/90"
+                  disabled={!inTelegram || payingPlan !== null}
+                  onClick={() => void pay(plan)}
+                >
+                  <Star aria-hidden />
+                  {planLabel(plan, access.prices[plan])}
+                </Button>
+              ))}
+              {!inTelegram && <p className="text-sm text-ink-muted">{t("payInTelegram")}</p>}
               {payError && (
                 <p className="text-sm text-ink-muted" role="alert">
                   {payError}

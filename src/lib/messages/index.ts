@@ -54,6 +54,31 @@ export function countPhrase(locale: LocaleId, count: number, stem: "day" | "note
   return `${count} ${translate(locale, key)}`;
 }
 
+export function formatPremiumStatus(
+  locale: LocaleId,
+  view: {
+    premium: "none" | "timed" | "forever";
+    premiumDaysLeft: number;
+    status: "new" | "trial" | "paid" | "locked";
+    daysLeft: number;
+  },
+): string {
+  const text =
+    view.premium === "forever"
+      ? translate(locale, "botPremiumForever")
+      : view.premium === "timed"
+        ? translate(locale, "botPremiumDays", {
+            days: countPhrase(locale, view.premiumDaysLeft, "day"),
+          })
+        : translate(locale, "botPremiumNone");
+  if (view.premium === "none" && view.status === "trial" && view.daysLeft > 0) {
+    return `${text}\n${translate(locale, "botPremiumTrial", {
+      days: countPhrase(locale, view.daysLeft, "day"),
+    })}`;
+  }
+  return text;
+}
+
 const FEELING_KEY = {
   тревожно: "feelingAnxious",
   спокойно: "feelingCalm",
