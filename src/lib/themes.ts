@@ -771,13 +771,30 @@ export function patternKey(themes: SessionTheme[], locale: string): string {
   return `p:${(hash >>> 0).toString(36)}:${locale}`;
 }
 
-/** The saved brief already matches these themes, so the button must not call the model. */
+/** The saved brief already matches these themes, so the model must not be called. */
 export function patternAlreadyCurrent(
   savedStamp: string | undefined,
   stamp: string,
   text: string,
 ): boolean {
   return Boolean(text) && savedStamp === stamp;
+}
+
+/** One pattern call after the backlog has settled, and none while it is still moving. */
+export function patternShouldRequest(input: {
+  hasInitData: boolean;
+  disabled: boolean;
+  judging: boolean;
+  themeCount: number;
+  savedStamp: string | undefined;
+  stamp: string;
+  savedText: string;
+  gaveUp: boolean;
+  inFlight: boolean;
+}): boolean {
+  if (!input.hasInitData || input.disabled || input.judging) return false;
+  if (input.themeCount === 0 || input.gaveUp || input.inFlight) return false;
+  return !patternAlreadyCurrent(input.savedStamp, input.stamp, input.savedText);
 }
 
 export function patternFacts(themes: SessionTheme[]): string {

@@ -6,7 +6,6 @@ import {
   UNMARKED_FILL,
   buildWeekSpectrum,
   feelingFill,
-  type DaySlice,
 } from "@/lib/spectrum";
 import type { Feeling, JournalEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -16,8 +15,9 @@ interface WeekSpectrumProps {
   dayKeys: string[];
   entries: JournalEntry[];
   todayKey: string;
-  selectedKey: string;
-  onSelect: (dayKey: string) => void;
+  patternTitle: string;
+  patternText: string;
+  patternPending: string;
 }
 
 function spectrumTitle(
@@ -52,15 +52,15 @@ export function WeekSpectrum({
   dayKeys,
   entries,
   todayKey,
-  selectedKey,
-  onSelect,
+  patternTitle,
+  patternText,
+  patternPending,
 }: WeekSpectrumProps) {
-  const { t, locale, feeling, count } = useI18n();
+  const { t, locale, feeling } = useI18n();
   const spectrum = buildWeekSpectrum(dayKeys, entries);
   const noteCount = spectrum.days.reduce((sum, day) => sum + day.slices.length, 0);
   const headline = spectrumLead(spectrum, noteCount, t, feeling);
   const title = spectrumTitle(spectrum, t, feeling);
-  const selected = spectrum.days.find((day) => day.key === selectedKey) ?? spectrum.days[0];
   const lead = spectrum.top[0];
 
   return (
@@ -136,7 +136,6 @@ export function WeekSpectrum({
 
         <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 sm:gap-1.5">
           {spectrum.days.map((day) => {
-            const selectedDay = day.key === selectedKey;
             const isToday = day.key === todayKey;
             const isFuture = day.key > todayKey;
             const names = day.slices.map((slice) =>
@@ -148,27 +147,22 @@ export function WeekSpectrum({
               names.length > 0 ? `: ${names.join("; ")}` : `: ${t("noEntry")}`
             }`;
             return (
-              <button
+              <div
                 key={day.key}
-                type="button"
-                aria-pressed={selectedDay}
+                role="img"
                 aria-label={label}
-                onClick={() => onSelect(day.key)}
                 className={cn(
-                  "flex min-w-11 flex-1 basis-0 flex-col items-center gap-2 rounded-2xl p-1 transition-[background-color,transform] duration-200 active:scale-[0.97]",
-                  "focus-visible:ring-4 focus-visible:ring-ring/25 focus-visible:outline-none",
-                  selectedDay && "bg-foreground/[0.05]",
+                  "flex min-w-11 flex-1 basis-0 flex-col items-center gap-2 rounded-2xl p-1",
                   isFuture && day.slices.length === 0 && "opacity-40",
                 )}
               >
                 <span
                   className={cn(
-                    "flex h-24 w-full flex-col gap-0.5 overflow-hidden rounded-xl p-1 transition-shadow sm:h-28",
+                    "flex h-24 w-full flex-col gap-0.5 overflow-hidden rounded-xl p-1 sm:h-28",
                     day.slices.length === 0
                       ? "border border-dashed border-[color:var(--glass-border)] bg-background/30"
                       : "bg-background/55",
-                    selectedDay && "ring-2 ring-foreground/60",
-                    isToday && !selectedDay && "ring-1 ring-primary/35",
+                    isToday && "ring-1 ring-primary/35",
                   )}
                 >
                   {day.slices.map((slice) => (
@@ -200,96 +194,20 @@ export function WeekSpectrum({
                     {Number(day.key.slice(8))}
                   </span>
                 </span>
-              </button>
+              </div>
             );
           })}
         </div>
 
-        {selected && (
-          <DayReading
-            dayKey={selected.key}
-            slices={selected.slices}
-            entries={entries.filter((entry) => entry.date === selected.key)}
-            locale={locale}
-            feeling={feeling}
-            count={count}
-            emptyDay={t("noNotesDay")}
-            noFeeling={t("noteNoFeeling")}
-          />
+        {(patternText || patternPending) && (
+          <div className="rounded-2xl bg-foreground/[0.04] px-4 py-4">
+            <p className="eyebrow text-muted-foreground">{patternTitle}</p>
+            <p className="mt-2 text-sm leading-relaxed text-foreground/90">
+              {patternText || patternPending}
+            </p>
+          </div>
         )}
       </div>
     </section>
   );
-}
-
-function DayReading({
-  dayKey,
-  slices,
-  entries,
-  locale,
-  feeling,
-  count,
-  emptyDay,
-  noFeeling,
-}: {
-  dayKey: string;
-  slices: DaySlice[];
-  entries: JournalEntry[];
-  locale: string;
-  feeling: (value: Feeling) => string;
-  count: (amount: number, stem: "note") => string;
-  emptyDay: string;
-  noFeeling: string;
-}) {
-  const feelings = [...new Set(slices.flatMap((slice) => slice.feelings))];
-  const withText = entries
-    .filter((entry) => entry.body.trim())
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  const preview = withText.slice(0, 2);
-
-  return (
-    <div className="rounded-2xl bg-foreground/[0.04] px-4 py-4">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <p className="font-display text-lg tracking-tight text-foreground">
-          {formatDayLabel(dayKey, locale)}
-        </p>
-        {slices.length > 1 && (
-          <p className="text-xs text-muted-foreground">{count(slices.length, "note")}</p>
-        )}
-      </div>
-      <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-muted-foreground">
-        {slices.length === 0 ? (
-          <span>{emptyDay}</span>
-        ) : feelings.length > 0 ? (
-          feelings.map((item) => (
-            <span key={item} className="inline-flex items-center gap-1.5">
-              <span
-                aria-hidden
-                className="size-1.5 rounded-full"
-                style={{ background: feelingFill(item) }}
-              />
-              {feeling(item)}
-            </span>
-          ))
-        ) : (
-          <span>{noFeeling}</span>
-        )}
-      </div>
-      {preview.length > 0 && (
-        <ul className="mt-3 space-y-2 border-t border-[color:var(--glass-border)] pt-3">
-          {preview.map((entry) => (
-            <li key={entry.id} className="text-sm leading-relaxed text-foreground/90">
-              {excerpt(entry.body)}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-
-function excerpt(body: string): string {
-  const clean = body.replace(/\s+/g, " ").trim();
-  if (clean.length <= 140) return clean;
-  return `${clean.slice(0, 137).trimEnd()}…`;
 }

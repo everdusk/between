@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Sparkles } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
 import { badgeVariants } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { SessionBacklog } from "@/components/session-backlog";
 import { WeekSpectrum } from "@/components/week-spectrum";
 import {
@@ -21,47 +19,18 @@ import { parseModelThemes, shownEntryTags, themeContextChunks } from "@/lib/tags
 import { feelingFill } from "@/lib/spectrum";
 import { requestBrief } from "@/lib/journal-api";
 import {
-  buildSessionBrief,
   clipPattern,
-  patternAlreadyCurrent,
   patternFacts,
   patternKey,
+  patternShouldRequest,
   pendingJudgeEntries,
   rankedThemes,
-  type BriefCopy,
 } from "@/lib/themes";
 import type { JournalEntry, SessionNote, SessionTheme, ThemeLink, WeekPrep } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import type { MessageKey } from "@/lib/messages";
 
 const themeGaveUp = new Set<string>();
 const patternGaveUp = new Set<string>();
-
-function briefFailure(
-  reason: string | undefined,
-  t: (key: MessageKey, vars?: Record<string, string | number | undefined>) => string,
-): string {
-  if (reason === "limit") return t("briefLimit");
-  if (reason === "no_model") return t("briefNoModel");
-  if (reason?.includes("aitunnel_key_shape")) return t("briefTunnelKey");
-  if (reason?.includes("aitunnel_403")) {
-    const marker = "aitunnel_403:";
-    const at = reason.indexOf(marker);
-    const note = at >= 0 ? reason.slice(at + marker.length).trim() : "";
-    return note ? `${t("briefTunnelForbidden")} ${note}` : t("briefTunnelForbidden");
-  }
-  if (reason?.includes("aitunnel_401")) return t("briefTunnelRejected");
-  if (
-    reason?.includes("gemini_400") ||
-    reason?.includes("gemini_401") ||
-    reason?.includes("gemini_403") ||
-    reason?.includes("groq_401") ||
-    reason?.includes("groq_403")
-  ) {
-    return t("briefBadKey");
-  }
-  return t("briefPlain", { reason: reason ? ` (${reason})` : "" });
-}
 
 interface WeeklyPanelProps {
   entries: JournalEntry[];
@@ -108,10 +77,6 @@ export function WeeklyPanel({
   const prep =
     weekPreps.find((item) => item.weekKey === key) ??
     weekPreps.find((item) => item.weekKey === weekKey(now));
-  const [briefPhase, setBriefPhase] = useState<
-    "idle" | "loading" | "local" | "plain" | "failed"
-  >("idle");
-  const [briefNote, setBriefNote] = useState<string | null>(null);
   const [focusDay, setFocusDay] = useState<string | null>(null);
   const [themeFilter, setThemeFilter] = useState<string | null>(null);
 
@@ -137,42 +102,13 @@ export function WeeklyPanel({
     (byDate.get(day) ?? []).some((entry) => entry.body.trim()),
   ).length;
   const sessionDates = sessions.map((session) => session.date);
-  const briefCopy: BriefCopy = {
-    header: t("briefHeader"),
-    headerOpen: t("briefHeaderOpen"),
-    moodUp: t("moodUp"),
-    moodDown: t("moodDown"),
-    moodFlat: t("moodFlat"),
-    anomaly: t("briefAnomaly"),
-    discussed: t("briefDiscussedTitle"),
-    returned: t("briefReturned"),
-    mark: {
-      new: t("themeNew"),
-      returned: t("themeBack"),
-      week2: t("themeWeek2"),
-      week3: t("themeWeek3"),
-    },
-  };
   const agenda = rankedThemes(themes, todayKey, sessionDates);
   const said = themes
     .filter((theme) => theme.status === "discussed" && !theme.dismissed)
     .sort((a, b) => b.lastSeen.localeCompare(a.lastSeen) || a.title.localeCompare(b.title));
-  const sessionBrief = buildSessionBrief({
-    themes,
-    entries: weekEntries,
-    sessionDates,
-    lastSession: period.last,
-    todayKey,
-    copy: briefCopy,
-    dayLabel: (date) => formatDayLabel(date, locale),
-    longDate: (date) => formatLongDate(date, locale),
-    feelingLabel: feeling,
-    entryPhrase: (amount) => count(amount, "note"),
-    dayPhrase: (amount) => count(amount, "day"),
-  });
   const patternStamp = patternKey(agenda, locale);
-  const patternText =
-    prep?.patternStamp === patternStamp ? clipPattern(sessionBrief.words, prep.patternText ?? "") : "";
+  const patternFactText = patternFacts(agenda);
+  const patternBody = prep?.patternText ? clipPattern(0, prep.patternText) : "";
   const judging = pendingJudgeEntries(weekEntries, judgeSettled, days).length > 0;
   const themeStamp = `t2:${briefStamp(
     weekEntries.filter((entry) => entry.body.trim()),
@@ -237,67 +173,52 @@ export function WeeklyPanel({
   }, [themesSettled, disabled, initData, themeChunkKey, themeStamp, locale, key, onSaveThemes]);
 
   const patternAttempt = useRef<string | null>(null);
+  const savedPatternStamp = prep?.patternStamp;
+  const savedPatternText = prep?.patternText ?? "";
   useEffect(() => {
-    if (!initData || disabled || agenda.length === 0 || prep?.patternStamp === patternStamp) return;
-    if (patternGaveUp.has(patternStamp)) return;
-    if (patternAttempt.current === patternStamp) return;
+    if (
+      !patternShouldRequest({
+        hasInitData: Boolean(initData),
+        disabled: Boolean(disabled),
+        judging,
+        themeCount: agenda.length,
+        savedStamp: savedPatternStamp,
+        stamp: patternStamp,
+        savedText: savedPatternText,
+        gaveUp: patternGaveUp.has(patternStamp),
+        inFlight: patternAttempt.current === patternStamp,
+      })
+    ) {
+      return;
+    }
     patternAttempt.current = patternStamp;
+    const facts = patternFactText;
     let cancelled = false;
     void (async () => {
-      const result = await requestBrief(
-        initData,
-        patternFacts(agenda),
-        patternStamp,
-        locale,
-        "pattern",
-      );
+      const result = await requestBrief(initData as string, facts, patternStamp, locale, "pattern");
       if (cancelled) return;
       if (!result.ok || !result.text) {
         patternGaveUp.add(patternStamp);
         return;
       }
-      onSavePattern(key, clipPattern(sessionBrief.words, result.text), patternStamp);
+      onSavePattern(key, clipPattern(0, result.text), patternStamp);
     })();
     return () => {
       cancelled = true;
     };
   }, [
-    agenda,
+    agenda.length,
     disabled,
     initData,
+    judging,
     key,
     locale,
     onSavePattern,
+    patternFactText,
     patternStamp,
-    prep?.patternStamp,
-    sessionBrief.words,
+    savedPatternStamp,
+    savedPatternText,
   ]);
-
-  async function formulate() {
-    setBriefPhase("loading");
-    setBriefNote(null);
-    if (!initData) {
-      setBriefPhase("local");
-      setBriefNote(t("briefLocal"));
-      return;
-    }
-    if (agenda.length === 0) {
-      setBriefPhase("idle");
-      return;
-    }
-    if (patternAlreadyCurrent(prep?.patternStamp, patternStamp, patternText)) {
-      setBriefPhase("idle");
-      return;
-    }
-    const result = await requestBrief(initData, patternFacts(agenda), patternStamp, locale, "pattern");
-    if (!result.ok || !result.text) {
-      setBriefPhase(result.ok ? "plain" : "failed");
-      setBriefNote(result.ok ? briefFailure(result.reason, t) : t("briefFail"));
-      return;
-    }
-    onSavePattern(key, clipPattern(sessionBrief.words, result.text), patternStamp);
-    setBriefPhase("idle");
-  }
 
   const notesPhrase = count(weekEntries.length, "note");
   const notesSpace = notesPhrase.indexOf(" ");
@@ -319,14 +240,27 @@ export function WeeklyPanel({
         dayKeys={days}
         entries={weekEntries}
         todayKey={todayKey}
-        selectedKey={selectedDay}
-        onSelect={(day) => {
-          setFocusDay(day);
-          document.getElementById(`week-day-${day}`)?.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-          });
-        }}
+        patternTitle={t("briefPatternTitle")}
+        patternText={patternBody}
+        patternPending={
+          patternBody
+            ? ""
+            : judging
+              ? t("backlogRefreshing")
+              : patternShouldRequest({
+                    hasInitData: Boolean(initData),
+                    disabled: Boolean(disabled),
+                    judging: false,
+                    themeCount: agenda.length,
+                    savedStamp: savedPatternStamp,
+                    stamp: patternStamp,
+                    savedText: savedPatternText,
+                    gaveUp: patternGaveUp.has(patternStamp),
+                    inFlight: false,
+                  })
+                ? t("formulating")
+                : ""
+        }
       />
 
       <div className="grid grid-cols-2 gap-4">
@@ -358,90 +292,6 @@ export function WeeklyPanel({
         onAdd={onAddTheme}
         onOpenNote={setFocusDay}
       />
-
-      <section className="ink relative overflow-hidden rounded-3xl p-5 sm:p-6">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-20 -end-20 size-56 rounded-full bg-ink-foreground/[0.06] blur-2xl"
-        />
-        <div className="relative space-y-4">
-          <div className="space-y-1.5">
-            <p className="eyebrow text-ink-muted">{t("briefTitle")}</p>
-            <p className="text-sm text-ink-muted">
-              {t("briefStats", {
-                days: noteDays,
-                total: days.length,
-                count: weekEntries.length,
-              })}
-            </p>
-          </div>
-          <div className="space-y-4 text-[0.9375rem] leading-relaxed text-ink-foreground/95">
-            <p>{sessionBrief.header}</p>
-            {sessionBrief.mood && <p>{sessionBrief.mood}</p>}
-            {sessionBrief.anomalies.map((item) => (
-              <p key={item.date}>{t("briefAnomaly", { day: item.label, themes: item.themes })}</p>
-            ))}
-            {sessionBrief.themes.map((theme) => (
-              <div key={theme.id} className="space-y-1.5">
-                <p>
-                  {theme.title}
-                  <span className="text-ink-muted">
-                    {" "}
-                    · ×{theme.count}
-                    {theme.peak ? ` · ${theme.peak}` : ""} · {briefCopy.mark[theme.mark]}
-                  </span>
-                </p>
-                {theme.quotes.map((quote) => (
-                  <button
-                    key={`${quote.entryId}:${quote.text}`}
-                    type="button"
-                    className="block text-start text-ink-foreground/80 underline-offset-4 hover:underline"
-                    onClick={() => {
-                      setFocusDay(quote.date);
-                      document.getElementById(`week-day-${quote.date}`)?.scrollIntoView({
-                        behavior: "smooth",
-                        block: "nearest",
-                      });
-                    }}
-                  >
-                    {formatDayLabel(quote.date, locale)}: {quote.text}
-                  </button>
-                ))}
-              </div>
-            ))}
-            {sessionBrief.discussed.length > 0 && (
-              <div className="space-y-1">
-                <p className="text-ink-muted">{t("briefDiscussedTitle")}</p>
-                {sessionBrief.discussed.map((item) => (
-                  <p key={item.id}>
-                    {item.title}
-                    {item.reopened ? ` — ${t("briefReturned")}` : ""}
-                  </p>
-                ))}
-              </div>
-            )}
-            {patternText && (
-              <div className="space-y-1">
-                <p className="text-ink-muted">{t("briefPatternTitle")}</p>
-                <p>{patternText}</p>
-              </div>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-3 pt-1">
-            <Button
-              type="button"
-              variant="secondary"
-              className="bg-ink-foreground/12 text-ink-foreground hover:bg-ink-foreground/20"
-              disabled={disabled || briefPhase === "loading"}
-              onClick={() => void formulate()}
-            >
-              <Sparkles aria-hidden />
-              {briefPhase === "loading" ? t("formulating") : t("formulate")}
-            </Button>
-            {briefNote && <p className="text-sm text-ink-muted">{briefNote}</p>}
-          </div>
-        </div>
-      </section>
 
       {weekTags.length > 0 && (
         <div className="space-y-3 px-2 pt-3">
