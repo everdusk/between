@@ -143,7 +143,11 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
             <p className="font-display text-[1.375rem] leading-none tracking-tight text-foreground">
               Between
               {premium ? (
-                <span className="ms-1.5 align-middle text-[0.9em]" role="img" aria-label={t("premiumMark")}>
+                <span
+                  className="relative -top-[0.34em] ms-1.5 inline-block text-[0.82em] leading-none"
+                  role="img"
+                  aria-label={t("premiumMark")}
+                >
                   ⭐
                 </span>
               ) : null}
