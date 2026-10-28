@@ -1,0 +1,29 @@
+Between — медиа для каталога
+Бот: https://t.me/BetweenJournalBot
+Приложение: https://between-rouge.vercel.app/
+
+Куда что класть
+- description-ru-640x360.png и description-en-640x360.png — картинка описания в BotFather, ровно 640×360.
+- ru/ и en/ — превью профиля Main Mini App и скриншоты каталога. Семь кадров, все 840×1688, меньше 1 МБ. Порядок файлов — порядок в карусели. Для превью Telegram язык ru и en загружаются отдельно.
+- Найдите FindMini или другой каталог: те же семь кадров, они одного размера.
+
+Порядок кадров
+1. Дневник, новая запись
+2. Заметки за день
+3. Календарь
+4. Спектр недели
+5. Что обсудить
+6. Ближайший сеанс
+7. Прошлый сеанс
+
+Кратко, английский (15 слов)
+A private journal between therapy sessions: notes, feelings, a week spectrum, and themes to discuss.
+
+Кратко, русский (12 слов)
+Личный дневник между сеансами: заметки, самочувствие, спектр недели и темы к разговору.
+
+Описание, русский (239 знаков)
+Between — личный дневник между сеансами. Пишите заметки и отмечайте самочувствие. Неделя собирает спектр с прошлой встречи и темы, которые стоит обсудить. В сеансах — ритм, напоминания и итог: что обсудили, что поняли и что сделать дальше.
+
+Описание, английский (267 знаков)
+Between is a private journal between therapy sessions. Write notes and mark how you feel. The week gathers a spectrum since the last meeting and the themes worth bringing up. Sessions keep the rhythm, reminders, and a record of what you discussed and want to do next.
