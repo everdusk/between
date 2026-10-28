@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import type { WebApp } from "@twa-dev/types";
 import {
+  applyDevicePerformance,
+  applyTelegramChrome,
   applyTelegramSafeArea,
   applyTelegramTheme,
   applyViewportHeight,
@@ -58,6 +60,7 @@ export function useTelegram(): TelegramSession {
       const user = wa.initDataUnsafe?.user ?? null;
       if (inTelegram) {
         applyTelegramTheme(wa.themeParams, wa.colorScheme);
+        applyTelegramChrome(wa);
         applyViewportHeight(wa.viewportStableHeight || wa.viewportHeight);
       } else {
         clearTelegramThemeOverrides();
@@ -83,15 +86,10 @@ export function useTelegram(): TelegramSession {
         webApp = mod.default;
         const inTelegram = isLikelyTelegram(webApp);
 
+        applyDevicePerformance(navigator.userAgent);
         if (inTelegram) {
           webApp.ready();
           webApp.expand();
-          try {
-            webApp.setHeaderColor("bg_color");
-            webApp.setBackgroundColor("bg_color");
-          } catch {
-            // Older clients may not support header/background colors
-          }
           applyTelegramSafeArea(webApp.safeAreaInset, webApp.contentSafeAreaInset);
         }
 

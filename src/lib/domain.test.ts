@@ -33,7 +33,15 @@ import {
   themeContextChunks,
 } from "./tags";
 import type { ThemeParams } from "@twa-dev/types";
-import { applyTelegramSafeArea, applyTelegramTheme, panelColor, schemeFromColor } from "./telegram";
+import {
+  applyDevicePerformance,
+  applyTelegramSafeArea,
+  applyTelegramTheme,
+  panelColor,
+  performanceClassFromUserAgent,
+  schemeFromColor,
+  telegramChromeColor,
+} from "./telegram";
 import { sheetShouldDismiss } from "./sheet";
 import {
   aitunnelKeyProblem,
@@ -907,6 +915,111 @@ describe("telegram theme", () => {
     globalThis.document = previous;
     assert.equal(props.get("--tg-safe-area-bottom"), "34px");
     assert.equal(props.has("--tg-content-safe-area-bottom"), false);
+  });
+
+  it("maps section, subtitle, accent, and link colors", () => {
+    const props = new Map<string, string>();
+    const previous = globalThis.document;
+    globalThis.document = {
+      documentElement: {
+        dataset: {},
+        style: {
+          setProperty(name: string, value: string) {
+            props.set(name, value);
+          },
+          removeProperty(name: string) {
+            props.delete(name);
+          },
+        },
+      },
+    } as unknown as Document;
+
+    applyTelegramTheme(
+      {
+        bg_color: "#17212b",
+        text_color: "#f5f5f5",
+        section_header_text_color: "#6ab2f2",
+        subtitle_text_color: "#708499",
+        accent_text_color: "#e5b25d",
+        link_color: "#6ab3f3",
+      } as unknown as ThemeParams,
+      "dark",
+    );
+    assert.equal(props.get("--section-header"), "#6ab2f2");
+    assert.equal(props.get("--subtitle"), "#708499");
+    assert.equal(props.get("--accent-text"), "#e5b25d");
+    assert.equal(props.get("--link"), "#6ab3f3");
+
+    applyTelegramTheme({ bg_color: "#17212b" } as unknown as ThemeParams, "dark");
+    assert.equal(props.has("--section-header"), false);
+    assert.equal(props.has("--link"), false);
+    globalThis.document = previous;
+  });
+
+  it("keeps a hex chrome color and falls back when the value is not #RRGGBB", () => {
+    assert.equal(telegramChromeColor("#17212b", "bg_color"), "#17212b");
+    assert.equal(telegramChromeColor(undefined, "bg_color"), "bg_color");
+    assert.equal(telegramChromeColor("red", "secondary_bg_color"), "secondary_bg_color");
+    assert.equal(telegramChromeColor("#abc", "bottom_bar_bg_color"), "bottom_bar_bg_color");
+  });
+
+  it("reads the Android performance class and ignores other clients", () => {
+    const low =
+      "Mozilla/5.0 (Linux; Android 14; sdk_gphone64_arm64) AppleWebKit/537.36 Telegram-Android/11.3.3 (Google sdk_gphone64_arm64; Android 14; SDK 34; LOW)";
+    assert.equal(performanceClassFromUserAgent(low), "LOW");
+    assert.equal(
+      performanceClassFromUserAgent(low.replace("LOW", "AVERAGE")),
+      "AVERAGE",
+    );
+    assert.equal(performanceClassFromUserAgent(low.replace("LOW", "HIGH")), "HIGH");
+    assert.equal(performanceClassFromUserAgent("Telegram-Android/11.3.3"), null);
+    assert.equal(
+      performanceClassFromUserAgent(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Telegram-iOS/10.0",
+      ),
+      null,
+    );
+
+    const previous = globalThis.document;
+    const root = { dataset: {} as { performance?: string } };
+    globalThis.document = { documentElement: root } as unknown as Document;
+    assert.equal(applyDevicePerformance(low), "LOW");
+    assert.equal(root.dataset.performance, "low");
+    assert.equal(applyDevicePerformance("Mozilla/5.0"), null);
+    assert.equal(root.dataset.performance, undefined);
+    globalThis.document = previous;
+  });
+
+  it("writes every safe-area edge, including the content inset", () => {
+    const props = new Map<string, string>();
+    const previous = globalThis.document;
+    globalThis.document = {
+      documentElement: {
+        dataset: {},
+        style: {
+          setProperty(name: string, value: string) {
+            props.set(name, value);
+          },
+          removeProperty(name: string) {
+            props.delete(name);
+          },
+        },
+      },
+    } as unknown as Document;
+
+    applyTelegramSafeArea(
+      { top: 0, right: 4, bottom: 34, left: 4 },
+      { top: 56, right: 0, bottom: 12, left: 0 },
+    );
+    globalThis.document = previous;
+    assert.equal(props.has("--tg-safe-area-top"), false);
+    assert.equal(props.get("--tg-safe-area-right"), "4px");
+    assert.equal(props.get("--tg-safe-area-bottom"), "34px");
+    assert.equal(props.get("--tg-safe-area-left"), "4px");
+    assert.equal(props.get("--tg-content-safe-area-top"), "56px");
+    assert.equal(props.has("--tg-content-safe-area-right"), false);
+    assert.equal(props.get("--tg-content-safe-area-bottom"), "12px");
+    assert.equal(props.has("--tg-content-safe-area-left"), false);
   });
 });
 

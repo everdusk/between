@@ -173,7 +173,7 @@ export function WeekTab({
     return (
       <div className="space-y-4">
         <div className="space-y-2 px-2 pt-1 pb-1">
-          <p className="eyebrow text-muted-foreground">{t("weekTitle")}</p>
+          <p className="eyebrow text-section-header">{t("weekTitle")}</p>
         </div>
         <section className="ink relative overflow-hidden rounded-3xl p-6 sm:p-7">
           <div

@@ -15,7 +15,7 @@ const badgeVariants = cva(
         outline:
           "border-[color:var(--glass-border)] bg-background/40 text-foreground [a]:hover:bg-background/70",
         ghost: "hover:bg-muted hover:text-muted-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-link underline-offset-4 hover:underline",
       },
     },
     defaultVariants: {
