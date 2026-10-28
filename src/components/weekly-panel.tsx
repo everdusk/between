@@ -20,6 +20,7 @@ import { feelingFill } from "@/lib/spectrum";
 import { requestBrief } from "@/lib/journal-api";
 import {
   clipPattern,
+  judgeStamp,
   patternFacts,
   patternKey,
   patternShouldRequest,
@@ -40,6 +41,7 @@ interface WeeklyPanelProps {
   themes: SessionTheme[];
   themeLinks: ThemeLink[];
   judgeSettled: string[];
+  judgeSkipped?: string[];
   onDiscussTheme: (id: string, discussed: boolean) => void;
   onDismissTheme: (id: string) => void;
   onAddTheme: (title: string) => void;
@@ -62,6 +64,7 @@ export function WeeklyPanel({
   themes,
   themeLinks,
   judgeSettled,
+  judgeSkipped = [],
   onDiscussTheme,
   onDismissTheme,
   onAddTheme,
@@ -120,7 +123,11 @@ export function WeeklyPanel({
   const patternStamp = patternKey(agenda, locale);
   const patternFactText = patternFacts(agenda);
   const patternBody = prep?.patternText ? clipPattern(0, prep.patternText) : "";
-  const judging = pendingJudgeEntries(weekEntries, judgeSettled, days).length > 0;
+  const skippedJudges = new Set(judgeSkipped);
+  const judging =
+    pendingJudgeEntries(weekEntries, judgeSettled, days).filter(
+      (entry) => !skippedJudges.has(judgeStamp(entry)),
+    ).length > 0;
   const themeStamp = `t2:${briefStamp(
     weekEntries.filter((entry) => entry.body.trim()),
     "",
@@ -216,6 +223,7 @@ export function WeeklyPanel({
     })();
     return () => {
       cancelled = true;
+      if (patternAttempt.current === patternStamp) patternAttempt.current = null;
     };
   }, [
     agenda.length,
@@ -256,21 +264,19 @@ export function WeeklyPanel({
         patternPending={
           patternBody
             ? ""
-            : judging
-              ? t("backlogRefreshing")
-              : patternShouldRequest({
-                    hasInitData: Boolean(initData),
-                    disabled: Boolean(disabled),
-                    judging: false,
-                    themeCount: agenda.length,
-                    savedStamp: savedPatternStamp,
-                    stamp: patternStamp,
-                    savedText: savedPatternText,
-                    gaveUp: patternGaveUp.has(patternStamp),
-                    inFlight: false,
-                  })
-                ? t("formulating")
-                : ""
+            : patternShouldRequest({
+                  hasInitData: Boolean(initData),
+                  disabled: Boolean(disabled),
+                  judging,
+                  themeCount: agenda.length,
+                  savedStamp: savedPatternStamp,
+                  stamp: patternStamp,
+                  savedText: savedPatternText,
+                  gaveUp: patternGaveUp.has(patternStamp),
+                  inFlight: false,
+                })
+              ? t("formulating")
+              : ""
         }
       />
 

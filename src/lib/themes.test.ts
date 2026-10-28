@@ -7,6 +7,7 @@ import {
   briefWordLimit,
   buildSessionBrief,
   clipPattern,
+  judgeFacts,
   patternAlreadyCurrent,
   patternKey,
   patternShouldRequest,
@@ -504,7 +505,38 @@ describe("session brief", () => {
     assert.equal(patternAlreadyCurrent(stamp, moved, "Тревога перед звонком."), false);
   });
 
-  it("asks for a pattern once the backlog has settled", () => {
+  it("keeps a judge request inside the brief limit when many themes are open", () => {
+    const themes = Array.from({ length: 15 }, (_, index) => {
+      const theme: SessionTheme = {
+        id: `theme-${index}`,
+        userId: "local",
+        title: "конфликты с мамой из-за границ ".repeat(4),
+        status: "active",
+        count: 3,
+        firstSeen: "2026-10-01",
+        lastSeen: `2026-10-${String(index + 1).padStart(2, "0")}`,
+        peakIntensity: 8,
+        reopened: false,
+        dismissed: false,
+        confidence: 0.9,
+        summary: "длинное описание паттерна ".repeat(6),
+        quotes: Array.from({ length: 3 }, (__, quote) => ({
+          entryId: `e-${index}-${quote}`,
+          date: "2026-10-20",
+          text: "Мама опять обиделась и сказала, что я её не слышу, ".repeat(3),
+          intensity: 8,
+        })),
+        updatedAt: "2026-10-20T00:00:00.000Z",
+      };
+      return theme;
+    });
+    const facts = judgeFacts(themes, entry("note", "Сегодня снова сорвалась на звонке.", ["злость"]));
+    assert.ok(facts.length <= 3800);
+    assert.match(facts, /Сегодня снова сорвалась/);
+    assert.match(facts, /Открытые темы/);
+  });
+
+  it("asks for a pattern even while another note is still being judged", () => {
     const ready = {
       hasInitData: true,
       disabled: false,
@@ -517,7 +549,7 @@ describe("session brief", () => {
       inFlight: false,
     };
     assert.equal(patternShouldRequest(ready), true);
-    assert.equal(patternShouldRequest({ ...ready, judging: true }), false);
+    assert.equal(patternShouldRequest({ ...ready, judging: true }), true);
     assert.equal(patternShouldRequest({ ...ready, savedStamp: ready.stamp, savedText: "Уже есть." }), false);
     assert.equal(patternShouldRequest({ ...ready, inFlight: true }), false);
     assert.equal(patternShouldRequest({ ...ready, gaveUp: true }), false);

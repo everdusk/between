@@ -177,6 +177,8 @@ export function useTherapyStore(options?: {
   const judgeTries = useRef<Record<string, number>>({});
   const judgeTimer = useRef<number | null>(null);
   const judgeAlive = useRef(true);
+  const judgeSkippedRef = useRef<string[]>([]);
+  const [judgeSkipped, setJudgeSkipped] = useState<string[]>([]);
   const [judgeNudge, setJudgeNudge] = useState(0);
   useEffect(() => {
     judgeAlive.current = true;
@@ -193,11 +195,12 @@ export function useTherapyStore(options?: {
     const now = new Date();
     const today = toDateKey(now);
     const period = therapyWindow(store.sessions, store.entries, today, now, store.sessionPlan);
+    const held = new Set(judgeSkippedRef.current);
     const pending = pendingJudgeEntries(
       store.entries.filter((entry) => entryInWindow(entry, period)),
       store.judgeSettled ?? [],
       period.days,
-    );
+    ).filter((entry) => !held.has(judgeStamp(entry)));
     const entry = pending[0];
     if (!entry) return;
     const stamp = judgeStamp(entry);
@@ -215,15 +218,23 @@ export function useTherapyStore(options?: {
       if (!judgeAlive.current || judgeRun.current !== stamp) return;
       const verdict = result.ok && result.text ? parseJudgeVerdict(result.text) : null;
       if (!verdict) {
+        const reason = result.ok ? (result.reason ?? "") : result.error;
         const tries = (judgeTries.current[stamp] ?? 0) + 1;
         judgeTries.current[stamp] = tries;
         judgeRun.current = null;
-        if (judgeAlive.current && tries < 6) {
+        const retry =
+          tries < 2 && (reason === "network" || reason.startsWith("model_failed"));
+        if (retry && judgeAlive.current) {
           if (judgeTimer.current !== null) window.clearTimeout(judgeTimer.current);
           judgeTimer.current = window.setTimeout(() => {
             judgeTimer.current = null;
             setJudgeNudge((n) => n + 1);
           }, 8000);
+          return;
+        }
+        if (!judgeSkippedRef.current.includes(stamp)) {
+          judgeSkippedRef.current = [...judgeSkippedRef.current, stamp];
+          setJudgeSkipped(judgeSkippedRef.current);
         }
         return;
       }
@@ -265,7 +276,7 @@ export function useTherapyStore(options?: {
         judgeSettled: [...new Set([...(latest.judgeSettled ?? []), stamp])].slice(-400),
       });
     })();
-  }, [hydrated, initData, judgeNudge, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions]);
+  }, [hydrated, initData, judgeNudge, judgeSkipped, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions]);
 
   const resetCorrupted = useCallback(() => {
     const result = clearStore();
@@ -576,6 +587,7 @@ export function useTherapyStore(options?: {
     dismissSessionTheme,
     addSessionTheme,
     savePattern,
+    judgeSkipped,
     refreshCloud: syncFromCloud,
   };
 }

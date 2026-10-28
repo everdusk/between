@@ -42,6 +42,10 @@ function briefKey(userId: number | string, stamp: string): string {
   return `between:user:${userId}:brief:${stamp}`;
 }
 
+function latestBriefKey(userId: number | string, kind: string): string {
+  return `between:user:${userId}:brief-latest:${kind}`;
+}
+
 function briefCountKey(userId: number | string, dateKey: string): string {
   return `between:user:${userId}:brief-count:${dateKey}`;
 }
@@ -153,10 +157,26 @@ export async function cacheBrief(
   userId: number | string,
   stamp: string,
   text: string,
+  kind?: string,
 ): Promise<void> {
   const redis = getRedis();
   if (!redis) return;
-  await redis.set(briefKey(userId, stamp), text, { ex: 60 * 60 * 24 * 21 });
+  const ttl = 60 * 60 * 24 * 21;
+  await redis.set(briefKey(userId, stamp), text, { ex: ttl });
+  if (kind === "pattern" || kind === "brief") {
+    await redis.set(latestBriefKey(userId, kind), text, { ex: ttl });
+  }
+}
+
+/** Last successful paragraph for this kind, when the exact stamp is not cached. */
+export async function getLatestBrief(
+  userId: number | string,
+  kind: string,
+): Promise<string | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const text = await redis.get<string>(latestBriefKey(userId, kind));
+  return text || null;
 }
 
 export async function loadWeekAccess(userId: number | string): Promise<WeekAccessRecord> {

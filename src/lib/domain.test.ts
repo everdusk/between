@@ -51,6 +51,7 @@ import {
   aitunnelKeyProblem,
   briefSystemPrompt,
   modelBudget,
+  textAfterModelFailure,
   normalizeAitunnelKey,
   resolveAitunnelModel,
   resolveGroqModel,
@@ -1113,6 +1114,13 @@ describe("model budget", () => {
     assert.deepEqual(modelBudget("judge"), { limit: 30, bucket: "judge" });
     assert.deepEqual(modelBudget("dedup"), { limit: 30, bucket: "judge" });
     assert.deepEqual(modelBudget("brief"), { limit: 8, bucket: "brief" });
+  });
+
+  it("keeps the last pattern when a fresh call fails", () => {
+    assert.equal(textAfterModelFailure("Старый паттерн.", "pattern"), "Старый паттерн.");
+    assert.equal(textAfterModelFailure("  ", "pattern"), null);
+    assert.equal(textAfterModelFailure("вердикт", "judge"), null);
+    assert.equal(textAfterModelFailure(null, "brief"), null);
   });
 });
 
