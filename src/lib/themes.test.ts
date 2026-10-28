@@ -9,6 +9,7 @@ import {
   clipPattern,
   patternAlreadyCurrent,
   patternKey,
+  patternShouldRequest,
   dismissTheme,
   modelRequestStamp,
   openThemes,
@@ -501,5 +502,26 @@ describe("session brief", () => {
     const moved = patternKey([{ ...theme, count: 3 }], "ru");
     assert.notEqual(moved, stamp);
     assert.equal(patternAlreadyCurrent(stamp, moved, "Тревога перед звонком."), false);
+  });
+
+  it("asks for a pattern once the backlog has settled", () => {
+    const ready = {
+      hasInitData: true,
+      disabled: false,
+      judging: false,
+      themeCount: 1,
+      savedStamp: "p:old:ru",
+      stamp: "p:new:ru",
+      savedText: "Старый абзац.",
+      gaveUp: false,
+      inFlight: false,
+    };
+    assert.equal(patternShouldRequest(ready), true);
+    assert.equal(patternShouldRequest({ ...ready, judging: true }), false);
+    assert.equal(patternShouldRequest({ ...ready, savedStamp: ready.stamp, savedText: "Уже есть." }), false);
+    assert.equal(patternShouldRequest({ ...ready, inFlight: true }), false);
+    assert.equal(patternShouldRequest({ ...ready, gaveUp: true }), false);
+    assert.equal(patternShouldRequest({ ...ready, hasInitData: false }), false);
+    assert.equal(patternShouldRequest({ ...ready, themeCount: 0 }), false);
   });
 });
