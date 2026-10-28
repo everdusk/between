@@ -138,7 +138,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
       </div>
 
       <header className="relative z-10">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-3 px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-2 sm:px-6">
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-3 ps-[max(1.25rem,var(--safe-left))] pe-[max(1.25rem,var(--safe-right))] pt-[max(1.25rem,var(--safe-top))] pb-2 sm:ps-[max(1.5rem,var(--safe-left))] sm:pe-[max(1.5rem,var(--safe-right))]">
           <div className="min-w-0">
             <p className="font-display text-[1.375rem] leading-none tracking-tight text-foreground">
               Between
@@ -152,7 +152,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                 </span>
               ) : null}
             </p>
-            <p className="mt-1.5 truncate text-xs text-muted-foreground">{greeting}</p>
+            <p className="mt-1.5 truncate text-xs text-subtitle">{greeting}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {!telegram.inTelegram && telegram.ready && (
@@ -188,7 +188,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-lg flex-1 px-4 pt-3 pb-4 sm:px-5">
+      <main className="relative z-10 mx-auto w-full max-w-lg flex-1 ps-[max(1rem,var(--safe-left))] pe-[max(1rem,var(--safe-right))] pt-3 pb-4 sm:ps-[max(1.25rem,var(--safe-left))] sm:pe-[max(1.25rem,var(--safe-right))]">
         {status === "loading" && (
           <div
             className="glass rounded-3xl px-6 py-14 text-center"
@@ -274,7 +274,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
               </TabsContent>
             </div>
 
-            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center px-4 pb-[max(1.25rem,env(safe-area-inset-bottom),var(--tg-safe-area-bottom,0px))]">
+            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center ps-[max(1rem,var(--safe-left))] pe-[max(1rem,var(--safe-right))] pb-[max(1.25rem,var(--safe-bottom))]">
               <TabsList
                 variant="dock"
                 aria-label={t("sections")}
@@ -295,7 +295,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
         )}
       </main>
 
-      <footer className="relative z-10 px-4 pb-28 text-center text-[0.6875rem] leading-relaxed tracking-wide text-muted-foreground/80">
+      <footer className="relative z-10 ps-[max(1rem,var(--safe-left))] pe-[max(1rem,var(--safe-right))] pb-[calc(7rem+var(--safe-bottom))] text-center text-[0.6875rem] leading-relaxed tracking-wide text-muted-foreground/80">
         Between
         {syncLabel === "cloud"
           ? ` · ${t("syncCloud")}`

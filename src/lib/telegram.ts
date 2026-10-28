@@ -70,6 +70,7 @@ export function applyTelegramTheme(theme: ThemeParams, colorScheme: "light" | "d
 
   const set = (name: string, value: string | undefined) => {
     if (value) root.style.setProperty(name, value);
+    else root.style.removeProperty(name);
   };
 
   set("--tg-bg-color", theme.bg_color);
@@ -81,6 +82,15 @@ export function applyTelegramTheme(theme: ThemeParams, colorScheme: "light" | "d
   set("--tg-destructive-color", theme.destructive_text_color);
   set("--tg-section-bg-color", theme.section_bg_color);
   set("--tg-link-color", theme.link_color);
+  set("--tg-header-bg-color", theme.header_bg_color);
+  set("--tg-bottom-bar-bg-color", theme.bottom_bar_bg_color);
+  set("--tg-accent-text-color", theme.accent_text_color);
+  set("--tg-section-header-text-color", theme.section_header_text_color);
+  set("--tg-subtitle-text-color", theme.subtitle_text_color);
+  set("--section-header", theme.section_header_text_color);
+  set("--subtitle", theme.subtitle_text_color);
+  set("--accent-text", theme.accent_text_color);
+  set("--link", theme.link_color);
 
   // Soft override of app tokens so the Mini App matches Telegram chrome
   set("--background", theme.bg_color);
@@ -103,6 +113,71 @@ export function applyTelegramTheme(theme: ThemeParams, colorScheme: "light" | "d
   set("--input", panel);
   set("--destructive", theme.destructive_text_color);
   set("--ring", theme.button_color || theme.link_color);
+}
+
+export type TelegramChromeFallback = "bg_color" | "secondary_bg_color" | "bottom_bar_bg_color";
+
+/** Hex from themeParams, otherwise a keyword Telegram accepts for chrome colors. */
+export function telegramChromeColor<T extends TelegramChromeFallback>(
+  color: string | undefined,
+  fallback: T,
+): T | `#${string}` {
+  if (color && /^#[\da-fA-F]{6}$/.test(color)) return color as `#${string}`;
+  return fallback;
+}
+
+export function applyTelegramChrome(webApp: WebApp) {
+  const theme = webApp.themeParams;
+  const header = telegramChromeColor(theme?.header_bg_color, "bg_color");
+  const background = telegramChromeColor(theme?.bg_color, "bg_color");
+  const bottom = telegramChromeColor(theme?.bottom_bar_bg_color, "bg_color");
+  try {
+    webApp.setHeaderColor(header);
+  } catch {
+    // Bot API older than 6.1
+  }
+  try {
+    webApp.setBackgroundColor(background);
+  } catch {
+    // Bot API older than 6.1
+  }
+  try {
+    webApp.setBottomBarColor(bottom);
+  } catch {
+    // Bot API older than 7.10
+  }
+}
+
+export type DevicePerformance = "LOW" | "AVERAGE" | "HIGH";
+
+const ANDROID_PERFORMANCE =
+  /Telegram-Android\/[\d.]+ \([^;]*; Android [^;]*; SDK \d+; (LOW|AVERAGE|HIGH)\)/;
+
+/** Android Mini App appends LOW, AVERAGE, or HIGH to the user agent. */
+export function performanceClassFromUserAgent(ua: string): DevicePerformance | null {
+  const match = ANDROID_PERFORMANCE.exec(ua);
+  if (!match) return null;
+  return match[1] as DevicePerformance;
+}
+
+export function applyDevicePerformance(ua: string) {
+  const root = document.documentElement;
+  const level = performanceClassFromUserAgent(ua);
+  if (!level) {
+    delete root.dataset.performance;
+    return null;
+  }
+  root.dataset.performance = level.toLowerCase();
+  return level;
+}
+
+/** Selection click, the same feedback Telegram uses for lists and segmented controls. */
+export function telegramSelection() {
+  try {
+    telegramWebApp()?.HapticFeedback.selectionChanged();
+  } catch {
+    // Haptics are missing outside Telegram and on older clients.
+  }
 }
 
 export function applyViewportHeight(height: number) {
@@ -130,25 +205,34 @@ export function setTelegramVerticalSwipes(enabled: boolean) {
   }
 }
 
-export function applyTelegramSafeArea(
-  safe?: { bottom?: number } | null,
-  content?: { bottom?: number } | null,
-) {
+type EdgeInsets = {
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+} | null | undefined;
+
+const EDGES = ["top", "right", "bottom", "left"] as const;
+
+function writeInsets(prefix: "safe-area" | "content-safe-area", insets: EdgeInsets) {
   const root = document.documentElement;
-  const bottom = Math.max(safe?.bottom ?? 0, 0);
-  const contentBottom = Math.max(content?.bottom ?? 0, 0);
-  if (bottom) root.style.setProperty("--tg-safe-area-bottom", `${bottom}px`);
-  else root.style.removeProperty("--tg-safe-area-bottom");
-  if (contentBottom) {
-    root.style.setProperty("--tg-content-safe-area-bottom", `${contentBottom}px`);
-  } else {
-    root.style.removeProperty("--tg-content-safe-area-bottom");
+  for (const edge of EDGES) {
+    const name = `--tg-${prefix}-${edge}`;
+    const value = Math.max(insets?.[edge] ?? 0, 0);
+    if (value) root.style.setProperty(name, `${value}px`);
+    else root.style.removeProperty(name);
   }
+}
+
+export function applyTelegramSafeArea(safe?: EdgeInsets, content?: EdgeInsets) {
+  writeInsets("safe-area", safe);
+  writeInsets("content-safe-area", content);
 }
 
 export function clearTelegramThemeOverrides() {
   const root = document.documentElement;
   delete root.dataset.telegramTheme;
+  delete root.dataset.performance;
   root.style.removeProperty("color-scheme");
   const keys = [
     "--tg-bg-color",
@@ -160,9 +244,24 @@ export function clearTelegramThemeOverrides() {
     "--tg-destructive-color",
     "--tg-section-bg-color",
     "--tg-link-color",
+    "--tg-header-bg-color",
+    "--tg-bottom-bar-bg-color",
+    "--tg-accent-text-color",
+    "--tg-section-header-text-color",
+    "--tg-subtitle-text-color",
+    "--section-header",
+    "--subtitle",
+    "--accent-text",
+    "--link",
     "--tg-viewport-stable-height",
+    "--tg-safe-area-top",
+    "--tg-safe-area-right",
     "--tg-safe-area-bottom",
+    "--tg-safe-area-left",
+    "--tg-content-safe-area-top",
+    "--tg-content-safe-area-right",
     "--tg-content-safe-area-bottom",
+    "--tg-content-safe-area-left",
     "--background",
     "--foreground",
     "--muted-foreground",

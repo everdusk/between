@@ -15,7 +15,7 @@ import {
 } from "@/lib/dates";
 import { sheetShouldDismiss } from "@/lib/sheet";
 import { feelingFill } from "@/lib/spectrum";
-import { setTelegramVerticalSwipes } from "@/lib/telegram";
+import { setTelegramVerticalSwipes, telegramSelection } from "@/lib/telegram";
 import type { Feeling } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -197,7 +197,7 @@ export function EntryCalendar({
             onPointerUp={onSheetPointerEnd}
             onPointerCancel={onSheetPointerEnd}
           >
-            <div className="glass-strong rounded-t-3xl px-4 pt-1 pb-[max(1.25rem,env(safe-area-inset-bottom),var(--tg-safe-area-bottom,0px))]">
+            <div className="glass-strong rounded-t-3xl ps-[max(1rem,var(--safe-left))] pe-[max(1rem,var(--safe-right))] pt-1 pb-[max(1.25rem,var(--safe-bottom))]">
               <div className="flex cursor-grab justify-center py-3 active:cursor-grabbing">
                 <div aria-hidden className="h-1 w-10 rounded-full bg-foreground/20" />
               </div>
@@ -256,6 +256,7 @@ export function EntryCalendar({
                       aria-pressed={selected}
                       aria-label={label}
                       onClick={() => {
+                        telegramSelection();
                         onChange(day);
                         setOpen(false);
                       }}

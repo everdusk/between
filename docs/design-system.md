@@ -20,7 +20,7 @@
 
 Светлая морская гамма: пена и камень. В коде зафиксировано, чего не делать: не фиолетовый, не крем с терракотой.
 
-Одна колонка, `max-w-lg`. Это Telegram Mini App, не десктопный журнал. Снизу плавающий док, контент не должен прятаться под него: у оболочки нижний отступ с `env(safe-area-inset-bottom)`.
+Одна колонка, `max-w-lg`. Это Telegram Mini App, не десктопный журнал. Снизу плавающий док, контент не должен прятаться под него: отступы оболочки и листа календаря идут через `--safe-top`, `--safe-right`, `--safe-bottom` и `--safe-left`.
 
 На экране одна тёмная **ink**-плитка. Она держит фокус: бриф, ближайший сеанс, пэйволл. Остальное — стекло на открытом фоне, без карточки-обёртки на всю вкладку.
 
@@ -30,7 +30,7 @@
 
 Вне Telegram цвета берутся из `:root` в `globals.css`.
 
-Внутри Telegram `applyTelegramTheme` перезаписывает токены из `themeParams`. Стекло считается от них через `color-mix`, поэтому плитки и док повторяют тему клиента. Градиент фона в Telegram выключается, остаётся сплошной `bg_color`.
+Внутри Telegram `applyTelegramTheme` перезаписывает токены из `themeParams`. Стекло считается от них через `color-mix`, поэтому плитки и док повторяют тему клиента. Градиент фона в Telegram выключается, остаётся сплошной `bg_color`. `applyTelegramChrome` красит шапку, фон WebView и нижнюю панель Android: шестнадцатеричный цвет из темы, иначе ключевое слово `bg_color`.
 
 | Токен | В Telegram |
 | --- | --- |
@@ -41,6 +41,12 @@
 | `--border` | `section_separator_color`, иначе `hint_color` |
 | `--destructive` | `destructive_text_color` |
 | `--muted`, `--secondary`, `--accent`, `--input` | фон панели (`panelColor`) |
+| `--section-header` | `section_header_text_color`, иначе как hint |
+| `--subtitle` | `subtitle_text_color`, иначе как hint |
+| `--accent-text` | `accent_text_color`, иначе `--primary` |
+| `--link` | `link_color`, иначе `--primary` |
+
+`--safe-*` — максимум из `env(safe-area-inset-*)`, безопасной зоны Telegram и content safe area, по всем четырём краям. Пустое значение темы снимает inline-переменную, чтобы снова сработал запасной токен из `:root`.
 
 Правила, которые легко сломать:
 
@@ -81,10 +87,10 @@
 | `Input`, `Textarea` | Уже 44px и `rounded-2xl`. У `Textarea` ставить `resize-none`. |
 | `Label` | Над полем, цвет приглушённый. Не дублировать заголовок секции. |
 | `Badge` | `secondary` — чувство на записи, с точкой `feelingFill`. `outline` — тема. `default` — выбранный фильтр, если это не свой чип. |
-| `Tabs` | Оболочка: `TabsList variant="dock"`. Нажатие на тач — сразу, без hover-первого тапа. Высота пилюли 48px, `touch-manipulation`, `active:scale-[0.97]`. Обычный `default` — сегмент внутри плитки (режим сеанса собран вручную по тому же приёму). |
+| `Tabs` | Оболочка: `TabsList variant="dock"`. Нажатие на тач — сразу, без hover-первого тапа. Высота пилюли 48px, `touch-manipulation`, `active:scale-[0.97]`. Активный таб дока — `bg-primary` / `text-primary-foreground` (`button_color`). Смена вкладки вызывает `HapticFeedback.selectionChanged`. |
 | `Switch` | Напоминания. Под капотом нативный checkbox, подпись в `label`. |
 | `ThemeDateInput` | Время и дата сеанса. Всегда с `display` — локализованная строка. Нативный пикер остаётся, видимый текст не отдавать браузеру: он рисует дату в своём формате и чёрным. |
-| `EntryCalendar` | Дата в дневнике. Месяц открывается нижним листом до края экрана (`z-40`, портал в `document.body`, скругление только сверху). Пока лист открыт — `disableVerticalSwipes`, иначе Telegram сворачивает Mini App по той же ручке. Ручка тянет сам лист: вниз закрывает, короткий жест возвращает. Месяц с понедельника. Число — круг `size-10`; выбранный день залит `bg-foreground` только в круге. Точка под числом (`size-2`, `feelingFill`, без чувства — `foreground`) не перекрашивается у выбранного дня. Пустой день без точки. Сегодня — кольцо `ring-primary`, если день не выбран. Будущие дни приглушены и выключены, без общей `opacity` на кнопке. |
+| `EntryCalendar` | Дата в дневнике. Месяц открывается нижним листом до края экрана (`z-40`, портал в `document.body`, скругление только сверху). Пока лист открыт — `disableVerticalSwipes`, иначе Telegram сворачивает Mini App по той же ручке. Ручка тянет сам лист: вниз закрывает, короткий жест возвращает. Месяц с понедельника. Число — круг `size-10`; выбранный день залит `bg-foreground` только в круге. Точка под числом (`size-2`, `feelingFill`, без чувства — `foreground`) не перекрашивается у выбранного дня. Пустой день без точки. Сегодня — кольцо `ring-primary`, если день не выбран. Будущие дни приглушены и выключены, без общей `opacity` на кнопке. Отступы листа — `--safe-left`, `--safe-right`, `--safe-bottom`. Выбор дня вызывает `selectionChanged`. |
 
 Состояние «сохранено» — короткая вспышка с иконкой `Check` на 1.8 секунды, цвет `text-primary`. Отдельный тост не заводить.
 
@@ -103,9 +109,9 @@
 
 Смотреть `src/components/therapy-app.tsx`.
 
-1. Шапка: Literata «Between», приветствие `text-xs text-muted-foreground`, пилюля языка (`Languages` + подпись + `native-overlay` на `<select>`).
-2. Контент вкладки без общей карточки. Заголовок экрана: `eyebrow` и `font-display` около `2.125rem` / `leading-[1.05]`.
-3. Док фиксирован снизу, `variant="dock"`, три вкладки с иконками Lucide: `PenLine`, `Waves`, `CalendarDays`. Активная — тёмная пилюля. Нижний отступ — `max(1.25rem, env(safe-area-inset-bottom), var(--tg-safe-area-bottom))`, чтобы не сидеть в зоне жеста Telegram.
+1. Шапка: Literata «Between», приветствие `text-xs text-subtitle`, пилюля языка (`Languages` + подпись + `native-overlay` на `<select>`). Верхний и боковые отступы — `max(1.25rem, var(--safe-*))`.
+2. Контент вкладки без общей карточки. Заголовок экрана: `eyebrow text-section-header` и `font-display` около `2.125rem` / `leading-[1.05]`. Акцентная подпись внутри плитки — `text-accent-text`. Ссылка — `text-link`.
+3. Док фиксирован снизу, `variant="dock"`, три вкладки с иконками Lucide: `PenLine`, `Waves`, `CalendarDays`. Активная пилюля красится `button_color`. Нижний отступ — `max(1.25rem, var(--safe-bottom))`, боковые — `--safe-left` и `--safe-right`.
 4. Подвал со статусом синка — мелкий трекинг, не конкурирует с доком.
 
 Иконки только из `lucide-react`. Размер по умолчанию задаёт кнопка; в чипе и подписи — `size-3` / `size-4` и `aria-hidden`.
@@ -114,7 +120,7 @@
 
 Пятна фона `drift` 24–30s. Полоска загрузки `loading-slide` 1.1s. Вход вкладки — `animate-in fade-in slide-in-from-bottom-2 duration-500`. Нажатие контрола — `active:scale-[0.97]` или `0.98`.
 
-`prefers-reduced-motion: reduce` уже гасит пятна и полоску загрузки. Новую бесконечную анимацию добавлять рядом с этим правилом.
+`prefers-reduced-motion: reduce` гасит пятна, полоску загрузки, `animate-in` и `animate-ping`. На Android с классом LOW в User-Agent (`html[data-performance="low"]`) стекло теряет blur, пятна и зерно скрыты, декоративный `blur-2xl` / `blur-3xl` выключен, бесконечные анимации стоят. Новую бесконечную анимацию добавлять в оба правила.
 
 ## Чего не добавлять по дороге
 

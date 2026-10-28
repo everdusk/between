@@ -237,7 +237,7 @@ export function WeeklyPanel({
   return (
     <div className="space-y-4">
       <div className="space-y-2 px-2 pt-1 pb-1">
-        <p className="eyebrow text-muted-foreground">{t("weekTitle")}</p>
+        <p className="eyebrow text-section-header">{t("weekTitle")}</p>
         <h2 className="font-display text-[2.125rem] leading-[1.05] tracking-tight text-foreground sm:text-[2.5rem]">
           {period.last && days.length === 0
             ? t("afterSessionLead", { date: formatLongDate(period.last.date, locale) })
@@ -306,7 +306,7 @@ export function WeeklyPanel({
 
       {weekTags.length > 0 && (
         <div className="space-y-3 px-2 pt-3">
-          <p className="eyebrow text-muted-foreground">{t("themes")}</p>
+          <p className="eyebrow text-section-header">{t("themes")}</p>
           <div className="flex flex-wrap gap-2" aria-label={t("themes")}>
             {weekTags.map((item) => {
               const pressed = activeTheme === item.tag;
@@ -373,7 +373,7 @@ export function WeeklyPanel({
                   {formatDayLabel(day, locale)}
                 </span>
                 {day === todayKey && (
-                  <span className="eyebrow rounded-full bg-primary/10 px-2 py-1 text-[0.6rem] text-primary">
+                  <span className="eyebrow rounded-full bg-primary/10 px-2 py-1 text-[0.6rem] text-accent-text">
                     {t("todayTitle")}
                   </span>
                 )}

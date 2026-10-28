@@ -150,7 +150,7 @@ export function JournalPanel({
       <section className="glass-strong relative overflow-hidden rounded-3xl p-5 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="eyebrow text-muted-foreground">
+            <p className="eyebrow text-section-header">
               {isToday ? t("todayTitle") : t("journalTitle")}
             </p>
             <h2 className="mt-3 font-display text-[2.125rem] leading-[1.05] tracking-tight text-foreground sm:text-[2.5rem]">

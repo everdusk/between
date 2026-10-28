@@ -115,7 +115,7 @@ export function SessionsPanel({
   return (
     <div className="space-y-4">
       <div className="space-y-2 px-2 pt-1 pb-1">
-        <p className="eyebrow text-muted-foreground">{t("sessionsTitle")}</p>
+        <p className="eyebrow text-section-header">{t("sessionsTitle")}</p>
       </div>
 
       <section className="ink relative overflow-hidden rounded-3xl p-5 sm:p-6">
@@ -305,7 +305,7 @@ export function SessionsPanel({
                     <div className="overflow-hidden">
                       <div className="space-y-4 border-t border-[color:var(--glass-border)] px-5 py-5 text-sm leading-relaxed">
                         <div>
-                          <p className="eyebrow mb-2 text-muted-foreground">
+                          <p className="eyebrow mb-2 text-section-header">
                             {t("discussedShort")}
                           </p>
                           <p className="whitespace-pre-wrap text-foreground/90">
@@ -314,7 +314,7 @@ export function SessionsPanel({
                         </div>
                         {session.insights && (
                           <div>
-                            <p className="eyebrow mb-2 text-muted-foreground">
+                            <p className="eyebrow mb-2 text-section-header">
                               {t("insightsShort")}
                             </p>
                             <p className="whitespace-pre-wrap text-foreground/90">
@@ -324,7 +324,7 @@ export function SessionsPanel({
                         )}
                         {session.homework && (
                           <div className="rounded-2xl bg-primary/[0.07] px-4 py-3.5">
-                            <p className="eyebrow mb-2 text-primary">
+                            <p className="eyebrow mb-2 text-accent-text">
                               {t("nextShort")}
                             </p>
                             <p className="whitespace-pre-wrap text-foreground/90">

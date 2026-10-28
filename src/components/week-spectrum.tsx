@@ -78,7 +78,7 @@ export function WeekSpectrum({
 
       <div className="relative space-y-6">
         <div className="space-y-2">
-          <p id="week-spectrum-title" className="eyebrow text-muted-foreground">
+          <p id="week-spectrum-title" className="eyebrow text-section-header">
             {t("spectrumLabel")}
           </p>
           <p className="font-display text-[2.125rem] leading-[1.05] tracking-tight text-foreground sm:text-[2.5rem]">
@@ -201,7 +201,7 @@ export function WeekSpectrum({
 
         {(patternText || patternPending) && (
           <div className="rounded-2xl bg-foreground/[0.04] px-4 py-4">
-            <p className="eyebrow text-muted-foreground">{patternTitle}</p>
+            <p className="eyebrow text-section-header">{patternTitle}</p>
             <p className="mt-2 text-sm leading-relaxed text-foreground/90">
               {patternText || patternPending}
             </p>
