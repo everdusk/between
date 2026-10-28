@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { loadWeekAccess, redisConfigured, saveWeekAccess } from "@/lib/redis";
 import { validateInitData } from "@/lib/telegram-auth";
 import {
-  describeWeekAccess,
-  isWeekAccessExempt,
+  accessForUser,
   markWeekIntroSeen,
   openWeekAccess,
   starPriceFromEnv,
@@ -28,17 +27,24 @@ function authed(req: Request) {
   return { user: validated.user };
 }
 
-function view(record: WeekAccessRecord, user: WeekAccessIdentity) {
-  return describeWeekAccess(record, new Date(), starPriceFromEnv(process.env.WEEK_STAR_PRICE), {
-    exempt: isWeekAccessExempt(user, process.env.WEEK_EXEMPT_USER_IDS),
-  });
+async function granted(record: WeekAccessRecord, user: WeekAccessIdentity) {
+  const resolved = accessForUser(
+    record,
+    user,
+    process.env.WEEK_EXEMPT_USER_IDS,
+    new Date(),
+    starPriceFromEnv(process.env.WEEK_STAR_PRICE),
+  );
+  if (resolved.changed) await saveWeekAccess(user.id, resolved.record);
+  return resolved;
 }
 
 export async function GET(req: Request) {
   const auth = authed(req);
   if ("error" in auth) return auth.error;
   const record = await loadWeekAccess(auth.user.id);
-  return NextResponse.json({ ok: true, access: view(record, auth.user) });
+  const resolved = await granted(record, auth.user);
+  return NextResponse.json({ ok: true, access: resolved.view });
 }
 
 export async function POST(req: Request) {
@@ -61,6 +67,7 @@ export async function POST(req: Request) {
     action === "open"
       ? openWeekAccess(current, new Date())
       : markWeekIntroSeen(current);
-  await saveWeekAccess(auth.user.id, next);
-  return NextResponse.json({ ok: true, access: view(next, auth.user) });
+  const resolved = await granted(next, auth.user);
+  if (!resolved.changed) await saveWeekAccess(auth.user.id, resolved.record);
+  return NextResponse.json({ ok: true, access: resolved.view });
 }

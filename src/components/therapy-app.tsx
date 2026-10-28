@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CalendarDays, ChevronDown, Languages, PenLine, Waves } from "lucide-react";
 import { JournalPanel } from "@/components/journal-panel";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
@@ -15,6 +15,8 @@ import { LOCALES } from "@/lib/i18n";
 import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
+import { fetchWeekAccess, localWeekView, readLocalWeekAccess } from "@/lib/week-access-client";
+import type { WeekAccessView } from "@/lib/week-access";
 
 const SECTIONS = ["journal", "week", "sessions"] as const;
 
@@ -85,7 +87,32 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
   });
 
   const [section, setSection] = useState<SectionId>("journal");
+  const [premium, setPremium] = useState(false);
+  const tabOwnsAccess = useRef(false);
   const disabled = status !== "ready";
+  useEffect(() => {
+    if (!telegram.ready) return;
+    if (!telegram.inTelegram) {
+      if (tabOwnsAccess.current) return;
+      setPremium(localWeekView(readLocalWeekAccess()).status === "paid");
+      return;
+    }
+    if (!telegram.initData) return;
+    let cancelled = false;
+    void fetchWeekAccess(telegram.initData).then((view) => {
+      if (cancelled || tabOwnsAccess.current || !view) return;
+      setPremium(view.status === "paid");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [telegram.ready, telegram.inTelegram, telegram.initData]);
+
+  function onWeekAccess(view: WeekAccessView) {
+    tabOwnsAccess.current = true;
+    setPremium(view.status === "paid");
+  }
+
   const name = shownName(telegram.displayName, translate(greetingLocale, "guest"));
   const greeting = !telegram.ready
     ? translate(greetingLocale, "loading")
@@ -115,6 +142,11 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
           <div className="min-w-0">
             <p className="font-display text-[1.375rem] leading-none tracking-tight text-foreground">
               Between
+              {premium ? (
+                <span className="ms-1.5 align-middle text-[0.9em]" role="img" aria-label={t("premiumMark")}>
+                  ⭐
+                </span>
+              ) : null}
             </p>
             <p className="mt-1.5 truncate text-xs text-muted-foreground">{greeting}</p>
           </div>
@@ -204,6 +236,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                   ready={telegram.ready}
                   inTelegram={telegram.inTelegram}
                   initData={telegram.initData}
+                  onAccess={onWeekAccess}
                 >
                   <WeeklyPanel
                     entries={store.entries}
