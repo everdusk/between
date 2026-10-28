@@ -134,7 +134,7 @@ export function WeekSpectrum({
           </div>
         )}
 
-        <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 sm:gap-1.5">
+        <div className="-mx-1 flex w-full min-w-0 gap-1 overflow-x-auto px-1 pb-1 sm:gap-1.5">
           {spectrum.days.map((day) => {
             const isToday = day.key === todayKey;
             const isFuture = day.key > todayKey;
@@ -202,7 +202,7 @@ export function WeekSpectrum({
         {(patternText || patternPending) && (
           <div className="rounded-2xl bg-foreground/[0.04] px-4 py-4">
             <p className="eyebrow text-section-header">{patternTitle}</p>
-            <p className="mt-2 text-sm leading-relaxed text-foreground/90">
+            <p className="mt-2 break-words text-sm leading-relaxed text-foreground/90">
               {patternText || patternPending}
             </p>
           </div>

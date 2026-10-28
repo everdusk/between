@@ -175,7 +175,10 @@ export function EntryCalendar({
   const sheet =
     open &&
     createPortal(
-      <div className="fixed inset-0 z-40 overscroll-none">
+      <div
+        className="fixed inset-x-0 z-40 overscroll-none"
+        style={{ top: "var(--vv-top, 0px)", height: "var(--vv-height, var(--tg-viewport-height, 100dvh))" }}
+      >
         <button
           ref={overlayRef}
           type="button"

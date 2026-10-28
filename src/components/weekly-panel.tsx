@@ -394,7 +394,7 @@ export function WeeklyPanel({
                           : ""}
                       </p>
                       {entry.body.trim() && (
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+                        <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">
                           {entry.body}
                         </p>
                       )}

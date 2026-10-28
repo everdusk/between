@@ -146,7 +146,7 @@ export function SessionBacklog({
                                 : ""}
                             </span>
                             {entry.body.trim() && (
-                              <span className="mt-1 block whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">
+                              <span className="mt-1 block whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">
                                 {entry.body}
                               </span>
                             )}

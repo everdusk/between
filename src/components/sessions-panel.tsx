@@ -308,7 +308,7 @@ export function SessionsPanel({
                           <p className="eyebrow mb-2 text-section-header">
                             {t("discussedShort")}
                           </p>
-                          <p className="whitespace-pre-wrap text-foreground/90">
+                          <p className="whitespace-pre-wrap break-words text-foreground/90">
                             {session.summary}
                           </p>
                         </div>
@@ -317,7 +317,7 @@ export function SessionsPanel({
                             <p className="eyebrow mb-2 text-section-header">
                               {t("insightsShort")}
                             </p>
-                            <p className="whitespace-pre-wrap text-foreground/90">
+                            <p className="whitespace-pre-wrap break-words text-foreground/90">
                               {session.insights}
                             </p>
                           </div>
@@ -327,7 +327,7 @@ export function SessionsPanel({
                             <p className="eyebrow mb-2 text-accent-text">
                               {t("nextShort")}
                             </p>
-                            <p className="whitespace-pre-wrap text-foreground/90">
+                            <p className="whitespace-pre-wrap break-words text-foreground/90">
                               {session.homework}
                             </p>
                           </div>
