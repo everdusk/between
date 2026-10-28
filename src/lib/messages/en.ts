@@ -187,7 +187,7 @@ export const en: Catalog = {
   moodFlat: "No clear shift in mood across the period.",
   botOpen: "Open Between",
   botHelp:
-    "Between is a journal for the session.\nAny text becomes a note for today.\nVoice notes come with a paid Week, up to 10 a day. The free week does not include them.",
+    "Between is a journal for the session.\n\nThe journal is free. Any text here becomes a note for today. I can ask how you are in the morning, afternoon, and evening.\n\nWeek gathers the spectrum, the pattern, and topics for the session. The first 7 days after you open the tab are free. Then {price} Stars for 30 days.\n\nA voice note is saved as text only after Week is paid, up to 10 a day. The 7 free days do not include it.",
   botUnknown:
     "Send text and I will save a note.",
   botNotReady:

@@ -180,7 +180,7 @@ export const pt: Catalog = {
   moodFlat: "O humor não mudou de forma clara.",
   botOpen: "Abrir Between",
   botHelp:
-    "Between é um diário para a sessão.\nQualquer texto vira uma nota de hoje.\nO áudio vem com a Semana paga, até 10 por dia. A semana grátis não inclui.",
+    "Between é um diário para a sessão.\n\nO diário é grátis. Qualquer texto aqui vira uma nota de hoje. Posso perguntar como você está de manhã, à tarde e à noite.\n\nSemana junta o espectro, o padrão e os temas para a sessão. Os primeiros 7 dias depois de abrir a aba são grátis. Depois, {price} Stars por 30 dias.\n\nO áudio vira texto só com a Semana paga, até 10 por dia. Os 7 dias grátis não incluem.",
   botUnknown:
     "Escreva um texto e eu salvo como nota.",
   botNotReady:

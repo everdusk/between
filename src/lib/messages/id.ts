@@ -180,7 +180,7 @@ export const id: Catalog = {
   moodFlat: "Suasana tidak bergeser secara jelas.",
   botOpen: "Buka Between",
   botHelp:
-    "Between adalah jurnal untuk sesi.\nTeks apa pun menjadi catatan hari ini.\nCatatan suara ada di Minggu berbayar, sampai 10 sehari. Minggu gratis tidak mencakupnya.",
+    "Between adalah jurnal untuk sesi.\n\nJurnalnya gratis. Teks apa pun di sini menjadi catatan hari ini. Saya bisa bertanya kabarmu pagi, siang, dan malam.\n\nMinggu mengumpulkan spektrum, pola, dan topik untuk sesi. 7 hari pertama setelah membuka tab gratis. Lalu {price} Stars untuk 30 hari.\n\nCatatan suara disimpan sebagai teks hanya setelah Minggu dibayar, sampai 10 sehari. 7 hari gratis tidak mencakupnya.",
   botUnknown:
     "Kirim teks, saya simpan sebagai catatan.",
   botNotReady:

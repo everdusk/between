@@ -28,7 +28,13 @@ import {
   voiceNoteBody,
   voiceReplyPreview,
 } from "@/lib/voice";
-import { WEEK_INVOICE_PAYLOAD, grantWeekPaidUntil, isWeekAccessExempt, voiceNotesOpen } from "@/lib/week-access";
+import {
+  WEEK_INVOICE_PAYLOAD,
+  grantWeekPaidUntil,
+  isWeekAccessExempt,
+  starPriceFromEnv,
+  voiceNotesOpen,
+} from "@/lib/week-access";
 
 type TelegramChat = { id: number; type?: string };
 type TelegramUser = {
@@ -328,7 +334,9 @@ export async function POST(req: Request) {
   if (lower === "/start" || lower.startsWith("/start ") || lower === "/help") {
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: translate(greeting, "botHelp"),
+      text: translate(greeting, "botHelp", {
+        price: starPriceFromEnv(process.env.WEEK_STAR_PRICE),
+      }),
       reply_markup: miniAppKeyboard(appUrl(), greeting),
     });
     return NextResponse.json({ ok: true });

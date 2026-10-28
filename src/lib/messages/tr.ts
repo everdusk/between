@@ -180,7 +180,7 @@ export const tr: Catalog = {
   moodFlat: "Dönem boyunca ruh halinde belirgin bir kayma yok.",
   botOpen: "Between’i aç",
   botHelp:
-    "Between, seans için bir günlük.\nHer metin bugünün notu olur.\nSesli not, ücretli Hafta ile gelir, günde 10’a kadar. Deneme haftası kapsamaz.",
+    "Between, seans için bir günlük.\n\nGünlük ücretsiz. Buradaki her metin bugünün notu olur. Sabah, öğlen ve akşam nasıl olduğunu sorabilirim.\n\nHafta, spektrumu, örüntüyü ve seans konularını toplar. Sekmeyi açtıktan sonraki ilk 7 gün ücretsiz. Sonra 30 gün için {price} Stars.\n\nSesli not, Hafta ödendikten sonra metin olur, günde 10’a kadar. 7 ücretsiz gün bunu kapsamaz.",
   botUnknown:
     "Metin yazın, not olarak kaydederim.",
   botNotReady:

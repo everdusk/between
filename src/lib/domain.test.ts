@@ -1095,8 +1095,11 @@ describe("languages", () => {
       translate("ru", "botHelp").split("\n")[0],
       "Between — дневник к сеансу.",
     );
-    assert.match(translate("ru", "botHelp"), /до 10 в день/);
-    assert.match(translate("ru", "botHelp"), /Пробная неделя/);
+    const help = translate("ru", "botHelp", { price: 150 });
+    assert.match(help, /Первые 7 дней/);
+    assert.match(help, /150 Stars на 30 дней/);
+    assert.match(help, /до 10 в день/);
+    assert.match(help, /Пробные 7 дней/);
     assert.match(pollText("morning"), /Утро/);
     assert.match(pollText("morning", "en"), /Morning/);
     const board = feelingKeyboard("morning", "en");

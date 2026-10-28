@@ -180,7 +180,7 @@ export const vi: Catalog = {
   moodFlat: "Tâm trạng không đổi rõ.",
   botOpen: "Mở Between",
   botHelp:
-    "Between là nhật ký cho buổi trị liệu.\nChữ nào cũng thành ghi chép hôm nay.\nTin nhắn thoại có ở Tuần đã trả, tối đa 10 một ngày. Tuần miễn phí không gồm.",
+    "Between là nhật ký cho buổi trị liệu.\n\nNhật ký miễn phí. Chữ nào ở đây cũng thành ghi chép hôm nay. Sáng, trưa và tối tôi có thể hỏi bạn thế nào.\n\nTuần gom phổ cảm xúc, mẫu lặp và chủ đề cho buổi trị liệu. 7 ngày đầu sau khi mở tab là miễn phí. Sau đó {price} Stars cho 30 ngày.\n\nTin nhắn thoại thành chữ chỉ sau khi trả Tuần, tối đa 10 một ngày. 7 ngày miễn phí không gồm.",
   botUnknown: "Gửi chữ, tôi lưu thành ghi chép.",
   botNotReady:
     "Lúc này không lưu được.",

@@ -180,7 +180,7 @@ export const uz: Catalog = {
   moodFlat: "Kayfiyatda aniq siljish yo‘q.",
   botOpen: "Between’ni ochish",
   botHelp:
-    "Between — seans uchun kundalik.\nHar qanday matn bugungi yozuv bo‘ladi.\nOvozli xabar pullik Hafta bilan, kuniga 10 tagacha. Sinov haftasi kirmaydi.",
+    "Between — seans uchun kundalik.\n\nKundalik bepul. Bu yerdagi har qanday matn bugungi yozuv bo‘ladi. Ertalab, kunduzi va kechqurun holingizni so‘rashim mumkin.\n\n«Hafta» spektr, naqsh va seans mavzularini yig‘adi. Varaq ochilgandan keyingi dastlabki 7 kun bepul. So‘ng 30 kunga {price} Stars.\n\nOvozli xabar matnga faqat «Hafta» to‘langach aylanadi, kuniga 10 tagacha. Bepul 7 kun bunga kirmaydi.",
   botUnknown: "Matn yozing, yozuv qilib saqlayman.",
   botNotReady:
     "Hozir saqlay olmayman.",
