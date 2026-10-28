@@ -121,6 +121,24 @@ export function weekdayShort(key: string, locale?: string): string {
   return new Intl.DateTimeFormat(tag, { weekday: "short" }).format(d);
 }
 
+const WEEKDAY_NOMINATIVE = [
+  "понедельник",
+  "вторник",
+  "среда",
+  "четверг",
+  "пятница",
+  "суббота",
+  "воскресенье",
+];
+
+/** Monday = 0. A standalone label: «суббота», not «субботу». */
+export function weekdayName(index: number, locale?: string): string {
+  const tag = intlTag(locale);
+  if (!tag || index < 0 || index > 6) return WEEKDAY_NOMINATIVE[index] ?? "";
+  const monday = new Date(2026, 0, 5 + index);
+  return new Intl.DateTimeFormat(tag, { weekday: "long" }).format(monday);
+}
+
 /** Monday = 0. Russian keeps the accusative used in «каждый вторник». */
 export function weekdayLong(index: number, locale?: string): string {
   const tag = intlTag(locale);

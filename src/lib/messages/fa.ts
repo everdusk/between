@@ -69,6 +69,7 @@ export const fa: Catalog = {
   planOnceNext: "بعدی: {when}.",
   planWeeklyMissing: "دست‌کم یک روز لازم است.",
   planWeekly: "{days}. نزدیک‌ترین — {date}.",
+  planSlot: "{day} ساعت {time}",
   weekTitle: "هفته",
   weekLead: "{range}",
   spectrumLabel: "طیف هفته",

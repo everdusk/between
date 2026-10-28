@@ -69,6 +69,7 @@ export const vi: Catalog = {
   planOnceNext: "Lần tới: {when}.",
   planWeeklyMissing: "Chọn ít nhất một ngày.",
   planWeekly: "{days}. Gần nhất — {date}.",
+  planSlot: "{day} lúc {time}",
   weekTitle: "Tuần",
   weekLead: "{range}",
   spectrumLabel: "Phổ của tuần",

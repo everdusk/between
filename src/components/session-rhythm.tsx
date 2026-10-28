@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeDateInput } from "@/components/theme-date-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { formatLongDate, toDateKey, weekdayLong, weekdayShort } from "@/lib/dates";
+import { formatLongDate, toDateKey, weekdayLong, weekdayName, weekdayShort } from "@/lib/dates";
 import {
   clockLabel,
   isSessionTime,
@@ -163,7 +163,7 @@ function SessionRhythmForm({
                       type="button"
                       disabled={disabled}
                       aria-pressed={on}
-                      aria-label={weekdayLong(index, locale)}
+                      aria-label={weekdayName(index, locale)}
                       onClick={() => toggleDay(index)}
                       className={cn(
                         "h-11 rounded-2xl border text-sm font-medium capitalize transition-[background-color,color,transform] duration-200 active:scale-[0.96] focus-visible:ring-4 focus-visible:ring-ring/25 focus-visible:outline-none",
@@ -184,7 +184,7 @@ function SessionRhythmForm({
                   {slots.map((slot) => (
                     <div key={slot.weekday} className="flex items-center justify-between gap-3">
                       <span className="text-sm capitalize text-foreground">
-                        {weekdayLong(slot.weekday, locale)}
+                        {weekdayName(slot.weekday, locale)}
                       </span>
                       <ThemeDateInput
                         id={`plan-time-${slot.weekday}`}
@@ -192,7 +192,7 @@ function SessionRhythmForm({
                         display={slot.time}
                         value={slot.time}
                         disabled={disabled}
-                        aria-label={`${t("time")} ${weekdayLong(slot.weekday, locale)}`}
+                        aria-label={`${t("time")} ${weekdayName(slot.weekday, locale)}`}
                         onChange={(event) => {
                           if (event.target.value) setSlotTime(slot.weekday, event.target.value);
                         }}
@@ -276,7 +276,10 @@ function SessionRhythmForm({
 function planPreview(
   plan: SessionPlan,
   locale: string,
-  t: (key: "planOnceMissing" | "planOncePast" | "planOnceNext" | "planWeeklyMissing" | "planWeekly", vars?: Record<string, string>) => string,
+  t: (
+    key: "planOnceMissing" | "planOncePast" | "planOnceNext" | "planWeeklyMissing" | "planWeekly" | "planSlot",
+    vars?: Record<string, string>,
+  ) => string,
 ): string {
   if (plan.mode === "once") {
     const at = onceSessionDate(plan);
@@ -290,7 +293,7 @@ function planPreview(
   if (chosen.length === 0 || !next) return t("planWeeklyMissing");
   return t("planWeekly", {
     days: chosen
-      .map((slot) => `${weekdayLong(slot.weekday, locale)} · ${slot.time}`)
+      .map((slot) => t("planSlot", { day: weekdayLong(slot.weekday, locale), time: slot.time }))
       .join(", "),
     date: `${formatLongDate(toDateKey(next), locale)}, ${clockLabel(next)}`,
   });

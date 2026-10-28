@@ -69,6 +69,7 @@ export const ar: Catalog = {
   planOnceNext: "التالي: {when}.",
   planWeeklyMissing: "اختر يومًا واحدًا على الأقل.",
   planWeekly: "{days}. الأقرب — {date}.",
+  planSlot: "{day} في {time}",
   weekTitle: "الأسبوع",
   weekLead: "{range}",
   spectrumLabel: "طيف الأسبوع",

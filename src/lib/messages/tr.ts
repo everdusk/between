@@ -69,6 +69,7 @@ export const tr: Catalog = {
   planOnceNext: "Sonraki: {when}.",
   planWeeklyMissing: "En az bir gün seç.",
   planWeekly: "{days}. Yakın olan — {date}.",
+  planSlot: "{day} {time}",
   weekTitle: "Hafta",
   weekLead: "{range}",
   spectrumLabel: "Haftanın spektrumu",

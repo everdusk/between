@@ -69,6 +69,7 @@ export const uz: Catalog = {
   planOnceNext: "Keyingisi: {when}.",
   planWeeklyMissing: "Kamida bir kun kerak.",
   planWeekly: "{days}. Yaqini — {date}.",
+  planSlot: "{day} soat {time}",
   weekTitle: "Hafta",
   weekLead: "{range}",
   spectrumLabel: "Hafta spektri",

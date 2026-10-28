@@ -69,6 +69,7 @@ export const id: Catalog = {
   planOnceNext: "Berikutnya: {when}.",
   planWeeklyMissing: "Pilih setidaknya satu hari.",
   planWeekly: "{days}. Berikutnya — {date}.",
+  planSlot: "{day} pukul {time}",
   weekTitle: "Minggu",
   weekLead: "{range}",
   spectrumLabel: "Spektrum minggu",

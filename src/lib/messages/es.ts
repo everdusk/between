@@ -69,6 +69,7 @@ export const es: Catalog = {
   planOnceNext: "Siguiente: {when}.",
   planWeeklyMissing: "Elige al menos un día.",
   planWeekly: "{days}. Próxima — {date}.",
+  planSlot: "{day} a las {time}",
   weekTitle: "Semana",
   weekLead: "{range}",
   spectrumLabel: "Espectro de la semana",

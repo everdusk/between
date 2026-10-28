@@ -67,6 +67,7 @@ export const ru = {
   planOnceNext: "Следующий: {when}.",
   planWeeklyMissing: "Нужен хотя бы один день.",
   planWeekly: "{days}. Ближайший — {date}.",
+  planSlot: "{day} в {time}",
   weekTitle: "Неделя",
   weekLead: "{range}",
   spectrumLabel: "Спектр недели",

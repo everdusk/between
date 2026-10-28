@@ -69,6 +69,7 @@ export const uk: Catalog = {
   planOnceNext: "Наступний: {when}.",
   planWeeklyMissing: "Потрібен хоча б один день.",
   planWeekly: "{days}. Найближчий — {date}.",
+  planSlot: "{day} о {time}",
   weekTitle: "Тиждень",
   weekLead: "{range}",
   spectrumLabel: "Спектр тижня",

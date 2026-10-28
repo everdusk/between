@@ -69,6 +69,7 @@ export const hi: Catalog = {
   planOnceNext: "अगला: {when}.",
   planWeeklyMissing: "कम से कम एक दिन चुनें.",
   planWeekly: "{days}. अगला — {date}.",
+  planSlot: "{day} {time} पर",
   weekTitle: "हफ़्ता",
   weekLead: "{range}",
   spectrumLabel: "सप्ताह का स्पेक्ट्रम",
