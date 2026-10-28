@@ -119,14 +119,25 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
     : translate(greetingLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
   const localeLabel = LOCALES.find((item) => item.id === locale)?.label ?? locale;
 
+  const footer = (
+    <footer className="py-8 text-center text-[0.6875rem] leading-relaxed tracking-wide text-muted-foreground/80">
+      Between
+      {syncLabel === "cloud"
+        ? ` · ${t("syncCloud")}`
+        : syncLabel === "offline-cloud"
+          ? ` · ${t("syncOffline")}`
+          : ` · ${t("syncDevice")}`}
+      {!telegram.inTelegram && telegram.ready ? ` · ${t("outsideTelegram")}` : null}
+    </footer>
+  );
+
   return (
     <div
-      className="relative flex min-h-full flex-1 flex-col"
-      style={
-        telegram.viewportStableHeight
-          ? { minHeight: telegram.viewportStableHeight }
-          : undefined
-      }
+      className="fixed inset-x-0 flex flex-col overflow-hidden"
+      style={{
+        top: "var(--vv-top, 0px)",
+        height: "var(--vv-height, var(--tg-viewport-height, 100dvh))",
+      }}
     >
       <div
         className="pointer-events-none absolute inset-0 overflow-hidden"
@@ -188,40 +199,45 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-lg flex-1 pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pt-3 pb-4 sm:pl-[max(1.25rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))]">
-        {status === "loading" && (
-          <div
-            className="glass rounded-3xl px-6 py-14 text-center"
-            role="status"
-          >
-            <div className="mx-auto mb-4 h-1 w-28 overflow-hidden rounded-full bg-foreground/[0.08]">
-              <div className="loading-bar h-full w-1/2 rounded-full bg-primary/70" />
-            </div>
-            <p className="text-sm text-muted-foreground">{t("loadingEntries")}</p>
-          </div>
-        )}
-
-        {status === "error" && (
-          <div
-            className="glass rounded-3xl border-destructive/20 px-6 py-7"
-            role="alert"
-          >
-            <p className="font-display text-xl text-foreground">{t("dataError")}</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {localizeStorageError(error, t)}
-            </p>
-            <Button className="mt-5" variant="secondary" onClick={resetCorrupted}>
-              {t("startOver")}
-            </Button>
-          </div>
+      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col">
+        {status !== "ready" && (
+          <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pt-3 sm:pl-[max(1.25rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))]">
+            {status === "loading" && (
+              <div
+                className="glass rounded-3xl px-6 py-14 text-center"
+                role="status"
+              >
+                <div className="mx-auto mb-4 h-1 w-28 overflow-hidden rounded-full bg-foreground/[0.08]">
+                  <div className="loading-bar h-full w-1/2 rounded-full bg-primary/70" />
+                </div>
+                <p className="text-sm text-muted-foreground">{t("loadingEntries")}</p>
+              </div>
+            )}
+            {status === "error" && (
+              <div
+                className="glass rounded-3xl border-destructive/20 px-6 py-7"
+                role="alert"
+              >
+                <p className="font-display text-xl text-foreground">{t("dataError")}</p>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {localizeStorageError(error, t)}
+                </p>
+                <Button className="mt-5" variant="secondary" onClick={resetCorrupted}>
+                  {t("startOver")}
+                </Button>
+              </div>
+            )}
+            {footer}
+          </main>
         )}
 
         {status === "ready" && (
           <Tabs
             value={section}
             onValueChange={(v) => setSection(v as SectionId)}
-            className="gap-0"
+            className="flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden"
           >
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pt-3 sm:pl-[max(1.25rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))]">
             <div
               key={section}
               className="animate-in fade-in slide-in-from-bottom-2 duration-500 ease-out"
@@ -273,12 +289,14 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                 />
               </TabsContent>
             </div>
+            {footer}
+            </div>
 
-            <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex justify-center pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pb-[max(1.25rem,var(--safe-bottom))]">
+            <div className="z-30 flex shrink-0 justify-center pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pt-2 pb-[max(1.25rem,var(--safe-bottom))]">
               <TabsList
                 variant="dock"
                 aria-label={t("sections")}
-                className="pointer-events-auto w-full max-w-sm justify-stretch"
+                className="w-full max-w-sm justify-stretch"
               >
                 {SECTIONS.map((id) => {
                   const Icon = SECTION_ICON[id];
@@ -293,17 +311,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
             </div>
           </Tabs>
         )}
-      </main>
-
-      <footer className="relative z-10 pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pb-[calc(7rem+var(--safe-bottom))] text-center text-[0.6875rem] leading-relaxed tracking-wide text-muted-foreground/80">
-        Between
-        {syncLabel === "cloud"
-          ? ` · ${t("syncCloud")}`
-          : syncLabel === "offline-cloud"
-            ? ` · ${t("syncOffline")}`
-            : ` · ${t("syncDevice")}`}
-        {!telegram.inTelegram && telegram.ready ? ` · ${t("outsideTelegram")}` : null}
-      </footer>
+      </div>
     </div>
   );
 }

@@ -223,7 +223,7 @@ export function JournalPanel({
                     disabled={disabled}
                     onClick={() => removeTag(tag)}
                     aria-label={`${tag} — ${t("remove")}`}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--glass-border)] bg-background/55 pr-2.5 pl-3 text-xs text-foreground transition-colors hover:bg-background/85"
+                    className="inline-flex h-8 max-w-full items-center gap-1.5 rounded-full border border-[color:var(--glass-border)] bg-background/55 pr-2.5 pl-3 text-xs break-all text-foreground transition-colors hover:bg-background/85"
                   >
                     {tag}
                     <X aria-hidden className="size-3 opacity-50" />
@@ -351,7 +351,7 @@ export function JournalPanel({
                     </div>
                   )}
                   {entry.body.trim() && (
-                    <p className="mt-3 whitespace-pre-wrap text-[0.9375rem] leading-relaxed text-foreground/90">
+                    <p className="mt-3 whitespace-pre-wrap break-words text-[0.9375rem] leading-relaxed text-foreground/90">
                       {entry.body}
                     </p>
                   )}

@@ -37,8 +37,12 @@ import {
   applyDevicePerformance,
   applyTelegramSafeArea,
   applyTelegramTheme,
+  keptBottomInset,
+  keyboardObscuresViewport,
   panelColor,
   performanceClassFromUserAgent,
+  readVisualViewport,
+  resetDeviceSafeBottom,
   schemeFromColor,
   telegramChromeColor,
 } from "./telegram";
@@ -1020,6 +1024,66 @@ describe("telegram theme", () => {
     assert.equal(props.has("--tg-content-safe-area-right"), false);
     assert.equal(props.get("--tg-content-safe-area-bottom"), "12px");
     assert.equal(props.has("--tg-content-safe-area-left"), false);
+  });
+
+  it("puts the home-indicator inset back after the note keyboard closes", () => {
+    resetDeviceSafeBottom();
+    const props = new Map<string, string>();
+    const previous = globalThis.document;
+    globalThis.document = {
+      documentElement: {
+        dataset: {},
+        style: {
+          setProperty(name: string, value: string) {
+            props.set(name, value);
+          },
+          removeProperty(name: string) {
+            props.delete(name);
+          },
+        },
+      },
+    } as unknown as Document;
+
+    applyTelegramSafeArea({ bottom: 34 }, undefined, { visible: 700, stable: 700 });
+    assert.equal(props.get("--tg-safe-area-bottom"), "34px");
+
+    applyTelegramSafeArea({ bottom: 0 }, undefined, { visible: 380, stable: 700 });
+    assert.equal(props.has("--tg-safe-area-bottom"), false);
+
+    applyTelegramSafeArea({ bottom: 0 }, undefined, { visible: 700, stable: 700 });
+    assert.equal(props.get("--tg-safe-area-bottom"), "34px");
+    globalThis.document = previous;
+    resetDeviceSafeBottom();
+  });
+
+  it("keeps a phone with no home indicator at the bottom edge", () => {
+    resetDeviceSafeBottom();
+    assert.equal(keyboardObscuresViewport(380, 700), true);
+    assert.equal(keyboardObscuresViewport(690, 700), false);
+    assert.equal(keyboardObscuresViewport(0, 700), false);
+    assert.equal(keptBottomInset(0, false), 0);
+    assert.equal(keptBottomInset(34, false), 34);
+    assert.equal(keptBottomInset(0, true), 0);
+    assert.equal(keptBottomInset(0, false), 34);
+    resetDeviceSafeBottom();
+  });
+
+  it("follows the visible viewport when the keyboard shifts it", () => {
+    assert.deepEqual(readVisualViewport({ innerHeight: 800, height: 800, offsetTop: 0 }), {
+      top: 0,
+      height: 800,
+      bottom: 0,
+    });
+    assert.deepEqual(readVisualViewport({ innerHeight: 800, height: 420, offsetTop: 80 }), {
+      top: 80,
+      height: 420,
+      bottom: 300,
+    });
+    assert.deepEqual(readVisualViewport({ innerHeight: 800, height: 500, offsetTop: 0 }), {
+      top: 0,
+      height: 500,
+      bottom: 300,
+    });
   });
 });
 

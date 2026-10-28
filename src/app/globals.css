@@ -137,12 +137,14 @@
   }
   html {
     @apply font-sans;
-    min-height: var(--tg-viewport-stable-height, 100dvh);
+    height: 100%;
+    overflow: hidden;
     -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-background text-foreground;
-    min-height: var(--tg-viewport-stable-height, 100dvh);
+    height: 100%;
+    overflow: hidden;
     font-feature-settings: "ss01", "cv11";
     background-image:
       radial-gradient(

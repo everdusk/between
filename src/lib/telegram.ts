@@ -180,12 +180,96 @@ export function telegramSelection() {
   }
 }
 
+/** Visible height changes with the keyboard. Stable height does not. */
+export function applyViewportBox(visible: number, stable?: number) {
+  const root = document.documentElement;
+  if (visible && !Number.isNaN(visible)) {
+    root.style.setProperty("--tg-viewport-height", `${Math.round(visible)}px`);
+  }
+  const stableHeight = stable && !Number.isNaN(stable) ? stable : visible;
+  if (stableHeight && !Number.isNaN(stableHeight)) {
+    root.style.setProperty("--tg-viewport-stable-height", `${Math.round(stableHeight)}px`);
+  }
+}
+
 export function applyViewportHeight(height: number) {
-  if (!height || Number.isNaN(height)) return;
-  document.documentElement.style.setProperty(
-    "--tg-viewport-stable-height",
-    `${height}px`,
-  );
+  applyViewportBox(height, height);
+}
+
+/** The keyboard is open when the visible frame is clearly shorter than the stable one. */
+export function keyboardObscuresViewport(visible: number, stable: number): boolean {
+  if (!visible || !stable || Number.isNaN(visible) || Number.isNaN(stable)) return false;
+  return stable - visible > 80;
+}
+
+/**
+ * iOS drops safeAreaInset.bottom to 0 while the note keyboard is open, and
+ * sometimes never restores it. Remember the device inset and put it back
+ * once the keyboard is gone. A real 0 (no home indicator) stays 0.
+ */
+let deviceSafeBottom = 0;
+
+export function resetDeviceSafeBottom() {
+  deviceSafeBottom = 0;
+}
+
+export function keptBottomInset(
+  reported: number | undefined,
+  keyboardOpen: boolean,
+): number {
+  const value = Math.max(reported ?? 0, 0);
+  if (keyboardOpen) return value;
+  if (value > 0) {
+    deviceSafeBottom = value;
+    return value;
+  }
+  return deviceSafeBottom;
+}
+
+export type VisualViewportBox = {
+  top: number;
+  height: number;
+  bottom: number;
+};
+
+/** Where the visible screen sits inside the layout viewport. */
+export function readVisualViewport(metrics: {
+  innerHeight: number;
+  offsetTop?: number;
+  height?: number;
+}): VisualViewportBox {
+  const height =
+    metrics.height && metrics.height > 0 ? metrics.height : metrics.innerHeight;
+  const top = Math.max(0, metrics.offsetTop ?? 0);
+  const bottom = Math.max(0, metrics.innerHeight - top - height);
+  return {
+    top: Math.round(top),
+    height: Math.round(height),
+    bottom: Math.round(bottom),
+  };
+}
+
+export function applyVisualViewport(metrics: {
+  innerHeight: number;
+  offsetTop?: number;
+  height?: number;
+}) {
+  const box = readVisualViewport(metrics);
+  const root = document.documentElement;
+  root.style.setProperty("--vv-top", `${box.top}px`);
+  root.style.setProperty("--vv-height", `${box.height}px`);
+  root.style.setProperty("--vv-bottom", `${box.bottom}px`);
+  return box;
+}
+
+export function publishVisualViewport() {
+  if (typeof window === "undefined") return;
+  const viewport = window.visualViewport;
+  applyVisualViewport({
+    innerHeight: window.innerHeight,
+    offsetTop: viewport?.offsetTop ?? 0,
+    height: viewport?.height ?? window.innerHeight,
+  });
 }
 
 function telegramWebApp(): WebApp | undefined {
@@ -214,18 +298,32 @@ type EdgeInsets = {
 
 const EDGES = ["top", "right", "bottom", "left"] as const;
 
-function writeInsets(prefix: "safe-area" | "content-safe-area", insets: EdgeInsets) {
+function writeInsets(
+  prefix: "safe-area" | "content-safe-area",
+  insets: EdgeInsets,
+  overrides?: Partial<Record<(typeof EDGES)[number], number>>,
+) {
   const root = document.documentElement;
   for (const edge of EDGES) {
     const name = `--tg-${prefix}-${edge}`;
-    const value = Math.max(insets?.[edge] ?? 0, 0);
+    const raw = overrides && edge in overrides ? overrides[edge] : insets?.[edge];
+    const value = Math.max(raw ?? 0, 0);
     if (value) root.style.setProperty(name, `${value}px`);
     else root.style.removeProperty(name);
   }
 }
 
-export function applyTelegramSafeArea(safe?: EdgeInsets, content?: EdgeInsets) {
-  writeInsets("safe-area", safe);
+export function applyTelegramSafeArea(
+  safe?: EdgeInsets,
+  content?: EdgeInsets,
+  frame?: { visible: number; stable: number },
+) {
+  const keyboardOpen = frame
+    ? keyboardObscuresViewport(frame.visible, frame.stable)
+    : false;
+  writeInsets("safe-area", safe, {
+    bottom: keptBottomInset(safe?.bottom, keyboardOpen),
+  });
   writeInsets("content-safe-area", content);
 }
 
@@ -233,6 +331,7 @@ export function clearTelegramThemeOverrides() {
   const root = document.documentElement;
   delete root.dataset.telegramTheme;
   delete root.dataset.performance;
+  resetDeviceSafeBottom();
   root.style.removeProperty("color-scheme");
   const keys = [
     "--tg-bg-color",
@@ -253,7 +352,11 @@ export function clearTelegramThemeOverrides() {
     "--subtitle",
     "--accent-text",
     "--link",
+    "--tg-viewport-height",
     "--tg-viewport-stable-height",
+    "--vv-top",
+    "--vv-height",
+    "--vv-bottom",
     "--tg-safe-area-top",
     "--tg-safe-area-right",
     "--tg-safe-area-bottom",

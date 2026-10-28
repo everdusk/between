@@ -7,8 +7,9 @@ import {
   applyTelegramChrome,
   applyTelegramSafeArea,
   applyTelegramTheme,
-  applyViewportHeight,
+  applyViewportBox,
   clearTelegramThemeOverrides,
+  publishVisualViewport,
   DEV_DISPLAY_NAME,
   displayNameFromUser,
   isLikelyTelegram,
@@ -31,6 +32,7 @@ export function useTelegram(): TelegramSession {
   useEffect(() => {
     let cancelled = false;
     let webApp: WebApp | null = null;
+    const onVisualViewport = () => publishVisualViewport();
 
     const onTheme = () => {
       if (!webApp || cancelled) return;
@@ -40,9 +42,12 @@ export function useTelegram(): TelegramSession {
 
     const onViewport = () => {
       if (!webApp || cancelled) return;
-      applyViewportHeight(
-        webApp.viewportStableHeight || webApp.viewportHeight,
-      );
+      applyViewportBox(webApp.viewportHeight, webApp.viewportStableHeight);
+      publishVisualViewport();
+      applyTelegramSafeArea(webApp.safeAreaInset, webApp.contentSafeAreaInset, {
+        visible: webApp.viewportHeight,
+        stable: webApp.viewportStableHeight,
+      });
       setSession((prev) => ({
         ...prev,
         viewportStableHeight:
@@ -52,7 +57,10 @@ export function useTelegram(): TelegramSession {
 
     const onSafeArea = () => {
       if (!webApp || cancelled) return;
-      applyTelegramSafeArea(webApp.safeAreaInset, webApp.contentSafeAreaInset);
+      applyTelegramSafeArea(webApp.safeAreaInset, webApp.contentSafeAreaInset, {
+        visible: webApp.viewportHeight,
+        stable: webApp.viewportStableHeight,
+      });
     };
 
     function syncFromWebApp(wa: WebApp, inTelegram: boolean) {
@@ -61,7 +69,8 @@ export function useTelegram(): TelegramSession {
       if (inTelegram) {
         applyTelegramTheme(wa.themeParams, wa.colorScheme);
         applyTelegramChrome(wa);
-        applyViewportHeight(wa.viewportStableHeight || wa.viewportHeight);
+        applyViewportBox(wa.viewportHeight, wa.viewportStableHeight);
+        publishVisualViewport();
       } else {
         clearTelegramThemeOverrides();
       }
@@ -87,10 +96,17 @@ export function useTelegram(): TelegramSession {
         const inTelegram = isLikelyTelegram(webApp);
 
         applyDevicePerformance(navigator.userAgent);
+        publishVisualViewport();
+        window.visualViewport?.addEventListener("resize", onVisualViewport);
+        window.visualViewport?.addEventListener("scroll", onVisualViewport);
+        window.addEventListener("resize", onVisualViewport);
         if (inTelegram) {
           webApp.ready();
           webApp.expand();
-          applyTelegramSafeArea(webApp.safeAreaInset, webApp.contentSafeAreaInset);
+          applyTelegramSafeArea(webApp.safeAreaInset, webApp.contentSafeAreaInset, {
+            visible: webApp.viewportHeight,
+            stable: webApp.viewportStableHeight,
+          });
         }
 
         syncFromWebApp(webApp, inTelegram);
@@ -111,6 +127,9 @@ export function useTelegram(): TelegramSession {
 
     return () => {
       cancelled = true;
+      window.visualViewport?.removeEventListener("resize", onVisualViewport);
+      window.visualViewport?.removeEventListener("scroll", onVisualViewport);
+      window.removeEventListener("resize", onVisualViewport);
       if (webApp) {
         webApp.offEvent("themeChanged", onTheme);
         webApp.offEvent("viewportChanged", onViewport);
