@@ -23,7 +23,7 @@ import { buildWeekSpectrum, spectrumHeadline } from "./spectrum";
 import { digestAction } from "./digest";
 import { mergeStores } from "./journal-api";
 import { normalizeStore } from "./migrate";
-import { nextWeeklyOccurrence } from "./session-plan";
+import { nextWeeklyOccurrence, previousWeeklyOccurrence } from "./session-plan";
 import {
   applyThemePass,
   parseModelThemes,
@@ -46,8 +46,9 @@ import {
   textFromGeminiParts,
 } from "../app/api/brief/route";
 import { formatDayLabel, formatMonthTitle, monthCells, shiftMonth } from "./dates";
-import { buildPeriodSummary, therapyWindow } from "./session-summary";
-import { emptyStore, type JournalEntry, type SessionNote } from "./types";
+import { buildPeriodSummary, entryInWindow, therapyWindow } from "./session-summary";
+import { emptyStore, type JournalEntry, type SessionNote, type SessionPlan } from "./types";
+import { transcriptFromResponse, voiceFileName, voiceNoteBody, voiceReplyPreview } from "./voice";
 import {
   daysPhrase,
   describeWeekAccess,
@@ -105,6 +106,34 @@ describe("migrate", () => {
     assert.deepEqual(store.entries[1].feelings, ["радость"]);
     assert.equal(store.entries[1].source, "app");
     assert.equal(store.notify.moodPolls, true);
+  });
+
+  it("keeps every chosen weekday and its own time", () => {
+    const store = normalizeStore({
+      version: 2,
+      entries: [],
+      sessions: [],
+      weekPreps: [],
+      sessionPlan: {
+        mode: "weekly",
+        date: "",
+        time: "17:00",
+        weekday: 3,
+        slots: [
+          { weekday: 3, time: "17:00" },
+          { weekday: 0, time: "10:00" },
+          { weekday: 3, time: "nope" },
+          { weekday: 9, time: "12:00" },
+        ],
+        updatedAt: "2026-10-08T00:00:00.000Z",
+      },
+    });
+    assert.deepEqual(store?.sessionPlan?.slots, [
+      { weekday: 0, time: "10:00" },
+      { weekday: 3, time: "17:00" },
+    ]);
+    assert.equal(store?.sessionPlan?.time, "10:00");
+    assert.equal(store?.sessionPlan?.weekday, 0);
   });
 });
 
@@ -738,6 +767,37 @@ describe("session plan", () => {
     assert.equal(next?.getMonth(), 9);
     assert.equal(next?.getDate(), 15);
   });
+
+  it("picks the nearest time when several days are chosen", () => {
+    const plan = weeklyPlan([
+      { weekday: 0, time: "10:00" },
+      { weekday: 3, time: "17:00" },
+    ]);
+    const thursdayMorning = new Date(2026, 9, 8, 16, 0, 0);
+    const next = nextWeeklyOccurrence(plan, thursdayMorning);
+    assert.equal(next?.getDate(), 8);
+    assert.equal(next?.getHours(), 17);
+    const prev = previousWeeklyOccurrence(plan, thursdayMorning);
+    assert.equal(prev?.getDate(), 5);
+    assert.equal(prev?.getHours(), 10);
+    const after = nextWeeklyOccurrence(plan, new Date(2026, 9, 8, 18, 0, 0));
+    assert.equal(after?.getDate(), 12);
+    assert.equal(after?.getHours(), 10);
+  });
+});
+
+describe("voice notes", () => {
+  it("reads a transcript and keeps a caption above it", () => {
+    assert.equal(transcriptFromResponse({ text: "  привет  " }), "привет");
+    assert.equal(transcriptFromResponse({}), "");
+    assert.equal(transcriptFromResponse(null), "");
+    assert.equal(voiceNoteBody("сегодня тяжело", "к сеансу"), "к сеансу\nсегодня тяжело");
+    assert.equal(voiceNoteBody("  только голос  "), "только голос");
+    assert.equal(voiceReplyPreview("а".repeat(800)).length, 698);
+    assert.equal(voiceFileName("voice/file_1.ogg", "audio/ogg"), "file_1.ogg");
+    assert.equal(voiceFileName(undefined, "audio/mpeg"), "voice.mp3");
+    assert.equal(voiceFileName("file", "audio/wav"), "voice.wav");
+  });
 });
 
 describe("telegram theme", () => {
@@ -1098,6 +1158,17 @@ describe("digest", () => {
   });
 });
 
+function weeklyPlan(slots: { weekday: number; time: string }[]): SessionPlan {
+  return {
+    mode: "weekly",
+    date: "",
+    time: slots[0]?.time ?? "17:00",
+    weekday: slots[0]?.weekday ?? 3,
+    slots,
+    updatedAt: "",
+  };
+}
+
 function session(date: string, id = date): SessionNote {
   return {
     id,
@@ -1128,6 +1199,126 @@ describe("therapy week", () => {
     assert.equal(period.days.includes("2026-10-12"), true);
     assert.equal(period.previousDays[0], "2026-10-02");
     assert.equal(period.previousDays.at(-1), "2026-10-08");
+    assert.equal(period.weekKey, "since:2026-10-08");
+    assert.equal(period.startsAfter, null);
+    assert.equal(period.endsAt, null);
+  });
+
+  it("keeps notes until 17:00 on Thursday and starts the next week after that", () => {
+    const plan = weeklyPlan([{ weekday: 3, time: "17:00" }]);
+    const morning = note({
+      id: "am",
+      date: "2026-10-08",
+      createdAt: new Date(2026, 9, 8, 10, 0).toISOString(),
+      body: "утро",
+    });
+    const exact = note({
+      id: "exact",
+      date: "2026-10-08",
+      createdAt: new Date(2026, 9, 8, 17, 0).toISOString(),
+      body: "ровно",
+    });
+    const evening = note({
+      id: "pm",
+      date: "2026-10-08",
+      createdAt: new Date(2026, 9, 8, 18, 0).toISOString(),
+      body: "вечер",
+    });
+    const before = therapyWindow(
+      [],
+      [morning, exact, evening],
+      "2026-10-08",
+      new Date(2026, 9, 8, 16, 0),
+      plan,
+    );
+    assert.equal(entryInWindow(morning, before), true);
+    assert.equal(entryInWindow(exact, before), true);
+    assert.equal(entryInWindow(evening, before), false);
+    assert.equal(before.endsAt?.getDate(), 8);
+    assert.equal(before.endsAt?.getHours(), 17);
+    assert.equal(before.weekKey, "since:2026-10-01T17:00");
+
+    const opened = therapyWindow(
+      [],
+      [morning, exact, evening],
+      "2026-10-08",
+      new Date(2026, 9, 8, 17, 0),
+      plan,
+    );
+    assert.equal(entryInWindow(morning, opened), false);
+    assert.equal(entryInWindow(exact, opened), false);
+    assert.equal(opened.weekKey, "since:2026-10-08T17:00");
+    assert.equal(opened.endsAt?.getDate(), 15);
+
+    const after = therapyWindow(
+      [session("2026-10-08")],
+      [morning, exact, evening],
+      "2026-10-08",
+      new Date(2026, 9, 8, 18, 0),
+      plan,
+    );
+    assert.equal(entryInWindow(morning, after), false);
+    assert.equal(entryInWindow(exact, after), false);
+    assert.equal(entryInWindow(evening, after), true);
+    assert.equal(after.weekKey, "since:2026-10-08T17:00");
+  });
+
+  it("splits a week that has Monday morning and Thursday evening", () => {
+    const plan = weeklyPlan([
+      { weekday: 0, time: "10:00" },
+      { weekday: 3, time: "17:00" },
+    ]);
+    const mondayEarly = note({
+      id: "mon-early",
+      date: "2026-10-05",
+      createdAt: new Date(2026, 9, 5, 9, 0).toISOString(),
+      body: "до понедельника",
+    });
+    const mondayLate = note({
+      id: "mon-late",
+      date: "2026-10-05",
+      createdAt: new Date(2026, 9, 5, 11, 0).toISOString(),
+      body: "после понедельника",
+    });
+    const morning = note({
+      id: "thu-am",
+      date: "2026-10-08",
+      createdAt: new Date(2026, 9, 8, 10, 0).toISOString(),
+      body: "утро четверга",
+    });
+    const evening = note({
+      id: "thu-pm",
+      date: "2026-10-08",
+      createdAt: new Date(2026, 9, 8, 18, 0).toISOString(),
+      body: "вечер четверга",
+    });
+    const before = therapyWindow(
+      [],
+      [mondayEarly, mondayLate, morning, evening],
+      "2026-10-08",
+      new Date(2026, 9, 8, 16, 0),
+      plan,
+    );
+    assert.equal(before.days[0], "2026-10-05");
+    assert.equal(before.days.at(-1), "2026-10-08");
+    assert.equal(entryInWindow(mondayEarly, before), false);
+    assert.equal(entryInWindow(mondayLate, before), true);
+    assert.equal(entryInWindow(morning, before), true);
+    assert.equal(entryInWindow(evening, before), false);
+    assert.equal(before.weekKey, "since:2026-10-05T10:00");
+
+    const after = therapyWindow(
+      [],
+      [morning, evening],
+      "2026-10-08",
+      new Date(2026, 9, 8, 18, 0),
+      plan,
+    );
+    assert.equal(entryInWindow(morning, after), false);
+    assert.equal(entryInWindow(evening, after), true);
+    assert.equal(after.endsAt?.getDate(), 12);
+    assert.equal(after.endsAt?.getHours(), 10);
+    assert.equal(after.weekKey, "since:2026-10-08T17:00");
   });
 
   it("ignores a session dated after today", () => {

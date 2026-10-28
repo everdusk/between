@@ -13,7 +13,7 @@ import {
   toDateKey,
   weekKey,
 } from "@/lib/dates";
-import { therapyWeekKey, therapyWindow } from "@/lib/session-summary";
+import { entryInWindow, therapyWindow } from "@/lib/session-summary";
 import { briefStamp, tagCounts } from "@/lib/brief";
 import { parseModelThemes, shownEntryTags, themeContextChunks } from "@/lib/tags";
 import { feelingFill } from "@/lib/spectrum";
@@ -26,7 +26,7 @@ import {
   pendingJudgeEntries,
   rankedThemes,
 } from "@/lib/themes";
-import type { JournalEntry, SessionNote, SessionTheme, ThemeLink, WeekPrep } from "@/lib/types";
+import type { JournalEntry, SessionNote, SessionPlan, SessionTheme, ThemeLink, WeekPrep } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const themeGaveUp = new Set<string>();
@@ -35,6 +35,7 @@ const patternGaveUp = new Set<string>();
 interface WeeklyPanelProps {
   entries: JournalEntry[];
   sessions: SessionNote[];
+  plan: SessionPlan | null;
   weekPreps: WeekPrep[];
   themes: SessionTheme[];
   themeLinks: ThemeLink[];
@@ -56,6 +57,7 @@ interface WeeklyPanelProps {
 export function WeeklyPanel({
   entries,
   sessions,
+  plan,
   weekPreps,
   themes,
   themeLinks,
@@ -69,11 +71,19 @@ export function WeeklyPanel({
   disabled,
 }: WeeklyPanelProps) {
   const { t, locale, feeling, slot, count } = useI18n();
-  const now = new Date();
+  const [now, setNow] = useState(() => new Date());
   const todayKey = toDateKey(now);
-  const period = therapyWindow(sessions, entries, todayKey);
+  const period = therapyWindow(sessions, entries, todayKey, now, plan);
   const days = period.days;
-  const key = therapyWeekKey(period.last);
+  const key = period.weekKey;
+  const boundaryAt = period.endsAt?.getTime() ?? null;
+  useEffect(() => {
+    if (boundaryAt === null) return;
+    const delay = boundaryAt - Date.now() + 1000;
+    if (delay <= 0 || delay > 8 * 24 * 60 * 60 * 1000) return;
+    const timer = window.setTimeout(() => setNow(new Date()), delay);
+    return () => window.clearTimeout(timer);
+  }, [boundaryAt]);
   const prep =
     weekPreps.find((item) => item.weekKey === key) ??
     weekPreps.find((item) => item.weekKey === weekKey(now));
@@ -83,6 +93,7 @@ export function WeeklyPanel({
   const byDate = new Map<string, JournalEntry[]>();
   for (const day of days) byDate.set(day, []);
   for (const entry of entries) {
+    if (!entryInWindow(entry, period)) continue;
     const list = byDate.get(entry.date);
     if (list) list.push(entry);
   }

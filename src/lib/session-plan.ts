@@ -1,5 +1,5 @@
 import { formatLongDate, toDateKey } from "./dates";
-import type { SessionPlan } from "./types";
+import type { SessionPlan, SessionSlot } from "./types";
 
 export const WEEKDAY_LONG = [
   "понедельник",
@@ -30,30 +30,72 @@ export function onceSessionDate(plan: SessionPlan): Date | null {
   return new Date(year, month - 1, day, hour, minute, 0, 0);
 }
 
+export function weeklySlots(plan: SessionPlan | null | undefined): SessionSlot[] {
+  if (!plan || plan.mode !== "weekly") return [];
+  const raw =
+    plan.slots && plan.slots.length > 0
+      ? plan.slots
+      : isSessionTime(plan.time) && Number.isInteger(plan.weekday)
+        ? [{ weekday: plan.weekday, time: plan.time }]
+        : [];
+  const byDay = new Map<number, string>();
+  for (const slot of raw) {
+    if (!Number.isInteger(slot.weekday) || slot.weekday < 0 || slot.weekday > 6) continue;
+    if (!isSessionTime(slot.time)) continue;
+    byDay.set(slot.weekday, slot.time);
+  }
+  return [...byDay.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([weekday, time]) => ({ weekday, time }));
+}
+
+function atLocal(day: Date, time: string): Date {
+  const [hour, minute] = time.split(":").map(Number);
+  return new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute, 0, 0);
+}
+
+/** Soonest chosen day whose time is still ahead, including this minute. */
 export function nextWeeklyOccurrence(
   plan: SessionPlan,
   now = new Date(),
 ): Date | null {
-  if (!isSessionTime(plan.time)) return null;
-  if (!Number.isInteger(plan.weekday) || plan.weekday < 0 || plan.weekday > 6) {
-    return null;
-  }
-  const [hour, minute] = plan.time.split(":").map(Number);
-  for (let offset = 0; offset < 8; offset += 1) {
-    const candidate = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate() + offset,
-      hour,
-      minute,
-      0,
-      0,
-    );
-    if (weekdayIndex(candidate) === plan.weekday && candidate.getTime() >= now.getTime()) {
-      return candidate;
+  const slots = weeklySlots(plan);
+  let best: Date | null = null;
+  for (const slot of slots) {
+    for (let offset = 0; offset < 8; offset += 1) {
+      const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
+      if (weekdayIndex(day) !== slot.weekday) continue;
+      const candidate = atLocal(day, slot.time);
+      if (candidate.getTime() < now.getTime()) continue;
+      if (!best || candidate.getTime() < best.getTime()) best = candidate;
+      break;
     }
   }
-  return null;
+  return best;
+}
+
+/** Latest chosen day whose time has already arrived. That minute closes the week. */
+export function previousWeeklyOccurrence(
+  plan: SessionPlan,
+  now = new Date(),
+): Date | null {
+  const slots = weeklySlots(plan);
+  let best: Date | null = null;
+  for (const slot of slots) {
+    for (let offset = 0; offset < 8; offset += 1) {
+      const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - offset);
+      if (weekdayIndex(day) !== slot.weekday) continue;
+      const candidate = atLocal(day, slot.time);
+      if (candidate.getTime() > now.getTime()) continue;
+      if (!best || candidate.getTime() > best.getTime()) best = candidate;
+      break;
+    }
+  }
+  return best;
+}
+
+export function clockLabel(at: Date): string {
+  return `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
 }
 
 export function describeSessionPlan(plan: SessionPlan, now = new Date()): string {
@@ -64,8 +106,11 @@ export function describeSessionPlan(plan: SessionPlan, now = new Date()): string
     if (at.getTime() < now.getTime()) return `Эта встреча уже прошла: ${when}.`;
     return `Следующий сеанс: ${when}.`;
   }
+  const slots = weeklySlots(plan);
   const next = nextWeeklyOccurrence(plan, now);
-  if (!next) return "Укажите день и время еженедельного сеанса.";
-  const day = WEEKDAY_LONG[plan.weekday] ?? "день";
-  return `Каждый ${day} в ${plan.time}. Ближайший — ${formatLongDate(toDateKey(next))}.`;
+  if (slots.length === 0 || !next) return "Укажите день и время еженедельного сеанса.";
+  const days = slots
+    .map((slot) => `${WEEKDAY_LONG[slot.weekday] ?? "день"} в ${slot.time}`)
+    .join(", ");
+  return `${days}. Ближайший — ${formatLongDate(toDateKey(next))}, ${clockLabel(next)}.`;
 }

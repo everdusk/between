@@ -196,20 +196,55 @@ function normalizeBacklog(
   };
 }
 
+function normalizeSlots(raw: unknown): { weekday: number; time: string }[] {
+  if (!Array.isArray(raw)) return [];
+  const byDay = new Map<number, string>();
+  for (const item of raw) {
+    const slot = asRecord(item);
+    if (!slot) continue;
+    const weekday = slot.weekday;
+    const time = slot.time;
+    if (typeof weekday !== "number" || !Number.isInteger(weekday) || weekday < 0 || weekday > 6) {
+      continue;
+    }
+    if (typeof time !== "string" || !TIME_RE.test(time)) continue;
+    byDay.set(weekday, time);
+  }
+  return [...byDay.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([weekday, time]) => ({ weekday, time }));
+}
+
 function normalizePlan(raw: unknown): SessionPlan | null {
   const plan = asRecord(raw);
   if (!plan) return null;
   if (plan.mode !== "once" && plan.mode !== "weekly") return null;
-  if (typeof plan.time !== "string" || !TIME_RE.test(plan.time)) return null;
-  const weekday = typeof plan.weekday === "number" ? plan.weekday : 0;
-  if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6) return null;
+  const slots = normalizeSlots(plan.slots);
+  const fallbackTime = typeof plan.time === "string" && TIME_RE.test(plan.time) ? plan.time : "";
+  const fallbackDay =
+    typeof plan.weekday === "number" &&
+    Number.isInteger(plan.weekday) &&
+    plan.weekday >= 0 &&
+    plan.weekday <= 6
+      ? plan.weekday
+      : null;
+  const weekly =
+    slots.length > 0
+      ? slots
+      : plan.mode === "weekly" && fallbackTime && fallbackDay !== null
+        ? [{ weekday: fallbackDay, time: fallbackTime }]
+        : [];
+  const time = weekly[0]?.time ?? fallbackTime;
+  const weekday = weekly[0]?.weekday ?? fallbackDay ?? 0;
+  if (!time) return null;
   const date = typeof plan.date === "string" && DATE_RE.test(plan.date) ? plan.date : "";
   if (plan.mode === "once" && !date) return null;
   return {
     mode: plan.mode,
     date,
-    time: plan.time,
+    time,
     weekday,
+    ...(weekly.length > 0 ? { slots: weekly } : {}),
     updatedAt: typeof plan.updatedAt === "string" ? plan.updatedAt : "",
   };
 }

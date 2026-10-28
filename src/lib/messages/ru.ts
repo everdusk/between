@@ -65,8 +65,8 @@ export const ru = {
   planOnceMissing: "Нужны дата и время.",
   planOncePast: "Уже прошло: {when}.",
   planOnceNext: "Следующий: {when}.",
-  planWeeklyMissing: "Нужны день и время.",
-  planWeekly: "{day} в {time}. Ближайший — {date}.",
+  planWeeklyMissing: "Нужен хотя бы один день.",
+  planWeekly: "{days}. Ближайший — {date}.",
   weekTitle: "Неделя",
   weekLead: "{range}",
   spectrumLabel: "Спектр недели",
@@ -184,12 +184,19 @@ export const ru = {
   moodFlat: "Самочувствие за период без явного сдвига.",
   botOpen: "Открыть Between",
   botHelp:
-    "Between — дневник к сеансу.\nЛюбой текст станет заметкой на сегодня.",
+    "Between — дневник к сеансу.\nЛюбой текст станет заметкой на сегодня.\nГолосовое тоже запишу текстом.",
   botUnknown:
     "Не понял. Напишите текст — запишу заметкой.",
   botNotReady:
     "Сейчас не могу сохранить.",
   botSaved: "Записал на сегодня.",
+  botVoiceSaved: "Записал на сегодня.\n\n{text}",
+  botVoiceEmpty: "В голосовом не слышно слов.",
+  botVoiceFail: "Не получилось разобрать голосовое. Напишите текстом.",
+  botVoiceForbidden:
+    "AI Tunnel не принял расшифровку. В кабинете ключа разрешите модель whisper-1.",
+  botVoiceLimit: "На сегодня хватит голосовых. Напишите текстом.",
+  botVoiceNoKey: "Голосовые разбирает модель. Ключ ещё не подключён.",
   botSaveFail: "Не сохранилось. Попробуйте ещё раз.",
   botCheckinNotReady: "Сейчас не могу сохранить отметку.",
   botCheckinSaved: "Записал: {feeling}.",

@@ -208,6 +208,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                   <WeeklyPanel
                     entries={store.entries}
                     sessions={store.sessions}
+                    plan={store.sessionPlan}
                     weekPreps={store.weekPreps}
                     themes={store.themes ?? []}
                     themeLinks={store.themeLinks ?? []}
