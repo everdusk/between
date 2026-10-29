@@ -1490,7 +1490,7 @@ describe("therapy week", () => {
     assert.equal(period.endsAt, null);
   });
 
-  it("keeps notes until 17:00 on Thursday and starts the next week after that", () => {
+  it("keeps the week through the session and turns it over an hour later", () => {
     const plan = weeklyPlan([{ weekday: 3, time: "17:00" }]);
     const morning = note({
       id: "am",
@@ -1504,43 +1504,49 @@ describe("therapy week", () => {
       createdAt: new Date(2026, 9, 8, 17, 0).toISOString(),
       body: "ровно",
     });
+    const during = note({
+      id: "during",
+      date: "2026-10-08",
+      createdAt: new Date(2026, 9, 8, 17, 30).toISOString(),
+      body: "на сеансе",
+    });
     const evening = note({
       id: "pm",
       date: "2026-10-08",
-      createdAt: new Date(2026, 9, 8, 18, 0).toISOString(),
+      createdAt: new Date(2026, 9, 8, 18, 30).toISOString(),
       body: "вечер",
     });
-    const before = therapyWindow(
-      [],
-      [morning, exact, evening],
-      "2026-10-08",
-      new Date(2026, 9, 8, 16, 0),
-      plan,
-    );
+    const notes = [morning, exact, during, evening];
+    const before = therapyWindow([], notes, "2026-10-08", new Date(2026, 9, 8, 16, 0), plan);
     assert.equal(entryInWindow(morning, before), true);
     assert.equal(entryInWindow(exact, before), true);
+    assert.equal(entryInWindow(during, before), true);
     assert.equal(entryInWindow(evening, before), false);
     assert.equal(before.endsAt?.getDate(), 8);
-    assert.equal(before.endsAt?.getHours(), 17);
+    assert.equal(before.endsAt?.getHours(), 18);
     assert.equal(before.weekKey, "since:2026-10-01T17:00");
 
-    const opened = therapyWindow(
-      [],
-      [morning, exact, evening],
-      "2026-10-08",
-      new Date(2026, 9, 8, 17, 0),
-      plan,
-    );
+    const inSession = therapyWindow([], notes, "2026-10-08", new Date(2026, 9, 8, 17, 0), plan);
+    assert.equal(entryInWindow(morning, inSession), true);
+    assert.equal(entryInWindow(exact, inSession), true);
+    assert.equal(entryInWindow(during, inSession), true);
+    assert.equal(inSession.weekKey, "since:2026-10-01T17:00");
+    assert.equal(inSession.endsAt?.getHours(), 18);
+
+    const opened = therapyWindow([], notes, "2026-10-08", new Date(2026, 9, 8, 18, 0), plan);
     assert.equal(entryInWindow(morning, opened), false);
     assert.equal(entryInWindow(exact, opened), false);
+    assert.equal(entryInWindow(during, opened), false);
+    assert.equal(entryInWindow(evening, opened), true);
     assert.equal(opened.weekKey, "since:2026-10-08T17:00");
     assert.equal(opened.endsAt?.getDate(), 15);
+    assert.equal(opened.endsAt?.getHours(), 18);
 
     const after = therapyWindow(
       [session("2026-10-08")],
-      [morning, exact, evening],
+      notes,
       "2026-10-08",
-      new Date(2026, 9, 8, 18, 0),
+      new Date(2026, 9, 8, 18, 30),
       plan,
     );
     assert.equal(entryInWindow(morning, after), false);
@@ -1563,7 +1569,7 @@ describe("therapy week", () => {
     const mondayLate = note({
       id: "mon-late",
       date: "2026-10-05",
-      createdAt: new Date(2026, 9, 5, 11, 0).toISOString(),
+      createdAt: new Date(2026, 9, 5, 11, 30).toISOString(),
       body: "после понедельника",
     });
     const morning = note({
@@ -1575,7 +1581,7 @@ describe("therapy week", () => {
     const evening = note({
       id: "thu-pm",
       date: "2026-10-08",
-      createdAt: new Date(2026, 9, 8, 18, 0).toISOString(),
+      createdAt: new Date(2026, 9, 8, 18, 30).toISOString(),
       body: "вечер четверга",
     });
     const before = therapyWindow(
@@ -1603,7 +1609,7 @@ describe("therapy week", () => {
     assert.equal(entryInWindow(morning, after), false);
     assert.equal(entryInWindow(evening, after), true);
     assert.equal(after.endsAt?.getDate(), 12);
-    assert.equal(after.endsAt?.getHours(), 10);
+    assert.equal(after.endsAt?.getHours(), 11);
     assert.equal(after.weekKey, "since:2026-10-08T17:00");
   });
 

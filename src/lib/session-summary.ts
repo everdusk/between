@@ -68,6 +68,13 @@ function loggedBoundary(session: SessionNote, slots: { weekday: number; time: st
   return new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, minute, 0, 0);
 }
 
+/** The spectrum stays through the session and turns over an hour after it starts. */
+const WEEK_HOLDS_AFTER_START_MS = 60 * 60 * 1000;
+
+function weekTurnsAt(sessionStart: Date): Date {
+  return new Date(sessionStart.getTime() + WEEK_HOLDS_AFTER_START_MS);
+}
+
 function dateOnlyWindow(
   sessions: SessionNote[],
   entries: JournalEntry[],
@@ -105,8 +112,9 @@ function dateOnlyWindow(
 
 /**
  * The therapy week runs from the day after the last session through today.
- * A weekly schedule closes each chosen day at its time: Thursday 17:00 keeps
- * earlier notes in the ending week and starts the next week after 17:00.
+ * A weekly schedule keeps that week open for an hour after the session starts,
+ * so the spectrum is still there while the session is going on. Thursday 17:00
+ * turns the week over at 18:00.
  * Without a schedule it runs from the first note through today, not from Monday.
  */
 export function therapyWindow(
@@ -120,28 +128,33 @@ export function therapyWindow(
   const slots = weeklySlots(plan);
   if (!plan || slots.length === 0) return base;
 
-  let startsAfter = previousWeeklyOccurrence(plan, now);
+  let sessionStart = previousWeeklyOccurrence(plan, now);
+  if (sessionStart && weekTurnsAt(sessionStart).getTime() > now.getTime()) {
+    sessionStart = previousWeeklyOccurrence(plan, new Date(sessionStart.getTime() - 60_000));
+  }
   for (const session of sessions) {
     if (session.date > todayKey) continue;
-    const boundary = loggedBoundary(session, slots);
+    const logged = loggedBoundary(session, slots);
     const onSchedule = slots.some((slot) => slot.weekday === weekdayOf(parseDateKey(session.date)));
-    if (onSchedule && boundary.getTime() > now.getTime()) continue;
-    if (!startsAfter || boundary.getTime() > startsAfter.getTime()) startsAfter = boundary;
+    if (onSchedule && weekTurnsAt(logged).getTime() > now.getTime()) continue;
+    if (!sessionStart || logged.getTime() > sessionStart.getTime()) sessionStart = logged;
   }
-  if (!startsAfter) return base;
+  if (!sessionStart) return base;
 
-  const endsAt = nextWeeklyOccurrence(plan, new Date(startsAfter.getTime() + 60_000));
+  const startsAfter = weekTurnsAt(sessionStart);
+  const nextStart = nextWeeklyOccurrence(plan, new Date(sessionStart.getTime() + 60_000));
+  const endsAt = nextStart ? weekTurnsAt(nextStart) : null;
   const onASlot = slots.some(
-    (slot) => slot.weekday === weekdayOf(startsAfter) && slot.time === clockLabel(startsAfter),
+    (slot) => slot.weekday === weekdayOf(sessionStart) && slot.time === clockLabel(sessionStart),
   );
-  const startKey = onASlot ? toDateKey(startsAfter) : addDays(toDateKey(startsAfter), 1);
+  const startKey = onASlot ? toDateKey(sessionStart) : addDays(toDateKey(sessionStart), 1);
   return {
     last: base.last,
     days: dateKeysBetween(startKey, todayKey),
     previousDays: base.previousDays,
     startsAfter,
     endsAt,
-    weekKey: `since:${toDateKey(startsAfter)}T${clockLabel(startsAfter)}`,
+    weekKey: `since:${toDateKey(sessionStart)}T${clockLabel(sessionStart)}`,
   };
 }
 
