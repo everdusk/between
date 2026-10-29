@@ -74,7 +74,7 @@ export function nextWeeklyOccurrence(
   return best;
 }
 
-/** Latest chosen day whose time has already arrived. That minute closes the week. */
+/** Latest chosen day whose start has already arrived. The week turns an hour after that. */
 export function previousWeeklyOccurrence(
   plan: SessionPlan,
   now = new Date(),
