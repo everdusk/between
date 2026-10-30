@@ -135,8 +135,7 @@ export function therapyWindow(
   for (const session of sessions) {
     if (session.date > todayKey) continue;
     const logged = loggedBoundary(session, slots);
-    const onSchedule = slots.some((slot) => slot.weekday === weekdayOf(parseDateKey(session.date)));
-    if (onSchedule && weekTurnsAt(logged).getTime() > now.getTime()) continue;
+    if (weekTurnsAt(logged).getTime() > now.getTime()) continue;
     if (!sessionStart || logged.getTime() > sessionStart.getTime()) sessionStart = logged;
   }
   if (!sessionStart) return base;
