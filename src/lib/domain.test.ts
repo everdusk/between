@@ -1613,6 +1613,26 @@ describe("therapy week", () => {
     assert.equal(after.weekKey, "since:2026-10-08T17:00");
   });
 
+  it("keeps the current week when a session is logged before its close", () => {
+    const plan = weeklyPlan([{ weekday: 3, time: "17:00" }]);
+    const friday = note({
+      id: "fri",
+      date: "2026-10-09",
+      createdAt: new Date(2026, 9, 9, 12, 0).toISOString(),
+      body: "пятница",
+    });
+    const period = therapyWindow(
+      [session("2026-10-09")],
+      [friday],
+      "2026-10-09",
+      new Date(2026, 9, 9, 15, 0),
+      plan,
+    );
+    assert.equal(period.days.includes("2026-10-09"), true);
+    assert.equal(entryInWindow(friday, period), true);
+    assert.equal(period.weekKey, "since:2026-10-08T17:00");
+  });
+
   it("ignores a session dated after today", () => {
     const period = therapyWindow(
       [session("2026-10-20"), session("2026-10-08")],
