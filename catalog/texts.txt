@@ -1,0 +1,30 @@
+Between — медиа для каталога
+Бот: https://t.me/BetweenJournalBot
+Приложение: https://between-rouge.vercel.app/
+
+Куда что класть
+- description-ru-640x360.jpg и description-en-640x360.jpg — хиро, картинка описания в BotFather. Ровно 640×360.
+- ru/ и en/ — три кадра карусели, все 1290×2796, меньше 1 МБ. Русский и английский загружаются отдельно.
+
+Порядок кадров
+Хиро. Дневник к сеансу
+1. Пишу боту — «Боту достаточно пары слов»
+2. Неделя собралась — «Неделя складывается сама»
+3. Есть что сказать — «К сеансу есть о чём говорить»
+
+Английский хиро: A journal for the session
+1. A few words to the bot
+2. The week takes shape
+3. Something to say in session
+
+Кратко, русский (17 слов)
+Дневник к сеансу. Пара слов боту, неделя складывается сама, и к разговору уже есть о чём говорить.
+
+Кратко, английский (15 слов)
+A journal for the session. Message the bot, see the week, bring it to session.
+
+Описание, русский (233 знака)
+Между сеансами легко всё забыть. Between — место для коротких заметок: как вы, что повторялось за неделю и о чём хотите сказать в следующий раз. Встречу можно поставить на повтор, а после неё записать, что обсудили и что попробовать.
+
+Описание, английский (240 знаков)
+Between sessions the week slips away. This is a place for short notes: how you were, what kept coming back, and what you want to say next time. You can set the session to repeat, and afterwards write down what you discussed and what to try.
