@@ -201,7 +201,7 @@ html[data-telegram-theme="dark"] {
    A fixed background also flashes in iOS while the window is still growing. */
 html[data-splash],
 html[data-splash] body {
-  background-color: #0d1714 !important;
+  background-color: #0c1210 !important;
   background-image: none !important;
   background-attachment: scroll !important;
   color-scheme: dark;

@@ -49,7 +49,7 @@ export function applyLaunchTheme(
 /** Hides the journal until the frame leaves, even if position:fixed is not covering yet. */
 export const SPLASH_COVER_CSS = `
 .app-root { display: contents; }
-html[data-splash], html[data-splash] body { background: #0d1714 !important; background-image: none !important; }
+html[data-splash], html[data-splash] body { background: #0c1210 !important; background-image: none !important; }
 html[data-splash] .app-root { display: none !important; }
 html[data-splash] .splash-screen {
   display: flex !important;
@@ -60,7 +60,7 @@ html[data-splash] .splash-screen {
   min-height: 100vh;
   min-height: 100dvh;
   z-index: 80;
-  background: #0d1714;
+  background: #0c1210;
 }
 `.trim();
 

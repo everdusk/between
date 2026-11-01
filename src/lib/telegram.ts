@@ -132,7 +132,7 @@ export function telegramChromeColor<T extends TelegramChromeFallback>(
 }
 
 /** Edges of the launch frame. Header and webview match it until the frame leaves. */
-export const SPLASH_CHROME = "#0d1714" as const;
+export const SPLASH_CHROME = "#0c1210" as const;
 
 let splashChromeHeld = true;
 let splashChromePainted = false;

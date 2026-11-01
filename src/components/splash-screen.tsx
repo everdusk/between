@@ -112,8 +112,8 @@ export function SplashScreen() {
       <img
         src="/splash.webp"
         alt="Between"
-        width={1080}
-        height={1920}
+        width={780}
+        height={1560}
         fetchPriority="high"
         decoding="sync"
         style={{ width: "100%", height: "100%", objectFit: "contain" }}
