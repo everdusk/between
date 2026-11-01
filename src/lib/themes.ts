@@ -1,4 +1,4 @@
-import { createId, parseDateKey } from "./dates";
+import { createId, parseDateKey, toDateKey } from "./dates";
 import { feelingValence } from "./feelings";
 import type {
   Feeling,
@@ -14,6 +14,8 @@ const CREATE_CONFIDENCE = 0.7;
 const CREATE_INTENSITY = 5;
 const MERGE_CONFIDENCE = 0.85;
 const BRIEF_WORD_LIMIT = 300;
+/** A checked theme stays in the working list this long, then moves to the archive. */
+export const DISCUSSED_LINGER_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type JudgeVerdict = {
   relevant: boolean;
@@ -170,6 +172,13 @@ export function feelingIntensity(feelings: Feeling[]): number {
   return feelings.reduce((max, feeling) => Math.max(max, weights[feeling] ?? 0), 0);
 }
 
+function withoutCheck(theme: SessionTheme): SessionTheme {
+  if (!theme.discussedAt) return theme;
+  const copy = { ...theme };
+  delete copy.discussedAt;
+  return copy;
+}
+
 function recount(theme: SessionTheme, links: ThemeLink[]): SessionTheme {
   const ids = new Set(
     links.filter((link) => link.themeId === theme.id).map((link) => link.entryId),
@@ -245,7 +254,7 @@ export function applyVerdict(
       state.themes.map((theme) => {
         if (theme.id !== matched.id) return theme;
         const next: SessionTheme = {
-          ...theme,
+          ...withoutCheck(theme),
           status: "active",
           reopened: theme.reopened || reopened,
           lastSeen: entry.date > theme.lastSeen ? entry.date : theme.lastSeen,
@@ -337,7 +346,7 @@ export function mergeThemes(
   const nextTitle = (title?.replace(/\s+/g, " ").trim() || keep.title).slice(0, 80);
   const merged: SessionTheme = recount(
     {
-      ...keep,
+      ...withoutCheck(keep),
       title: nextTitle,
       summary: nextTitle,
       status: "active",
@@ -412,16 +421,55 @@ export function rankedThemes(
     .map((item) => item.theme);
 }
 
-export function discussTheme(themes: SessionTheme[], id: string, discussed: boolean, now = new Date().toISOString()): SessionTheme[] {
-  return themes.map((theme) =>
-    theme.id === id
-      ? {
-          ...theme,
-          status: discussed ? "discussed" : "active",
-          updatedAt: now,
-        }
-      : theme,
+/** Instant the circle was checked. Older rows have no discussedAt, so updatedAt stands in. */
+export function discussedMoment(theme: SessionTheme): number {
+  const stamped = theme.discussedAt ? Date.parse(theme.discussedAt) : NaN;
+  if (Number.isFinite(stamped)) return stamped;
+  const updated = Date.parse(theme.updatedAt);
+  return Number.isFinite(updated) ? updated : 0;
+}
+
+/** Device-local day of the check, for the archive row. */
+export function discussedDateKey(theme: SessionTheme): string {
+  const time = Date.parse(theme.discussedAt || theme.updatedAt);
+  return Number.isFinite(time) ? toDateKey(new Date(time)) : theme.lastSeen;
+}
+
+/**
+ * Working list versus the retrospective archive.
+ * A checked theme stays with the open ones for a week, then leaves.
+ * Dismissed themes are in neither list.
+ */
+export function splitBacklog(
+  themes: SessionTheme[],
+  now = new Date(),
+): { live: SessionTheme[]; archive: SessionTheme[] } {
+  const live: SessionTheme[] = [];
+  const archive: SessionTheme[] = [];
+  const line = now.getTime();
+  for (const theme of themes) {
+    if (theme.dismissed || theme.status === "archived") continue;
+    if (theme.status !== "discussed") {
+      live.push(theme);
+      continue;
+    }
+    if (discussedMoment(theme) + DISCUSSED_LINGER_MS > line) live.push(theme);
+    else archive.push(theme);
+  }
+  archive.sort(
+    (a, b) => discussedMoment(b) - discussedMoment(a) || a.title.localeCompare(b.title),
   );
+  return { live, archive };
+}
+
+export function discussTheme(themes: SessionTheme[], id: string, discussed: boolean, now = new Date().toISOString()): SessionTheme[] {
+  return themes.map((theme) => {
+    if (theme.id !== id) return theme;
+    if (discussed) {
+      return { ...theme, status: "discussed" as const, discussedAt: now, updatedAt: now };
+    }
+    return { ...withoutCheck(theme), status: "active" as const, updatedAt: now };
+  });
 }
 
 export function dismissTheme(themes: SessionTheme[], id: string, now = new Date().toISOString()): SessionTheme[] {
@@ -684,6 +732,7 @@ export function buildSessionBrief(input: {
 
   const discussed = input.themes
     .filter((theme) => theme.status === "discussed" && !theme.dismissed)
+    .sort((a, b) => discussedMoment(b) - discussedMoment(a) || a.title.localeCompare(b.title))
     .slice(0, 4)
     .map((theme) => ({ id: theme.id, title: theme.title, reopened: theme.reopened }));
 

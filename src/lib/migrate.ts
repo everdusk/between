@@ -322,6 +322,9 @@ function normalizeTheme(raw: unknown): SessionTheme | null {
   };
   if (peakFeeling) next.peakFeeling = peakFeeling;
   if (theme.manual === true) next.manual = true;
+  if (typeof theme.discussedAt === "string" && Number.isFinite(Date.parse(theme.discussedAt))) {
+    next.discussedAt = theme.discussedAt;
+  }
   return next;
 }
 

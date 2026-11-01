@@ -106,6 +106,8 @@ export interface SessionTheme {
   peakFeeling?: Feeling;
   reopened: boolean;
   dismissed: boolean;
+  /** When the circle was checked. Absent on older rows; those use updatedAt. */
+  discussedAt?: string;
   confidence: number;
   /** One line for the judge. Built from the title. */
   summary: string;
