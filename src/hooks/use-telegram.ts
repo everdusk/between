@@ -75,13 +75,13 @@ export function useTelegram(): TelegramSession {
       if (cancelled) return;
       const user = wa.initDataUnsafe?.user ?? null;
       if (inTelegram) {
-        // A custom theme often arrives late. Repainting chrome or color-scheme
-        // while the frame is up flashes the whole WebView on iOS.
+        // Variables can update under the frame. Native chrome and color-scheme
+        // wait until it leaves: each of those repaints the iOS WebView.
+        applyTelegramTheme(wa.themeParams, wa.colorScheme, {
+          scheme: !splashChromeIsHeld(),
+        });
         if (splashChromeIsHeld()) paintSplashChrome();
-        else {
-          applyTelegramTheme(wa.themeParams, wa.colorScheme);
-          applyTelegramChrome(wa);
-        }
+        else applyTelegramChrome(wa);
         applyViewportBox(wa.viewportHeight, wa.viewportStableHeight);
         publishVisualViewport();
       } else {
