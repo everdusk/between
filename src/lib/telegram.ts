@@ -130,14 +130,19 @@ export function telegramChromeColor<T extends TelegramChromeFallback>(
 export const SPLASH_CHROME = "#0d1714" as const;
 
 let splashChromeHeld = true;
+let splashChromePainted = false;
 
 export function splashChromeIsHeld(): boolean {
   return splashChromeHeld;
 }
 
 export function paintSplashChrome() {
+  // iOS repaints the whole Mini App on every chrome call, even for the same hex.
+  // One paint, under the native loader, before the frame is visible.
+  if (splashChromePainted || !splashChromeHeld) return;
   const webApp = telegramWebApp();
   if (!webApp) return;
+  splashChromePainted = true;
   try {
     webApp.setHeaderColor(SPLASH_CHROME);
   } catch {
@@ -155,11 +160,13 @@ export function paintSplashChrome() {
   }
 }
 
-/** Theme chrome returns when the launch frame is gone. */
+/** Theme and chrome return once, after the launch frame has left the tree. */
 export function releaseSplashChrome() {
+  if (!splashChromeHeld) return;
   splashChromeHeld = false;
   const webApp = telegramWebApp();
   if (!webApp || !isLikelyTelegram(webApp)) return;
+  applyTelegramTheme(webApp.themeParams, webApp.colorScheme);
   applyTelegramChrome(webApp);
 }
 

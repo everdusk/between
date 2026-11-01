@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 import type { WebApp } from "@twa-dev/types";
-import { markSplashVisible } from "@/lib/splash";
+import {
+  markSplashVisible,
+  SPLASH_VIEWPORT_WAIT_MS,
+  splashShouldWaitForViewport,
+  splashViewportSettled,
+} from "@/lib/splash";
 import {
   applyDevicePerformance,
   applyTelegramChrome,
@@ -70,9 +75,13 @@ export function useTelegram(): TelegramSession {
       if (cancelled) return;
       const user = wa.initDataUnsafe?.user ?? null;
       if (inTelegram) {
-        applyTelegramTheme(wa.themeParams, wa.colorScheme);
+        // A custom theme often arrives late. Repainting chrome or color-scheme
+        // while the frame is up flashes the whole WebView on iOS.
         if (splashChromeIsHeld()) paintSplashChrome();
-        else applyTelegramChrome(wa);
+        else {
+          applyTelegramTheme(wa.themeParams, wa.colorScheme);
+          applyTelegramChrome(wa);
+        }
         applyViewportBox(wa.viewportHeight, wa.viewportStableHeight);
         publishVisualViewport();
       } else {
@@ -93,6 +102,10 @@ export function useTelegram(): TelegramSession {
       });
     }
 
+    let revealed = false;
+    let viewportCap = 0;
+    let revealViewport: ((params: { isStateStable: boolean }) => void) | null = null;
+
     void import("@twa-dev/sdk")
       .then((mod) => {
         if (cancelled) return;
@@ -105,16 +118,58 @@ export function useTelegram(): TelegramSession {
         window.visualViewport?.addEventListener("scroll", onVisualViewport);
         window.addEventListener("resize", onVisualViewport);
         if (inTelegram) {
-          // Grow first, then reveal, so the frame is not resized in front of the user.
+          const reveal = () => {
+            if (revealed || cancelled || !webApp) return;
+            revealed = true;
+            window.clearTimeout(viewportCap);
+            if (revealViewport) {
+              webApp.offEvent("viewportChanged", revealViewport);
+              revealViewport = null;
+            }
+            // The hold starts at ready(). Until then Telegram's loader covers the page.
+            webApp.ready();
+            markSplashVisible();
+          };
+          const waitForViewport = splashShouldWaitForViewport(webApp.platform);
+          if (!waitForViewport) {
+            revealViewport = (params) => {
+              if (!webApp) return;
+              const settled = splashViewportSettled({
+                expanded: webApp.isExpanded,
+                viewportHeight: webApp.viewportHeight,
+                stableHeight: webApp.viewportStableHeight,
+              });
+              // A stable event while still collapsed is the size before expand().
+              const stableAndOpen = params?.isStateStable !== false && webApp.isExpanded;
+              if (!settled && !stableAndOpen) return;
+              reveal();
+            };
+            // Listen before expand(), so a sync resize is not missed.
+            webApp.onEvent("viewportChanged", revealViewport);
+          }
           webApp.expand();
-          webApp.ready();
+          paintSplashChrome();
           applyTelegramSafeArea(webApp.safeAreaInset, webApp.contentSafeAreaInset, {
             visible: webApp.viewportHeight,
             stable: webApp.viewportStableHeight,
           });
+          if (
+            !waitForViewport &&
+            splashViewportSettled({
+              expanded: webApp.isExpanded,
+              viewportHeight: webApp.viewportHeight,
+              stableHeight: webApp.viewportStableHeight,
+            })
+          ) {
+            reveal();
+          } else {
+            // iOS marks the window stable on the first resize, mid-animation.
+            // The loader stays up for the whole wait, then the frame appears at full size.
+            viewportCap = window.setTimeout(reveal, SPLASH_VIEWPORT_WAIT_MS);
+          }
+        } else {
+          markSplashVisible();
         }
-        // The hold starts here. Before ready(), Telegram's loader is what the user sees.
-        markSplashVisible();
 
         syncFromWebApp(webApp, inTelegram);
         webApp.onEvent("themeChanged", onTheme);
@@ -135,10 +190,12 @@ export function useTelegram(): TelegramSession {
 
     return () => {
       cancelled = true;
+      window.clearTimeout(viewportCap);
       window.visualViewport?.removeEventListener("resize", onVisualViewport);
       window.visualViewport?.removeEventListener("scroll", onVisualViewport);
       window.removeEventListener("resize", onVisualViewport);
       if (webApp) {
+        if (revealViewport) webApp.offEvent("viewportChanged", revealViewport);
         webApp.offEvent("themeChanged", onTheme);
         webApp.offEvent("viewportChanged", onViewport);
         webApp.offEvent("safeAreaChanged", onSafeArea);
