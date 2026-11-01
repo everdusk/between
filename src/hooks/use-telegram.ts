@@ -19,6 +19,7 @@ import {
   clearTelegramThemeOverrides,
   publishVisualViewport,
   DEV_DISPLAY_NAME,
+  userAllowsBotWrite,
   displayNameFromUser,
   isLikelyTelegram,
   type TelegramSession,
@@ -28,6 +29,7 @@ const FALLBACK: TelegramSession = {
   ready: false,
   inTelegram: false,
   user: null,
+  allowsWriteToPm: false,
   displayName: DEV_DISPLAY_NAME,
   colorScheme: "light",
   viewportStableHeight: null,
@@ -91,6 +93,7 @@ export function useTelegram(): TelegramSession {
         ready: true,
         inTelegram,
         user,
+        allowsWriteToPm: inTelegram && userAllowsBotWrite(user),
         displayName: inTelegram
           ? displayNameFromUser(user)
           : DEV_DISPLAY_NAME,

@@ -189,6 +189,12 @@ export const en: Catalog = {
   moodUp: "Toward the end, the mood is lighter than at the start.",
   moodDown: "Toward the end, the mood is heavier than at the start.",
   moodFlat: "No clear shift in mood across the period.",
+  botChatTitle: "Between lives in the chat too",
+  botChatNote:
+    "A thought between sessions — write it to the bot, and it is already in the journal. No need to open the app.",
+  botChatAsk:
+    "Morning, afternoon, and evening, the bot asks how you are. If you would rather not, turn it off on the Sessions tab.",
+  botChatAllow: "Allow messages",
   botOpen: "Open Between",
   botHelp:
     "Between is a journal for the session.\n\nThe journal is free. Any text here becomes a note for today. I can ask how you are in the morning, afternoon, and evening.\n\nWeek gathers the spectrum, the pattern, and topics for the session. The first 7 days after you open the tab are free. Then {price} Stars for 30 days.\n\nA voice note is saved as text only after Week is paid, up to 10 a day. The 7 free days do not include it.",
