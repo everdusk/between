@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, PenLine, Waves } from "lucide-react";
-import { BotChatGate } from "@/components/bot-chat-gate";
+import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
 import { JournalPanel } from "@/components/journal-panel";
 import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
@@ -139,6 +139,12 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
   );
 
   return (
+    <BotChatPermission
+      ready={telegram.ready}
+      inTelegram={telegram.inTelegram}
+      allowsWriteToPm={telegram.allowsWriteToPm}
+      initData={telegram.initData}
+    >
     <div
       className="fixed inset-x-0 flex flex-col overflow-hidden"
       style={{
@@ -297,12 +303,8 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
           </Tabs>
         )}
       </div>
-      <BotChatGate
-        ready={telegram.ready}
-        inTelegram={telegram.inTelegram}
-        allowsWriteToPm={telegram.allowsWriteToPm}
-        initData={telegram.initData}
-      />
+      <BotChatSheet />
     </div>
+    </BotChatPermission>
   );
 }
