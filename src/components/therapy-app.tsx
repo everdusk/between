@@ -17,6 +17,7 @@ import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { markSplashReady } from "@/lib/splash";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
+import { trackAnalytics } from "@/lib/analytics-client";
 import { fetchWeekAccess, localWeekView, readLocalWeekAccess } from "@/lib/week-access-client";
 import type { WeekAccessView } from "@/lib/week-access";
 
@@ -91,6 +92,11 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
 
   const [section, setSection] = useState<SectionId>("journal");
   const [premium, setPremium] = useState(false);
+
+  useEffect(() => {
+    if (!telegram.ready || !telegram.inTelegram || !telegram.initData) return;
+    trackAnalytics("visit", telegram.initData);
+  }, [telegram.ready, telegram.inTelegram, telegram.initData]);
   const tabOwnsAccess = useRef(false);
   const disabled = status !== "ready";
   useEffect(() => {
@@ -238,6 +244,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                   onSave={upsertEntry}
                   onDelete={deleteEntry}
                   disabled={disabled}
+                  initData={telegram.inTelegram ? telegram.initData : ""}
                 />
               </TabsContent>
               <TabsContent value="week" className="mt-0 outline-none">

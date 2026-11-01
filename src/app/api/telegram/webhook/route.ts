@@ -12,6 +12,13 @@ import {
   saveWeekAccess,
   takeBriefAttempt,
 } from "@/lib/redis";
+import {
+  analyticsRedis,
+  formatAnalyticsReport,
+  isAnalyticsOwner,
+  loadAnalyticsReport,
+  recordPaidAnalytics,
+} from "@/lib/analytics";
 import { appUrl } from "@/lib/telegram-auth";
 import {
   downloadTelegramFile,
@@ -50,6 +57,7 @@ type SuccessfulPayment = {
   currency?: string;
   total_amount?: number;
   invoice_payload?: string;
+  telegram_payment_charge_id?: string;
   subscription_expiration_date?: number;
 };
 type TelegramMedia = {
@@ -184,6 +192,7 @@ async function handlePayment(message: TelegramMessage) {
     const current = await loadWeekAccess(userId);
     await saveWeekAccess(userId, grantWeekPaidUntil(current, paidUntil));
   }
+  await recordPaidAnalytics(userId, payment.telegram_payment_charge_id);
 
   const { reply } = await localesFor(message.from);
   await telegramRequest("sendMessage", {
@@ -364,6 +373,28 @@ export async function POST(req: Request) {
     await telegramRequest("sendMessage", {
       chat_id: chatId,
       text: formatPremiumStatus(reply, resolved.view),
+      reply_markup: keyboard,
+    });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (isBotCommand(text, "stats")) {
+    const owners = process.env.ANALYTICS_OWNERS ?? "aliatorovskaia";
+    if (!isAnalyticsOwner(message.from?.username, owners)) {
+      await telegramRequest("sendMessage", {
+        chat_id: chatId,
+        text: translate(reply, "botUnknown"),
+        reply_markup: keyboard,
+      });
+      return NextResponse.json({ ok: true });
+    }
+    const redis = analyticsRedis();
+    const stats = redis
+      ? formatAnalyticsReport(await loadAnalyticsReport(redis))
+      : "Счётчики ещё не пишутся.";
+    await telegramRequest("sendMessage", {
+      chat_id: chatId,
+      text: stats,
       reply_markup: keyboard,
     });
     return NextResponse.json({ ok: true });

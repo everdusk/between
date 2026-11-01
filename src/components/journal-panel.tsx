@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { trackAnalytics } from "@/lib/analytics-client";
 import { addDays, formatDayLabel, formatTime, toDateKey } from "@/lib/dates";
 import { feelingFill } from "@/lib/spectrum";
 import { isTherapyTheme, sanitizeTags, shownEntryTags, splitTags } from "@/lib/tags";
@@ -28,6 +29,7 @@ interface JournalPanelProps {
   }) => boolean;
   onDelete: (id: string) => boolean;
   disabled?: boolean;
+  initData?: string;
 }
 
 /** First feeling of the day, or null when the notes carry no feeling. */
@@ -60,6 +62,7 @@ export function JournalPanel({
   onSave,
   onDelete,
   disabled,
+  initData = "",
 }: JournalPanelProps) {
   const { t, locale, count, feeling: feelingLabel, slot } = useI18n();
   const today = toDateKey();
@@ -136,6 +139,7 @@ export function JournalPanel({
       themeHidden: hidden,
     });
     if (ok) {
+      if (!editingId) trackAnalytics("note", initData);
       setSavedFlash(true);
       window.setTimeout(() => setSavedFlash(false), 1800);
       resetForm();
