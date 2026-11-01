@@ -5,6 +5,7 @@ import type { InvoiceStatuses } from "@twa-dev/types";
 import { Lock, Star } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
 import { trackAnalytics } from "@/lib/analytics-client";
+import { captureProduct } from "@/lib/product-analytics";
 import { Button } from "@/components/ui/button";
 import {
   createWeekInvoice,
@@ -149,11 +150,12 @@ export function WeekTab({
       setPayError(t("payFail"));
       return;
     }
-    trackAnalytics("checkout", initData);
+    trackAnalytics("checkout", initData, { plan });
     const webApp = (await import("@twa-dev/sdk")).default;
     webApp.openInvoice(url, (status: InvoiceStatuses) => {
       if (!alive.current) return;
       if (status === "paid") {
+        captureProduct("paid", { plan });
         void refreshAfterPay();
         return;
       }

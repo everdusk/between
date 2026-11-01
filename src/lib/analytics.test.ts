@@ -9,6 +9,7 @@ import {
   formatAnalyticsReport,
   isAnalyticsOwner,
   planAnalyticsSend,
+  scrubProductEvent,
   snapshotFromReads,
 } from "./analytics-model";
 
@@ -134,6 +135,54 @@ describe("analytics", () => {
     assert.match(text, /20 окт — 8 новых, следующий день 3 из 8, день 7: 2 из 8/);
     assert.doesNotMatch(text, /1 окт/);
     assert.equal(text.includes("424242"), false);
+  });
+
+  it("sends a funnel step to PostHog without a person, an ip, or the launch hash", () => {
+    const launch =
+      "https://between-rouge.vercel.app/#tgWebAppData=user%3D%257B%2522id%2522%253A424242%257D&tgWebAppVersion=8";
+    const kept = scrubProductEvent({
+      event: "checkout",
+      properties: {
+        distinct_id: "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        token: "phc_public",
+        $session_id: "sess",
+        $lib: "web",
+        $current_url: launch,
+        $ip: "203.0.113.8",
+        $elements: [{ text: "сегодня тяжело" }],
+        note: "сегодня тяжело",
+        plan: "quarter",
+        username: "aliatorovskaia",
+      },
+      $set: { name: "hidden" },
+      $set_once: { first: "hidden" },
+      $unset: ["name"],
+    });
+    assert.ok(kept);
+    assert.equal(kept.event, "checkout");
+    assert.equal(kept.properties?.plan, "quarter");
+    assert.equal(kept.properties?.distinct_id, "7c9e6679-7425-40de-944b-e07fc1f90ae7");
+    assert.equal(kept.properties?.token, "phc_public");
+    assert.equal(kept.properties?.$session_id, "sess");
+    assert.equal(kept.properties?.$lib, "web");
+    assert.equal(kept.properties?.$current_url, "https://between-rouge.vercel.app/");
+    assert.equal(kept.properties?.$geoip_disable, true);
+    assert.equal(kept.properties?.$ip, undefined);
+    assert.equal(kept.properties?.note, undefined);
+    assert.equal(kept.properties?.username, undefined);
+    assert.equal(kept.properties?.$elements, undefined);
+    assert.equal(kept.$set, undefined);
+    assert.equal(kept.$set_once, undefined);
+    assert.equal(kept.$unset, undefined);
+    assert.equal(JSON.stringify(kept).includes("424242"), false);
+    assert.equal(JSON.stringify(kept).includes("тяжело"), false);
+
+    assert.equal(scrubProductEvent({ event: "$pageview", properties: { distinct_id: "anon" } }), null);
+    assert.equal(scrubProductEvent({ event: "paid", properties: { plan: "forever", distinct_id: "anon" } })?.properties?.plan, undefined);
+    assert.equal(
+      scrubProductEvent({ event: "visit", properties: { distinct_id: "424242" } }),
+      null,
+    );
   });
 
   it("recognises the owner without treating the name as a stored id", () => {

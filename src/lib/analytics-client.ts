@@ -1,5 +1,6 @@
 import { toDateKey } from "./dates";
-import { planAnalyticsSend, type ClientAnalyticsEvent } from "./analytics-model";
+import { planAnalyticsSend, type ClientAnalyticsEvent, type ProductPlan } from "./analytics-model";
+import { captureProduct } from "./product-analytics";
 
 const COHORT_KEY = "between:analytics-cohort";
 const SENT_KEY = "between:analytics-sent";
@@ -16,7 +17,11 @@ function readState(): { cohort: string | null; sent: Record<string, string[]> } 
 }
 
 /** Counts one funnel step per device per day. No Telegram id leaves the validated request. */
-export function trackAnalytics(event: ClientAnalyticsEvent, initData: string): void {
+export function trackAnalytics(
+  event: ClientAnalyticsEvent,
+  initData: string,
+  detail?: { plan?: ProductPlan },
+): void {
   if (!initData || typeof window === "undefined") return;
   let plan: ReturnType<typeof planAnalyticsSend>;
   try {
@@ -27,6 +32,7 @@ export function trackAnalytics(event: ClientAnalyticsEvent, initData: string): v
     return;
   }
   if (!plan.send) return;
+  captureProduct(event, detail?.plan ? { plan: detail.plan } : undefined);
   void fetch("/api/analytics", {
     method: "POST",
     headers: {

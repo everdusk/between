@@ -5,6 +5,12 @@ export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
 export const CLIENT_ANALYTICS_EVENTS = ["visit", "note", "week", "paywall", "checkout"] as const;
 export type ClientAnalyticsEvent = (typeof CLIENT_ANALYTICS_EVENTS)[number];
 
+/** The only custom property a product event may carry. */
+export const PRODUCT_PLANS = ["month", "quarter", "year"] as const;
+export type ProductPlan = (typeof PRODUCT_PLANS)[number];
+
+const DROPPED_PRODUCT_KEYS = new Set(["$set", "$set_once", "$unset", "$ip"]);
+
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_OFFSET = 400;
 const REPORT_DAYS = 7;
@@ -180,6 +186,65 @@ export function snapshotFromReads(
 
 export function reportDaySpan(): { reportDays: number; cohortDays: number } {
   return { reportDays: REPORT_DAYS, cohortDays: COHORT_DAYS };
+}
+
+export type ProductEvent = {
+  event: string;
+  properties?: Record<string, unknown> | null;
+  $set?: unknown;
+  $set_once?: unknown;
+  $unset?: unknown;
+};
+
+function keepProductKey(key: string): boolean {
+  if (DROPPED_PRODUCT_KEYS.has(key)) return false;
+  if (/user.?id|username|init.?data|tgWebApp/i.test(key)) return false;
+  return key.startsWith("$") || key === "distinct_id" || key === "token" || key === "plan";
+}
+
+/** Origin and path only, so a Telegram launch hash never leaves the device. */
+function quietProductValue(value: unknown): unknown {
+  if (typeof value === "number" || typeof value === "boolean" || value == null) return value;
+  if (typeof value !== "string") return undefined;
+  if (/^\d{6,}$/.test(value)) return undefined;
+  if (!/tgWebAppData|initData|^https?:\/\//i.test(value)) return value;
+  try {
+    const url = new URL(value);
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Keeps a funnel event and the anonymous device id.
+ * Drops person profiles, IP, note text, and anything that is not `plan`.
+ */
+export function scrubProductEvent(event: ProductEvent): (ProductEvent & { properties: Record<string, unknown> }) | null {
+  if (!(ANALYTICS_EVENTS as readonly string[]).includes(event.event)) return null;
+  const source =
+    event.properties && typeof event.properties === "object" && !Array.isArray(event.properties)
+      ? event.properties
+      : {};
+  const distinctId = source.distinct_id;
+  if (typeof distinctId === "number" || (typeof distinctId === "string" && /^\d{5,}$/.test(distinctId))) {
+    return null;
+  }
+  const properties: Record<string, unknown> = { $geoip_disable: true };
+  for (const [key, value] of Object.entries(source)) {
+    if (!keepProductKey(key)) continue;
+    if (key === "plan") {
+      if ((PRODUCT_PLANS as readonly string[]).includes(String(value))) properties.plan = String(value);
+      continue;
+    }
+    const quiet = quietProductValue(value);
+    if (quiet !== undefined) properties[key] = quiet;
+  }
+  const next = { ...event, properties };
+  delete next.$set;
+  delete next.$set_once;
+  delete next.$unset;
+  return next;
 }
 
 function ruDay(iso: string): string {
