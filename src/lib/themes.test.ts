@@ -11,9 +11,12 @@ import {
   patternAlreadyCurrent,
   patternKey,
   patternShouldRequest,
+  discussTheme,
+  discussedDateKey,
   dismissTheme,
   modelRequestStamp,
   openThemes,
+  splitBacklog,
   parseJudgeVerdict,
   sameProblemTitle,
   settleEntry,
@@ -220,6 +223,7 @@ describe("theme judge", () => {
       summary: "конфликты с мамой",
       quotes: [],
       updatedAt: "2026-10-10T00:00:00.000Z",
+      discussedAt: "2026-10-10T12:00:00.000Z",
     };
     const result = applyVerdict(
       { themes: [discussed], links: [] },
@@ -229,6 +233,7 @@ describe("theme judge", () => {
     const theme = result.state.themes[0];
     assert.equal(theme.status, "active");
     assert.equal(theme.reopened, true);
+    assert.equal(theme.discussedAt, undefined);
     assert.ok(openThemes(result.state.themes).some((item) => item.id === "mom"));
     const quiet = themeScore({ ...theme, reopened: false }, "2026-10-27", []);
     assert.ok(themeScore(theme, "2026-10-27", []) >= quiet + 4);
@@ -555,5 +560,63 @@ describe("session brief", () => {
     assert.equal(patternShouldRequest({ ...ready, gaveUp: true }), false);
     assert.equal(patternShouldRequest({ ...ready, hasInitData: false }), false);
     assert.equal(patternShouldRequest({ ...ready, themeCount: 0 }), false);
+  });
+
+  it("keeps a checked theme in the list for a week, then archives it", () => {
+    const base: SessionTheme = {
+      id: "mom",
+      userId: "local",
+      title: "конфликты с мамой",
+      status: "active",
+      count: 2,
+      firstSeen: "2026-10-01",
+      lastSeen: "2026-10-10",
+      peakIntensity: 6,
+      reopened: false,
+      dismissed: false,
+      confidence: 0.8,
+      summary: "конфликты с мамой",
+      quotes: [],
+      updatedAt: "2026-10-01T00:00:00.000Z",
+    };
+    const checked = discussTheme([base], "mom", true, "2026-10-20T15:00:00.000Z");
+    assert.equal(checked[0]?.status, "discussed");
+    assert.equal(checked[0]?.discussedAt, "2026-10-20T15:00:00.000Z");
+    const recent = { ...checked[0]!, id: "recent" };
+    const aged = {
+      ...checked[0]!,
+      id: "aged",
+      title: "стыд за детское",
+      discussedAt: "2026-10-15T15:00:00.000Z",
+      updatedAt: "2026-10-15T15:00:00.000Z",
+    };
+    const week = {
+      ...checked[0]!,
+      id: "week",
+      title: "дедлайн",
+      discussedAt: "2026-10-16T15:00:00.000Z",
+    };
+    const legacy = {
+      ...checked[0]!,
+      id: "legacy",
+      title: "работа",
+      discussedAt: undefined,
+      updatedAt: "2026-10-18T15:00:00.000Z",
+    };
+    const forgotten = dismissTheme([base], "mom", "2026-10-20T15:00:00.000Z")[0]!;
+    const now = new Date("2026-10-23T15:00:00.000Z");
+    const split = splitBacklog([base, recent, aged, week, legacy, forgotten], now);
+    assert.deepEqual(
+      split.live.map((theme) => theme.id),
+      ["mom", "recent", "legacy"],
+    );
+    assert.deepEqual(
+      split.archive.map((theme) => theme.id),
+      ["week", "aged"],
+    );
+    assert.equal(discussedDateKey(aged), "2026-10-15");
+    const back = discussTheme(checked, "mom", false, "2026-10-21T00:00:00.000Z");
+    assert.equal(back[0]?.status, "active");
+    assert.equal(back[0]?.discussedAt, undefined);
   });
 });
