@@ -126,6 +126,43 @@ export function telegramChromeColor<T extends TelegramChromeFallback>(
   return fallback;
 }
 
+/** Edges of the launch frame. Header and webview match it until the frame leaves. */
+export const SPLASH_CHROME = "#0d1714" as const;
+
+let splashChromeHeld = true;
+
+export function splashChromeIsHeld(): boolean {
+  return splashChromeHeld;
+}
+
+export function paintSplashChrome() {
+  const webApp = telegramWebApp();
+  if (!webApp) return;
+  try {
+    webApp.setHeaderColor(SPLASH_CHROME);
+  } catch {
+    // Bot API older than 6.1
+  }
+  try {
+    webApp.setBackgroundColor(SPLASH_CHROME);
+  } catch {
+    // Bot API older than 6.1
+  }
+  try {
+    webApp.setBottomBarColor(SPLASH_CHROME);
+  } catch {
+    // Bot API older than 7.10
+  }
+}
+
+/** Theme chrome returns when the launch frame is gone. */
+export function releaseSplashChrome() {
+  splashChromeHeld = false;
+  const webApp = telegramWebApp();
+  if (!webApp || !isLikelyTelegram(webApp)) return;
+  applyTelegramChrome(webApp);
+}
+
 export function applyTelegramChrome(webApp: WebApp) {
   const theme = webApp.themeParams;
   const header = telegramChromeColor(theme?.header_bg_color, "bg_color");
