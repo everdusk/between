@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Literata, Manrope } from "next/font/google";
 import { SplashScreen } from "@/components/splash-screen";
+import { SPLASH_CHROME } from "@/lib/telegram";
 import "./globals.css";
 
 const literata = Literata({
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="ru"
       className={`${literata.variable} ${manrope.variable} h-full antialiased`}
+      style={{ backgroundColor: SPLASH_CHROME }}
     >
       <head>
         <link rel="preload" href="/splash.webp" as="image" fetchPriority="high" />

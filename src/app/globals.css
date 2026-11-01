@@ -368,7 +368,4 @@ html[data-performance="low"] .blur-3xl {
   .animate-in {
     animation: none;
   }
-  .splash-screen {
-    transition: none;
-  }
 }

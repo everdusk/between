@@ -2,52 +2,59 @@
 
 import { useEffect, useState } from "react";
 import {
-  SPLASH_FADE_MS,
+  SPLASH_MAX_MS,
   SPLASH_READY_EVENT,
+  SPLASH_VISIBLE_EVENT,
+  dismissSplash,
+  markSplashVisible,
   splashAppIsReady,
+  splashIsDismissed,
   splashRemainMs,
+  splashVisibleElapsed,
 } from "@/lib/splash";
 import { releaseSplashChrome, SPLASH_CHROME } from "@/lib/telegram";
 
 export function SplashScreen() {
   const [shown, setShown] = useState(true);
-  const [leaving, setLeaving] = useState(false);
+  // A remount after the frame has left must not paint it again. The server
+  // render is always shown, so the first hydration still matches.
+  if (typeof window !== "undefined" && splashIsDismissed() && shown) {
+    setShown(false);
+  }
 
   useEffect(() => {
-    const started = performance.now();
+    if (splashIsDismissed()) {
+      clearSplashField();
+      return;
+    }
+
     let appReady = splashAppIsReady();
     let timer = 0;
-    let fadeTimer = 0;
     let removed = false;
-
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const beginHide = () => {
+    const hide = () => {
       if (removed) return;
       removed = true;
       window.clearTimeout(timer);
-      const fade = fadeMs(reducedMotion);
-      if (fade === 0) {
-        releaseSplashChrome();
-        setShown(false);
-        return;
-      }
-      setLeaving(true);
-      fadeTimer = window.setTimeout(() => {
-        releaseSplashChrome();
-        setShown(false);
-      }, fade);
+      dismissSplash();
+      releaseSplashChrome();
+      clearSplashField();
+      setShown(false);
     };
 
     const schedule = () => {
       window.clearTimeout(timer);
+      const elapsed = splashVisibleElapsed(performance.now());
+      // Still behind Telegram's own loader. The hold has not started.
+      if (elapsed == null) return;
       const remain = splashRemainMs({
-        elapsed: performance.now() - started,
+        elapsed,
         appReady,
         reducedMotion,
       });
       if (remain == null) {
-        beginHide();
+        hide();
         return;
       }
       timer = window.setTimeout(schedule, remain);
@@ -57,13 +64,22 @@ export function SplashScreen() {
       appReady = true;
       schedule();
     };
+    const onVisible = () => schedule();
 
     window.addEventListener(SPLASH_READY_EVENT, onReady);
+    window.addEventListener(SPLASH_VISIBLE_EVENT, onVisible);
     schedule();
+    // If the client never reports that the frame is visible, start the hold anyway.
+    const safety = window.setTimeout(() => {
+      markSplashVisible();
+      schedule();
+    }, SPLASH_MAX_MS + 600);
+
     return () => {
       window.clearTimeout(timer);
-      window.clearTimeout(fadeTimer);
+      window.clearTimeout(safety);
       window.removeEventListener(SPLASH_READY_EVENT, onReady);
+      window.removeEventListener(SPLASH_VISIBLE_EVENT, onVisible);
     };
   }, []);
 
@@ -71,11 +87,18 @@ export function SplashScreen() {
 
   return (
     <div
-      className={`splash-screen fixed inset-0 z-[80] flex items-center justify-center transition-opacity duration-[420ms] ease-out ${leaving ? "pointer-events-none opacity-0" : "opacity-100"}`}
-      style={{ backgroundColor: SPLASH_CHROME }}
-      aria-hidden={leaving ? true : undefined}
+      className="splash-screen"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 80,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: SPLASH_CHROME,
+      }}
     >
-      {/* Static file in the first HTML. next/image would wait on its runtime. */}
+      {/* Inline box so the frame covers the page before the stylesheet arrives. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/splash.webp"
@@ -83,15 +106,13 @@ export function SplashScreen() {
         width={1080}
         height={1920}
         fetchPriority="high"
-        decoding="async"
-        className="h-full w-full object-contain"
+        decoding="sync"
+        style={{ width: "100%", height: "100%", objectFit: "contain" }}
       />
     </div>
   );
 }
 
-function fadeMs(reducedMotion: boolean): number {
-  if (reducedMotion) return 0;
-  if (document.documentElement.dataset.performance === "low") return 0;
-  return SPLASH_FADE_MS;
+function clearSplashField() {
+  document.documentElement.style.backgroundColor = "";
 }
