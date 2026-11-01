@@ -7,6 +7,8 @@ import {
   markSplashVisible,
   resetSplashClock,
   splashRemainMs,
+  splashShouldWaitForViewport,
+  splashViewportSettled,
   splashVisibleElapsed,
 } from "./splash";
 
@@ -29,6 +31,28 @@ describe("splash", () => {
     markSplashVisible(2_000);
     assert.equal(splashVisibleElapsed(1_600), 600);
     resetSplashClock();
+  });
+
+  it("waits to reveal until the telegram window has finished expanding", () => {
+    assert.equal(
+      splashViewportSettled({ expanded: false, viewportHeight: 700, stableHeight: 700 }),
+      false,
+    );
+    assert.equal(
+      splashViewportSettled({ expanded: true, viewportHeight: 640, stableHeight: 700 }),
+      false,
+    );
+    assert.equal(
+      splashViewportSettled({ expanded: true, viewportHeight: 0, stableHeight: 0 }),
+      false,
+    );
+    assert.equal(
+      splashViewportSettled({ expanded: true, viewportHeight: 700, stableHeight: 700 }),
+      true,
+    );
+    assert.equal(splashShouldWaitForViewport("ios"), true);
+    assert.equal(splashShouldWaitForViewport("tdesktop"), false);
+    assert.equal(splashShouldWaitForViewport("android"), false);
   });
 
   it("leaves as soon as the journal is ready when motion is reduced", () => {

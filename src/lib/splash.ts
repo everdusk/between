@@ -4,6 +4,12 @@ export const SPLASH_MIN_MS = 1100;
 export const SPLASH_MAX_MS = 2400;
 /** Reduced motion still covers the first paint, then leaves. */
 export const SPLASH_REDUCED_MAX_MS = 280;
+/**
+ * Telegram expand keeps resizing the WebView after the page is up.
+ * Wait for a settled window before ready(), but don't leave the native
+ * loader up if the client never reports one.
+ */
+export const SPLASH_VIEWPORT_WAIT_MS = 700;
 export const SPLASH_READY_EVENT = "between-splash-ready";
 /** Fired once the frame is actually on screen. In Telegram that is WebApp.ready(). */
 export const SPLASH_VISIBLE_EVENT = "between-splash-visible";
@@ -56,6 +62,30 @@ export function resetSplashClock(): void {
  * Milliseconds until the next decision, or null when the frame should leave.
  * A ready app waits out the minimum. An app that never gets ready leaves at the cap.
  */
+/**
+ * The expand animation is finished when the Mini App is open and the
+ * visible height matches the stable one. A zero height is still the loader.
+ */
+export function splashViewportSettled(input: {
+  expanded: boolean;
+  viewportHeight: number;
+  stableHeight: number;
+}): boolean {
+  return (
+    input.expanded &&
+    input.stableHeight > 0 &&
+    input.viewportHeight === input.stableHeight
+  );
+}
+
+/**
+ * iOS reports the window as already expanded until the first viewport event,
+ * then animates expand under the page. Other clients are already at size.
+ */
+export function splashShouldWaitForViewport(platform: string): boolean {
+  return platform === "ios";
+}
+
 export function splashRemainMs(input: {
   elapsed: number;
   appReady: boolean;

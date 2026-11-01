@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import {
   SPLASH_MAX_MS,
   SPLASH_READY_EVENT,
@@ -22,11 +22,16 @@ export function SplashScreen() {
     setShown(false);
   }
 
+  // Drop the frame before the theme paints, so a color-scheme change
+  // cannot flash the WebView while the picture is still on screen.
+  useLayoutEffect(() => {
+    if (shown) return;
+    releaseSplashChrome();
+    clearSplashField();
+  }, [shown]);
+
   useEffect(() => {
-    if (splashIsDismissed()) {
-      clearSplashField();
-      return;
-    }
+    if (splashIsDismissed()) return;
 
     let appReady = splashAppIsReady();
     let timer = 0;
@@ -38,8 +43,6 @@ export function SplashScreen() {
       removed = true;
       window.clearTimeout(timer);
       dismissSplash();
-      releaseSplashChrome();
-      clearSplashField();
       setShown(false);
     };
 
@@ -114,5 +117,7 @@ export function SplashScreen() {
 }
 
 function clearSplashField() {
-  document.documentElement.style.backgroundColor = "";
+  const root = document.documentElement;
+  root.style.backgroundColor = "";
+  delete root.dataset.splash;
 }

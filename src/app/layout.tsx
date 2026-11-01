@@ -29,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ru"
+      data-splash=""
       className={`${literata.variable} ${manrope.variable} h-full antialiased`}
       style={{ backgroundColor: SPLASH_CHROME }}
     >
