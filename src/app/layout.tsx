@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Literata, Manrope } from "next/font/google";
 import { SplashScreen } from "@/components/splash-screen";
+import { LAUNCH_THEME_SCRIPT, SPLASH_COVER_CSS } from "@/lib/launch-theme";
 import { SPLASH_CHROME } from "@/lib/telegram";
 import "./globals.css";
 
@@ -32,13 +33,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       data-splash=""
       className={`${literata.variable} ${manrope.variable} h-full antialiased`}
       style={{ backgroundColor: SPLASH_CHROME }}
+      suppressHydrationWarning
     >
       <head>
+        <style dangerouslySetInnerHTML={{ __html: SPLASH_COVER_CSS }} />
+        <script dangerouslySetInnerHTML={{ __html: LAUNCH_THEME_SCRIPT }} />
         <link rel="preload" href="/splash.webp" as="image" fetchPriority="high" />
       </head>
       <body className="flex h-full flex-col overflow-hidden font-sans">
         <SplashScreen />
-        {children}
+        <div className="app-root">{children}</div>
       </body>
     </html>
   );

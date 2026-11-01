@@ -60,13 +60,18 @@ export function panelColor(
 }
 
 /** Map Telegram theme params onto Between CSS variables when present. */
-export function applyTelegramTheme(theme: ThemeParams, colorScheme: "light" | "dark") {
+export function applyTelegramTheme(
+  theme: ThemeParams,
+  colorScheme: "light" | "dark",
+  options?: { scheme?: boolean },
+) {
   const root = document.documentElement;
   root.dataset.telegramTheme = colorScheme;
-  root.style.setProperty(
-    "color-scheme",
-    schemeFromColor(theme.bg_color) ?? colorScheme,
-  );
+  // color-scheme repaints the whole iOS WebView. Skip it while the frame is up.
+  if (options?.scheme !== false) {
+    const next = schemeFromColor(theme.bg_color) ?? colorScheme;
+    if (root.style.colorScheme !== next) root.style.setProperty("color-scheme", next);
+  }
 
   const set = (name: string, value: string | undefined) => {
     if (value) root.style.setProperty(name, value);
@@ -127,7 +132,7 @@ export function telegramChromeColor<T extends TelegramChromeFallback>(
 }
 
 /** Edges of the launch frame. Header and webview match it until the frame leaves. */
-export const SPLASH_CHROME = "#0d1714" as const;
+export const SPLASH_CHROME = "#0c1210" as const;
 
 let splashChromeHeld = true;
 let splashChromePainted = false;

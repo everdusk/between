@@ -93,7 +93,13 @@ export function SplashScreen() {
       className="splash-screen"
       style={{
         position: "fixed",
-        inset: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        width: "100%",
+        height: "100%",
+        minHeight: "100dvh",
         zIndex: 80,
         display: "flex",
         alignItems: "center",
@@ -106,8 +112,8 @@ export function SplashScreen() {
       <img
         src="/splash.webp"
         alt="Between"
-        width={1080}
-        height={1920}
+        width={780}
+        height={1560}
         fetchPriority="high"
         decoding="sync"
         style={{ width: "100%", height: "100%", objectFit: "contain" }}
