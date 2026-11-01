@@ -69,7 +69,7 @@
 | `eyebrow` | Мелкая подпись над заголовком: `0.6875rem`, semibold, tracking `0.16em`, капс. |
 | `tabular` | Числа и время. |
 | `font-display` | Бренд и заголовки. Шрифт Literata. Всё остальное — Manrope (`font-sans` на `body`). |
-| `native-overlay` | Невидимый нативный `input` / `select` поверх нарисованной пилюли. Паттерн даты, времени и языка. |
+| `native-overlay` | Невидимый нативный `input` поверх нарисованной пилюли. Только дата и время. Язык — своё меню, системный список на компьютере нечитаем. |
 
 Радиус плитки — `rounded-3xl`. Вложенный блок — `rounded-2xl`. Контрол (кнопка, чип, поле, док) — `rounded-full` или `rounded-2xl` у поля.
 
@@ -109,7 +109,7 @@
 
 Смотреть `src/components/therapy-app.tsx`.
 
-1. Шапка: Literata «Between», приветствие `text-xs text-subtitle`, пилюля языка (`Languages` + подпись + `native-overlay` на `<select>`). Верхний и боковые отступы — `max(1.25rem, var(--safe-*))`.
+1. Шапка: Literata «Between», приветствие `text-xs text-subtitle`, пилюля языка (`LanguageSwitch`: `Languages` + подпись + своё меню `glass-strong`). Системный список `<select>` на компьютере рисует белое меню с цветом текста темы, поэтому подписи пропадают. Верхний и боковые отступы — `max(1.25rem, var(--safe-*))`.
 2. Контент вкладки без общей карточки. Заголовок экрана: `eyebrow text-section-header` и `font-display` около `2.125rem` / `leading-[1.05]`. Акцентная подпись внутри плитки — `text-accent-text`. Ссылка — `text-link`.
 3. Док стоит в колонке под прокручиваемой областью, `variant="dock"`, три вкладки с иконками Lucide: `PenLine`, `Waves`, `CalendarDays`. Он не `position: fixed`: после клавиатуры на заметке iOS уносит фиксированный низ ниже экрана. Колонка занимает видимый viewport (`--vv-height`). Активная пилюля красится `button_color`. Нижний отступ — `max(1.25rem, var(--safe-bottom))`, боковые — `--safe-left` и `--safe-right`.
 4. Подвал со статусом синка прокручивается вместе с вкладкой. Текст заметки переносится через `break-words`, длинное слово не раздвигает колонку.

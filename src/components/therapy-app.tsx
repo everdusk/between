@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, ChevronDown, Languages, PenLine, Waves } from "lucide-react";
+import { CalendarDays, PenLine, Waves } from "lucide-react";
 import { JournalPanel } from "@/components/journal-panel";
+import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WeekTab } from "@/components/week-tab";
@@ -11,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTelegram } from "@/hooks/use-telegram";
 import { useTherapyStore } from "@/hooks/use-therapy-store";
-import { LOCALES } from "@/lib/i18n";
 import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { markSplashReady } from "@/lib/splash";
@@ -63,7 +63,7 @@ function localizeStorageError(
 }
 
 function TherapyShell({ telegram }: { telegram: TelegramSession }) {
-  const { t, locale, greetingLocale, setLocale } = useI18n();
+  const { t, locale, greetingLocale } = useI18n();
   const {
     store,
     status,
@@ -124,7 +124,6 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
   const greeting = !telegram.ready
     ? translate(greetingLocale, "loading")
     : translate(greetingLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
-  const localeLabel = LOCALES.find((item) => item.id === locale)?.label ?? locale;
 
   const footer = (
     <footer className="py-8 text-center text-[0.6875rem] leading-relaxed tracking-wide text-muted-foreground/80">
@@ -155,7 +154,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
         <div className="atmosphere-grain" />
       </div>
 
-      <header className="relative z-10">
+      <header className="relative z-30">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-3 pl-[max(1.25rem,var(--safe-left))] pr-[max(1.25rem,var(--safe-right))] pt-[max(1.25rem,var(--safe-top))] pb-2 sm:pl-[max(1.5rem,var(--safe-left))] sm:pr-[max(1.5rem,var(--safe-right))]">
           <div className="min-w-0">
             <p className="font-display text-[1.375rem] leading-none tracking-tight text-foreground">
@@ -178,30 +177,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                 localhost
               </span>
             )}
-            <span className="glass relative inline-flex h-9 items-center gap-1.5 rounded-full pr-2.5 pl-3 text-xs font-medium text-foreground has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-ring/25">
-              <Languages aria-hidden className="size-3.5 opacity-70" />
-              <span className="max-w-24 truncate">{localeLabel}</span>
-              <ChevronDown aria-hidden className="size-3 opacity-50" />
-              <label className="sr-only" htmlFor="app-language">
-                {t("language")}
-              </label>
-              <select
-                id="app-language"
-                aria-label={t("language")}
-                value={locale}
-                onChange={(event) => {
-                  const next = LOCALES.find((item) => item.id === event.target.value);
-                  if (next) setLocale(next.id);
-                }}
-                className="native-overlay"
-              >
-                {LOCALES.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </span>
+            <LanguageSwitch />
           </div>
         </div>
       </header>
