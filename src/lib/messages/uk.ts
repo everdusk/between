@@ -209,6 +209,8 @@ export const uk: Catalog = {
   botPremiumDays: "Преміум ще {days}.",
   botPremiumNone: "Преміуму немає.",
   botPremiumTrial: "«Тиждень» ще безкоштовний {days}.",
+  botPaySupport:
+    "Оплата «Тижня» йде через Telegram Stars.\n\n30 днів — підписка: скасування в Telegram, доступ до кінця оплаченого строку. 3 місяці і рік — разовий платіж.\n\nЯкщо Stars списалися, а «Тиждень» не відкрився, або потрібне повернення — напишіть у цей чат, що сталося і коли. Розберемося тут.",
   botPollMorning: "Ранок. Як ви?",
   botPollDay: "День. Як ви?",
   botPollEvening: "Вечір. Як ви?",

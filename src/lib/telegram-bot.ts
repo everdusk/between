@@ -45,6 +45,38 @@ export function miniAppKeyboard(url: string, locale: LocaleId = "ru") {
   };
 }
 
+/** `/paysupport`, `/paysupport@Bot`, and `/paysupport something`. */
+export function isBotCommand(text: string, name: string): boolean {
+  const lower = text.trim().toLowerCase();
+  const command = `/${name.toLowerCase()}`;
+  return lower === command || lower.startsWith(`${command} `) || lower.startsWith(`${command}@`);
+}
+
+const COMMANDS_EN = [
+  { command: "start", description: "Open Between" },
+  { command: "premium", description: "Premium time left" },
+  { command: "paysupport", description: "Stars payment help" },
+];
+
+const COMMANDS_RU = [
+  { command: "start", description: "Открыть Between" },
+  { command: "premium", description: "Сколько премиума осталось" },
+  { command: "paysupport", description: "Вопрос по оплате" },
+];
+
+let commandsReady = false;
+
+/** Menu list Telegram checks when a bot takes Stars. Safe to call on every update. */
+export async function publishBotCommands(): Promise<void> {
+  if (commandsReady || !process.env.BOT_TOKEN?.trim()) return;
+  const english = await telegramRequest("setMyCommands", { commands: COMMANDS_EN });
+  const russian = await telegramRequest("setMyCommands", {
+    commands: COMMANDS_RU,
+    language_code: "ru",
+  });
+  if (english && russian) commandsReady = true;
+}
+
 export async function telegramCall<T>(
   method: string,
   body: Record<string, unknown>,

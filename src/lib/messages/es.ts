@@ -209,6 +209,8 @@ export const es: Catalog = {
   botPremiumDays: "Quedan {days} de premium.",
   botPremiumNone: "No hay premium.",
   botPremiumTrial: "Semana sigue gratis {days}.",
+  botPaySupport:
+    "Semana se paga con Telegram Stars.\n\n30 días es una suscripción: se cancela en Telegram y el acceso sigue hasta el fin del periodo pagado. 3 meses y un año son un pago único.\n\nSi se cobraron Stars y Semana no se abrió, o necesitas un reembolso, escribe aquí qué pasó y cuándo. Lo vemos en este chat.",
   botPollMorning: "Mañana. ¿Cómo estás?",
   botPollDay: "Día. ¿Cómo estás?",
   botPollEvening: "Noche. ¿Cómo estás?",

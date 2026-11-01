@@ -208,6 +208,8 @@ export const vi: Catalog = {
   botPremiumDays: "Còn {days} premium.",
   botPremiumNone: "Chưa có premium.",
   botPremiumTrial: "Tuần vẫn miễn phí {days}.",
+  botPaySupport:
+    "Tuần được trả bằng Telegram Stars.\n\n30 ngày là đăng ký: hủy trong Telegram, quyền truy cập giữ đến hết kỳ đã trả. 3 tháng và một năm là trả một lần.\n\nNếu Stars đã bị trừ mà Tuần không mở, hoặc bạn cần hoàn tiền, hãy viết vào cuộc trò chuyện này chuyện gì đã xảy ra và khi nào. Chúng tôi xử lý tại đây.",
   botPollMorning: "Sáng. Bạn thế nào?",
   botPollDay: "Trưa. Bạn thế nào?",
   botPollEvening: "Tối. Bạn thế nào?",

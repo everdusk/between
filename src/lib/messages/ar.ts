@@ -208,6 +208,8 @@ export const ar: Catalog = {
   botPremiumDays: "تبقّى من البريميوم {days}.",
   botPremiumNone: "لا بريميوم.",
   botPremiumTrial: "«الأسبوع» ما زال مجانيًا {days}.",
+  botPaySupport:
+    "يُدفع «الأسبوع» عبر Telegram Stars.\n\n30 يومًا اشتراك: يُلغى في تيليغرام، ويبقى الوصول حتى نهاية المدة المدفوعة. 3 أشهر وسنة دفعة واحدة.\n\nإذا خُصم Stars ولم يُفتح «الأسبوع»، أو احتجت إلى استرداد، اكتب في هذه الدردشة ماذا حدث ومتى. نحلّ الأمر هنا.",
   botPollMorning: "صباح. كيف الحال؟",
   botPollDay: "نهار. كيف الحال؟",
   botPollEvening: "مساء. كيف الحال؟",
