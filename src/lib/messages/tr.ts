@@ -183,6 +183,12 @@ export const tr: Catalog = {
   moodUp: "Dönemin sonunda ruh hali baştakinden daha hafif.",
   moodDown: "Dönemin sonunda ruh hali baştakinden daha ağır.",
   moodFlat: "Dönem boyunca ruh halinde belirgin bir kayma yok.",
+  botChatTitle: "Between sohbette de yaşar",
+  botChatNote:
+    "Seanslar arasında bir düşünce geldiyse bota yazın, günlüğe düşer. Uygulamayı açmanız gerekmez.",
+  botChatAsk:
+    "Sabah, öğlen ve akşam bot halinizi sorar. İstemezseniz Seanslar sekmesinden kapatın.",
+  botChatAllow: "Mesajlara izin ver",
   botOpen: "Between’i aç",
   botHelp:
     "Between, seans için bir günlük.\n\nGünlük ücretsiz. Buradaki her metin bugünün notu olur. Sabah, öğlen ve akşam nasıl olduğunu sorabilirim.\n\nHafta, spektrumu, örüntüyü ve seans konularını toplar. Sekmeyi açtıktan sonraki ilk 7 gün ücretsiz. Sonra 30 gün için {price} Stars.\n\nSesli not, Hafta ödendikten sonra metin olur, günde 10’a kadar. 7 ücretsiz gün bunu kapsamaz.",

@@ -183,6 +183,12 @@ export const vi: Catalog = {
   moodUp: "Về cuối, tâm trạng nhẹ hơn lúc đầu.",
   moodDown: "Về cuối, tâm trạng nặng hơn lúc đầu.",
   moodFlat: "Tâm trạng không đổi rõ.",
+  botChatTitle: "Between cũng ở trong cuộc trò chuyện",
+  botChatNote:
+    "Một ý nghĩ giữa các buổi — viết cho bot, và nó đã nằm trong nhật ký. Không cần mở ứng dụng.",
+  botChatAsk:
+    "Sáng, trưa và tối bot sẽ hỏi bạn thế nào. Không muốn thì tắt ở tab Buổi trị liệu.",
+  botChatAllow: "Cho phép tin nhắn",
   botOpen: "Mở Between",
   botHelp:
     "Between là nhật ký cho buổi trị liệu.\n\nNhật ký miễn phí. Chữ nào ở đây cũng thành ghi chép hôm nay. Sáng, trưa và tối tôi có thể hỏi bạn thế nào.\n\nTuần gom phổ cảm xúc, mẫu lặp và chủ đề cho buổi trị liệu. 7 ngày đầu sau khi mở tab là miễn phí. Sau đó {price} Stars cho 30 ngày.\n\nTin nhắn thoại thành chữ chỉ sau khi trả Tuần, tối đa 10 một ngày. 7 ngày miễn phí không gồm.",

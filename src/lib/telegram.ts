@@ -4,12 +4,18 @@ export type TelegramSession = {
   ready: boolean;
   inTelegram: boolean;
   user: WebAppUser | null;
+  /** True after Start or after the user allowed the bot to message them. */
+  allowsWriteToPm: boolean;
   displayName: string;
   colorScheme: "light" | "dark";
   viewportStableHeight: number | null;
   /** Raw WebApp initData for server auth; empty outside Telegram. */
   initData: string;
 };
+
+export function userAllowsBotWrite(user: WebAppUser | null | undefined): boolean {
+  return (user as { allows_write_to_pm?: boolean } | null | undefined)?.allows_write_to_pm === true;
+}
 
 export const DEV_DISPLAY_NAME = "Гость";
 

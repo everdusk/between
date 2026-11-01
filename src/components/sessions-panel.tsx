@@ -7,6 +7,7 @@ import { ThemeDateInput } from "@/components/theme-date-input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/components/locale-provider";
+import { BotChatSettings } from "@/components/bot-chat-gate";
 import { SessionRhythm } from "@/components/session-rhythm";
 import { dateKeysBetween, formatDayLabel, formatLongDate, toDateKey } from "@/lib/dates";
 import { clockLabel, nextWeeklyOccurrence, onceSessionDate } from "@/lib/session-plan";
@@ -156,6 +157,8 @@ export function SessionsPanel({
         onSaveNotify={onSaveNotify}
         disabled={disabled}
       />
+
+      <BotChatSettings />
 
       <section id="session-form" className="glass scroll-mt-4 rounded-3xl p-5 sm:p-6">
         <form onSubmit={handleSubmit} className="space-y-6">

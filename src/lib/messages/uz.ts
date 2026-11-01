@@ -183,6 +183,12 @@ export const uz: Catalog = {
   moodUp: "Davr oxirida kayfiyat boshidagidan yengilroq.",
   moodDown: "Davr oxirida kayfiyat boshidagidan og‘irroq.",
   moodFlat: "Kayfiyatda aniq siljish yo‘q.",
+  botChatTitle: "Between chatda ham yashaydi",
+  botChatNote:
+    "Seanslar orasida fikr keldi — botga yozing, u kundalikda bo‘ladi. Ilovani ochish shart emas.",
+  botChatAsk:
+    "Ertalab, kunduzi va kechqurun bot holingizni so‘raydi. Istamasangiz, «Seanslar» bo‘limida o‘chiring.",
+  botChatAllow: "Xabarlarga ruxsat",
   botOpen: "Between’ni ochish",
   botHelp:
     "Between — seans uchun kundalik.\n\nKundalik bepul. Bu yerdagi har qanday matn bugungi yozuv bo‘ladi. Ertalab, kunduzi va kechqurun holingizni so‘rashim mumkin.\n\n«Hafta» spektr, naqsh va seans mavzularini yig‘adi. Varaq ochilgandan keyingi dastlabki 7 kun bepul. So‘ng 30 kunga {price} Stars.\n\nOvozli xabar matnga faqat «Hafta» to‘langach aylanadi, kuniga 10 tagacha. Bepul 7 kun bunga kirmaydi.",

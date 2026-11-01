@@ -183,6 +183,12 @@ export const es: Catalog = {
   moodUp: "Al final del periodo el ánimo está más ligero que al inicio.",
   moodDown: "Al final del periodo el ánimo está más pesado que al inicio.",
   moodFlat: "El ánimo no se movió de forma clara.",
+  botChatTitle: "Between también vive en el chat",
+  botChatNote:
+    "Si entre sesiones aparece un pensamiento, escríbaselo al bot y ya está en el diario. No hace falta abrir la aplicación.",
+  botChatAsk:
+    "Por la mañana, por la tarde y por la noche el bot pregunta cómo está. Si no quiere, desactívelo en la pestaña Sesiones.",
+  botChatAllow: "Permitir mensajes",
   botOpen: "Abrir Between",
   botHelp:
     "Between es un diario para la sesión.\n\nEl diario es gratis. Cualquier texto aquí se vuelve una nota de hoy. Puedo preguntar cómo estás por la mañana, por la tarde y por la noche.\n\nSemana reúne el espectro, el patrón y los temas para la sesión. Los primeros 7 días tras abrir la pestaña son gratis. Luego, {price} Stars por 30 días.\n\nLa nota de voz se guarda como texto solo con la Semana pagada, hasta 10 al día. Los 7 días gratis no la incluyen.",

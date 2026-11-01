@@ -62,6 +62,10 @@ function deviceLocaleKey(userId: number | string): string {
   return `between:user:${userId}:device-locale`;
 }
 
+function botIntroKey(userId: number | string): string {
+  return `between:user:${userId}:bot-intro`;
+}
+
 export async function rememberUser(userId: number | string): Promise<void> {
   const redis = getRedis();
   if (!redis) return;
@@ -240,6 +244,20 @@ export async function saveDeviceLocale(userId: number | string, locale: LocaleId
   const redis = getRedis();
   if (!redis) return;
   await redis.set(deviceLocaleKey(userId), locale);
+}
+
+/** True the first time this account should receive the bot hello. */
+export async function claimBotIntro(userId: number | string): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return true;
+  const result = await redis.set(botIntroKey(userId), "1", { nx: true });
+  return result === "OK";
+}
+
+export async function releaseBotIntro(userId: number | string): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.del(botIntroKey(userId));
 }
 
 /** Keeps a language seen from Telegram until the Mini App reports the device. */

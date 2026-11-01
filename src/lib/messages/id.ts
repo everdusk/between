@@ -183,6 +183,12 @@ export const id: Catalog = {
   moodUp: "Menjelang akhir, suasana lebih ringan daripada awal.",
   moodDown: "Menjelang akhir, suasana lebih berat daripada awal.",
   moodFlat: "Suasana tidak bergeser secara jelas.",
+  botChatTitle: "Between juga hidup di chat",
+  botChatNote:
+    "Ada pikiran di antara sesi — tulis ke bot, dan itu sudah masuk jurnal. Aplikasi tidak perlu dibuka.",
+  botChatAsk:
+    "Pagi, siang, dan sore bot menanyakan kabar Anda. Jika tidak ingin, matikan di tab Sesi.",
+  botChatAllow: "Izinkan pesan",
   botOpen: "Buka Between",
   botHelp:
     "Between adalah jurnal untuk sesi.\n\nJurnalnya gratis. Teks apa pun di sini menjadi catatan hari ini. Saya bisa bertanya kabarmu pagi, siang, dan malam.\n\nMinggu mengumpulkan spektrum, pola, dan topik untuk sesi. 7 hari pertama setelah membuka tab gratis. Lalu {price} Stars untuk 30 hari.\n\nCatatan suara disimpan sebagai teks hanya setelah Minggu dibayar, sampai 10 sehari. 7 hari gratis tidak mencakupnya.",
