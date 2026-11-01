@@ -209,6 +209,8 @@ export const tr: Catalog = {
   botPremiumDays: "Premium için {days} kaldı.",
   botPremiumNone: "Premium yok.",
   botPremiumTrial: "Hafta {days} daha ücretsiz.",
+  botPaySupport:
+    "Hafta ödemesi Telegram Stars ile yapılır.\n\n30 gün aboneliktir: Telegram’da iptal edilir, erişim ödenen sürenin sonuna kadar sürer. 3 ay ve bir yıl tek seferlik ödemedir.\n\nStars çekildiyse ve Hafta açılmadıysa ya da iade gerekiyorsa, ne olduğunu ve ne zaman olduğunu bu sohbete yazın. Burada bakarız.",
   botPollMorning: "Sabah. Nasılsınız?",
   botPollDay: "Gün. Nasılsınız?",
   botPollEvening: "Akşam. Nasılsınız?",

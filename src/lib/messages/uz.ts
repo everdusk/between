@@ -208,6 +208,8 @@ export const uz: Catalog = {
   botPremiumDays: "Premiumdan {days} qoldi.",
   botPremiumNone: "Premium yo‘q.",
   botPremiumTrial: "«Hafta» yana {days} bepul.",
+  botPaySupport:
+    "«Hafta» to‘lovi Telegram Stars orqali.\n\n30 kun — obuna: Telegramda bekor qilinadi, kirish to‘langan muddat oxirigacha qoladi. 3 oy va bir yil — bir martalik to‘lov.\n\nStars yechilgan, lekin «Hafta» ochilmagan bo‘lsa yoki qaytarish kerak bo‘lsa, shu chatga nima bo‘lganini va qachonligini yozing. Shu yerda ko‘ramiz.",
   botPollMorning: "Ertalab. Qandaysiz?",
   botPollDay: "Kun. Qandaysiz?",
   botPollEvening: "Kechqurun. Qandaysiz?",

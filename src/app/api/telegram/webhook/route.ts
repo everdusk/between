@@ -15,8 +15,10 @@ import {
 import { appUrl } from "@/lib/telegram-auth";
 import {
   downloadTelegramFile,
+  isBotCommand,
   miniAppKeyboard,
   parseFeelingCallback,
+  publishBotCommands,
   telegramRequest,
 } from "@/lib/telegram-bot";
 import { todayInTimeZone } from "@/lib/zoned";
@@ -288,6 +290,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "bad json" }, { status: 400 });
   }
 
+  await publishBotCommands();
+
   if (update.pre_checkout_query) {
     await handlePreCheckout(update.pre_checkout_query);
     return NextResponse.json({ ok: true });
@@ -328,8 +332,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  const lower = text.toLowerCase();
-  if (lower === "/start" || lower.startsWith("/start ") || lower === "/help") {
+  if (isBotCommand(text, "start") || isBotCommand(text, "help")) {
     await telegramRequest("sendMessage", {
       chat_id: chatId,
       text: translate(greeting, "botHelp", {
@@ -340,7 +343,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  if (lower === "/premium" || lower.startsWith("/premium ") || lower.startsWith("/premium@")) {
+  if (isBotCommand(text, "premium")) {
     if (!userId || !botToken() || !redisConfigured()) {
       await telegramRequest("sendMessage", {
         chat_id: chatId,
@@ -361,6 +364,15 @@ export async function POST(req: Request) {
     await telegramRequest("sendMessage", {
       chat_id: chatId,
       text: formatPremiumStatus(reply, resolved.view),
+      reply_markup: keyboard,
+    });
+    return NextResponse.json({ ok: true });
+  }
+
+  if (isBotCommand(text, "paysupport")) {
+    await telegramRequest("sendMessage", {
+      chat_id: chatId,
+      text: translate(reply, "botPaySupport"),
       reply_markup: keyboard,
     });
     return NextResponse.json({ ok: true });

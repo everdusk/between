@@ -18,7 +18,7 @@ import {
 } from "./i18n";
 import { catalogsShareKeys, countPhrase, feelingLabel, formatPremiumStatus, translate } from "./messages";
 import { pollText } from "./digest";
-import { feelingKeyboard, parseFeelingCallback } from "./telegram-bot";
+import { feelingKeyboard, isBotCommand, parseFeelingCallback } from "./telegram-bot";
 import { buildWeekSpectrum, spectrumHeadline } from "./spectrum";
 import { digestAction } from "./digest";
 import { mergeStores } from "./journal-api";
@@ -1369,6 +1369,13 @@ describe("languages", () => {
     assert.match(help, /150 Stars на 30 дней/);
     assert.match(help, /до 10 в день/);
     assert.match(help, /Пробные 7 дней/);
+    assert.equal(isBotCommand("/paysupport", "paysupport"), true);
+    assert.equal(isBotCommand("/paysupport@BetweenJournalBot", "paysupport"), true);
+    assert.equal(isBotCommand("/PaySupport refund", "paysupport"), true);
+    assert.equal(isBotCommand("/premium", "paysupport"), false);
+    assert.match(translate("ru", "botPaySupport"), /Stars/);
+    assert.match(translate("ru", "botPaySupport"), /возврат/);
+    assert.match(translate("en", "botPaySupport"), /refund/);
     assert.match(pollText("morning"), /Утро/);
     assert.match(pollText("morning", "en"), /Morning/);
     const board = feelingKeyboard("morning", "en");
