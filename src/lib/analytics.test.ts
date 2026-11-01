@@ -189,11 +189,11 @@ describe("analytics", () => {
   it("passes a public PostHog token to the browser and holds a personal key", () => {
     assert.deepEqual(posthogBrowserConfig({ key: "phc_publictoken12" }), {
       token: "phc_publictoken12",
-      host: "https://eu.i.posthog.com",
+      host: "https://us.i.posthog.com",
     });
     assert.equal(posthogBrowserConfig({ key: "phx_personalkey12" }), null);
     assert.equal(posthogBrowserConfig({ key: "" }), null);
-    assert.equal(posthogBrowserConfig({ key: "phc_publictoken12", host: "http://evil.example" })?.host, "https://eu.i.posthog.com");
+    assert.equal(posthogBrowserConfig({ key: "phc_publictoken12", host: "http://evil.example" })?.host, "https://us.i.posthog.com");
     assert.equal(
       posthogBrowserConfig({ key: "  phc_publictoken12  ", host: "https://eu.i.posthog.com/capture/" })?.host,
       "https://eu.i.posthog.com",
