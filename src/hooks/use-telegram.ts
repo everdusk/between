@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { WebApp } from "@twa-dev/types";
+import { markSplashVisible } from "@/lib/splash";
 import {
   applyDevicePerformance,
   applyTelegramChrome,
@@ -104,13 +105,16 @@ export function useTelegram(): TelegramSession {
         window.visualViewport?.addEventListener("scroll", onVisualViewport);
         window.addEventListener("resize", onVisualViewport);
         if (inTelegram) {
-          webApp.ready();
+          // Grow first, then reveal, so the frame is not resized in front of the user.
           webApp.expand();
+          webApp.ready();
           applyTelegramSafeArea(webApp.safeAreaInset, webApp.contentSafeAreaInset, {
             visible: webApp.viewportHeight,
             stable: webApp.viewportStableHeight,
           });
         }
+        // The hold starts here. Before ready(), Telegram's loader is what the user sees.
+        markSplashVisible();
 
         syncFromWebApp(webApp, inTelegram);
         webApp.onEvent("themeChanged", onTheme);
@@ -120,6 +124,7 @@ export function useTelegram(): TelegramSession {
       })
       .catch(() => {
         if (!cancelled) {
+          markSplashVisible();
           clearTelegramThemeOverrides();
           setSession({
             ...FALLBACK,
