@@ -14,6 +14,7 @@ import { useTherapyStore } from "@/hooks/use-therapy-store";
 import { LOCALES } from "@/lib/i18n";
 import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
+import { markSplashReady } from "@/lib/splash";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
 import { fetchWeekAccess, localWeekView, readLocalWeekAccess } from "@/lib/week-access-client";
 import type { WeekAccessView } from "@/lib/week-access";
@@ -113,6 +114,11 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
     tabOwnsAccess.current = true;
     setPremium(view.status === "paid");
   }
+
+  const shellReady = telegram.ready && status !== "loading";
+  useEffect(() => {
+    if (shellReady) markSplashReady();
+  }, [shellReady]);
 
   const name = shownName(telegram.displayName, translate(greetingLocale, "guest"));
   const greeting = !telegram.ready

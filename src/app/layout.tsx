@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Literata, Manrope } from "next/font/google";
+import { SplashScreen } from "@/components/splash-screen";
 import "./globals.css";
 
 const literata = Literata({
@@ -29,7 +30,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ru"
       className={`${literata.variable} ${manrope.variable} h-full antialiased`}
     >
-      <body className="flex h-full flex-col overflow-hidden font-sans">{children}</body>
+      <head>
+        <link rel="preload" href="/splash.webp" as="image" fetchPriority="high" />
+      </head>
+      <body className="flex h-full flex-col overflow-hidden font-sans">
+        <SplashScreen />
+        {children}
+      </body>
     </html>
   );
 }

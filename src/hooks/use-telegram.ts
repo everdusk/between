@@ -6,6 +6,8 @@ import {
   applyDevicePerformance,
   applyTelegramChrome,
   applyTelegramSafeArea,
+  paintSplashChrome,
+  splashChromeIsHeld,
   applyTelegramTheme,
   applyViewportBox,
   clearTelegramThemeOverrides,
@@ -68,7 +70,8 @@ export function useTelegram(): TelegramSession {
       const user = wa.initDataUnsafe?.user ?? null;
       if (inTelegram) {
         applyTelegramTheme(wa.themeParams, wa.colorScheme);
-        applyTelegramChrome(wa);
+        if (splashChromeIsHeld()) paintSplashChrome();
+        else applyTelegramChrome(wa);
         applyViewportBox(wa.viewportHeight, wa.viewportStableHeight);
         publishVisualViewport();
       } else {
