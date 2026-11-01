@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Literata, Manrope } from "next/font/google";
+import { ProductAnalyticsConfig } from "@/components/product-analytics-config";
 import { SplashScreen } from "@/components/splash-screen";
 import { LAUNCH_THEME_SCRIPT, SPLASH_COVER_CSS } from "@/lib/launch-theme";
+import { posthogBrowserConfig } from "@/lib/posthog-env";
 import { SPLASH_CHROME } from "@/lib/telegram";
 import "./globals.css";
 
@@ -27,6 +29,10 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
+  const posthog = posthogBrowserConfig({
+    key: process.env.POSTHOG_KEY,
+    host: process.env.POSTHOG_HOST,
+  });
   return (
     <html
       lang="ru"
@@ -41,6 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <link rel="preload" href="/splash.webp" as="image" fetchPriority="high" />
       </head>
       <body className="flex h-full flex-col overflow-hidden font-sans">
+        {posthog ? <ProductAnalyticsConfig token={posthog.token} host={posthog.host} /> : null}
         <SplashScreen />
         <div className="app-root">{children}</div>
       </body>

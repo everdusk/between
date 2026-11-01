@@ -12,6 +12,7 @@ import {
   scrubProductEvent,
   snapshotFromReads,
 } from "./analytics-model";
+import { posthogBrowserConfig } from "./posthog-env";
 
 function memoryRedis(): AnalyticsRedis & { keys: Map<string, number>; sets: Map<string, Set<string>> } {
   const keys = new Map<string, number>();
@@ -182,6 +183,20 @@ describe("analytics", () => {
     assert.equal(
       scrubProductEvent({ event: "visit", properties: { distinct_id: "424242" } }),
       null,
+    );
+  });
+
+  it("passes a public PostHog token to the browser and holds a personal key", () => {
+    assert.deepEqual(posthogBrowserConfig({ key: "phc_publictoken12" }), {
+      token: "phc_publictoken12",
+      host: "https://eu.i.posthog.com",
+    });
+    assert.equal(posthogBrowserConfig({ key: "phx_personalkey12" }), null);
+    assert.equal(posthogBrowserConfig({ key: "" }), null);
+    assert.equal(posthogBrowserConfig({ key: "phc_publictoken12", host: "http://evil.example" })?.host, "https://eu.i.posthog.com");
+    assert.equal(
+      posthogBrowserConfig({ key: "  phc_publictoken12  ", host: "https://eu.i.posthog.com/capture/" })?.host,
+      "https://eu.i.posthog.com",
     );
   });
 

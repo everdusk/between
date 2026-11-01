@@ -1,7 +1,5 @@
 import { scrubProductEvent, type AnalyticsEvent, type ProductPlan } from "./analytics-model";
-
-const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY?.trim() ?? "";
-const HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST?.trim() || "https://eu.i.posthog.com";
+import { readPosthogBrowserConfig } from "./posthog-env";
 
 type PostHogClient = {
   init: (token: string, config: Record<string, unknown>) => void;
@@ -12,14 +10,17 @@ let booting: Promise<PostHogClient | null> | null = null;
 let started = false;
 
 function load(): Promise<PostHogClient | null> {
-  if (!KEY || typeof window === "undefined") return Promise.resolve(null);
+  const cfg = readPosthogBrowserConfig();
+  if (!cfg) return Promise.resolve(null);
   if (!booting) {
     booting = import("posthog-js")
       .then(({ default: posthog }) => {
+        const current = readPosthogBrowserConfig();
+        if (!current) return null;
         if (!started) {
           started = true;
-          posthog.init(KEY, {
-            api_host: HOST,
+          posthog.init(current.token, {
+            api_host: current.host,
             person_profiles: "identified_only",
             autocapture: false,
             capture_pageview: false,
@@ -48,7 +49,7 @@ function load(): Promise<PostHogClient | null> {
 
 /** One funnel step in PostHog. No-op until the public project token is set. Never calls identify. */
 export function captureProduct(event: AnalyticsEvent, detail?: { plan?: ProductPlan }): void {
-  if (!KEY || typeof window === "undefined") return;
+  if (!readPosthogBrowserConfig()) return;
   const properties = detail?.plan ? { plan: detail.plan } : undefined;
   void load().then((posthog) => {
     posthog?.capture(event, properties);
