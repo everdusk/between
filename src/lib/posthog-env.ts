@@ -1,4 +1,4 @@
-const DEFAULT_HOST = "https://eu.i.posthog.com";
+const DEFAULT_HOST = "https://us.i.posthog.com";
 
 export const POSTHOG_BROWSER_KEY = "__BETWEEN_POSTHOG__";
 
