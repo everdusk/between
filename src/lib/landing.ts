@@ -79,7 +79,7 @@ export const WEB_SURFACE_CSS = [
   "html[data-splash] .splash-screen{display:none!important}",
   "html[data-splash] .app-root,.app-root{display:none!important}",
   ".between-landing{display:block!important}",
-  "html[data-splash],html[data-splash] body{background-color:var(--background)!important;background-image:none!important;color-scheme:light}",
+  "html[data-between=web],html[data-between=web] body{background-color:#0c1412!important;background-image:none!important;color-scheme:dark}",
 ].join("");
 
 export const SURFACE_BOOT_SCRIPT = `try{var stored=null;try{stored=sessionStorage.getItem("__telegram__initParams")}catch(e){}var surface=(${surfaceFromLocation.toString()})(location.hash||"",location.search||"",stored);var css=surface==="app"?"${APP_SURFACE_CSS}":"${WEB_SURFACE_CSS}";var style=document.createElement("style");style.id="between-surface";style.textContent=css;document.head.appendChild(style);document.documentElement.setAttribute("data-between",surface);}catch(e){}`;
