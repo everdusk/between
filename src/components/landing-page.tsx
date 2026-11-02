@@ -39,9 +39,6 @@ const STEPS = [
     n: "01",
     title: "Напишите боту",
     body: "Строчка в очереди, голосовое по дороге, поток в полночь — как получилось. Between сохранит настроение и аккуратно разложит всё по дням.",
-    frameTitle: "Напишите боту",
-    frameNote: "Строчка, голосовое или поток в полночь — как получилось.",
-    chip: "это единственный шаг, который делаете вы",
     image: "/landing/step-1.webp",
     alt: "Чат с ботом: заметка своими словами и ответ «Записал на сегодня.»",
   },
@@ -49,9 +46,6 @@ const STEPS = [
     n: "02",
     title: "Картина собирается сама",
     body: "Вы ничего не сортируете. Эмоции, повторы и недосказанное Between складывает в наглядную картину: что происходило и как вы на это реагировали.",
-    frameTitle: "Картина собирается сама",
-    frameNote: "Эмоции и повторы складываются в спектр недели.",
-    chip: "вы ничего не делали — а оно собралось",
     image: "/landing/step-2.webp",
     alt: "Спектр недели: спокойно, 22–28 октября",
   },
@@ -59,15 +53,10 @@ const STEPS = [
     n: "03",
     title: "Приходите подготовленным",
     body: "Ко встрече с терапевтом уже ждёт выкладка: что обсудить, что повторялось, о чём спросить. Никаких «я хз, я норм».",
-    frameTitle: "Приходите подготовленным",
-    frameNote: "К сессии уже есть, что обсудить и о чём спросить.",
-    chip: "темы к сессии — без вашего участия",
     image: "/landing/step-3.webp",
     alt: "Темы к сеансу: граница с работой, звонок мамы",
   },
 ];
-
-const DOTS: Feeling[] = ["радость", "спокойно", "усталость", "грусть", "тревожно", "злость"];
 
 const VIDEO_HTML = `<video class="bl-video" autoplay muted loop playsinline preload="metadata" poster="/landing/poster.webp" aria-label="Нажатие «тревожно», заметка своими словами, спектр недели, темы к сеансу, настройка даты сессии и заставка Between"><source src="/landing/screen-ru.webm" type="video/webm"><source src="/landing/screen-ru.mp4" type="video/mp4"></video>`;
 
@@ -105,11 +94,7 @@ const CSS = `
 .bl-quote{border-radius:1.25rem;border:1px solid rgba(94,231,197,.18);background:linear-gradient(90deg,rgba(40,120,96,.28),rgba(16,22,20,.4) 42%,rgba(16,22,20,.2));padding:1.15rem 1.4rem;color:#d5e0da;line-height:1.55}
 .bl-quote b{color:#7af0d2;font-weight:600}
 .bl-num{font-family:var(--font-sans),sans-serif;font-weight:700;font-size:clamp(4.2rem,7vw,5.6rem);line-height:.8;letter-spacing:-.05em;color:#6ff0cf;text-shadow:0 0 42px rgba(90,240,200,.35)}
-.bl-frame{position:relative;width:min(100%,22rem);border-radius:2rem;border:1px solid rgba(255,255,255,.1);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));padding:1.35rem 1.15rem 1.15rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
-.bl-frame::before{content:"";position:absolute;inset:8% -12%;z-index:-1;background:radial-gradient(closest-side,rgba(80,220,170,.22),transparent 72%);filter:blur(16px)}
-.bl-frame .bl-phone{width:78%;margin:1rem auto 0}
-.bl-tag{display:inline-flex;align-items:center;gap:.4rem;margin-top:.85rem;padding:.4rem .7rem;border-radius:999px;border:1px solid rgba(94,231,197,.25);background:rgba(8,14,12,.8);color:#cfe7df;font-size:.75rem}
-.bl-tag i{color:var(--bl-teal)}
+.bl-shot{display:block;width:min(100%,18.5rem);height:auto;border-radius:1.35rem}
 .bl-close{position:relative;overflow:hidden;border-radius:1.75rem;border:1px solid rgba(255,255,255,.08);background:
   radial-gradient(70% 80% at 70% 0%,rgba(90,80,180,.28),transparent 55%),
   radial-gradient(60% 80% at 20% 100%,rgba(40,140,110,.35),transparent 60%),
@@ -153,16 +138,6 @@ function Kicker({ children }: { children: string }) {
   );
 }
 
-function MoodDots() {
-  return (
-    <span className="mt-3 flex justify-center gap-1.5" aria-hidden>
-      {DOTS.map((feeling) => (
-        <i key={feeling} className="block h-1.5 w-1.5 rounded-full" style={{ background: feelingFill(feeling) }} />
-      ))}
-    </span>
-  );
-}
-
 function Icon({ name }: { name: string }) {
   const common = { fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   return (
@@ -186,26 +161,10 @@ function Icon({ name }: { name: string }) {
   );
 }
 
-function StepFrame({ step }: { step: (typeof STEPS)[number] }) {
+function StepShot({ step }: { step: (typeof STEPS)[number] }) {
   return (
-    <div className="bl-frame text-center">
-      <p className="text-[0.62rem] font-semibold tracking-[0.22em] text-[var(--bl-teal)]">BETWEEN</p>
-      <h3 className="mt-3 font-display text-[1.65rem] leading-tight tracking-tight">{step.frameTitle}</h3>
-      <MoodDots />
-      <p className="mx-auto mt-3 max-w-[16rem] text-[0.8rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
-        {step.frameNote}
-      </p>
-      <div className="bl-phone">
-        <div className="bl-screen">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={step.image} alt={step.alt} width={642} height={1266} />
-        </div>
-      </div>
-      <p className="bl-tag">
-        <i>▸</i>
-        {step.chip}
-      </p>
-    </div>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img className="bl-shot" src={step.image} alt={step.alt} width={588} height={1280} />
   );
 }
 
@@ -339,7 +298,7 @@ export function LandingPage() {
                       {step.body}
                     </p>
                   </div>
-                  <StepFrame step={step} />
+                  <StepShot step={step} />
                 </li>
               ))}
             </ol>
