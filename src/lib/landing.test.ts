@@ -8,6 +8,7 @@ import {
   landingStatsLine,
   rememberLandingSource,
   startPayload,
+  SURFACE_BOOT_SCRIPT,
   surfaceFromLocation,
   WEB_SURFACE_CSS,
   YANDEX_METRIKA_ID,
@@ -72,6 +73,11 @@ describe("landing surface", () => {
     );
     assert.match(YANDEX_METRIKA_SCRIPT, /ssr:true,webvisor:true,clickmap:true/);
     assert.match(YANDEX_METRIKA_NOSCRIPT, /https:\/\/mc\.yandex\.ru\/watch\/114026277/);
+  });
+
+  it("ships the public page visible, then lets Telegram replace that style", () => {
+    assert.match(SURFACE_BOOT_SCRIPT, /getElementById\("between-surface"\)/);
+    assert.doesNotMatch(SURFACE_BOOT_SCRIPT, /appendChild\(style\)\}catch/);
   });
 
   it("hides the launch splash with the same specificity it uses to show itself", () => {

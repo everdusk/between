@@ -4,7 +4,8 @@ import { ProductAnalyticsConfig } from "@/components/product-analytics-config";
 import { SplashScreen } from "@/components/splash-screen";
 import { LandingPage } from "@/components/landing-page";
 import { LandingSurface } from "@/components/landing-surface";
-import { SURFACE_BOOT_SCRIPT, YANDEX_METRIKA_NOSCRIPT, YANDEX_METRIKA_SCRIPT } from "@/lib/landing";
+import { SURFACE_BOOT_SCRIPT, WEB_SURFACE_CSS, YANDEX_METRIKA_NOSCRIPT, YANDEX_METRIKA_SCRIPT } from "@/lib/landing";
+import { landingJsonLd, landingMetadata } from "@/lib/landing-seo";
 import { LAUNCH_THEME_SCRIPT, SPLASH_COVER_CSS } from "@/lib/launch-theme";
 import { posthogBrowserConfig } from "@/lib/posthog-env";
 import { SPLASH_CHROME } from "@/lib/telegram";
@@ -20,11 +21,7 @@ const manrope = Manrope({
   subsets: ["latin", "latin-ext", "cyrillic"],
 });
 
-export const metadata: Metadata = {
-  title: "Between — дневник к сеансу",
-  description:
-    "Пара слов боту, неделя складывается сама, и к разговору уже есть о чём говорить.",
-};
+export const metadata: Metadata = landingMetadata;
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -46,6 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
+        <style id="between-surface" dangerouslySetInnerHTML={{ __html: WEB_SURFACE_CSS }} />
         <style dangerouslySetInnerHTML={{ __html: SPLASH_COVER_CSS }} />
         <script dangerouslySetInnerHTML={{ __html: LAUNCH_THEME_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: SURFACE_BOOT_SCRIPT }} />
@@ -53,6 +51,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <link rel="preload" href="/splash.webp" as="image" fetchPriority="high" />
       </head>
       <body className="flex h-full flex-col overflow-hidden font-sans">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: landingJsonLd() }} />
         <noscript dangerouslySetInnerHTML={{ __html: YANDEX_METRIKA_NOSCRIPT }} />
         {posthog ? <ProductAnalyticsConfig token={posthog.token} host={posthog.host} /> : null}
         <LandingSurface />
