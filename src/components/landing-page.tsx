@@ -94,7 +94,14 @@ const CSS = `
 .bl-quote{border-radius:1.25rem;border:1px solid rgba(94,231,197,.18);background:linear-gradient(90deg,rgba(40,120,96,.28),rgba(16,22,20,.4) 42%,rgba(16,22,20,.2));padding:1.15rem 1.4rem;color:#d5e0da;line-height:1.55}
 .bl-quote b{color:#7af0d2;font-weight:600}
 .bl-num{font-family:var(--font-sans),sans-serif;font-weight:700;font-size:clamp(4.2rem,7vw,5.6rem);line-height:.8;letter-spacing:-.05em;color:#6ff0cf;text-shadow:0 0 42px rgba(90,240,200,.35)}
-.bl-shot{display:block;width:min(100%,18.5rem);height:auto;border-radius:1.35rem}
+.bl-shot{display:block;width:min(100%,18.5rem);height:auto;margin-inline:auto;border-radius:1.35rem}
+@media (max-width:639px){
+  .bl-bar{gap:.55rem;padding-left:.7rem}
+  .bl-cta,.bl-ghost{width:100%}
+  .bl-cta-sm{width:auto;height:2.15rem;padding:0 .75rem;font-size:.78rem}
+  .bl-kicker{letter-spacing:.12em}
+  .bl-close{padding-left:1.15rem;padding-right:1.15rem}
+}
 .bl-close{position:relative;overflow:hidden;border-radius:1.75rem;border:1px solid rgba(255,255,255,.08);background:
   radial-gradient(70% 80% at 70% 0%,rgba(90,80,180,.28),transparent 55%),
   radial-gradient(60% 80% at 20% 100%,rgba(40,140,110,.35),transparent 60%),
@@ -175,7 +182,7 @@ export function LandingPage() {
       <div className="relative min-h-full">
         <div className="bl-wash" aria-hidden />
 
-        <header className="relative z-20 px-4">
+        <header className="relative z-20 px-4 pt-[max(0.25rem,env(safe-area-inset-top))]">
           <div className="bl-bar">
             <a href="#top" onClick={(event) => jump(event, "top")} className="bl-logo">
               <span className="bl-mark" aria-hidden>
@@ -190,15 +197,18 @@ export function LandingPage() {
                 Как это работает
               </a>
             </nav>
-            <OpenLink className="bl-cta bl-cta-sm">Открыть в Telegram</OpenLink>
+            <OpenLink className="bl-cta bl-cta-sm">
+              <span className="min-[380px]:hidden">Открыть</span>
+              <span className="hidden min-[380px]:inline">Открыть в Telegram</span>
+            </OpenLink>
           </div>
         </header>
 
         <main id="top" className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-16 sm:px-8">
-          <section className="grid items-center gap-14 pt-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-8 lg:pt-16">
+          <section className="grid items-center gap-10 pt-8 sm:gap-14 sm:pt-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-8 lg:pt-16">
             <div className="max-w-xl">
               <Kicker>Дневник для тех, кто в терапии</Kicker>
-              <h1 className="mt-5 font-display text-[2.7rem] leading-[1.02] tracking-tight sm:text-6xl lg:text-[4.15rem]">
+              <h1 className="mt-5 font-display text-[2.35rem] leading-[1.02] tracking-tight min-[380px]:text-[2.7rem] sm:text-6xl lg:text-[4.15rem]">
                 Терапевт попросил вести дневник.
                 <br />
                 <span className="bl-shift">
@@ -212,7 +222,7 @@ export function LandingPage() {
                 записи в понятную картину. Вам — только отвечать. К следующей сессии всё, что стоит рассказать, уже
                 собрано.
               </p>
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <OpenLink className="bl-cta">Открыть Between</OpenLink>
                 <a href="#kak" onClick={(event) => jump(event, "kak")} className="bl-ghost">
                   Как это работает
@@ -228,14 +238,14 @@ export function LandingPage() {
               </ul>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[20rem] lg:max-w-[24rem]">
+            <div className="relative mx-auto w-full max-w-[17.5rem] min-[380px]:max-w-[20rem] lg:max-w-[24rem]">
               <div className="bl-phone">
                 <div className="bl-screen" dangerouslySetInnerHTML={{ __html: VIDEO_HTML }} />
               </div>
             </div>
           </section>
 
-          <section className="bl-marquee mt-20 sm:mt-28" aria-label="Примеры записей">
+          <section className="bl-marquee mt-14 sm:mt-28" aria-label="Примеры записей">
             <div className="flex justify-center">
               <Kicker>Например, так</Kicker>
             </div>
@@ -251,9 +261,9 @@ export function LandingPage() {
             </div>
           </section>
 
-          <section id="dnevnik" className="mt-24 sm:mt-28">
+          <section id="dnevnik" className="mt-16 sm:mt-28">
             <Kicker>Знакомо?</Kicker>
-            <h2 className="mt-4 max-w-xl font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl">
+            <h2 className="mt-4 max-w-xl font-display text-[2.15rem] leading-[1.05] tracking-tight sm:text-5xl">
               Почему «просто вести дневник» не работает
             </h2>
             <p className="mt-4 max-w-xl text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
@@ -276,24 +286,24 @@ export function LandingPage() {
             </p>
           </section>
 
-          <section id="kak" className="mt-24 sm:mt-32">
+          <section id="kak" className="mt-16 sm:mt-32">
             <Kicker>Как это работает</Kicker>
-            <h2 className="mt-4 max-w-2xl font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl">
+            <h2 className="mt-4 max-w-2xl font-display text-[2.15rem] leading-[1.05] tracking-tight sm:text-5xl">
               Стартанули бота — и к сессии всё готово
             </h2>
             <p className="mt-4 max-w-md text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
               Три шага. Ваше участие — только в первом, остальное Between делает сам.
             </p>
-            <ol className="mt-16 flex flex-col gap-20 sm:mt-20 sm:gap-28">
+            <ol className="mt-12 flex flex-col gap-14 sm:mt-20 sm:gap-28">
               {STEPS.map((step, index) => (
-                <li key={step.n} className={`flex flex-col items-center gap-10 lg:flex-row lg:gap-16 ${index % 2 ? "lg:flex-row-reverse" : ""}`}>
+                <li key={step.n} className={`flex flex-col items-center gap-6 sm:gap-10 lg:flex-row lg:gap-16 ${index % 2 ? "lg:flex-row-reverse" : ""}`}>
                   <div className="w-full max-w-md flex-1">
                     <p className="bl-kicker">
                       <i className="!w-1.5 !h-1.5 !rounded-full !bg-[var(--bl-teal)]" />
                       Шаг {step.n}
                     </p>
                     <p className="bl-num mt-3">{step.n}</p>
-                    <h3 className="mt-4 font-display text-3xl tracking-tight sm:text-4xl">{step.title}</h3>
+                    <h3 className="mt-4 font-display text-[1.85rem] tracking-tight sm:text-4xl">{step.title}</h3>
                     <p className="mt-4 max-w-sm text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
                       {step.body}
                     </p>
@@ -304,8 +314,8 @@ export function LandingPage() {
             </ol>
           </section>
 
-          <section className="bl-close mt-24 px-6 py-16 text-center sm:mt-32 sm:px-12 sm:py-20">
-            <h2 className="mx-auto max-w-3xl font-display text-4xl leading-[1.05] tracking-tight sm:text-6xl">
+          <section className="bl-close mt-16 px-6 py-12 text-center sm:mt-32 sm:px-12 sm:py-20">
+            <h2 className="mx-auto max-w-3xl font-display text-[2.15rem] leading-[1.05] tracking-tight sm:text-6xl">
               Между сессиями <span className="bl-shift">всё и происходит</span>
             </h2>
             <p className="mx-auto mt-5 max-w-md text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
