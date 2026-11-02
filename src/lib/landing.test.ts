@@ -10,6 +10,9 @@ import {
   startPayload,
   surfaceFromLocation,
   WEB_SURFACE_CSS,
+  YANDEX_METRIKA_ID,
+  YANDEX_METRIKA_NOSCRIPT,
+  YANDEX_METRIKA_SCRIPT,
 } from "./landing";
 
 describe("landing start mark", () => {
@@ -58,6 +61,17 @@ describe("landing surface", () => {
       "app",
     );
     assert.equal(surfaceFromLocation("", "", "{"), "web");
+  });
+
+  it("counts the public page and leaves the journal alone", () => {
+    assert.equal(YANDEX_METRIKA_ID, 114026277);
+    assert.match(YANDEX_METRIKA_SCRIPT, /data-between"\)!=="app"/);
+    assert.match(
+      YANDEX_METRIKA_SCRIPT,
+      /https:\/\/mc\.yandex\.ru\/metrika\/tag\.js\?id=114026277/,
+    );
+    assert.match(YANDEX_METRIKA_SCRIPT, /ssr:true,webvisor:true,clickmap:true/);
+    assert.match(YANDEX_METRIKA_NOSCRIPT, /https:\/\/mc\.yandex\.ru\/watch\/114026277/);
   });
 
   it("hides the launch splash with the same specificity it uses to show itself", () => {

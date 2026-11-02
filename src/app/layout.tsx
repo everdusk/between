@@ -4,7 +4,7 @@ import { ProductAnalyticsConfig } from "@/components/product-analytics-config";
 import { SplashScreen } from "@/components/splash-screen";
 import { LandingPage } from "@/components/landing-page";
 import { LandingSurface } from "@/components/landing-surface";
-import { SURFACE_BOOT_SCRIPT } from "@/lib/landing";
+import { SURFACE_BOOT_SCRIPT, YANDEX_METRIKA_NOSCRIPT, YANDEX_METRIKA_SCRIPT } from "@/lib/landing";
 import { LAUNCH_THEME_SCRIPT, SPLASH_COVER_CSS } from "@/lib/launch-theme";
 import { posthogBrowserConfig } from "@/lib/posthog-env";
 import { SPLASH_CHROME } from "@/lib/telegram";
@@ -49,9 +49,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <style dangerouslySetInnerHTML={{ __html: SPLASH_COVER_CSS }} />
         <script dangerouslySetInnerHTML={{ __html: LAUNCH_THEME_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: SURFACE_BOOT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: YANDEX_METRIKA_SCRIPT }} />
         <link rel="preload" href="/splash.webp" as="image" fetchPriority="high" />
       </head>
       <body className="flex h-full flex-col overflow-hidden font-sans">
+        <noscript dangerouslySetInnerHTML={{ __html: YANDEX_METRIKA_NOSCRIPT }} />
         {posthog ? <ProductAnalyticsConfig token={posthog.token} host={posthog.host} /> : null}
         <LandingSurface />
         <SplashScreen />

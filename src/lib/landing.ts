@@ -84,6 +84,13 @@ export const WEB_SURFACE_CSS = [
 
 export const SURFACE_BOOT_SCRIPT = `try{var stored=null;try{stored=sessionStorage.getItem("__telegram__initParams")}catch(e){}var surface=(${surfaceFromLocation.toString()})(location.hash||"",location.search||"",stored);var css=surface==="app"?"${APP_SURFACE_CSS}":"${WEB_SURFACE_CSS}";var style=document.createElement("style");style.id="between-surface";style.textContent=css;document.head.appendChild(style);document.documentElement.setAttribute("data-between",surface);}catch(e){}`;
 
+/** Public landing counter. Stays off inside the Mini App so session replay does not record the journal. */
+export const YANDEX_METRIKA_ID = 114026277;
+
+export const YANDEX_METRIKA_SCRIPT = `if(document.documentElement.getAttribute("data-between")!=="app"){(function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};m[i].l=1*new Date();for(var j=0;j<document.scripts.length;j++){if(document.scripts[j].src===r){return;}}k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})(window,document,'script','https://mc.yandex.ru/metrika/tag.js?id=${YANDEX_METRIKA_ID}','ym');ym(${YANDEX_METRIKA_ID},'init',{ssr:true,webvisor:true,clickmap:true,ecommerce:"dataLayer",referrer:document.referrer,url:location.href,accurateTrackBounce:true,trackLinks:true});}`;
+
+export const YANDEX_METRIKA_NOSCRIPT = `<div><img src="https://mc.yandex.ru/watch/${YANDEX_METRIKA_ID}" style="position:absolute;left:-9999px;" alt="" /></div>`;
+
 /** Telegram confirmed after paint (web client, no launch hash). Replaces the boot style. */
 export function holdAppSurface(): void {
   if (typeof document === "undefined") return;
