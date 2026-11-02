@@ -106,19 +106,10 @@ const CSS = `
 .bl-cta:focus-visible,.bl-ghost:focus-visible,.bl-bar a:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(94,231,197,.28)}
 .bl-meta{display:inline-flex;align-items:center;gap:.4rem;height:2.15rem;padding:0 .85rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#c9d4ce;font-size:.82rem}
 .bl-meta b{color:var(--bl-teal);font-weight:600}
-.bl-stage{position:relative;border-radius:2.6rem;padding:1.35rem 1.15rem 1.5rem;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.1);box-shadow:0 40px 90px -36px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.08)}
-.bl-stage::before{content:"";position:absolute;inset:-12% -18% auto;height:70%;background:radial-gradient(closest-side,rgba(70,220,160,.28),transparent 70%);filter:blur(12px);z-index:-1}
 .bl-phone{position:relative;width:100%;aspect-ratio:642/1266;border-radius:2.15rem;padding:.42rem;background:linear-gradient(165deg,#3a4246,#14191c 40%,#0c1012);box-shadow:0 30px 60px -28px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.14)}
 .bl-phone::before{content:"";position:absolute;top:.72rem;left:50%;z-index:2;width:4.4rem;height:1.05rem;margin-left:-2.2rem;border-radius:999px;background:#050708}
 .bl-screen{position:relative;height:100%;overflow:hidden;border-radius:1.8rem;background:#0c0e10}
 .bl-video,.bl-screen img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover}
-.bl-float{display:inline-flex;align-items:center;gap:.45rem;padding:.45rem .7rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(12,16,15,.78);font-size:.78rem;color:#e7eeea;white-space:nowrap;box-shadow:0 12px 30px -18px #000;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
-.bl-float i{width:.45rem;height:.45rem;border-radius:50%;background:#5ee7c5;box-shadow:0 0 10px #5ee7c5}
-.bl-float{z-index:3}
-.bl-float-a{position:absolute;left:0;top:38%;transform:translateX(-18%)}
-.bl-float-b{position:absolute;right:0;top:58%;transform:translateX(18%)}
-.bl-float-c{position:absolute;bottom:1.4rem;left:1.2rem}
-@media (max-width:1023px){.bl-float-a,.bl-float-b,.bl-float-c{position:static;transform:none;margin:.4rem .4rem 0 0}}
 .bl-reason{border-radius:1.35rem;border:1px solid rgba(255,255,255,.09);background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));padding:1.35rem 1.25rem 1.45rem}
 .bl-ico{display:grid;place-items:center;width:2.4rem;height:2.4rem;border-radius:.8rem;border:1px solid rgba(94,231,197,.28);background:rgba(94,231,197,.06);color:var(--bl-teal)}
 .bl-quote{border-radius:1.25rem;border:1px solid rgba(94,231,197,.18);background:linear-gradient(90deg,rgba(40,120,96,.28),rgba(16,22,20,.4) 42%,rgba(16,22,20,.2));padding:1.15rem 1.4rem;color:#d5e0da;line-height:1.55}
@@ -288,32 +279,10 @@ export function LandingPage() {
               </ul>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[24rem]">
-              <div className="bl-stage">
-                <p className="text-center font-display text-[1.7rem] leading-tight tracking-tight">
-                  Приходи
-                  <br />
-                  подготовленным
-                </p>
-                <MoodDots />
-                <p className="mx-auto mt-3 max-w-[16rem] text-center text-[0.8rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
-                  Всё, что стоит обсудить, само собирается в список к следующей сессии.
-                </p>
-                <div className="relative mx-auto mt-4 w-[78%]">
-                  <div className="bl-phone">
-                    <div className="bl-screen" dangerouslySetInnerHTML={{ __html: VIDEO_HTML }} />
-                  </div>
-                </div>
+            <div className="relative mx-auto w-full max-w-[20rem] lg:max-w-[24rem]">
+              <div className="bl-phone">
+                <div className="bl-screen" dangerouslySetInnerHTML={{ __html: VIDEO_HTML }} />
               </div>
-              <span className="bl-float bl-float-a">
-                <i />
-                Запись сохранена
-              </span>
-              <span className="bl-float bl-float-b">как день? · 21:00</span>
-              <span className="bl-float bl-float-c">
-                <i />
-                +2 темы к сессии
-              </span>
             </div>
           </section>
 
