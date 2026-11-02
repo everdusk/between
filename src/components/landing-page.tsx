@@ -133,11 +133,12 @@ const CSS = `
   radial-gradient(60% 80% at 20% 100%,rgba(40,140,110,.35),transparent 60%),
   #0c1214;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
-.bl-ticker{position:relative;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
-.bl-ticker-track{display:flex;gap:.6rem;width:max-content;animation:bl-ticker 46s linear infinite}
+.bl-marquee{width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw)}
+.bl-ticker{position:relative;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.bl-ticker-track{display:flex;gap:.75rem;width:max-content;padding:.15rem 0;animation:bl-ticker 42s linear infinite}
 .bl-ticker:hover .bl-ticker-track{animation-play-state:paused}
-.bl-note{display:inline-flex;align-items:center;gap:.5rem;height:2.35rem;padding:0 .9rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.035);color:#d5e0db;font-size:.88rem;white-space:nowrap}
-.bl-note i{width:.42rem;height:.42rem;border-radius:50%;box-shadow:0 0 10px currentColor}
+.bl-note{display:inline-flex;align-items:center;gap:.6rem;height:2.85rem;padding:0 1.1rem 0 .95rem;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.045);color:#e4ece8;font-size:.98rem;white-space:nowrap}
+.bl-note i{width:.5rem;height:.5rem;border-radius:50%;box-shadow:0 0 12px currentColor;flex:none}
 @keyframes bl-ticker{to{transform:translateX(-50%)}}
 @media (prefers-reduced-motion:reduce){.bl-ticker-track{animation:none}}
 }
@@ -315,8 +316,11 @@ export function LandingPage() {
             </div>
           </section>
 
-          <section className="mt-16 sm:mt-20" aria-label="Примеры записей">
-            <div className="bl-ticker">
+          <section className="bl-marquee mt-20 sm:mt-28" aria-label="Примеры записей">
+            <div className="flex justify-center">
+              <Kicker>Например, так</Kicker>
+            </div>
+            <div className="bl-ticker mt-6">
               <div className="bl-ticker-track">
                 {[...NOTES, ...NOTES].map((note, index) => (
                   <span key={`${note.text}-${index}`} className="bl-note" aria-hidden={index >= NOTES.length}>
