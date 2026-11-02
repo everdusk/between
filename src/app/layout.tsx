@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Literata, Manrope } from "next/font/google";
 import { ProductAnalyticsConfig } from "@/components/product-analytics-config";
 import { SplashScreen } from "@/components/splash-screen";
+import { LandingPage } from "@/components/landing-page";
+import { LandingSurface } from "@/components/landing-surface";
+import { SURFACE_BOOT_SCRIPT } from "@/lib/landing";
 import { LAUNCH_THEME_SCRIPT, SPLASH_COVER_CSS } from "@/lib/launch-theme";
 import { posthogBrowserConfig } from "@/lib/posthog-env";
 import { SPLASH_CHROME } from "@/lib/telegram";
@@ -19,7 +22,8 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "Between — дневник к сеансу",
-  description: "Дневник к сеансу.",
+  description:
+    "Пара слов боту, неделя складывается сама, и к разговору уже есть о чём говорить.",
 };
 
 export const viewport: Viewport = {
@@ -44,11 +48,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <style dangerouslySetInnerHTML={{ __html: SPLASH_COVER_CSS }} />
         <script dangerouslySetInnerHTML={{ __html: LAUNCH_THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: SURFACE_BOOT_SCRIPT }} />
         <link rel="preload" href="/splash.webp" as="image" fetchPriority="high" />
       </head>
       <body className="flex h-full flex-col overflow-hidden font-sans">
         {posthog ? <ProductAnalyticsConfig token={posthog.token} host={posthog.host} /> : null}
+        <LandingSurface />
         <SplashScreen />
+        <LandingPage />
         <div className="app-root">{children}</div>
       </body>
     </html>

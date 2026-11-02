@@ -8,6 +8,7 @@ import {
   splashShouldWaitForViewport,
   splashViewportSettled,
 } from "@/lib/splash";
+import { holdAppSurface } from "@/lib/landing";
 import {
   applyDevicePerformance,
   applyTelegramChrome,
@@ -77,6 +78,7 @@ export function useTelegram(): TelegramSession {
       if (cancelled) return;
       const user = wa.initDataUnsafe?.user ?? null;
       if (inTelegram) {
+        holdAppSurface();
         // Variables can update under the frame. Native chrome and color-scheme
         // wait until it leaves: each of those repaints the iOS WebView.
         applyTelegramTheme(wa.themeParams, wa.colorScheme, {

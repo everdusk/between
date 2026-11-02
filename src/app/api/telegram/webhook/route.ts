@@ -3,6 +3,7 @@ import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale, type Local
 import { addCheckin, appendBotMessageToToday } from "@/lib/journal-server";
 import { countPhrase, feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
 import {
+  getRedis,
   getUserTimezone,
   loadDeviceLocale,
   loadUserLocale,
@@ -19,6 +20,13 @@ import {
   loadAnalyticsReport,
   recordPaidAnalytics,
 } from "@/lib/analytics";
+import {
+  isLandingStart,
+  LANDING_COUNT_KEY,
+  landingCount,
+  landingStatsLine,
+  rememberLandingSource,
+} from "@/lib/landing";
 import { appUrl } from "@/lib/telegram-auth";
 import {
   downloadTelegramFile,
@@ -342,6 +350,16 @@ export async function POST(req: Request) {
   }
 
   if (isBotCommand(text, "start") || isBotCommand(text, "help")) {
+    if (userId && isLandingStart(text)) {
+      const redis = getRedis();
+      if (redis) {
+        try {
+          await rememberLandingSource(redis, userId);
+        } catch {
+          // The greeting still goes out if the mark cannot be stored.
+        }
+      }
+    }
     await telegramRequest("sendMessage", {
       chat_id: chatId,
       text: translate(greeting, "botHelp", {
@@ -392,9 +410,18 @@ export async function POST(req: Request) {
     const stats = redis
       ? formatAnalyticsReport(await loadAnalyticsReport(redis))
       : "Счётчики ещё не пишутся.";
+    let landing = "";
+    const sourceRedis = getRedis();
+    if (sourceRedis) {
+      try {
+        landing = landingStatsLine(landingCount(await sourceRedis.get(LANDING_COUNT_KEY)));
+      } catch {
+        landing = "";
+      }
+    }
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: stats,
+      text: `${stats}${landing}`,
       reply_markup: keyboard,
     });
     return NextResponse.json({ ok: true });
