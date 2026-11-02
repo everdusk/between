@@ -114,9 +114,9 @@ const CSS = `
 .bl-video,.bl-screen img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover}
 .bl-float{display:inline-flex;align-items:center;gap:.45rem;padding:.45rem .7rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(12,16,15,.78);font-size:.78rem;color:#e7eeea;white-space:nowrap;box-shadow:0 12px 30px -18px #000;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
 .bl-float i{width:.45rem;height:.45rem;border-radius:50%;background:#5ee7c5;box-shadow:0 0 10px #5ee7c5}
-.bl-float-a{position:absolute;left:0;top:38%;transform:translateX(-18%)}
-.bl-float-b{position:absolute;right:0;top:58%;transform:translateX(18%)}
-.bl-float-c{position:absolute;bottom:1.4rem;left:1.2rem}
+.bl-float-a{position:absolute;left:0;top:22%;transform:translateX(-42%)}
+.bl-float-b{position:absolute;right:0;top:46%;transform:translateX(38%)}
+.bl-float-c{position:absolute;left:0;bottom:22%;transform:translateX(-62%)}
 @media (max-width:1023px){.bl-float-a,.bl-float-b,.bl-float-c{position:static;transform:none;margin:.4rem .4rem 0 0}}
 .bl-reason{border-radius:1.35rem;border:1px solid rgba(255,255,255,.09);background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));padding:1.35rem 1.25rem 1.45rem}
 .bl-ico{display:grid;place-items:center;width:2.4rem;height:2.4rem;border-radius:.8rem;border:1px solid rgba(94,231,197,.28);background:rgba(94,231,197,.06);color:var(--bl-teal)}
@@ -287,22 +287,9 @@ export function LandingPage() {
               </ul>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[24rem]">
-              <div className="bl-stage">
-                <p className="text-center font-display text-[1.7rem] leading-tight tracking-tight">
-                  Приходи
-                  <br />
-                  подготовленным
-                </p>
-                <MoodDots />
-                <p className="mx-auto mt-3 max-w-[16rem] text-center text-[0.8rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
-                  Всё, что стоит обсудить, само собирается в список к следующей сессии.
-                </p>
-                <div className="relative mx-auto mt-4 w-[78%]">
-                  <div className="bl-phone">
-                    <div className="bl-screen" dangerouslySetInnerHTML={{ __html: VIDEO_HTML }} />
-                  </div>
-                </div>
+            <div className="relative mx-auto w-full max-w-[22rem] lg:max-w-[24rem]">
+              <div className="bl-phone">
+                <div className="bl-screen" dangerouslySetInnerHTML={{ __html: VIDEO_HTML }} />
               </div>
               <span className="bl-float bl-float-a">
                 <i />
