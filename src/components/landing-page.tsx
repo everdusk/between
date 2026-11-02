@@ -4,21 +4,33 @@ import type { Feeling } from "@/lib/types";
 
 const DOTS: Feeling[] = ["радость", "спокойно", "усталость", "грусть", "тревожно", "злость"];
 
-/** One day, four check-ins. The line the bot draws when nobody has to remember anything. */
+/** The three mood polls: 9:00, 14:00, 18:00. A tap, not a message. */
 const DAY_POINTS: { x: number; y: number; time: string; feeling: Feeling }[] = [
-  { x: 70, y: 70, time: "9:00", feeling: "спокойно" },
-  { x: 290, y: 118, time: "14:00", feeling: "усталость" },
-  { x: 520, y: 150, time: "18:00", feeling: "тревожно" },
-  { x: 730, y: 262, time: "21:00", feeling: "грусть" },
+  { x: 110, y: 74, time: "9:00", feeling: "спокойно" },
+  { x: 400, y: 148, time: "14:00", feeling: "усталость" },
+  { x: 690, y: 252, time: "18:00", feeling: "тревожно" },
+];
+
+/** The buttons the bot actually sends, in picker order. */
+const BUTTONS: Feeling[] = [
+  "тревожно",
+  "спокойно",
+  "злость",
+  "грусть",
+  "радость",
+  "усталость",
+  "стыд",
+  "пусто",
+  "напряжение",
 ];
 
 const FEATURES = [
   {
     index: "01",
     title: "Бот спросит сам",
-    body: "Вечером, в тихое время. Отвечаете одним словом или абзацем — день записан.",
+    body: "Утром, днём и вечером. Не текст — кнопки: нажали «тревожно», и день отмечен.",
     image: "/landing/chat.webp",
-    alt: "Чат с ботом: «Вечер. Как вы?» и ответ одной фразой",
+    alt: "Бот спрашивает «Вечер. Как вы?» и даёт кнопки настроения",
   },
   {
     index: "02",
@@ -37,26 +49,13 @@ const FEATURES = [
 ];
 
 const STEPS = [
-  { n: "1", title: "Спросит", body: "Вечером бот пишет: «Как вы?» Самому заходить и помнить не нужно." },
-  { n: "2", title: "Ответите", body: "Словом или абзацем прямо в чате. Голосовым тоже можно." },
+  { n: "1", title: "Спросит", body: "В 9:00, 14:00 и 18:00 бот пишет «Как вы?» с кнопками. Самому заходить не нужно." },
+  { n: "2", title: "Нажмёте", body: "Одна кнопка: «тревожно», «спокойно», «усталость». Печатать ничего не надо." },
   { n: "3", title: "Сложится", body: "Дни и настроение собираются в неделю сами, без таблиц." },
   { n: "4", title: "Увидите", body: "Через пару недель понятно, после чего прилетают пики." },
 ];
 
-const VIDEO_HTML = `<video class="bl-video" autoplay muted loop playsinline preload="metadata" poster="/landing/poster.webp" aria-label="Запись экрана: бот спрашивает, как дела, затем неделя и темы к сеансу"><source src="/landing/screen-ru.webm" type="video/webm"><source src="/landing/screen-ru.mp4" type="video/mp4"></video>`;
-
-const TICKER: { text: string; feeling: Feeling }[] = [
-  { text: "спокойно, выспалась", feeling: "спокойно" },
-  { text: "норм", feeling: "спокойно" },
-  { text: "устала после планёрки", feeling: "усталость" },
-  { text: "опять переписка с ней, трясёт", feeling: "тревожно" },
-  { text: "вроде ок", feeling: "спокойно" },
-  { text: "дно", feeling: "грусть" },
-  { text: "злюсь, что согласилась", feeling: "злость" },
-  { text: "наконец-то встретились", feeling: "радость" },
-  { text: "не спала, всё бесит", feeling: "злость" },
-  { text: "тихо и хорошо", feeling: "радость" },
-];
+const VIDEO_HTML = `<video class="bl-video" autoplay muted loop playsinline preload="metadata" poster="/landing/poster.webp" aria-label="Запись экрана: бот спрашивает настроение кнопками, нажатие «тревожно», затем неделя и темы к сеансу"><source src="/landing/screen-ru.webm" type="video/webm"><source src="/landing/screen-ru.mp4" type="video/mp4"></video>`;
 
 /* Unlayered rules would beat Tailwind's responsive utilities (hidden, sm:flex), so everything sits in @layer components. */
 const CSS = `
@@ -139,23 +138,22 @@ function DayChart({ compact = false }: { compact?: boolean }) {
   // The phone gets half the width; labels keep their size so the curve stays readable.
   const k = compact ? 0.5 : 1;
   const width = 800 * k;
-  const [a, b, c, d] = DAY_POINTS.map((point) => ({ ...point, x: point.x * k }));
-  const path = `M ${a.x} ${a.y} C ${150 * k} ${a.y - 14}, ${210 * k} ${b.y + 6}, ${b.x} ${b.y} S ${440 * k} ${c.y - 40}, ${c.x} ${c.y} C ${600 * k} ${c.y + 10}, ${640 * k} ${d.y - 6}, ${d.x} ${d.y}`;
-  const marker = { x: 590 * k, y: 190 };
+  const points = DAY_POINTS.map((point) => ({ ...point, x: point.x * k }));
+  const [a, b, c] = points;
+  const path = `M ${a.x} ${a.y} C ${220 * k} ${a.y - 10}, ${300 * k} ${b.y - 16}, ${b.x} ${b.y} C ${520 * k} ${b.y + 30}, ${580 * k} ${c.y - 20}, ${c.x} ${c.y}`;
   const id = compact ? "bl-c" : "bl";
   return (
     <svg
       className={`bl-chart ${compact ? "sm:hidden" : "hidden sm:block"}`}
       viewBox={`0 0 ${width} 330`}
       role="img"
-      aria-label="Линия одного дня: спокойно утром, усталость днём, тревожно к вечеру, грусть ночью"
+      aria-label="Линия одного дня: спокойно в 9:00, усталость в 14:00, тревожно в 18:00"
     >
       <defs>
         <linearGradient id={`${id}-stroke`} x1="0" x2="1" y1="0" y2="0">
           <stop offset="0" stopColor={feelingFill("спокойно")} />
           <stop offset="0.4" stopColor={feelingFill("усталость")} />
-          <stop offset="0.7" stopColor={feelingFill("тревожно")} />
-          <stop offset="1" stopColor={feelingFill("грусть")} />
+          <stop offset="1" stopColor={feelingFill("тревожно")} />
         </linearGradient>
         <linearGradient id={`${id}-fill`} x1="0" x2="0" y1="0" y2="1">
           <stop offset="0" stopColor="rgba(70,231,204,.24)" />
@@ -168,17 +166,11 @@ function DayChart({ compact = false }: { compact?: boolean }) {
       {[70, 134, 198, 262].map((y) => (
         <line key={y} x1={20 * k + 20} x2={width - 20 * k - 20} y1={y} y2={y} stroke="rgba(255,255,255,.07)" strokeWidth="1" />
       ))}
-      <path d={`${path} L ${d.x} 300 L ${a.x} 300 Z`} fill={`url(#${id}-fill)`} />
+      <path d={`${path} L ${c.x} 300 L ${a.x} 300 Z`} fill={`url(#${id}-fill)`} />
       <path d={path} fill="none" stroke={`url(#${id}-stroke)`} strokeWidth={compact ? 12 : 16} strokeLinecap="round" opacity=".7" filter={`url(#${id}-blur)`} />
       <path d={path} className="bl-line-draw" fill="none" stroke={`url(#${id}-stroke)`} strokeWidth="3.5" strokeLinecap="round" />
-      <g>
-        <line x1={marker.x} x2={marker.x} y1={marker.y + 14} y2={marker.y + 48} stroke="rgba(255,255,255,.3)" strokeDasharray="3 4" />
-        <text x={marker.x + 10} y={marker.y + 68} textAnchor="end" fill="#a9bdb4" fontSize={compact ? 13 : 14} fontFamily="var(--font-sans), sans-serif">
-          {compact ? "18:40 · то самое сообщение" : "18:40 · пришло то самое сообщение"}
-        </text>
-      </g>
-      {[a, b, c, d].map((point, index) => {
-        const anchor = compact && index === 0 ? "start" : compact && index === 3 ? "end" : "middle";
+      {points.map((point, index) => {
+        const anchor = compact && index === 0 ? "start" : compact && index === points.length - 1 ? "end" : "middle";
         const nudge = anchor === "start" ? -12 : anchor === "end" ? 12 : 0;
         return (
           <g key={point.time}>
@@ -260,7 +252,7 @@ export function LandingPage() {
                 <i style={{ background: feelingFill("спокойно"), color: feelingFill("спокойно") }} />
                 <span>
                   Вечер. Как вы?
-                  <small>бот · 20:21</small>
+                  <small>бот · 18:00</small>
                 </span>
               </div>
               <div
@@ -268,24 +260,23 @@ export function LandingPage() {
                 style={{ animationDelay: "-3.5s" }}
                 aria-hidden
               >
-                <i style={{ background: feelingFill("грусть"), color: feelingFill("грусть") }} />
+                <i style={{ background: feelingFill("тревожно"), color: feelingFill("тревожно") }} />
                 <span>
-                  Записал на сегодня.
-                  <small>одно сообщение</small>
+                  Записал: тревожно.
+                  <small>одно нажатие</small>
                 </span>
               </div>
             </div>
           </section>
 
-          <section className="mt-20 sm:mt-28" aria-label="Примеры ответов боту">
-            <p className="bl-kicker text-center">Отвечать можно как угодно</p>
+          <section className="mt-20 sm:mt-28" aria-label="Кнопки настроения, которые присылает бот">
+            <p className="bl-kicker text-center">Настроение — это кнопка</p>
             <div className="bl-ticker mt-6">
               <div className="bl-ticker-track">
-                {[...TICKER, ...TICKER].map((chip, index) => (
-                  <span key={`${chip.text}-${index}`} className="bl-chip" aria-hidden={index >= TICKER.length}>
-                    <i style={{ background: feelingFill(chip.feeling), color: feelingFill(chip.feeling) }} />
-                    {chip.text}
-                    <small>{chip.feeling}</small>
+                {[...BUTTONS, ...BUTTONS].map((feeling, index) => (
+                  <span key={`${feeling}-${index}`} className="bl-chip" aria-hidden={index >= BUTTONS.length}>
+                    <i style={{ background: feelingFill(feeling), color: feelingFill(feeling) }} />
+                    {feeling}
                   </span>
                 ))}
               </div>
@@ -301,8 +292,8 @@ export function LandingPage() {
                 </h2>
               </div>
               <p className="max-w-xl text-[1rem] leading-relaxed lg:justify-self-end lg:text-right" style={{ color: "var(--bl-muted)" }}>
-                Бот спрашивает утром, днём и вечером. Четыре отметки — и видно, что «дно» наступило не вообще,
-                а после шести, когда пришло то самое сообщение.
+                В 9:00, 14:00 и 18:00 бот спрашивает настроение, и ответом служит одно нажатие. Три отметки — и видно,
+                что «дно» наступило не вообще, а к вечеру.
               </p>
             </div>
             <div className="mt-8 rounded-3xl p-3 sm:mt-10 sm:p-6" style={{ background: "rgba(0,0,0,.25)", border: "1px solid var(--bl-line)" }}>
@@ -318,7 +309,8 @@ export function LandingPage() {
                 Не надо помнить, что куда-то надо зайти
               </h2>
               <p className="mx-auto mt-5 max-w-xl text-[1.0625rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
-                Вечером бот тихо спросит, как дела. Отвечаете одним словом или абзацем — и день уже в дневнике.
+                Утром, днём и вечером бот присылает кнопки. Нажимаете «тревожно» — отметка уже в дневнике. Заметку
+                вечером он спросит, только если за день ничего не написано.
               </p>
             </div>
             <ol className="mt-12 grid gap-5 md:grid-cols-3">
