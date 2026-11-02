@@ -18,104 +18,128 @@ const NOTES: { text: string; feeling: Feeling }[] = [
 
 const REASONS = [
   {
-    title: "Не помнишь",
-    body: "К сеансу от недели остаётся пара ярких вечеров. Остальное стёрлось.",
-    icon: "memory",
+    title: "Неудобно",
+    body: "Отдельное приложение, заметки или бумажка у кровати. Каждая запись — это ещё одна задача, а задач и так хватает.",
+    icon: "box",
   },
   {
     title: "Забывается",
-    body: "Дневник в другом приложении. Туда надо зайти — и ещё вспомнить, что туда надо зайти.",
+    body: "Обещаете себе написать вечером — вечер пролетает. А через пару дней не вспомнить даже, что именно задевало.",
     icon: "clock",
   },
   {
-    title: "«Я и так помню»",
-    body: "Помнится дно. А утро было спокойным — этого в памяти уже нет.",
-    icon: "spark",
+    title: "«Я хз, я норм»",
+    body: "На сессии кажется, рассказать нечего. А по дороге домой вспоминается всё сразу — но уже поздно.",
+    icon: "chat",
   },
 ];
 
 const STEPS = [
   {
     n: "01",
-    kicker: "Три раза в день",
-    title: "Настроение — кнопка",
-    body: "Утром, днём и вечером бот пишет «Как вы?» и даёт кнопки. Нажали «тревожно» — отметка уже в дневнике. Печатать ничего не надо.",
+    title: "Стартанули бота",
+    body: "Кнопка Start — и вы уже внутри. Без регистрации, паролей и анкет: Between открывается прямо в Telegram и просто ждёт ваше первое сообщение.",
+    frameTitle: "Просто напиши боту",
+    frameNote: "Пришла мысль в чат — Between сохранит её вместе с настроением. Без форм и лишних шагов.",
+    chip: "первая запись — просто сообщение боту",
     image: "/landing/mood.webp",
-    alt: "Бот спрашивает «Вечер. Как вы?» и предлагает кнопки настроения",
+    alt: "Чат с ботом: «Вечер. Как вы?» и кнопки настроения",
   },
   {
     n: "02",
-    kicker: "Когда есть что сказать",
-    title: "Заметку пишете сами",
-    body: "Любой текст боту становится записью на сегодня. Вечером он спросит про заметку сам — и только если за день ничего не написано.",
+    title: "Начали писать",
+    body: "Строчка в очереди, голосовое по дороге, поток в полночь — как получилось. Between сохранит настроение и аккуратно разложит всё по дням.",
+    frameTitle: "Каждый день — в цвете",
+    frameNote: "Отметьте эмоцию, добавьте пару строк — и день уже в дневнике.",
+    chip: "настроение и эмоции — в два касания",
     image: "/landing/note.webp",
-    alt: "Сообщение боту и ответ «Записал на сегодня.»",
+    alt: "Заметка боту и ответ «Записал на сегодня.»",
   },
   {
     n: "03",
-    kicker: "Без таблиц",
-    title: "Неделя собирается сама",
-    body: "Семь дней в одном спектре. Слева легче, справа тяжелее. Видно, после чего прилетают пики, не листая чат.",
+    title: "Картина собирается сама",
+    body: "Вы ничего не сортируете. Эмоции, повторы и недосказанное Between складывает в наглядную картину: что происходило и как вы на это реагировали.",
+    frameTitle: "Дневник между сессиями",
+    frameNote: "Between собирает твои дни, эмоции и заметки к терапии в одном спокойном месте.",
+    chip: "вы ничего не делали — а оно собралось",
     image: "/landing/spectrum.webp",
-    alt: "Вкладка «Неделя» со спектром настроения",
+    alt: "Спектр недели",
   },
   {
     n: "04",
-    kicker: "К разговору",
-    title: "К сеансу есть о чём говорить",
-    body: "Повторы собираются в «Что обсудить». Приходите не с пустой головой и не вспоминаете неделю с нуля.",
+    title: "Приходите подготовленным",
+    body: "Ко встрече с терапевтом уже ждёт выкладка: что обсудить, что повторялось, о чём спросить. Никаких «я хз, я норм».",
+    frameTitle: "Приходи подготовленным",
+    frameNote: "Всё, что стоит обсудить, само собирается в список к следующей сессии.",
+    chip: "темы к сессии — без вашего участия",
     image: "/landing/backlog.webp",
-    alt: "Список «Что обсудить» с темами к сеансу",
+    alt: "Темы к сеансу",
   },
 ];
+
+const DOTS: Feeling[] = ["радость", "спокойно", "усталость", "грусть", "тревожно", "злость"];
 
 const VIDEO_HTML = `<video class="bl-video" autoplay muted loop playsinline preload="metadata" poster="/landing/poster.webp" aria-label="Нажатие «тревожно», затем заметка своими словами, затем спектр недели и темы к сеансу"><source src="/landing/screen-ru.webm" type="video/webm"><source src="/landing/screen-ru.mp4" type="video/mp4"></video>`;
 
 const CSS = `
 @layer components{
-.between-landing{--bl-bg:#070908;--bl-fg:#f4f7f5;--bl-muted:#a7b5ae;--bl-dim:#6d7f77;--bl-teal:#3ee0c5;--bl-teal-ink:#06211c;--bl-line:rgba(255,255,255,.08);--bl-glass:rgba(255,255,255,.035);background:var(--bl-bg);color:var(--bl-fg);color-scheme:dark;-webkit-font-smoothing:antialiased}
-.between-landing ::selection{background:rgba(62,224,197,.28)}
-.bl-field{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.bl-glow{position:absolute;border-radius:50%;filter:blur(90px);opacity:.8;animation:bl-drift 28s ease-in-out infinite alternate}
-.bl-glow-a{width:42rem;height:42rem;top:-16rem;right:-6rem;background:radial-gradient(closest-side,rgba(24,92,78,.7),transparent)}
-.bl-glow-b{width:28rem;height:28rem;top:18rem;left:-10rem;background:radial-gradient(closest-side,rgba(62,224,197,.14),transparent);animation-duration:36s}
-.bl-grain{position:absolute;inset:0;opacity:.05;mix-blend-mode:soft-light;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:180px}
-.bl-nav{position:sticky;top:0;z-index:30;background:rgba(7,9,8,.72);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
-.bl-nav a{color:var(--bl-muted);font-size:.9rem}
-.bl-nav a:hover{color:var(--bl-fg)}
-.bl-kicker{font-size:.72rem;line-height:1;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--bl-teal)}
-.bl-accent{color:var(--bl-teal)}
-.bl-cta{display:inline-flex;align-items:center;justify-content:center;height:3rem;padding:0 1.35rem;border-radius:999px;background:var(--bl-teal);color:var(--bl-teal-ink);font-weight:600;font-size:.95rem;white-space:nowrap;box-shadow:0 14px 36px -16px rgba(62,224,197,.7),inset 0 1px 0 rgba(255,255,255,.4)}
-.bl-cta:hover{box-shadow:0 18px 40px -14px rgba(62,224,197,.85),inset 0 1px 0 rgba(255,255,255,.4)}
+.between-landing{--bl-bg:#07090d;--bl-fg:#f3f6f4;--bl-muted:#a9b4ae;--bl-dim:#74827b;--bl-teal:#5ee7c5;--bl-line:rgba(255,255,255,.1);background:#07090d;color:var(--bl-fg);color-scheme:dark;-webkit-font-smoothing:antialiased}
+.between-landing ::selection{background:rgba(94,231,197,.28)}
+.bl-wash{position:absolute;inset:0 0 auto 0;height:58rem;pointer-events:none;background:
+  radial-gradient(38rem 30rem at 78% 22%,rgba(36,150,112,.55),transparent 62%),
+  radial-gradient(26rem 24rem at 96% 30%,rgba(128,96,210,.42),transparent 64%),
+  radial-gradient(22rem 18rem at 12% 18%,rgba(20,70,60,.35),transparent 70%)}
+.bl-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;width:min(100%,40rem);margin:1.1rem auto 0;padding:.35rem .4rem .35rem .9rem;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(10,14,13,.72);box-shadow:0 10px 40px -24px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.05);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+.bl-logo{display:inline-flex;align-items:center;gap:.55rem;font-weight:600;letter-spacing:-.02em;color:var(--bl-fg)!important}
+.bl-mark{display:grid;place-items:center;width:1.7rem;height:1.7rem;border-radius:.55rem;border:1px solid rgba(94,231,197,.35);background:rgba(94,231,197,.08);color:var(--bl-teal)}
+.bl-bar nav a{color:#c5cfca;font-size:.92rem}
+.bl-bar nav a:hover{color:#fff}
+.bl-kicker{display:flex;align-items:center;gap:.65rem;font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--bl-teal)}
+.bl-kicker i{width:1.15rem;height:1px;background:currentColor;display:block}
+.bl-shift{background:linear-gradient(102deg,#5df0c6 0%,#7ee0d2 32%,#8eb6ff 70%,#c9b4ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bl-cta{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;height:2.85rem;padding:0 1.15rem;border-radius:999px;background:linear-gradient(100deg,#c8f8c4 0%,#5ee7c5 42%,#7eb6f0 100%);color:#062018;font-weight:600;font-size:.95rem;white-space:nowrap;box-shadow:0 10px 28px -12px rgba(90,200,190,.8),inset 0 1px 0 rgba(255,255,255,.7)}
+.bl-cta:hover{filter:saturate(1.08) brightness(1.04)}
 .bl-cta:active,.bl-ghost:active{transform:scale(.98)}
-.bl-ghost{display:inline-flex;align-items:center;justify-content:center;height:3rem;padding:0 1.25rem;border-radius:999px;border:1px solid var(--bl-line);background:rgba(255,255,255,.03);color:var(--bl-fg);font-weight:500;font-size:.95rem;white-space:nowrap}
-.bl-ghost:hover{background:rgba(255,255,255,.06)}
-.bl-cta:focus-visible,.bl-ghost:focus-visible,.bl-nav a:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(62,224,197,.28)}
-.bl-pill{display:inline-flex;align-items:center;gap:.45rem;color:var(--bl-dim);font-size:.84rem}
-.bl-pill i{width:.4rem;height:.4rem;border-radius:50%;background:var(--bl-teal);box-shadow:0 0 10px var(--bl-teal)}
-.bl-phone{position:relative;width:100%;aspect-ratio:642/1266;border-radius:2.6rem;padding:.55rem;background:linear-gradient(160deg,#2a3134,#12171a 42%,#0c1012);box-shadow:0 50px 100px -36px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.12),inset 0 0 0 1px rgba(0,0,0,.55)}
-.bl-phone::before{content:"";position:absolute;top:1.05rem;left:50%;width:5.2rem;height:1.35rem;margin-left:-2.6rem;border-radius:999px;background:#050708;z-index:2}
-.bl-screen{position:relative;height:100%;border-radius:2.15rem;overflow:hidden;background:#0c0e10}
-.bl-video,.bl-screen img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-.bl-chip{position:absolute;left:-1.5rem;top:46%;display:flex;align-items:center;gap:.65rem;padding:.8rem 1rem;border-radius:1.1rem;background:rgba(16,22,20,.72);border:1px solid rgba(255,255,255,.1);box-shadow:0 18px 40px -24px rgba(0,0,0,.8);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);font-size:.92rem;line-height:1.25}
-.bl-chip b{display:block;font-weight:600}
-.bl-chip small{display:block;margin-top:.15rem;color:var(--bl-dim);font-size:.72rem;font-weight:500}
-.bl-chip i{width:.55rem;height:.55rem;border-radius:50%;flex:none;box-shadow:0 0 12px currentColor}
-.bl-reason{border-radius:1.4rem;border:1px solid var(--bl-line);background:rgba(255,255,255,.03);padding:1.4rem 1.35rem 1.5rem}
-.bl-reason svg{color:var(--bl-teal)}
-.bl-step-n{font-size:.95rem;font-weight:600;letter-spacing:.14em;color:var(--bl-teal)}
-.bl-phone-wrap{position:relative;width:min(100%,17.5rem)}
-.bl-phone-wrap::before{content:"";position:absolute;inset:12% -8%;border-radius:50%;background:radial-gradient(closest-side,rgba(62,224,197,.22),transparent 72%);filter:blur(18px);z-index:0}
-.bl-close{position:relative;overflow:hidden;border-radius:2rem;text-align:center;background:radial-gradient(90% 80% at 50% 120%,rgba(62,224,197,.2),transparent 60%),#0c1211;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
-.bl-ticker{position:relative;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
-.bl-ticker-track{display:flex;gap:.7rem;width:max-content;animation:bl-ticker 46s linear infinite}
+.bl-cta-sm{height:2.3rem;padding:0 .95rem;font-size:.84rem}
+.bl-ghost{display:inline-flex;align-items:center;justify-content:center;height:2.85rem;padding:0 1.15rem;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#e7eeea;font-weight:500;font-size:.95rem;white-space:nowrap}
+.bl-ghost:hover{background:rgba(255,255,255,.08)}
+.bl-cta:focus-visible,.bl-ghost:focus-visible,.bl-bar a:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(94,231,197,.28)}
+.bl-meta{display:inline-flex;align-items:center;gap:.4rem;height:2.15rem;padding:0 .85rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#c9d4ce;font-size:.82rem}
+.bl-meta b{color:var(--bl-teal);font-weight:600}
+.bl-stage{position:relative;border-radius:2.6rem;padding:1.35rem 1.15rem 1.5rem;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.1);box-shadow:0 40px 90px -36px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.08)}
+.bl-stage::before{content:"";position:absolute;inset:-12% -18% auto;height:70%;background:radial-gradient(closest-side,rgba(70,220,160,.28),transparent 70%);filter:blur(12px);z-index:-1}
+.bl-phone{position:relative;width:100%;aspect-ratio:642/1266;border-radius:2.15rem;padding:.42rem;background:linear-gradient(165deg,#3a4246,#14191c 40%,#0c1012);box-shadow:0 30px 60px -28px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.14)}
+.bl-phone::before{content:"";position:absolute;top:.72rem;left:50%;z-index:2;width:4.4rem;height:1.05rem;margin-left:-2.2rem;border-radius:999px;background:#050708}
+.bl-screen{position:relative;height:100%;overflow:hidden;border-radius:1.8rem;background:#0c0e10}
+.bl-video,.bl-screen img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:cover}
+.bl-float{display:inline-flex;align-items:center;gap:.45rem;padding:.45rem .7rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(12,16,15,.78);font-size:.78rem;color:#e7eeea;white-space:nowrap;box-shadow:0 12px 30px -18px #000;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.bl-float i{width:.45rem;height:.45rem;border-radius:50%;background:#5ee7c5;box-shadow:0 0 10px #5ee7c5}
+.bl-float-a{position:absolute;left:0;top:38%;transform:translateX(-18%)}
+.bl-float-b{position:absolute;right:0;top:58%;transform:translateX(18%)}
+.bl-float-c{position:absolute;bottom:1.4rem;left:1.2rem}
+@media (max-width:1023px){.bl-float-a,.bl-float-b,.bl-float-c{position:static;transform:none;margin:.4rem .4rem 0 0}}
+.bl-reason{border-radius:1.35rem;border:1px solid rgba(255,255,255,.09);background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02));padding:1.35rem 1.25rem 1.45rem}
+.bl-ico{display:grid;place-items:center;width:2.4rem;height:2.4rem;border-radius:.8rem;border:1px solid rgba(94,231,197,.28);background:rgba(94,231,197,.06);color:var(--bl-teal)}
+.bl-quote{border-radius:1.25rem;border:1px solid rgba(94,231,197,.18);background:linear-gradient(90deg,rgba(40,120,96,.28),rgba(16,22,20,.4) 42%,rgba(16,22,20,.2));padding:1.15rem 1.4rem;color:#d5e0da;line-height:1.55}
+.bl-quote b{color:#7af0d2;font-weight:600}
+.bl-num{font-family:var(--font-sans),sans-serif;font-weight:700;font-size:clamp(4.2rem,7vw,5.6rem);line-height:.8;letter-spacing:-.05em;color:#6ff0cf;text-shadow:0 0 42px rgba(90,240,200,.35)}
+.bl-frame{position:relative;width:min(100%,22rem);border-radius:2rem;border:1px solid rgba(255,255,255,.1);background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));padding:1.35rem 1.15rem 1.15rem;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.bl-frame::before{content:"";position:absolute;inset:8% -12%;z-index:-1;background:radial-gradient(closest-side,rgba(80,220,170,.22),transparent 72%);filter:blur(16px)}
+.bl-frame .bl-phone{width:78%;margin:1rem auto 0}
+.bl-tag{display:inline-flex;align-items:center;gap:.4rem;margin-top:.85rem;padding:.4rem .7rem;border-radius:999px;border:1px solid rgba(94,231,197,.25);background:rgba(8,14,12,.8);color:#cfe7df;font-size:.75rem}
+.bl-tag i{color:var(--bl-teal)}
+.bl-close{position:relative;overflow:hidden;border-radius:1.75rem;border:1px solid rgba(255,255,255,.08);background:
+  radial-gradient(70% 80% at 70% 0%,rgba(90,80,180,.28),transparent 55%),
+  radial-gradient(60% 80% at 20% 100%,rgba(40,140,110,.35),transparent 60%),
+  #0c1214;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.bl-ticker{position:relative;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+.bl-ticker-track{display:flex;gap:.6rem;width:max-content;animation:bl-ticker 46s linear infinite}
 .bl-ticker:hover .bl-ticker-track{animation-play-state:paused}
-.bl-note{display:inline-flex;align-items:center;gap:.55rem;height:2.7rem;padding:0 1rem 0 .85rem;border-radius:999px;border:1px solid var(--bl-line);background:rgba(255,255,255,.035);font-size:.92rem;color:#d5e0db;white-space:nowrap}
-.bl-note i{width:.45rem;height:.45rem;border-radius:50%;box-shadow:0 0 10px currentColor;flex:none}
-@keyframes bl-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-4%,5%,0)}}
+.bl-note{display:inline-flex;align-items:center;gap:.5rem;height:2.35rem;padding:0 .9rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.035);color:#d5e0db;font-size:.88rem;white-space:nowrap}
+.bl-note i{width:.42rem;height:.42rem;border-radius:50%;box-shadow:0 0 10px currentColor}
 @keyframes bl-ticker{to{transform:translateX(-50%)}}
-@media (max-width:640px){.bl-chip{display:none}}
-@media (prefers-reduced-motion:reduce){.bl-glow,.bl-ticker-track{animation:none}}
+@media (prefers-reduced-motion:reduce){.bl-ticker-track{animation:none}}
 }
 `;
 
@@ -123,6 +147,7 @@ function OpenLink({ children, className }: { children: ReactNode; className: str
   return (
     <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM} className={className}>
       {children}
+      <span aria-hidden>→</span>
     </a>
   );
 }
@@ -132,40 +157,71 @@ function jump(event: MouseEvent<HTMLAnchorElement>, id: string) {
   const target = document.getElementById(id);
   if (!root || !target) return;
   event.preventDefault();
-  const top = target.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop - 76;
+  const top = target.getBoundingClientRect().top - root.getBoundingClientRect().top + root.scrollTop - 24;
   root.scrollTo({ top, behavior: "smooth" });
+}
+
+function Kicker({ children }: { children: string }) {
+  return (
+    <p className="bl-kicker">
+      <i />
+      {children}
+    </p>
+  );
+}
+
+function MoodDots() {
+  return (
+    <span className="mt-3 flex justify-center gap-1.5" aria-hidden>
+      {DOTS.map((feeling) => (
+        <i key={feeling} className="block h-1.5 w-1.5 rounded-full" style={{ background: feelingFill(feeling) }} />
+      ))}
+    </span>
+  );
 }
 
 function Icon({ name }: { name: string }) {
   const common = { fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
-      {name === "memory" && (
-        <>
-          <path {...common} d="M7 4.5h7.2L18 8.2V19.5H7z" />
-          <path {...common} d="M14 4.6V8.3H18M9.4 12.2h5M9.4 15.2h3.2" />
-        </>
-      )}
-      {name === "clock" && (
-        <>
-          <circle {...common} cx="12" cy="12" r="7.5" />
-          <path {...common} d="M12 8.5V12l2.4 1.6" />
-        </>
-      )}
-      {name === "spark" && <path {...common} d="M12 3.5 13.6 9H19l-4.3 3.2 1.6 5.3L12 14.6 7.7 17.5l1.6-5.3L5 9h5.4L12 3.5z" />}
-    </svg>
+    <span className="bl-ico">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
+        {name === "box" && (
+          <>
+            <rect {...common} x="4" y="4" width="16" height="16" rx="3" />
+            <path {...common} d="M8 12h8M8 8.5h5" />
+          </>
+        )}
+        {name === "clock" && (
+          <>
+            <circle {...common} cx="12" cy="12" r="7.5" />
+            <path {...common} d="M12 8.2V12l2.5 1.6" />
+          </>
+        )}
+        {name === "chat" && <path {...common} d="M6 16.5 4.5 20l4-1.6A8 8 0 1 0 6 16.5z" />}
+      </svg>
+    </span>
   );
 }
 
-function PhoneShot({ src, alt }: { src: string; alt: string }) {
+function StepFrame({ step }: { step: (typeof STEPS)[number] }) {
   return (
-    <div className="bl-phone-wrap">
-      <div className="bl-phone relative z-10">
+    <div className="bl-frame text-center">
+      <p className="text-[0.62rem] font-semibold tracking-[0.22em] text-[var(--bl-teal)]">BETWEEN</p>
+      <h3 className="mt-3 font-display text-[1.65rem] leading-tight tracking-tight">{step.frameTitle}</h3>
+      <MoodDots />
+      <p className="mx-auto mt-3 max-w-[16rem] text-[0.8rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
+        {step.frameNote}
+      </p>
+      <div className="bl-phone">
         <div className="bl-screen">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} alt={alt} width={642} height={1266} />
+          <img src={step.image} alt={step.alt} width={642} height={1266} />
         </div>
       </div>
+      <p className="bl-tag">
+        <i>▸</i>
+        {step.chip}
+      </p>
     </div>
   );
 }
@@ -175,76 +231,92 @@ export function LandingPage() {
     <div className="between-landing fixed inset-0 z-40 hidden overflow-x-hidden overflow-y-auto">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="relative min-h-full">
-        <div className="bl-field" aria-hidden>
-          <div className="bl-glow bl-glow-a" />
-          <div className="bl-glow bl-glow-b" />
-          <div className="bl-grain" />
-        </div>
+        <div className="bl-wash" aria-hidden />
 
-        <header className="bl-nav">
-          <div className="mx-auto grid w-full max-w-6xl grid-cols-[1fr_auto] items-center gap-4 px-5 py-3.5 sm:grid-cols-[1fr_auto_1fr] sm:px-8">
-            <a href="#top" onClick={(event) => jump(event, "top")} className="justify-self-start font-display text-[1.35rem] leading-none tracking-tight !text-[var(--bl-fg)]">
+        <header className="relative z-20 px-4">
+          <div className="bl-bar">
+            <a href="#top" onClick={(event) => jump(event, "top")} className="bl-logo">
+              <span className="bl-mark" aria-hidden>
+                <svg width="14" height="14" viewBox="0 0 16 16">
+                  <path d="M8 1.4 14 8 8 14.6 2 8Z" fill="none" stroke="currentColor" strokeWidth="1.4" />
+                </svg>
+              </span>
               Between
             </a>
-            <nav className="hidden items-center gap-8 sm:flex sm:justify-self-center" aria-label="Разделы">
-              <a href="#dnevnik" onClick={(event) => jump(event, "dnevnik")}>Дневник</a>
-              <a href="#kak" onClick={(event) => jump(event, "kak")}>Как устроен</a>
+            <nav className="hidden sm:block" aria-label="Разделы">
+              <a href="#kak" onClick={(event) => jump(event, "kak")}>
+                Как это работает
+              </a>
             </nav>
-            <div className="justify-self-end">
-              <OpenLink className="bl-cta !h-10 !px-4 !text-sm">Открыть бота</OpenLink>
-            </div>
+            <OpenLink className="bl-cta bl-cta-sm">Открыть в Telegram</OpenLink>
           </div>
         </header>
 
-        <main id="top" className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-20 sm:px-8">
-          <section className="grid items-center gap-14 pt-12 sm:pt-16 lg:grid-cols-[1.15fr_.85fr] lg:gap-6 lg:pt-20">
+        <main id="top" className="relative z-10 mx-auto w-full max-w-6xl px-5 pb-16 sm:px-8">
+          <section className="grid items-center gap-14 pt-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-8 lg:pt-16">
             <div className="max-w-xl">
-              <h1 className="font-display text-[2.7rem] leading-[1.02] tracking-tight text-balance sm:text-6xl lg:text-[4.15rem]">
+              <Kicker>Дневник для тех, кто в терапии</Kicker>
+              <h1 className="mt-5 font-display text-[2.7rem] leading-[1.02] tracking-tight sm:text-6xl lg:text-[4.15rem]">
                 Терапевт попросил вести дневник.
-                <br className="hidden lg:block" /> <span className="bl-accent">Вы честно пытались.</span>
+                <br />
+                <span className="bl-shift">
+                  Вы честно
+                  <br />
+                  пытались.
+                </span>
               </h1>
-              <p className="mt-6 max-w-md text-[1.05rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
-                Между сеансами неделя стирается. Between живёт в Telegram: настроение — одна кнопка, заметка —
-                когда есть что сказать. К сеансу уже собрано, о чём говорить.
+              <p className="mt-6 max-w-md text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
+                Between — дневник в Telegram, который ведёт себя сам: сам спрашивает, как прошёл день, сам складывает
+                записи в понятную картину. Вам — только отвечать. К следующей сессии всё, что стоит рассказать, уже
+                собрано.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <OpenLink className="bl-cta">Открыть бота</OpenLink>
+                <OpenLink className="bl-cta">Открыть Between</OpenLink>
                 <a href="#kak" onClick={(event) => jump(event, "kak")} className="bl-ghost">
                   Как это работает
                 </a>
               </div>
-              <ul className="mt-7 flex flex-wrap gap-x-5 gap-y-2">
-                {["Без установки", "В Telegram", "Одно нажатие"].map((item) => (
-                  <li key={item} className="bl-pill">
-                    <i />
+              <ul className="mt-6 flex flex-wrap gap-2">
+                {["Без установки приложений", "Старт за минуту", "Записи — только ваши"].map((item) => (
+                  <li key={item} className="bl-meta">
+                    <b>+</b>
                     {item}
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[19.5rem] lg:mx-0 lg:justify-self-end">
-              <div
-                className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[30rem] w-[30rem] -translate-x-1/2 -translate-y-1/2 rounded-full"
-                style={{ background: "radial-gradient(closest-side, rgba(62,224,197,.22), transparent 70%)", filter: "blur(8px)" }}
-                aria-hidden
-              />
-              <div className="bl-phone">
-                <div className="bl-screen" dangerouslySetInnerHTML={{ __html: VIDEO_HTML }} />
+            <div className="relative mx-auto w-full max-w-[24rem]">
+              <div className="bl-stage">
+                <p className="text-center font-display text-[1.7rem] leading-tight tracking-tight">
+                  Приходи
+                  <br />
+                  подготовленным
+                </p>
+                <MoodDots />
+                <p className="mx-auto mt-3 max-w-[16rem] text-center text-[0.8rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
+                  Всё, что стоит обсудить, само собирается в список к следующей сессии.
+                </p>
+                <div className="relative mx-auto mt-4 w-[78%]">
+                  <div className="bl-phone">
+                    <div className="bl-screen" dangerouslySetInnerHTML={{ __html: VIDEO_HTML }} />
+                  </div>
+                </div>
               </div>
-              <div className="bl-chip" aria-hidden>
-                <i style={{ background: feelingFill("тревожно"), color: feelingFill("тревожно") }} />
-                <span>
-                  <b>Записал: тревожно.</b>
-                  <small>18:01 · одно нажатие</small>
-                </span>
-              </div>
+              <span className="bl-float bl-float-a">
+                <i />
+                Запись сохранена
+              </span>
+              <span className="bl-float bl-float-b">как день? · 21:00</span>
+              <span className="bl-float bl-float-c">
+                <i />
+                +2 темы к сессии
+              </span>
             </div>
           </section>
 
           <section className="mt-16 sm:mt-20" aria-label="Примеры записей">
-            <p className="bl-kicker text-center">Например, так</p>
-            <div className="bl-ticker mt-5">
+            <div className="bl-ticker">
               <div className="bl-ticker-track">
                 {[...NOTES, ...NOTES].map((note, index) => (
                   <span key={`${note.text}-${index}`} className="bl-note" aria-hidden={index >= NOTES.length}>
@@ -256,75 +328,80 @@ export function LandingPage() {
             </div>
           </section>
 
-          <section id="dnevnik" className="mt-24 scroll-mt-24 sm:mt-32">
-            <div className="mx-auto max-w-2xl text-center">
-              <p className="bl-kicker">Дневник, который не открывают</p>
-              <h2 className="mt-4 font-display text-4xl leading-[1.05] tracking-tight text-balance sm:text-5xl">
-                Почему «просто вести дневник» не работает
-              </h2>
-            </div>
-            <ul className="mt-10 grid gap-4 md:grid-cols-3">
+          <section id="dnevnik" className="mt-24 sm:mt-28">
+            <Kicker>Знакомо?</Kicker>
+            <h2 className="mt-4 max-w-xl font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl">
+              Почему «просто вести дневник» не работает
+            </h2>
+            <p className="mt-4 max-w-xl text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
+              Терапевты почти всегда просят записи между сессиями — это правда помогает. Вот только мешают три вещи:
+            </p>
+            <ul className="mt-8 grid gap-4 md:grid-cols-3">
               {REASONS.map((reason) => (
                 <li key={reason.title} className="bl-reason">
                   <Icon name={reason.icon} />
-                  <h3 className="mt-4 font-display text-[1.45rem] tracking-tight">{reason.title}</h3>
-                  <p className="mt-2 text-[0.95rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
+                  <h3 className="mt-4 text-[1.05rem] font-semibold tracking-tight">{reason.title}</h3>
+                  <p className="mt-2 text-[0.92rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
                     {reason.body}
                   </p>
                 </li>
               ))}
             </ul>
-            <p className="mx-auto mt-8 max-w-xl text-center text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
-              Дно наступает не «вообще». Оно приходит в конкретный вечер.
+            <p className="bl-quote mt-5 text-[0.98rem]">
+              Дело не в силе воли. Обычный дневник — это работа, за которую никто не берётся ещё и вечером.{" "}
+              <b>Between</b> встраивается в переписку и берёт рутину на себя.
             </p>
           </section>
 
-          <section id="kak" className="mt-24 scroll-mt-24 sm:mt-32">
-            <div className="mx-auto max-w-2xl text-center">
-              <p className="bl-kicker">Как это работает</p>
-              <h2 className="mt-4 font-display text-4xl leading-[1.05] tracking-tight text-balance sm:text-5xl">
-                Стартанули бота — и к сессии всё готово
-              </h2>
-            </div>
+          <section id="kak" className="mt-24 sm:mt-32">
+            <Kicker>Как это работает</Kicker>
+            <h2 className="mt-4 max-w-2xl font-display text-4xl leading-[1.05] tracking-tight sm:text-5xl">
+              Стартанули бота — и к сессии всё готово
+            </h2>
+            <p className="mt-4 max-w-md text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
+              Четыре шага. Ваше участие — только в первых двух, остальное Between делает сам.
+            </p>
             <ol className="mt-16 flex flex-col gap-20 sm:mt-20 sm:gap-28">
               {STEPS.map((step, index) => (
-                <li key={step.n} className={`flex flex-col items-center gap-10 lg:flex-row lg:gap-20 ${index % 2 ? "lg:flex-row-reverse" : ""}`}>
+                <li key={step.n} className={`flex flex-col items-center gap-10 lg:flex-row lg:gap-16 ${index % 2 ? "lg:flex-row-reverse" : ""}`}>
                   <div className="w-full max-w-md flex-1">
-                    <p className="bl-step-n">{step.n}</p>
-                    <p className="mt-3 text-sm" style={{ color: "var(--bl-dim)" }}>{step.kicker}</p>
-                    <h3 className="mt-2 font-display text-3xl leading-tight tracking-tight sm:text-4xl">{step.title}</h3>
+                    <p className="bl-kicker">
+                      <i className="!w-1.5 !h-1.5 !rounded-full !bg-[var(--bl-teal)]" />
+                      Шаг {step.n}
+                    </p>
+                    <p className="bl-num mt-3">{step.n}</p>
+                    <h3 className="mt-4 font-display text-3xl tracking-tight sm:text-4xl">{step.title}</h3>
                     <p className="mt-4 max-w-sm text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
                       {step.body}
                     </p>
                   </div>
-                  <PhoneShot src={step.image} alt={step.alt} />
+                  <StepFrame step={step} />
                 </li>
               ))}
             </ol>
           </section>
 
-          <section className="bl-close mt-24 px-6 py-16 sm:mt-32 sm:px-12 sm:py-24">
-            <h2 className="mx-auto max-w-3xl font-display text-4xl leading-[1.05] tracking-tight text-balance sm:text-6xl">
-              Между сессиями всё и происходит
+          <section className="bl-close mt-24 px-6 py-16 text-center sm:mt-32 sm:px-12 sm:py-20">
+            <h2 className="mx-auto max-w-3xl font-display text-4xl leading-[1.05] tracking-tight sm:text-6xl">
+              Между сессиями <span className="bl-shift">всё и происходит</span>
             </h2>
-            <p className="mx-auto mt-5 max-w-md text-[1.05rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
-              Бот спрашивает настроение сам. Заметку пишете, когда она есть. Дневник при этом ведётся.
+            <p className="mx-auto mt-5 max-w-md text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
+              Именно там Between и живёт. Откройте бота и напишите первую запись — она займёт минуту. Дальше он сам.
             </p>
             <div className="mt-8">
-              <OpenLink className="bl-cta">Открыть бота</OpenLink>
+              <OpenLink className="bl-cta">Открыть в Telegram</OpenLink>
             </div>
             <p className="mt-4 text-sm" style={{ color: "var(--bl-dim)" }}>
-              Дневник и сеансы бесплатно. «Неделя» — первые 7 дней бесплатно.
+              Работает везде, где есть Telegram: телефон, планшет, компьютер.
             </p>
           </section>
         </main>
 
-        <footer className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-3 px-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:flex-row sm:px-8">
-          <p className="font-display text-lg tracking-tight">Between</p>
-          <p className="text-xs tracking-wide" style={{ color: "var(--bl-dim)" }}>
-            Дневник настроения · мини-приложение Telegram
+        <footer className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-3 px-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:px-8">
+          <p className="text-sm" style={{ color: "var(--bl-dim)" }}>
+            Between — дневник между сессиями терапии
           </p>
-          <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM} className="text-sm font-medium" style={{ color: "var(--bl-teal)" }}>
+          <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM} className="text-sm" style={{ color: "var(--bl-muted)" }}>
             @BetweenJournalBot
           </a>
         </footer>
