@@ -53,4 +53,6 @@ Next.js (App Router), TypeScript, Tailwind, shadcn/ui, `@twa-dev/sdk`, Upstash R
 
 ## Не в этой версии
 
-PDF, шаринг с терапевтом, отдельный аккаунт вне Telegram.
+PDF, шаринг с терапевтом.
+
+Браузерный дневник — `/journal`: почта и пароль, бот подключается с вкладки «Сеансы».

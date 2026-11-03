@@ -14,13 +14,20 @@ export type JournalFetchResult =
   | { ok: true; store: TherapyStore; timeZone: string | null }
   | { ok: false; status: number; error: string };
 
+function journalHeaders(initData: string, json = false): HeadersInit {
+  const headers: Record<string, string> = {};
+  if (json) headers["Content-Type"] = "application/json";
+  if (initData) headers["X-Telegram-Init-Data"] = initData;
+  return headers;
+}
+
 export async function fetchJournal(
   initData: string,
 ): Promise<JournalFetchResult> {
   try {
     const res = await fetch("/api/journal", {
       method: "GET",
-      headers: { "X-Telegram-Init-Data": initData },
+      headers: journalHeaders(initData),
       cache: "no-store",
     });
     if (!res.ok) {
@@ -57,10 +64,7 @@ export async function putJournal(
   try {
     const res = await fetch("/api/journal", {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": initData,
-      },
+      headers: journalHeaders(initData, true),
       body: JSON.stringify({ store, timeZone: timeZone || undefined }),
     });
     return res.ok;
@@ -82,10 +86,7 @@ export async function requestBrief(
   try {
     const res = await fetch("/api/brief", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": initData,
-      },
+      headers: journalHeaders(initData, true),
       body: JSON.stringify({ facts, stamp, locale, kind }),
     });
     const data = (await res.json()) as {

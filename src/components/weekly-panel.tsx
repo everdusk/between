@@ -53,6 +53,8 @@ interface WeeklyPanelProps {
     themeSource: "model" | "rules",
   ) => boolean;
   initData?: string;
+  /** Browser session: the week model may run without Telegram init data. */
+  cloud?: boolean;
   disabled?: boolean;
 }
 
@@ -71,9 +73,11 @@ export function WeeklyPanel({
   onSavePattern,
   onSaveThemes,
   initData,
+  cloud,
   disabled,
 }: WeeklyPanelProps) {
   const { t, locale, feeling, slot, count } = useI18n();
+  const remote = Boolean(initData) || Boolean(cloud);
   const [now, setNow] = useState(() => new Date());
   const todayKey = toDateKey(now);
   const period = therapyWindow(sessions, entries, todayKey, now, plan);
@@ -151,7 +155,7 @@ export function WeeklyPanel({
   const themeAttempt = useRef<string | null>(null);
 
   useEffect(() => {
-    if (themesSettled || disabled || !initData || !themeChunkKey) return;
+    if (themesSettled || disabled || !remote || !themeChunkKey) return;
     if (themeGaveUp.has(themeStamp)) return;
     if (themeAttempt.current === themeStamp) return;
     themeAttempt.current = themeStamp;
@@ -161,7 +165,7 @@ export function WeeklyPanel({
       const chunks = themeChunksRef.current;
       for (let index = 0; index < chunks.length; index += 1) {
         const result = await requestBrief(
-          initData,
+          initData ?? "",
           chunks[index],
           `${themeStamp}:${index}`,
           locale,
@@ -188,7 +192,7 @@ export function WeeklyPanel({
       cancelled = true;
       if (themeAttempt.current === themeStamp) themeAttempt.current = null;
     };
-  }, [themesSettled, disabled, initData, themeChunkKey, themeStamp, locale, key, onSaveThemes]);
+  }, [themesSettled, disabled, initData, remote, themeChunkKey, themeStamp, locale, key, onSaveThemes]);
 
   const patternAttempt = useRef<string | null>(null);
   const savedPatternStamp = prep?.patternStamp;
@@ -196,7 +200,7 @@ export function WeeklyPanel({
   useEffect(() => {
     if (
       !patternShouldRequest({
-        hasInitData: Boolean(initData),
+        hasInitData: remote,
         disabled: Boolean(disabled),
         judging,
         themeCount: agenda.length,
@@ -213,7 +217,7 @@ export function WeeklyPanel({
     const facts = patternFactText;
     let cancelled = false;
     void (async () => {
-      const result = await requestBrief(initData as string, facts, patternStamp, locale, "pattern");
+      const result = await requestBrief(initData ?? "", facts, patternStamp, locale, "pattern");
       if (cancelled) return;
       if (!result.ok || !result.text) {
         patternGaveUp.add(patternStamp);
@@ -229,6 +233,7 @@ export function WeeklyPanel({
     agenda.length,
     disabled,
     initData,
+    remote,
     judging,
     key,
     locale,
@@ -265,7 +270,7 @@ export function WeeklyPanel({
           patternBody
             ? ""
             : patternShouldRequest({
-                  hasInitData: Boolean(initData),
+                  hasInitData: remote,
                   disabled: Boolean(disabled),
                   judging,
                   themeCount: agenda.length,
@@ -302,7 +307,7 @@ export function WeeklyPanel({
         themes={[...agenda, ...said]}
         entries={entries}
         links={themeLinks}
-        refreshing={Boolean(initData) && judging}
+        refreshing={remote && judging}
         disabled={disabled}
         onDiscuss={onDiscussTheme}
         onDismiss={onDismissTheme}

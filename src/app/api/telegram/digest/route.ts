@@ -11,6 +11,7 @@ import {
   redisConfigured,
   releaseDigestSlot,
 } from "@/lib/redis";
+import { resolveJournalId } from "@/lib/web-account-store";
 import { feelingKeyboard, telegramRequest } from "@/lib/telegram-bot";
 import { zonedParts } from "@/lib/zoned";
 
@@ -36,9 +37,14 @@ async function runDigest() {
 
   for (const userId of userIds) {
     try {
-      const timeZone = await getUserTimezone(userId);
+      if (!/^\d+$/.test(userId)) {
+        skipped += 1;
+        continue;
+      }
+      const owner = await resolveJournalId(Number(userId));
+      const timeZone = await getUserTimezone(owner);
       const clock = zonedParts(now, timeZone);
-      const store = await loadUserStore(userId);
+      const store = await loadUserStore(owner);
       const slotName = slotForHour(clock.hour);
       if (!slotName) {
         skipped += 1;
@@ -59,8 +65,8 @@ async function runDigest() {
       }
 
       const locale = resolveBotLocale(
-        await loadUserLocale(userId),
-        await loadDeviceLocale(userId),
+        await loadUserLocale(owner),
+        await loadDeviceLocale(owner),
         null,
       );
       const ok =

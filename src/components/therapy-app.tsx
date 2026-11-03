@@ -1,21 +1,26 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { CalendarDays, PenLine, Waves } from "lucide-react";
 import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
 import { JournalPanel } from "@/components/journal-panel";
 import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import { SessionsPanel } from "@/components/sessions-panel";
+import { WebAccountCard } from "@/components/web-account-card";
+import { WebAccountGate } from "@/components/web-account-gate";
 import { WeekTab } from "@/components/week-tab";
 import { WeeklyPanel } from "@/components/weekly-panel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTelegram } from "@/hooks/use-telegram";
 import { useTherapyStore } from "@/hooks/use-therapy-store";
+import { useWebAccount } from "@/hooks/use-web-account";
 import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { markSplashReady } from "@/lib/splash";
+import { clearStore, WEB_STORAGE_KEY } from "@/lib/storage";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
 import { trackAnalytics } from "@/lib/analytics-client";
 import { fetchWeekAccess, localWeekView, readLocalWeekAccess } from "@/lib/week-access-client";
@@ -66,6 +71,9 @@ function localizeStorageError(
 
 function TherapyShell({ telegram }: { telegram: TelegramSession }) {
   const { t, locale, greetingLocale } = useI18n();
+  const pathname = usePathname();
+  const webEntry = pathname === "/journal" || pathname.startsWith("/journal/");
+  const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
   const {
     store,
     status,
@@ -88,6 +96,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
     initData: telegram.initData,
     inTelegram: telegram.inTelegram,
     locale,
+    web: Boolean(web.account),
   });
 
   const [section, setSection] = useState<SectionId>("journal");
@@ -122,7 +131,15 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
     setPremium(view.status === "paid");
   }
 
-  const shellReady = telegram.ready && status !== "loading";
+  const showGate =
+    webEntry &&
+    telegram.ready &&
+    !telegram.inTelegram &&
+    !web.account &&
+    (web.status === "ready" || web.status === "unavailable");
+  const accountPending =
+    webEntry && !telegram.inTelegram && (web.status === "idle" || web.status === "loading");
+  const shellReady = telegram.ready && !accountPending && (showGate || status !== "loading");
   useEffect(() => {
     if (shellReady) markSplashReady();
   }, [shellReady]);
@@ -130,7 +147,9 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
   const name = shownName(telegram.displayName, translate(greetingLocale, "guest"));
   const greeting = !telegram.ready
     ? translate(greetingLocale, "loading")
-    : translate(greetingLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
+    : webEntry && !telegram.inTelegram
+      ? t("webHello")
+      : translate(greetingLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
 
   const footer = (
     <footer className="py-8 text-center text-[0.6875rem] leading-relaxed tracking-wide text-muted-foreground/80">
@@ -185,7 +204,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
             <p className="mt-1.5 truncate text-xs text-subtitle">{greeting}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {!telegram.inTelegram && telegram.ready && (
+            {!telegram.inTelegram && telegram.ready && !webEntry && (
               <span className="eyebrow hidden rounded-full border border-[color:var(--glass-border)] bg-background/50 px-2.5 py-2 text-muted-foreground sm:inline-flex">
                 localhost
               </span>
@@ -196,7 +215,9 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
       </header>
 
       <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col">
-        {status !== "ready" && (
+        {showGate ? (
+          <WebAccountGate onSignedIn={web.setAccount} />
+        ) : status !== "ready" && (
           <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pt-3 sm:pl-[max(1.25rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))]">
             {status === "loading" && (
               <div
@@ -227,7 +248,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
           </main>
         )}
 
-        {status === "ready" && (
+        {!showGate && status === "ready" && (
           <Tabs
             value={section}
             onValueChange={(v) => setSection(v as SectionId)}
@@ -270,11 +291,22 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                     onSavePattern={savePattern}
                     onSaveThemes={saveThemes}
                     initData={telegram.inTelegram ? telegram.initData : ""}
+                    cloud={Boolean(web.account)}
                     disabled={disabled}
                   />
                 </WeekTab>
               </TabsContent>
               <TabsContent value="sessions" className="mt-0 outline-none">
+                {web.account ? (
+                  <WebAccountCard
+                    account={web.account}
+                    onRefresh={() => void web.refresh()}
+                    onLogout={() => {
+                      clearStore(WEB_STORAGE_KEY);
+                      web.setAccount(null);
+                    }}
+                  />
+                ) : null}
                 <SessionsPanel
                   sessions={store.sessions}
                   plan={store.sessionPlan}

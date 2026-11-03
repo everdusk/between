@@ -20,12 +20,15 @@ import {
   loadAnalyticsReport,
   recordPaidAnalytics,
 } from "@/lib/analytics";
+import { linkCodeFromStart } from "@/lib/web-account";
+import { claimTelegramLink } from "@/lib/web-account-store";
 import {
   isLandingStart,
   LANDING_COUNT_KEY,
   landingCount,
   landingStatsLine,
   rememberLandingSource,
+  startPayload,
 } from "@/lib/landing";
 import { appUrl } from "@/lib/telegram-auth";
 import {
@@ -350,6 +353,17 @@ export async function POST(req: Request) {
   }
 
   if (isBotCommand(text, "start") || isBotCommand(text, "help")) {
+    const linkCode = linkCodeFromStart(startPayload(text) ?? "");
+    if (linkCode && userId) {
+      const linked = await claimTelegramLink(linkCode, userId);
+      const key = linked === "ok" ? "botLinkOk" : linked === "taken" ? "botLinkTaken" : "botLinkBad";
+      await telegramRequest("sendMessage", {
+        chat_id: chatId,
+        text: translate(reply, key),
+        reply_markup: keyboard,
+      });
+      return NextResponse.json({ ok: true });
+    }
     if (userId && isLandingStart(text)) {
       const redis = getRedis();
       if (redis) {

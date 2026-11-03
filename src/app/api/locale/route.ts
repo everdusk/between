@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
+import { actorFromRequest } from "@/lib/account-actor";
 import { isLocale } from "@/lib/i18n";
 import { redisConfigured, saveDeviceLocale, saveUserLocale } from "@/lib/redis";
-import { validateInitData } from "@/lib/telegram-auth";
+import { sessionSecret } from "@/lib/web-account";
 
 export async function POST(req: Request) {
-  if (!redisConfigured() || !process.env.BOT_TOKEN?.trim()) {
+  if (!redisConfigured() || !sessionSecret()) {
     return NextResponse.json({ ok: false, error: "server_not_configured" }, { status: 503 });
   }
-  const initData = req.headers.get("x-telegram-init-data");
-  if (!initData) {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
-  const validated = validateInitData(initData);
-  if (!validated) {
+  const actor = await actorFromRequest(req);
+  if (!actor) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
@@ -28,7 +25,7 @@ export async function POST(req: Request) {
   if (!locale && !device) {
     return NextResponse.json({ ok: false, error: "bad_locale" }, { status: 400 });
   }
-  if (locale) await saveUserLocale(validated.user.id, locale);
-  if (device) await saveDeviceLocale(validated.user.id, device);
+  if (locale) await saveUserLocale(actor.id, locale);
+  if (device) await saveDeviceLocale(actor.id, device);
   return NextResponse.json({ ok: true });
 }
