@@ -204,7 +204,19 @@ html[data-splash] body {
   background-color: #0c1210 !important;
   background-image: none !important;
   background-attachment: scroll !important;
-  color-scheme: dark;
+  color-scheme: only dark;
+}
+
+/* Chrome's translate bar inherits the page scheme and turns into a faint "Google" strip. Languages live in the app. */
+.skiptranslate,
+iframe.skiptranslate,
+.goog-te-banner-frame,
+#goog-gt-tt {
+  display: none !important;
+}
+html.translated-ltr,
+html.translated-rtl {
+  margin-top: 0 !important;
 }
 
 .app-root {

@@ -123,10 +123,11 @@ function JournalPreview() {
 
 export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccount) => void }) {
   const { t } = useI18n();
-  const [mode, setMode] = useState<"create" | "enter">("create");
+  const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const formRef = useRef<HTMLElement>(null);
 
@@ -142,35 +143,53 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
     }
   }, [t]);
 
-  async function submit(event: FormEvent) {
+  function mailError(code: string | undefined): string {
+    if (code === "bad_email") return t("webBadEmail");
+    if (code === "mail_off") return t("webMailOff");
+    if (code === "soon") return t("webMailSoon");
+    if (code === "mail_fail") return t("webMailFail");
+    if (code === "server_not_configured") return t("webServer");
+    return t("webCodeBad");
+  }
+
+  async function sendCode(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    setNote(null);
+    try {
+      const res = await fetch("/api/account/otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(mailError(data.error));
+        return;
+      }
+      setStep("code");
+      setNote(t("webCodeSent", { email }));
+    } catch {
+      setError(t("webServer"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function verifyCode(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(mode === "create" ? "/api/account/register" : "/api/account/login", {
+      const res = await fetch("/api/account/otp/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, code }),
       });
-      const data = (await res.json().catch(() => ({}))) as {
-        account?: WebAccount;
-        error?: string;
-      };
+      const data = (await res.json().catch(() => ({}))) as { account?: WebAccount; error?: string };
       if (!res.ok || !data.account) {
-        const code = data.error;
-        setError(
-          t(
-            code === "taken"
-              ? "webEmailTaken"
-              : code === "bad_email"
-                ? "webBadEmail"
-                : code === "short_password"
-                  ? "webPasswordShort"
-                  : code === "server_not_configured"
-                    ? "webServer"
-                    : "webBadLogin",
-          ),
-        );
+        setError(mailError(data.error));
         return;
       }
       onSignedIn(data.account);
@@ -209,9 +228,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
       </section>
 
       <section ref={formRef} className="journal-gate-form glass mt-6 scroll-mt-4 rounded-[22px] px-5 py-6 sm:px-6">
-        <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">
-          {mode === "create" ? t("webFormCreate") : t("webFormEnter")}
-        </h2>
+        <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{t("webFormCreate")}</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t("webFormLead")}</p>
 
         <div className="mt-5">
@@ -235,49 +252,66 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
           {t("webOr")}
         </p>
 
-        <form className="space-y-4" onSubmit={submit}>
-          <div className="space-y-2">
-            <Label htmlFor="web-email">{t("webEmail")}</Label>
-            <Input
-              id="web-email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="web-password">{t("webPassword")}</Label>
-            <Input
-              id="web-password"
-              type="password"
-              autoComplete={mode === "create" ? "new-password" : "current-password"}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              minLength={8}
-            />
-          </div>
-          {error ? (
-            <p className="text-sm text-destructive" role="alert">
-              {error}
-            </p>
-          ) : null}
-          <Button type="submit" className="w-full" size="lg" disabled={busy}>
-            {mode === "create" ? t("webCreate") : t("webEnter")}
-          </Button>
-          <button
-            type="button"
-            className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
-            onClick={() => {
-              setMode(mode === "create" ? "enter" : "create");
-              setError(null);
-            }}
-          >
-            {mode === "create" ? t("webSwitchEnter") : t("webSwitchCreate")}
-          </button>
-        </form>
+        {step === "email" ? (
+          <form className="space-y-4" onSubmit={sendCode}>
+            <div className="space-y-2">
+              <Label htmlFor="web-email">{t("webEmail")}</Label>
+              <Input
+                id="web-email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </div>
+            {error ? (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <Button type="submit" className="w-full" size="lg" disabled={busy}>
+              {t("webSendCode")}
+            </Button>
+          </form>
+        ) : (
+          <form className="space-y-4" onSubmit={verifyCode}>
+            {note ? <p className="text-sm leading-relaxed text-foreground">{note}</p> : null}
+            <div className="space-y-2">
+              <Label htmlFor="web-code">{t("webCode")}</Label>
+              <Input
+                id="web-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                value={code}
+                onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                required
+              />
+            </div>
+            {error ? (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <Button type="submit" className="w-full" size="lg" disabled={busy || code.length !== 6}>
+              {t("webOpenJournal")}
+            </Button>
+            <button
+              type="button"
+              className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
+              onClick={() => {
+                setStep("email");
+                setCode("");
+                setError(null);
+                setNote(null);
+              }}
+            >
+              {t("webOtherEmail")}
+            </button>
+          </form>
+        )}
       </section>
     </main>
   );

@@ -62,7 +62,7 @@ const VIDEO_HTML = `<video class="bl-video" autoplay muted loop playsinline prel
 
 const CSS = `
 @layer components{
-.between-landing{--bl-bg:#07090d;--bl-fg:#f3f6f4;--bl-muted:#a9b4ae;--bl-dim:#74827b;--bl-teal:#5ee7c5;--bl-line:rgba(255,255,255,.1);background:#07090d;color:var(--bl-fg);color-scheme:dark;-webkit-font-smoothing:antialiased}
+.between-landing{--bl-bg:#07090d;--bl-fg:#f3f6f4;--bl-muted:#a9b4ae;--bl-dim:#74827b;--bl-teal:#5ee7c5;--bl-line:rgba(255,255,255,.1);background:#07090d;color:var(--bl-fg);color-scheme:only dark;-webkit-font-smoothing:antialiased}
 .between-landing ::selection{background:rgba(94,231,197,.28)}
 .bl-wash{position:absolute;inset:0 0 auto 0;height:58rem;pointer-events:none;background:
   radial-gradient(38rem 30rem at 78% 22%,rgba(36,150,112,.55),transparent 62%),

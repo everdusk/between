@@ -11,6 +11,7 @@ import {
 } from "./redis";
 import type { LocaleId } from "./i18n";
 import type { OauthProvider } from "./oauth";
+import { OTP_TTL_MS, otpMatches } from "./otp-mail";
 import {
   hashPassword,
   journalStorageId,
@@ -54,6 +55,10 @@ function telegramKey(userId: number): string {
 
 function linkKey(code: string): string {
   return `between:link:${code}`;
+}
+
+function otpKey(email: string): string {
+  return `between:otp:${email}`;
 }
 
 function oauthKey(provider: OauthProvider, subject: string): string {
@@ -142,6 +147,86 @@ export async function createAccount(
   };
   await redis.set(accountKey(id), account);
   return account;
+}
+
+const OTP_RESEND_MS = 60_000;
+const OTP_ATTEMPTS = 5;
+
+type OtpRow = { hash: string; attempts: number; sentAt: number };
+
+function asOtp(raw: unknown): OtpRow | null {
+  const value = typeof raw === "string" ? safeJson(raw) : raw;
+  if (!value || typeof value !== "object") return null;
+  const row = value as Partial<OtpRow>;
+  if (typeof row.hash !== "string" || typeof row.attempts !== "number" || typeof row.sentAt !== "number") {
+    return null;
+  }
+  return { hash: row.hash, attempts: row.attempts, sentAt: row.sentAt };
+}
+
+/** Open the journal for this email, creating it when the person is new. */
+export async function openAccountByEmail(email: string): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const existingId = await redis.get<string>(emailKey(email));
+  if (typeof existingId === "string") {
+    const existing = await loadAccount(existingId);
+    if (existing) return existing;
+  }
+  const id = newAccountId();
+  const claimed = await redis.set(emailKey(email), id, { nx: true });
+  if (claimed !== "OK") {
+    const winner = await redis.get<string>(emailKey(email));
+    return typeof winner === "string" ? loadAccount(winner) : null;
+  }
+  const account: AccountRecord = {
+    id,
+    email,
+    salt: "",
+    hash: "",
+    telegramUserId: null,
+    createdAt: new Date().toISOString(),
+    providers: {},
+  };
+  await redis.set(accountKey(id), account);
+  return account;
+}
+
+/** "soon" while the last code is less than a minute old. */
+export async function otpSendAllowed(email: string, now = Date.now()): Promise<"ok" | "soon" | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const row = asOtp(await redis.get<unknown>(otpKey(email)));
+  if (row && now - row.sentAt < OTP_RESEND_MS) return "soon";
+  return "ok";
+}
+
+export async function saveOtp(email: string, hash: string, now = Date.now()): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return false;
+  const row: OtpRow = { hash, attempts: 0, sentAt: now };
+  await redis.set(otpKey(email), row, { ex: Math.ceil(OTP_TTL_MS / 1000) });
+  return true;
+}
+
+export async function consumeOtp(
+  email: string,
+  code: string,
+  secret: string,
+): Promise<"ok" | "bad" | "missing" | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const key = otpKey(email);
+  const row = asOtp(await redis.get<unknown>(key));
+  if (!row) return "missing";
+  if (!otpMatches(code, secret, row.hash)) {
+    const attempts = row.attempts + 1;
+    if (attempts >= OTP_ATTEMPTS) await redis.del(key);
+    else await redis.set(key, { ...row, attempts }, { ex: Math.ceil(OTP_TTL_MS / 1000) });
+    return "bad";
+  }
+  await redis.del(key);
+  return "ok";
 }
 
 export async function loginAccount(

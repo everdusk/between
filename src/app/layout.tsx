@@ -46,8 +46,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ru"
+      translate="no"
       data-splash=""
-      className={`${literata.variable} ${manrope.variable} ${unbounded.variable} h-full antialiased`}
+      className={`${literata.variable} ${manrope.variable} ${unbounded.variable} notranslate h-full antialiased`}
       style={{ backgroundColor: SPLASH_CHROME }}
       suppressHydrationWarning
     >
