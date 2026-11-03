@@ -150,7 +150,7 @@ export function JournalPanel({
   const isToday = date === today;
 
   return (
-    <div className="space-y-4">
+    <div className="journal-board flex flex-col gap-4">
       <section className="glass-strong relative overflow-hidden rounded-3xl p-5 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

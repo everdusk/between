@@ -13,6 +13,9 @@ export const uk: Catalog = {
   syncDevice: "на пристрої",
   outsideTelegram: "поза Telegram",
   webHello: "Вітаю",
+  webScheme: "Тема",
+  webNight: "Ніч",
+  webDay: "День",
   webTitle: "Щоденник у браузері",
   webNote:
     "Нотатки зберігаються на сервері. Телеграм не обов’язковий. Бота можна підключити пізніше: він запитає, як ви, і прийме запис у чаті.",

@@ -11,6 +11,9 @@ export const ru = {
   syncDevice: "на устройстве",
   outsideTelegram: "вне Telegram",
   webHello: "Здравствуйте",
+  webScheme: "Тема",
+  webNight: "Ночь",
+  webDay: "День",
   webTitle: "Дневник в браузере",
   webNote:
     "Заметки хранятся на сервере. Телеграм не обязателен. Бота можно подключить позже: он спросит, как вы, и примет запись в чате.",

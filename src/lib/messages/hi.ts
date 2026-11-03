@@ -13,6 +13,9 @@ export const hi: Catalog = {
   syncDevice: "डिवाइस पर",
   outsideTelegram: "Telegram के बाहर",
   webHello: "नमस्ते",
+  webScheme: "थीम",
+  webNight: "रात",
+  webDay: "दिन",
   webTitle: "ब्राउज़र में डायरी",
   webNote:
     "नोट सर्वर पर रहते हैं। टेलीग्राम ज़रूरी नहीं। बॉट बाद में जोड़ सकते हैं: वह पूछेगा आप कैसे हैं और चैट में नोट लेगा।",

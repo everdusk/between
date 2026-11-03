@@ -75,9 +75,9 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   }
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-3 pr-[max(1rem,var(--safe-right))] pb-8 pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]">
+    <main className="journal-gate min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-3 pr-[max(1rem,var(--safe-right))] pb-8 pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]">
       <section className="glass rounded-[22px] px-5 py-6 sm:px-6">
-        <p className="eyebrow text-[#8FF0BC]">Between</p>
+        <p className="eyebrow text-[color:var(--accent-text)]">Between</p>
         <h1 className="mt-3 font-display text-[2rem] leading-[1.05] text-foreground">
           <span className="brand-words">{t("webMark")}</span>
         </h1>

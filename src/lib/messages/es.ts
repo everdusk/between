@@ -13,6 +13,9 @@ export const es: Catalog = {
   syncDevice: "en el dispositivo",
   outsideTelegram: "fuera de Telegram",
   webHello: "Hola",
+  webScheme: "Tema",
+  webNight: "Noche",
+  webDay: "Día",
   webTitle: "Diario en el navegador",
   webNote:
     "Las notas se guardan en el servidor. Telegram no es obligatorio. El bot se puede conectar después: preguntará cómo está y aceptará una nota en el chat.",

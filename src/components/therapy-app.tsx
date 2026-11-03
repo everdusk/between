@@ -7,6 +7,7 @@ import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
 import { JournalPanel } from "@/components/journal-panel";
 import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
+import { SchemeSwitch } from "@/components/scheme-switch";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WebAccountCard } from "@/components/web-account-card";
 import { WebAccountGate } from "@/components/web-account-gate";
@@ -151,6 +152,19 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
       ? t("webHello")
       : translate(greetingLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
 
+  const webSurface = webEntry && !telegram.inTelegram;
+  const accountCard = () =>
+    web.account ? (
+      <WebAccountCard
+        account={web.account}
+        onRefresh={() => void web.refresh()}
+        onLogout={() => {
+          clearStore(WEB_STORAGE_KEY);
+          web.setAccount(null);
+        }}
+      />
+    ) : null;
+
   const footer = (
     <footer className="py-8 text-center text-[0.6875rem] leading-relaxed tracking-wide text-muted-foreground/80">
       Between
@@ -171,7 +185,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
       initData={telegram.initData}
     >
     <div
-      className="journal-shell fixed inset-x-0 flex flex-col overflow-hidden"
+      className="journal-shell journal-frame fixed inset-x-0 flex flex-col overflow-hidden"
       style={{
         top: "var(--vv-top, 0px)",
         height: "var(--vv-height, var(--tg-viewport-height, 100dvh))",
@@ -186,9 +200,46 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
         <div className="atmosphere-grain" />
       </div>
 
+      {webSurface ? (
+        <aside className="journal-side relative z-30">
+          <div className="journal-side-top relative z-20 grid gap-4">
+            <div>
+              <p className="font-display text-[1.65rem] leading-none text-foreground">Between</p>
+              <p className="mt-2 truncate text-xs text-subtitle">{greeting}</p>
+            </div>
+            <SchemeSwitch className="w-full" />
+            <LanguageSwitch />
+          </div>
+          <div className="journal-side-scroll">
+            {!showGate && status === "ready" ? (
+              <nav className="grid gap-1" aria-label={t("sections")}>
+                {SECTIONS.map((id) => {
+                  const Icon = SECTION_ICON[id];
+                  const on = section === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      aria-current={on ? "page" : undefined}
+                      className={`flex items-center gap-2 rounded-full px-3 py-2.5 text-start text-sm font-extrabold ${on ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-foreground/[0.06]"}`}
+                      onClick={() => setSection(id)}
+                    >
+                      <Icon aria-hidden className="size-4" />
+                      <span>{t(SECTION_KEY[id])}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+            ) : null}
+            {accountCard() ? <div className="journal-side-account">{accountCard()}</div> : null}
+          </div>
+        </aside>
+      ) : null}
+
+      <div className="journal-stage relative z-10 flex min-h-0 min-w-0 flex-1 flex-col">
       <header className="relative z-30">
-        <div className="mx-auto flex max-w-lg items-center justify-between gap-3 pl-[max(1.25rem,var(--safe-left))] pr-[max(1.25rem,var(--safe-right))] pt-[max(1.25rem,var(--safe-top))] pb-2 sm:pl-[max(1.5rem,var(--safe-left))] sm:pr-[max(1.5rem,var(--safe-right))]">
-          <div className="min-w-0">
+        <div className="journal-column mx-auto flex w-full max-w-lg items-center justify-between gap-3 pt-[max(1.25rem,var(--safe-top))] pr-[max(1.25rem,var(--safe-right))] pb-2 pl-[max(1.25rem,var(--safe-left))] sm:pr-[max(1.5rem,var(--safe-right))] sm:pl-[max(1.5rem,var(--safe-left))]">
+          <div className="journal-phone-brand min-w-0">
             <p className="font-display text-[1.375rem] leading-none tracking-tight text-foreground">
               Between
               {premium ? (
@@ -203,18 +254,21 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
             </p>
             <p className="mt-1.5 truncate text-xs text-subtitle">{greeting}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 flex-col items-end gap-2">
             {!telegram.inTelegram && telegram.ready && !webEntry && (
               <span className="eyebrow hidden rounded-full border border-[color:var(--glass-border)] bg-background/50 px-2.5 py-2 text-muted-foreground sm:inline-flex">
                 localhost
               </span>
             )}
-            <LanguageSwitch />
+            <div className={webSurface ? "journal-mobile-tools" : undefined}>
+              <LanguageSwitch />
+            </div>
+            {webSurface ? <SchemeSwitch className="journal-mobile-tools" /> : null}
           </div>
         </div>
       </header>
 
-      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col">
+      <div className="journal-column relative z-10 mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col">
         {showGate ? (
           <WebAccountGate onSignedIn={web.setAccount} />
         ) : status !== "ready" && (
@@ -254,7 +308,10 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
             onValueChange={(v) => setSection(v as SectionId)}
             className="flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden"
           >
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pt-3 sm:pl-[max(1.25rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))]">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-3 pr-[max(1rem,var(--safe-right))] pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]">
+            {accountCard() ? (
+              <div className="journal-account-inline mb-4">{accountCard()}</div>
+            ) : null}
             <div
               key={section}
               className="animate-in fade-in slide-in-from-bottom-2 duration-500 ease-out"
@@ -297,16 +354,6 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                 </WeekTab>
               </TabsContent>
               <TabsContent value="sessions" className="mt-0 outline-none">
-                {web.account ? (
-                  <WebAccountCard
-                    account={web.account}
-                    onRefresh={() => void web.refresh()}
-                    onLogout={() => {
-                      clearStore(WEB_STORAGE_KEY);
-                      web.setAccount(null);
-                    }}
-                  />
-                ) : null}
                 <SessionsPanel
                   sessions={store.sessions}
                   plan={store.sessionPlan}
@@ -322,7 +369,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
             {footer}
             </div>
 
-            <div className="z-30 flex shrink-0 justify-center pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pt-2 pb-[max(1.25rem,var(--safe-bottom))]">
+            <div className="journal-dock z-30 flex shrink-0 justify-center pt-2 pr-[max(1rem,var(--safe-right))] pb-[max(1.25rem,var(--safe-bottom))] pl-[max(1rem,var(--safe-left))]">
               <TabsList
                 variant="dock"
                 aria-label={t("sections")}
@@ -341,6 +388,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
             </div>
           </Tabs>
         )}
+      </div>
       </div>
       <BotChatSheet />
     </div>

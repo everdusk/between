@@ -13,6 +13,9 @@ export const tr: Catalog = {
   syncDevice: "cihazda",
   outsideTelegram: "Telegram dışında",
   webHello: "Merhaba",
+  webScheme: "Tema",
+  webNight: "Gece",
+  webDay: "Gündüz",
   webTitle: "Tarayıcıda günlük",
   webNote:
     "Notlar sunucuda durur. Telegram şart değil. Botu sonra bağlayabilirsiniz: nasıl olduğunuzu sorar ve sohbette not alır.",

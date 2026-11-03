@@ -13,6 +13,9 @@ export const vi: Catalog = {
   syncDevice: "trên máy",
   outsideTelegram: "ngoài Telegram",
   webHello: "Xin chào",
+  webScheme: "Giao diện",
+  webNight: "Đêm",
+  webDay: "Ngày",
   webTitle: "Nhật ký trên trình duyệt",
   webNote:
     "Ghi chú nằm trên máy chủ. Telegram không bắt buộc. Bot có thể nối sau: bot sẽ hỏi bạn thế nào và nhận ghi chú trong chat.",

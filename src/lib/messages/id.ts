@@ -13,6 +13,9 @@ export const id: Catalog = {
   syncDevice: "di perangkat",
   outsideTelegram: "di luar Telegram",
   webHello: "Halo",
+  webScheme: "Tema",
+  webNight: "Malam",
+  webDay: "Siang",
   webTitle: "Jurnal di peramban",
   webNote:
     "Catatan tersimpan di server. Telegram tidak wajib. Bot bisa disambungkan nanti: ia menanyakan kabar Anda dan menerima catatan di chat.",

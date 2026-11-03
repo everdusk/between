@@ -13,6 +13,9 @@ export const fa: Catalog = {
   syncDevice: "روی دستگاه",
   outsideTelegram: "بیرون Telegram",
   webHello: "سلام",
+  webScheme: "پوسته",
+  webNight: "شب",
+  webDay: "روز",
   webTitle: "دفتر در مرورگر",
   webNote:
     "یادداشت‌ها روی سرور می‌مانند. تلگرام لازم نیست. ربات را بعداً می‌توان وصل کرد: می‌پرسد حالتان چطور است و یادداشت را در گفتگو می‌گیرد.",

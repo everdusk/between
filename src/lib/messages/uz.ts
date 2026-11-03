@@ -13,6 +13,9 @@ export const uz: Catalog = {
   syncDevice: "qurilmada",
   outsideTelegram: "Telegramdan tashqari",
   webHello: "Salom",
+  webScheme: "Mavzu",
+  webNight: "Tun",
+  webDay: "Kun",
   webTitle: "Brauzerdagi kundalik",
   webNote:
     "Qaydlar serverda saqlanadi. Telegram shart emas. Botni keyin ulash mumkin: u holingizni so‘raydi va chatda yozuv qabul qiladi.",

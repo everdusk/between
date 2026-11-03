@@ -13,6 +13,9 @@ export const ar: Catalog = {
   syncDevice: "على الجهاز",
   outsideTelegram: "خارج Telegram",
   webHello: "مرحبًا",
+  webScheme: "المظهر",
+  webNight: "الليل",
+  webDay: "النهار",
   webTitle: "اليوميات في المتصفح",
   webNote:
     "الملاحظات تُحفظ على الخادم. تيليغرام ليس لازمًا. يمكن ربط البوت لاحقًا: يسأل كيف حالكم ويقبل ملاحظة في الدردشة.",
