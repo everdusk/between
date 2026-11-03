@@ -55,7 +55,7 @@ export const tr: Catalog = {
   webPasswordShort: "Parola en az 8 karakter olmalı",
   webBadEmail: "E-posta doğru görünmüyor",
   webAccount: "Hesap",
-  webConnectBot: "Telegram botunu bağla",
+  webConnectBot: "Telegram botu",
   webBotLinked: "Telegram botu bağlı. Günün nasıl geçtiğini sorar, sohbetteki not burada görünür.",
   webBotHint:
     "Bu bir Telegram botu. Akşam günün nasıl geçtiğini sorar ve yanıtı bu günlüğe kaydeder. Günlük botsuz da çalışır: bot hatırlatmak ve sohbette not almak içindir. Telegram açılır — Start’a basın, bot bu günlüğe bağlanır.",

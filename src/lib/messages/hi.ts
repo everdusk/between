@@ -55,7 +55,7 @@ export const hi: Catalog = {
   webPasswordShort: "पासवर्ड कम से कम 8 अक्षर का हो",
   webBadEmail: "ईमेल सही नहीं लग रहा",
   webAccount: "अकाउंट",
-  webConnectBot: "Telegram बॉट जोड़ें",
+  webConnectBot: "Telegram बॉट",
   webBotLinked: "Telegram बॉट जुड़ गया। वह पूछेगा दिन कैसा रहा, और चैट का नोट यहाँ दिखेगा।",
   webBotHint:
     "यह Telegram का बॉट है। शाम को वह पूछता है दिन कैसा रहा और जवाब इस डायरी में रखता है। डायरी बॉट के बिना भी चलती है: बॉट याद दिलाने और चैट में नोट लेने के लिए है। Telegram खुलेगा — Start दबाएँ, और बॉट इस डायरी से जुड़ जाएगा।",

@@ -55,7 +55,7 @@ export const id: Catalog = {
   webPasswordShort: "Kata sandi minimal 8 karakter",
   webBadEmail: "Email ini tidak terlihat benar",
   webAccount: "Akun",
-  webConnectBot: "Hubungkan bot Telegram",
+  webConnectBot: "Bot Telegram",
   webBotLinked: "Bot Telegram terhubung. Ia bertanya bagaimana hari Anda, dan catatan dari chat muncul di sini.",
   webBotHint:
     "Ini bot Telegram. Malam hari ia bertanya bagaimana hari berjalan dan menyimpan jawaban di jurnal ini. Jurnal tetap jalan tanpa bot: bot untuk mengingatkan dan menerima catatan di chat. Telegram akan terbuka — tekan Start, dan bot terhubung ke jurnal ini.",

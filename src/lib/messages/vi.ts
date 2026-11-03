@@ -55,7 +55,7 @@ export const vi: Catalog = {
   webPasswordShort: "Mật khẩu cần ít nhất 8 ký tự",
   webBadEmail: "Email này không đúng dạng",
   webAccount: "Tài khoản",
-  webConnectBot: "Kết nối bot Telegram",
+  webConnectBot: "Bot Telegram",
   webBotLinked: "Bot Telegram đã kết nối. Bot hỏi ngày của bạn thế nào, và ghi chú từ chat hiện ở đây.",
   webBotHint:
     "Đây là bot Telegram. Tối bot hỏi ngày đã qua thế nào và lưu câu trả lời vào nhật ký này. Nhật ký vẫn chạy khi không có bot: bot để nhắc và để nhận ghi chú trong chat. Telegram sẽ mở — nhấn Start, bot nối với nhật ký này.",

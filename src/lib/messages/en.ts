@@ -55,7 +55,7 @@ export const en: Catalog = {
   webPasswordShort: "Password must be at least 8 characters",
   webBadEmail: "That email does not look right",
   webAccount: "Account",
-  webConnectBot: "Connect the Telegram bot",
+  webConnectBot: "Telegram bot",
   webBotLinked: "The Telegram bot is connected. It will ask how the day went, and the note from chat will show up here.",
   webBotHint:
     "This is a Telegram bot. In the evening it asks how the day went and saves the answer in this journal. The journal works without the bot: the bot is there to remind you and to take a note in chat. Telegram will open — press Start, and the bot links to this journal.",

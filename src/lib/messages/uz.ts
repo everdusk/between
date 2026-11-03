@@ -55,7 +55,7 @@ export const uz: Catalog = {
   webPasswordShort: "Parol kamida 8 belgidan iborat bo‘lsin",
   webBadEmail: "Pochta to‘g‘ri ko‘rinmayapti",
   webAccount: "Hisob",
-  webConnectBot: "Telegram botini ulash",
+  webConnectBot: "Telegram boti",
   webBotLinked: "Telegram boti ulangan. Kun qanday o‘tganini so‘raydi, chatdagi qayd shu yerda ko‘rinadi.",
   webBotHint:
     "Bu Telegram boti. Kechqurun kun qanday o‘tganini so‘raydi va javobni shu kundalikka saqlaydi. Kundalik botsiz ham ishlaydi: bot eslatish va chatda qayd olish uchun. Telegram ochiladi — Start ni bosing, bot shu kundalikka ulanadi.",
