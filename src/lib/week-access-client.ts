@@ -1,4 +1,5 @@
 import {
+  DEFAULT_RUB_PRICE,
   describeWeekAccess,
   emptyWeekAccess,
   normalizeWeekAccess,
@@ -37,6 +38,7 @@ async function readAccess(res: Response): Promise<WeekAccessView | null> {
   if (!res.ok) return null;
   const data = (await res.json()) as { ok?: boolean; access?: unknown };
   if (!data.ok || !isView(data.access)) return null;
+  if (typeof data.access.rubPrice !== "number") data.access.rubPrice = DEFAULT_RUB_PRICE;
   return data.access;
 }
 
@@ -65,6 +67,23 @@ export async function postWeekAccess(
         "X-Telegram-Init-Data": initData,
       },
       body: JSON.stringify({ action }),
+    });
+    return await readAccess(res);
+  } catch {
+    return null;
+  }
+}
+
+/** Browser session. The cookie is the login; no Telegram init data. */
+export async function postSessionWeekAccess(
+  action: "open" | "seen",
+  local?: WeekAccessRecord,
+): Promise<WeekAccessView | null> {
+  try {
+    const res = await fetch("/api/week-access", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, local }),
     });
     return await readAccess(res);
   } catch {

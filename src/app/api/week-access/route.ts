@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
+import { actorFromRequest, type Actor } from "@/lib/account-actor";
 import { loadWeekAccess, redisConfigured, saveWeekAccess } from "@/lib/redis";
-import { validateInitData } from "@/lib/telegram-auth";
 import {
   accessForUser,
+  adoptClientTrial,
   markWeekIntroSeen,
+  normalizeWeekAccess,
   openWeekAccess,
+  rubPriceFromEnv,
   starPriceFromEnv,
   type WeekAccessIdentity,
   type WeekAccessRecord,
@@ -18,38 +21,39 @@ function misconfigured() {
   return NextResponse.json({ ok: false, error: "server_not_configured" }, { status: 503 });
 }
 
-function authed(req: Request) {
-  if (!redisConfigured() || !process.env.BOT_TOKEN?.trim()) return { error: misconfigured() };
-  const initData = req.headers.get("x-telegram-init-data");
-  if (!initData) return { error: unauthorized() };
-  const validated = validateInitData(initData);
-  if (!validated) return { error: unauthorized() };
-  return { user: validated.user };
+function identityOf(actor: Actor): WeekAccessIdentity {
+  return {
+    id: actor.telegramUserId ?? 0,
+    username: actor.telegramUsername ?? undefined,
+  };
 }
 
-async function granted(record: WeekAccessRecord, user: WeekAccessIdentity) {
+async function granted(record: WeekAccessRecord, actor: Actor) {
   const resolved = accessForUser(
     record,
-    user,
+    identityOf(actor),
     process.env.WEEK_EXEMPT_USER_IDS,
     new Date(),
     starPriceFromEnv(process.env.WEEK_STAR_PRICE),
+    rubPriceFromEnv(process.env.WEEK_RUB_PRICE),
   );
-  if (resolved.changed) await saveWeekAccess(user.id, resolved.record);
+  if (resolved.changed) await saveWeekAccess(actor.id, resolved.record);
   return resolved;
 }
 
 export async function GET(req: Request) {
-  const auth = authed(req);
-  if ("error" in auth) return auth.error;
-  const record = await loadWeekAccess(auth.user.id);
-  const resolved = await granted(record, auth.user);
+  if (!redisConfigured()) return misconfigured();
+  const actor = await actorFromRequest(req);
+  if (!actor) return unauthorized();
+  const record = await loadWeekAccess(actor.id);
+  const resolved = await granted(record, actor);
   return NextResponse.json({ ok: true, access: resolved.view });
 }
 
 export async function POST(req: Request) {
-  const auth = authed(req);
-  if ("error" in auth) return auth.error;
+  if (!redisConfigured()) return misconfigured();
+  const actor = await actorFromRequest(req);
+  if (!actor) return unauthorized();
 
   let body: unknown;
   try {
@@ -62,12 +66,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "bad_action" }, { status: 400 });
   }
 
-  const current = await loadWeekAccess(auth.user.id);
-  const next =
-    action === "open"
-      ? openWeekAccess(current, new Date())
-      : markWeekIntroSeen(current);
-  const resolved = await granted(next, auth.user);
-  if (!resolved.changed) await saveWeekAccess(auth.user.id, resolved.record);
+  const now = new Date();
+  let current = await loadWeekAccess(actor.id);
+  if (action === "open") {
+    current = adoptClientTrial(current, normalizeWeekAccess((body as { local?: unknown }).local), now);
+    current = openWeekAccess(current, now);
+  } else {
+    current = markWeekIntroSeen(current);
+  }
+  const resolved = await granted(current, actor);
+  if (!resolved.changed) await saveWeekAccess(actor.id, resolved.record);
   return NextResponse.json({ ok: true, access: resolved.view });
 }

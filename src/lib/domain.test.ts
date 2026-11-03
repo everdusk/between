@@ -16,6 +16,7 @@ import {
   resolveBotLocale,
   resolveGreetingLocale,
 } from "./i18n";
+import { reviewLoginFromEnv } from "./web-account";
 import { catalogsShareKeys, countPhrase, feelingLabel, formatPremiumStatus, translate } from "./messages";
 import { pollText } from "./digest";
 import { feelingKeyboard, isBotCommand, parseFeelingCallback } from "./telegram-bot";
@@ -73,8 +74,11 @@ import {
   daysPhrase,
   describeWeekAccess,
   isWeekAccessExempt,
+  absorbWeekPremium,
+  adoptClientTrial,
   emptyWeekAccess,
   grantWeekPaidUntil,
+  mergeWeekAccess,
   markWeekIntroSeen,
   normalizeWeekAccess,
   openWeekAccess,
@@ -82,6 +86,7 @@ import {
   planDays,
   planFromPayload,
   planPrice,
+  rubPriceFromEnv,
   starPriceFromEnv,
   TRIAL_MS,
   voiceNotesOpen,
@@ -1324,6 +1329,62 @@ describe("week access", () => {
     assert.equal(starPriceFromEnv("0"), 150);
     assert.equal(starPriceFromEnv("10001"), 150);
     assert.equal(starPriceFromEnv("12.5"), 150);
+    assert.equal(rubPriceFromEnv(undefined), 150);
+    assert.equal(rubPriceFromEnv("299"), 299);
+    assert.equal(rubPriceFromEnv("0"), 150);
+  });
+
+  it("adds paid time from both sides and keeps the earlier trial", () => {
+    const day = 24 * 60 * 60 * 1000;
+    const web = grantWeekPaidUntil(
+      openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - 2 * day)),
+      new Date(now.getTime() + 10 * day).toISOString(),
+    );
+    const telegram = grantWeekPaidUntil(
+      { ...openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - 5 * day)), introSeen: true },
+      new Date(now.getTime() + 20 * day).toISOString(),
+    );
+    const merged = mergeWeekAccess(web, telegram, now);
+    assert.equal(merged.openedAt, telegram.openedAt);
+    assert.equal(merged.introSeen, true);
+    assert.equal(Date.parse(merged.paidUntil ?? ""), now.getTime() + 30 * day);
+
+    const absorbed = absorbWeekPremium(web, telegram, now);
+    assert.equal(absorbed.telegram.paidUntil, null);
+    const again = absorbWeekPremium(absorbed.web, absorbed.telegram, now);
+    assert.equal(again.web.paidUntil, absorbed.web.paidUntil);
+
+    const onlyTelegram = mergeWeekAccess(emptyWeekAccess(), telegram, now);
+    assert.equal(onlyTelegram.paidUntil, telegram.paidUntil);
+
+    const futureTrial = adoptClientTrial(
+      emptyWeekAccess(),
+      grantWeekPaidUntil(
+        openWeekAccess(emptyWeekAccess(), new Date(now.getTime() + day)),
+        new Date(now.getTime() + 40 * day).toISOString(),
+      ),
+      now,
+    );
+    assert.equal(futureTrial.openedAt, null);
+    assert.equal(futureTrial.paidUntil, null);
+
+    const earlier = adoptClientTrial(
+      openWeekAccess(emptyWeekAccess(), now),
+      openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - 3 * day)),
+      now,
+    );
+    assert.equal(earlier.openedAt, new Date(now.getTime() - 3 * day).toISOString());
+    assert.equal(describeWeekAccess(merged, now, 150, { rubPrice: 299 }).rubPrice, 299);
+  });
+
+  it("opens the review door only with a full password", () => {
+    assert.equal(reviewLoginFromEnv({}), null);
+    assert.equal(reviewLoginFromEnv({ REVIEW_EMAIL: "not-an-email", REVIEW_PASSWORD: "longenough" }), null);
+    assert.equal(reviewLoginFromEnv({ REVIEW_EMAIL: "review@between.test", REVIEW_PASSWORD: "short" }), null);
+    assert.deepEqual(reviewLoginFromEnv({ REVIEW_EMAIL: "Review@Between.test", REVIEW_PASSWORD: "longenough" }), {
+      email: "review@between.test",
+      password: "longenough",
+    });
   });
 });
 

@@ -1,6 +1,8 @@
 export const TRIAL_MS = 7 * 24 * 60 * 60 * 1000;
 export const SUBSCRIPTION_PERIOD_SEC = 2_592_000;
 export const DEFAULT_STAR_PRICE = 150;
+/** Rubles for 30 days of Week in the browser. Stars stay the Telegram price. */
+export const DEFAULT_RUB_PRICE = 150;
 export const WEEK_INVOICE_PAYLOAD = "between-week";
 
 /**
@@ -61,6 +63,8 @@ export type WeekAccessView = {
   premium: PremiumKind;
   premiumDaysLeft: number;
   starPrice: number;
+  /** Monthly price in rubles for the browser. Telegram keeps Stars. */
+  rubPrice: number;
   prices: { month: number; quarter: number; year: number };
 };
 
@@ -136,10 +140,18 @@ export function whitelistSpan(
   return PREMIUM_WHITELIST[username] ?? null;
 }
 
-export function starPriceFromEnv(raw: string | undefined): number {
+function priceFromEnv(raw: string | undefined, fallback: number): number {
   const price = Number(raw);
-  if (!Number.isInteger(price) || price < 1 || price > 10_000) return DEFAULT_STAR_PRICE;
+  if (!Number.isInteger(price) || price < 1 || price > 10_000) return fallback;
   return price;
+}
+
+export function starPriceFromEnv(raw: string | undefined): number {
+  return priceFromEnv(raw, DEFAULT_STAR_PRICE);
+}
+
+export function rubPriceFromEnv(raw: string | undefined): number {
+  return priceFromEnv(raw, DEFAULT_RUB_PRICE);
 }
 
 /** Extra numeric ids from `WEEK_EXEMPT_USER_IDS`, comma or space separated. */
@@ -190,6 +202,7 @@ export function accessForUser(
   extraIdsRaw: string | undefined,
   now: Date,
   starPrice = DEFAULT_STAR_PRICE,
+  rubPrice = DEFAULT_RUB_PRICE,
 ): { record: WeekAccessRecord; changed: boolean; view: WeekAccessView } {
   const span = whitelistSpan(user, extraIdsRaw);
   const applied = applyWhitelistGrant(record, span, now);
@@ -199,6 +212,7 @@ export function accessForUser(
     view: describeWeekAccess(applied.record, now, starPrice, {
       exempt: span === "forever",
       grant: span,
+      rubPrice,
     }),
   };
 }
@@ -226,6 +240,92 @@ export function markWeekIntroSeen(record: WeekAccessRecord): WeekAccessRecord {
   return { ...record, introSeen: true };
 }
 
+function earlierIso(left: string | null, right: string | null): string | null {
+  const a = left ? Date.parse(left) : NaN;
+  const b = right ? Date.parse(right) : NaN;
+  if (!Number.isFinite(a)) return Number.isFinite(b) ? new Date(b).toISOString() : null;
+  if (!Number.isFinite(b)) return new Date(a).toISOString();
+  return new Date(Math.min(a, b)).toISOString();
+}
+
+function laterIso(left: string | null, right: string | null): string | null {
+  const a = left ? Date.parse(left) : NaN;
+  const b = right ? Date.parse(right) : NaN;
+  if (!Number.isFinite(a)) return Number.isFinite(b) ? new Date(b).toISOString() : null;
+  if (!Number.isFinite(b)) return new Date(a).toISOString();
+  return new Date(Math.max(a, b)).toISOString();
+}
+
+function remainingPaidMs(record: WeekAccessRecord, nowMs: number): number {
+  const paid = record.paidUntil ? Date.parse(record.paidUntil) : NaN;
+  if (!Number.isFinite(paid)) return 0;
+  return Math.max(0, paid - nowMs);
+}
+
+/**
+ * One premium after a browser account and a Telegram account become the same journal.
+ * Trial start stays the earlier one. Two paid periods are added together.
+ */
+export function mergeWeekAccess(
+  left: WeekAccessRecord,
+  right: WeekAccessRecord,
+  now: Date,
+): WeekAccessRecord {
+  const nowMs = now.getTime();
+  const leftMs = remainingPaidMs(left, nowMs);
+  const rightMs = remainingPaidMs(right, nowMs);
+  let paidUntil: string | null;
+  if (leftMs > 0 && rightMs > 0) paidUntil = new Date(nowMs + leftMs + rightMs).toISOString();
+  else if (leftMs > 0) paidUntil = new Date(Date.parse(left.paidUntil ?? "")).toISOString();
+  else if (rightMs > 0) paidUntil = new Date(Date.parse(right.paidUntil ?? "")).toISOString();
+  else paidUntil = laterIso(left.paidUntil, right.paidUntil);
+  return {
+    openedAt: earlierIso(left.openedAt, right.openedAt),
+    paidUntil,
+    introSeen: left.introSeen || right.introSeen,
+    grantFrom: earlierIso(left.grantFrom, right.grantFrom),
+  };
+}
+
+/**
+ * Fold a Telegram premium into the shared journal once.
+ * The Telegram copy loses its paid end, so a second link does not add those days again.
+ */
+export function absorbWeekPremium(
+  web: WeekAccessRecord,
+  telegram: WeekAccessRecord,
+  now: Date,
+): { web: WeekAccessRecord; telegram: WeekAccessRecord } {
+  const merged = mergeWeekAccess(web, telegram, now);
+  const contributed = remainingPaidMs(telegram, now.getTime()) > 0;
+  return {
+    web: merged,
+    telegram: contributed ? { ...telegram, paidUntil: null } : telegram,
+  };
+}
+
+/** Keeps an earlier trial from this browser. A client cannot grant itself premium. */
+export function adoptClientTrial(
+  server: WeekAccessRecord,
+  client: WeekAccessRecord,
+  now: Date,
+): WeekAccessRecord {
+  const nowMs = now.getTime();
+  const clientOpen = client.openedAt ? Date.parse(client.openedAt) : NaN;
+  const serverOpen = server.openedAt ? Date.parse(server.openedAt) : NaN;
+  let openedAt = server.openedAt;
+  if (Number.isFinite(clientOpen) && clientOpen <= nowMs) {
+    if (!Number.isFinite(serverOpen) || clientOpen < serverOpen) {
+      openedAt = new Date(clientOpen).toISOString();
+    }
+  }
+  return {
+    ...server,
+    openedAt,
+    introSeen: server.introSeen || client.introSeen === true,
+  };
+}
+
 /** Keeps the later end date so a renewal does not shorten an existing period. */
 export function grantWeekPaidUntil(
   record: WeekAccessRecord,
@@ -242,7 +342,7 @@ export function describeWeekAccess(
   record: WeekAccessRecord,
   now: Date,
   starPrice = DEFAULT_STAR_PRICE,
-  options?: { exempt?: boolean; grant?: PremiumSpan | null },
+  options?: { exempt?: boolean; grant?: PremiumSpan | null; rubPrice?: number },
 ): WeekAccessView {
   const openedMs = record.openedAt ? Date.parse(record.openedAt) : NaN;
   const paidMs = record.paidUntil ? Date.parse(record.paidUntil) : NaN;
@@ -286,6 +386,7 @@ export function describeWeekAccess(
     premium,
     premiumDaysLeft,
     starPrice,
+    rubPrice: options?.rubPrice ?? DEFAULT_RUB_PRICE,
     prices: {
       month: planPrice(starPrice, "month"),
       quarter: planPrice(starPrice, "quarter"),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
 import { Lock, Star } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
@@ -11,6 +11,7 @@ import {
   createWeekInvoice,
   fetchWeekAccess,
   localWeekView,
+  postSessionWeekAccess,
   postWeekAccess,
   readLocalWeekAccess,
   writeLocalWeekAccess,
@@ -18,6 +19,7 @@ import {
 import {
   markWeekIntroSeen,
   openWeekAccess,
+  planPrice,
   type PremiumPlan,
   type WeekAccessView,
 } from "@/lib/week-access";
@@ -62,15 +64,26 @@ export function WeekTab({
     onAccessRef.current?.(view);
   }
 
-  useLayoutEffect(() => {
-    if (!active || !ready) return;
-    if (inTelegram) return;
-    const next = openWeekAccess(readLocalWeekAccess(), new Date());
-    writeLocalWeekAccess(next);
-    // Local preview has no server round-trip; apply it before paint.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- read localStorage once the week tab is open
-    publish(localWeekView(next));
-    setFailedOpen(false);
+  useEffect(() => {
+    if (!active || !ready || inTelegram) return;
+    let cancelled = false;
+
+    async function start() {
+      const opened = await postSessionWeekAccess("open", readLocalWeekAccess());
+      if (cancelled) return;
+      if (!opened) {
+        const next = openWeekAccess(readLocalWeekAccess(), new Date());
+        writeLocalWeekAccess(next);
+        publish(localWeekView(next));
+        return;
+      }
+      publish(opened);
+    }
+
+    void start();
+    return () => {
+      cancelled = true;
+    };
   }, [active, ready, inTelegram]);
 
   useEffect(() => {
@@ -111,6 +124,12 @@ export function WeekTab({
   async function dismissIntro() {
     if (!access) return;
     if (!inTelegram) {
+      const seen = await postSessionWeekAccess("seen");
+      if (!alive.current) return;
+      if (seen) {
+        publish(seen);
+        return;
+      }
       const next = markWeekIntroSeen(readLocalWeekAccess());
       writeLocalWeekAccess(next);
       publish(localWeekView(next));
@@ -171,6 +190,13 @@ export function WeekTab({
     return t("payStars", { price });
   }
 
+  function rubLabel(plan: PremiumPlan, monthly: number) {
+    const price = planPrice(monthly, plan);
+    if (plan === "quarter") return t("webWeekQuarter", { price });
+    if (plan === "year") return t("webWeekYear", { price });
+    return t("webWeekMonth", { price });
+  }
+
   if (!access) {
     if (failedOpen) return <>{children}</>;
     return (
@@ -199,23 +225,33 @@ export function WeekTab({
               <Lock aria-hidden className="size-5 text-ink-foreground" />
             </div>
             <p className="font-display text-[1.5rem] leading-snug tracking-tight text-ink-foreground">
-              {t("paywallBody", { price: access.starPrice })}
+              {inTelegram
+                ? t("paywallBody", { price: access.starPrice })
+                : t("webWeekPaywall", { price: access.rubPrice })}
             </p>
             <div className="space-y-3">
-              {PLANS.map((plan) => (
-                <Button
-                  key={plan}
-                  type="button"
-                  size="lg"
-                  className="w-full bg-ink-foreground text-ink hover:bg-ink-foreground/90"
-                  disabled={!inTelegram || payingPlan !== null}
-                  onClick={() => void pay(plan)}
-                >
-                  <Star aria-hidden />
-                  {planLabel(plan, access.prices[plan])}
-                </Button>
-              ))}
-              {!inTelegram && <p className="text-sm text-ink-muted">{t("payInTelegram")}</p>}
+              {inTelegram
+                ? PLANS.map((plan) => (
+                    <Button
+                      key={plan}
+                      type="button"
+                      size="lg"
+                      className="w-full bg-ink-foreground text-ink hover:bg-ink-foreground/90"
+                      disabled={payingPlan !== null}
+                      onClick={() => void pay(plan)}
+                    >
+                      <Star aria-hidden />
+                      {planLabel(plan, access.prices[plan])}
+                    </Button>
+                  ))
+                : PLANS.map((plan) => (
+                    <p
+                      key={plan}
+                      className="rounded-full bg-ink-foreground px-4 py-3 text-center text-sm font-medium text-ink"
+                    >
+                      {rubLabel(plan, access.rubPrice)}
+                    </p>
+                  ))}
               {payError && (
                 <p className="text-sm text-ink-muted" role="alert">
                   {payError}
@@ -235,7 +271,9 @@ export function WeekTab({
       {showIntro && (
         <section className="glass flex flex-col gap-5 rounded-3xl p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <p className="text-sm leading-relaxed text-foreground/90 sm:text-base">
-            {t("intro", { price: access.starPrice })}
+            {inTelegram
+              ? t("intro", { price: access.starPrice })
+              : t("webWeekIntro", { price: access.rubPrice })}
           </p>
           <Button type="button" variant="ink" className="shrink-0" onClick={() => void dismissIntro()}>
             {t("introOk")}
@@ -244,10 +282,15 @@ export function WeekTab({
       )}
       {access.status === "trial" && access.introSeen && (
         <p className="px-2 text-xs text-muted-foreground">
-          {t("trialLine", {
-            days: count(access.daysLeft, "day"),
-            price: access.starPrice,
-          })}
+          {inTelegram
+            ? t("trialLine", {
+                days: count(access.daysLeft, "day"),
+                price: access.starPrice,
+              })
+            : t("webWeekTrial", {
+                days: count(access.daysLeft, "day"),
+                price: access.rubPrice,
+              })}
         </p>
       )}
       {children}

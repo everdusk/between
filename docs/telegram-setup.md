@@ -25,6 +25,9 @@
 | `AITUNNEL_API_KEY` | нет | бриф, судья тем, паттерн и расшифровка голосовых (`whisper-1`). Модель текста `~deepseek/deepseek-v4-flash-latest` через `https://api.aitunnel.ru/v1/`. Если ключ задан, Gemini и Groq не вызываются. В allowlist ключа нужен и `whisper-1` |
 | `GEMINI_API_KEY` или `GROQ_API_KEY` | нет | запасной путь, только когда `AITUNNEL_API_KEY` пуст. Без любого ключа бриф собирается правилами |
 | `WEEK_STAR_PRICE` | нет | цена 30 дней «Недели» в Stars. Целое 1–10000, иначе 150. 3 месяца — эта цена × 3 со скидкой 20%, год — × 12 со скидкой 50% |
+| `WEEK_RUB_PRICE` | нет | та же цена в браузере, в рублях. Целое 1–10000, иначе 150. Скидки те же. В тексте «Недели» Stars не называются |
+| `REVIEW_EMAIL` | нет | почта входа для проверки сайта: `https://between-rouge.vercel.app/journal?review=1` |
+| `REVIEW_PASSWORD` | нет | пароль этой проверки, не короче 8 символов. Это вход на сайт, не кабинет оплаты |
 | `WEEK_EXEMPT_USER_IDS` | нет | дополнительные Telegram id через запятую с премиумом без срока. Сроки по username задаются в `PREMIUM_WHITELIST` |
 
 Создать Redis: [Upstash](https://upstash.com/) → Redis → REST API → скопировать URL и token в Vercel → Redeploy.
@@ -95,7 +98,7 @@ curl -sS "https://between-rouge.vercel.app/api/telegram/webhook"
 
 ## Дневник в браузере
 
-`https://between-rouge.vercel.app/journal` — тот же дневник без Telegram. Вход по коду на почту (код стоит в теме письма) или через VK, Яндекс и Сбер. Письма уходят через SMTP: `SMTP_HOST`, `SMTP_PORT` 465, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`. Заметки на сервере. В карточке аккаунта кнопка «Telegram бот» открывает `https://t.me/BetweenJournalBot?start=link_…`. С российского адреса перед ссылкой показывается, что без VPN Telegram не откроется. Код живёт 15 минут. После Start этот чат и браузер пишут в один дневник. Мини-приложение без связки по-прежнему хранит дневник на числовом id Telegram.
+`https://between-rouge.vercel.app/journal` — тот же дневник без Telegram. Вход по коду на почту (код стоит в теме письма) или через VK, Яндекс и Сбер. Письма уходят через SMTP: `SMTP_HOST`, `SMTP_PORT` 465, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`. Заметки на сервере. В карточке аккаунта кнопка «Telegram бот» открывает `https://t.me/BetweenJournalBot?start=link_…`. С российского адреса перед ссылкой показывается, что без VPN Telegram не откроется. Код живёт 15 минут. После Start этот чат и браузер пишут в один дневник, и премиум тоже один: купленный в Telegram открывается в браузере, купленный в браузере — в Telegram. Если срок был и там и там, дни складываются. Повторная связка те же дни не прибавляет. Мини-приложение без связки по-прежнему хранит дневник на числовом id Telegram. В браузере «Неделя» говорит цену в рублях и сколько бесплатных дней осталось. Для проверки сайта до оплаты есть отдельная страница с логином и паролем из `REVIEW_EMAIL` и `REVIEW_PASSWORD`. Обычный вход пароль не спрашивает.
 
 Для кнопок входа в кабинете провайдера регистрируется ровно этот callback: `https://between-rouge.vercel.app/api/account/oauth/vk/callback`, и то же для `yandex` и `sber`. Ключи — `VK_CLIENT_ID`, `VK_SERVICE_TOKEN`, `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET`, `SBER_CLIENT_ID`, `SBER_CLIENT_SECRET`. Сбер ещё ждёт сертификат партнёра в `SBER_CLIENT_CERT` и `SBER_CLIENT_KEY`. Пока ключа нет, кнопка возвращает на дневник с «этот вход ещё не подключён».
 

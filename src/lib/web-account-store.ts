@@ -4,14 +4,17 @@ import {
   getUserTimezone,
   loadUserLocale,
   loadUserStore,
+  loadWeekAccess,
   rememberUser,
   saveUserLocale,
   saveUserStore,
+  saveWeekAccess,
   setUserTimezone,
 } from "./redis";
 import type { LocaleId } from "./i18n";
 import type { OauthProvider } from "./oauth";
 import { OTP_TTL_MS, otpMatches } from "./otp-mail";
+import { absorbWeekPremium } from "./week-access";
 import {
   hashPassword,
   journalStorageId,
@@ -19,6 +22,7 @@ import {
   newLinkCode,
   normalizeEmail,
   passwordMatches,
+  reviewLoginFromEnv,
   webStorageId,
   LINK_TTL_SECONDS,
 } from "./web-account";
@@ -31,6 +35,7 @@ export type AccountRecord = {
   salt: string;
   hash: string;
   telegramUserId: number | null;
+  telegramUsername: string | null;
   createdAt: string;
   providers: AccountProviders;
 };
@@ -87,6 +92,10 @@ function asAccount(raw: unknown): AccountRecord | null {
     salt: row.salt,
     hash: row.hash,
     telegramUserId: typeof row.telegramUserId === "number" ? row.telegramUserId : null,
+    telegramUsername:
+      typeof row.telegramUsername === "string" && row.telegramUsername.trim()
+        ? row.telegramUsername.trim().replace(/^@/, "")
+        : null,
     createdAt: typeof row.createdAt === "string" ? row.createdAt : "",
     providers: readProviders((row as { providers?: unknown }).providers),
   };
@@ -142,6 +151,7 @@ export async function createAccount(
     salt: passwordRecord.salt,
     hash: passwordRecord.hash,
     telegramUserId: null,
+    telegramUsername: null,
     createdAt: new Date().toISOString(),
     providers: {},
   };
@@ -185,6 +195,7 @@ export async function openAccountByEmail(email: string): Promise<AccountRecord |
     salt: "",
     hash: "",
     telegramUserId: null,
+    telegramUsername: null,
     createdAt: new Date().toISOString(),
     providers: {},
   };
@@ -243,6 +254,33 @@ export async function loginAccount(
   return ok ? account : null;
 }
 
+/** Review credentials open or reset that one account. Everyone else uses their own password. */
+export async function loginForSite(email: string, password: string): Promise<AccountRecord | null> {
+  const review = reviewLoginFromEnv();
+  if (review && email === review.email && password === review.password) {
+    return ensureReviewAccount(email, password);
+  }
+  return loginAccount(email, password);
+}
+
+async function ensureReviewAccount(email: string, password: string): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const existingId = await redis.get<string>(emailKey(email));
+  if (typeof existingId === "string") {
+    const account = await loadAccount(existingId);
+    if (!account) return null;
+    if (await passwordMatches(password, account.salt, account.hash)) return account;
+    const passwordRecord = await hashPassword(password);
+    account.salt = passwordRecord.salt;
+    account.hash = passwordRecord.hash;
+    await redis.set(accountKey(account.id), account);
+    return account;
+  }
+  const created = await createAccount(email, password);
+  return created && created !== "taken" ? created : null;
+}
+
 export async function issueBotLink(accountId: string): Promise<string | null> {
   const redis = getRedis();
   if (!redis) return null;
@@ -254,7 +292,11 @@ export async function issueBotLink(accountId: string): Promise<string | null> {
 export type LinkResult = "ok" | "bad" | "taken";
 
 /** Bind a Telegram user to the account that asked for this code. One journal after that. */
-export async function claimTelegramLink(code: string, telegramUserId: number): Promise<LinkResult> {
+export async function claimTelegramLink(
+  code: string,
+  telegramUserId: number,
+  username?: string,
+): Promise<LinkResult> {
   const redis = getRedis();
   if (!redis) return "bad";
   const accountId = await redis.get<string>(linkKey(code.toLowerCase()));
@@ -269,6 +311,15 @@ export async function claimTelegramLink(code: string, telegramUserId: number): P
   if (existing && existing !== accountId) return "taken";
 
   const webId = webStorageId(accountId);
+  if (account.telegramUserId == null) {
+    const telegramAccess = await loadWeekAccess(telegramUserId);
+    const absorbed = absorbWeekPremium(await loadWeekAccess(webId), telegramAccess, new Date());
+    await saveWeekAccess(webId, absorbed.web);
+    if (absorbed.telegram.paidUntil !== telegramAccess.paidUntil) {
+      await saveWeekAccess(telegramUserId, absorbed.telegram);
+    }
+  }
+
   const merged = mergeStores(
     await loadUserStore(webId),
     await loadUserStore(telegramUserId),
@@ -287,6 +338,8 @@ export async function claimTelegramLink(code: string, telegramUserId: number): P
   }
 
   account.telegramUserId = telegramUserId;
+  const handle = username?.trim().replace(/^@/, "");
+  if (handle) account.telegramUsername = handle;
   await redis.set(accountKey(accountId), account);
   await redis.set(telegramKey(telegramUserId), accountId);
   await rememberUser(telegramUserId);
@@ -348,6 +401,7 @@ export async function upsertOauthAccount(input: {
     salt: "",
     hash: "",
     telegramUserId: null,
+    telegramUsername: null,
     createdAt: new Date().toISOString(),
     providers: { [input.provider]: input.providerUserId },
   };
