@@ -5,8 +5,23 @@ import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import "@/app/journal/theme.css";
 import { LEGAL_SURFACE_CSS } from "@/lib/landing";
-import { LEGAL_INN, legalDocument, type LegalKind } from "@/lib/legal";
+import { LEGAL_DELETE_URL, LEGAL_INN, legalDocument, type LegalKind } from "@/lib/legal";
 import { markSplashReady } from "@/lib/splash";
+
+function LegalText({ text }: { text: string }) {
+  if (!text.includes(LEGAL_DELETE_URL)) return text;
+  const parts = text.split(LEGAL_DELETE_URL);
+  return parts.map((part, index) => (
+    <span key={`${index}-${part.slice(0, 12)}`}>
+      {part}
+      {index < parts.length - 1 ? (
+        <a href="/delete" className="underline underline-offset-4">
+          {LEGAL_DELETE_URL}
+        </a>
+      ) : null}
+    </span>
+  ));
+}
 
 function LegalArticle({ kind }: { kind: LegalKind }) {
   const { locale, t } = useI18n();
@@ -47,7 +62,7 @@ function LegalArticle({ kind }: { kind: LegalKind }) {
               <h2 className="font-display text-xl leading-snug">{section.heading}</h2>
               {section.paragraphs.map((paragraph) => (
                 <p key={paragraph} className="mt-2 text-sm leading-relaxed text-foreground/90">
-                  {paragraph}
+                  <LegalText text={paragraph} />
                 </p>
               ))}
             </section>

@@ -88,6 +88,9 @@ export function WebAccountCard({
       <Button type="button" variant="secondary" className="mt-4 w-full" onClick={() => void logout()}>
         {t("webLogout")}
       </Button>
+      <a href="/delete" className="mt-3 block text-center text-sm text-muted-foreground underline underline-offset-4">
+        {t("webDelete")}
+      </a>
     </section>
   );
 }
