@@ -10,7 +10,7 @@ import {
   redisConfigured,
   takeBriefAttempt,
 } from "@/lib/redis";
-import { validateInitData } from "@/lib/telegram-auth";
+import { actorFromRequest } from "@/lib/account-actor";
 import { todayInTimeZone } from "@/lib/zoned";
 
 export type BriefKind = "brief" | "backlog" | "themes" | "judge" | "dedup" | "pattern";
@@ -487,15 +487,11 @@ async function aitunnel(
 }
 
 export async function POST(req: Request) {
-  const initData = req.headers.get("x-telegram-init-data");
-  if (!initData) {
+  const actor = await actorFromRequest(req);
+  if (!actor) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
-  const validated = validateInitData(initData);
-  if (!validated) {
-    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
-  const userId = validated.user.id;
+  const userId = actor.id;
 
   let body: unknown;
   try {

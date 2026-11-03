@@ -5,6 +5,7 @@ import {
   loadUserStore,
   saveUserStore,
 } from "./redis";
+import { resolveJournalId } from "./web-account-store";
 import type { CheckinSlot, Feeling, JournalEntry, TherapyStore } from "./types";
 import { emptyStore } from "./types";
 import { todayInTimeZone } from "./zoned";
@@ -15,12 +16,13 @@ export async function appendBotMessageToToday(
   userId: number,
   text: string,
 ): Promise<{ date: string; store: TherapyStore }> {
-  const tz = await getUserTimezone(userId);
+  const owner = await resolveJournalId(userId);
+  const tz = await getUserTimezone(owner);
   const date = todayInTimeZone(tz);
   const body = text.trim();
   const now = new Date().toISOString();
 
-  let store = await loadUserStore(userId);
+  let store = await loadUserStore(owner);
   if (!store.entries) store = emptyStore();
 
   const entry: JournalEntry = {
@@ -38,7 +40,7 @@ export async function appendBotMessageToToday(
     ...store,
     entries: [entry, ...store.entries],
   };
-  await saveUserStore(userId, next);
+  await saveUserStore(owner, next);
   return { date, store: next };
 }
 
@@ -47,10 +49,11 @@ export async function addCheckin(
   slot: CheckinSlot,
   feeling: Feeling,
 ): Promise<TherapyStore> {
-  const tz = await getUserTimezone(userId);
+  const owner = await resolveJournalId(userId);
+  const tz = await getUserTimezone(owner);
   const date = todayInTimeZone(tz);
   const now = new Date().toISOString();
-  const store = await loadUserStore(userId);
+  const store = await loadUserStore(owner);
   const existing = store.entries.find(
     (entry) => entry.date === date && entry.slot === slot && entry.source === "checkin",
   );
@@ -77,6 +80,6 @@ export async function addCheckin(
       ];
 
   const next: TherapyStore = { ...store, entries };
-  await saveUserStore(userId, next);
+  await saveUserStore(owner, next);
   return next;
 }

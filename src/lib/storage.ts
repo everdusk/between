@@ -1,16 +1,18 @@
 import { normalizeStore, storeChangedShape } from "./migrate";
 import { emptyStore, STORAGE_KEY, type TherapyStore } from "./types";
 
+export const WEB_STORAGE_KEY = "therapy-helper:web";
+
 export type StorageResult =
   | { ok: true; data: TherapyStore }
   | { ok: false; error: string };
 
-export function loadStore(): StorageResult {
+export function loadStore(key = STORAGE_KEY): StorageResult {
   try {
     if (typeof window === "undefined") {
       return { ok: true, data: emptyStore() };
     }
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(key);
     if (!raw) {
       return { ok: true, data: emptyStore() };
     }
@@ -23,7 +25,7 @@ export function loadStore(): StorageResult {
       };
     }
     if (storeChangedShape(parsed, normalized)) {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      window.localStorage.setItem(key, JSON.stringify(normalized));
     }
     return { ok: true, data: normalized };
   } catch {
@@ -34,10 +36,10 @@ export function loadStore(): StorageResult {
   }
 }
 
-export function saveStore(store: TherapyStore): StorageResult {
+export function saveStore(store: TherapyStore, key = STORAGE_KEY): StorageResult {
   try {
     const normalized = normalizeStore(store) ?? store;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+    window.localStorage.setItem(key, JSON.stringify(normalized));
     return { ok: true, data: normalized };
   } catch {
     return {
@@ -48,9 +50,9 @@ export function saveStore(store: TherapyStore): StorageResult {
   }
 }
 
-export function clearStore(): StorageResult {
+export function clearStore(key = STORAGE_KEY): StorageResult {
   try {
-    window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(key);
     return { ok: true, data: emptyStore() };
   } catch {
     return { ok: false, error: "Не удалось очистить хранилище." };

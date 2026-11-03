@@ -22,7 +22,7 @@ import {
   themesForJudge,
 } from "@/lib/themes";
 import { applyThemePass, isTherapyTheme, sanitizeTags, splitTags } from "@/lib/tags";
-import { clearStore, loadStore, saveStore } from "@/lib/storage";
+import { clearStore, loadStore, saveStore, WEB_STORAGE_KEY } from "@/lib/storage";
 import {
   emptyStore,
   type Feeling,
@@ -62,9 +62,13 @@ export function useTherapyStore(options?: {
   initData?: string;
   inTelegram?: boolean;
   locale?: LocaleId;
+  web?: boolean;
 }) {
   const initData = options?.initData ?? "";
   const inTelegram = Boolean(options?.inTelegram && initData);
+  const web = Boolean(options?.web);
+  const cloud = inTelegram || web;
+  const storageKey = web ? WEB_STORAGE_KEY : undefined;
   const locale = options?.locale ?? "ru";
 
   const hydrated = useSyncExternalStore(
@@ -81,15 +85,19 @@ export function useTherapyStore(options?: {
   );
   const storeRef = useRef(store);
   const initDataRef = useRef(initData);
+  const cloudRef = useRef(cloud);
+  const storageKeyRef = useRef(storageKey);
   useEffect(() => {
     storeRef.current = store;
   }, [store]);
   useEffect(() => {
     initDataRef.current = initData;
-  }, [initData]);
+    cloudRef.current = cloud;
+    storageKeyRef.current = storageKey;
+  }, [initData, cloud, storageKey]);
 
   const applyLocal = useCallback((next: TherapyStore) => {
-    const result = saveStore(next);
+    const result = saveStore(next, storageKeyRef.current);
     if (result.ok) {
       setStore(result.data);
       setStatus("ready");
@@ -102,8 +110,8 @@ export function useTherapyStore(options?: {
   }, []);
 
   const syncFromCloud = useCallback(async () => {
+    if (!cloudRef.current) return;
     const data = initDataRef.current;
-    if (!data) return;
     const remote = await fetchJournal(data);
     if (!remote.ok) {
       if (remote.status === 503 || remote.status === 401) {
@@ -111,7 +119,7 @@ export function useTherapyStore(options?: {
       }
       return;
     }
-    const local = loadStore();
+    const local = loadStore(storageKeyRef.current);
     const localStore = local.ok ? local.data : emptyStore();
     const merged = mergeStores(localStore, remote.store);
     applyLocal(merged);
@@ -122,7 +130,7 @@ export function useTherapyStore(options?: {
 
   useEffect(() => {
     if (!hydrated) return;
-    const result = loadStore();
+    const result = loadStore(storageKey);
     if (result.ok) {
       // Local journal is only available after mount.
       // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate localStorage once on the client
@@ -135,15 +143,15 @@ export function useTherapyStore(options?: {
       return;
     }
 
-    if (inTelegram) {
+    if (cloud) {
       void syncFromCloud();
     } else {
       setSyncLabel("local");
     }
-  }, [hydrated, inTelegram, syncFromCloud]);
+  }, [hydrated, cloud, storageKey, syncFromCloud]);
 
   useEffect(() => {
-    if (!inTelegram) return;
+    if (!cloud) return;
     const onFocus = () => {
       void syncFromCloud();
     };
@@ -156,13 +164,13 @@ export function useTherapyStore(options?: {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [inTelegram, syncFromCloud]);
+  }, [cloud, syncFromCloud]);
 
   const persist = useCallback(
     (next: TherapyStore) => {
       const ok = applyLocal(next);
       if (!ok) return false;
-      if (initDataRef.current) {
+      if (cloudRef.current) {
         const tz = deviceTimeZone();
         void putJournal(initDataRef.current, next, tz).then((cloudOk) => {
           setSyncLabel(cloudOk ? "cloud" : "offline-cloud");
@@ -191,7 +199,7 @@ export function useTherapyStore(options?: {
     };
   }, []);
   useEffect(() => {
-    if (!hydrated || !initData) return;
+    if (!hydrated || !cloud) return;
     const now = new Date();
     const today = toDateKey(now);
     const period = therapyWindow(store.sessions, store.entries, today, now, store.sessionPlan);
@@ -276,15 +284,15 @@ export function useTherapyStore(options?: {
         judgeSettled: [...new Set([...(latest.judgeSettled ?? []), stamp])].slice(-400),
       });
     })();
-  }, [hydrated, initData, judgeNudge, judgeSkipped, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions]);
+  }, [hydrated, cloud, initData, judgeNudge, judgeSkipped, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions]);
 
   const resetCorrupted = useCallback(() => {
-    const result = clearStore();
+    const result = clearStore(storageKeyRef.current);
     if (result.ok) {
       setStore(result.data);
       setStatus("ready");
       setError(null);
-      if (initDataRef.current) {
+      if (cloudRef.current) {
         void putJournal(initDataRef.current, result.data, deviceTimeZone());
       }
     } else {

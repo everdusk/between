@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { actorFromRequest } from "@/lib/account-actor";
 import { normalizeStore } from "@/lib/migrate";
 import {
   getUserTimezone,
@@ -8,13 +9,9 @@ import {
   saveUserStore,
   setUserTimezone,
 } from "@/lib/redis";
-import { validateInitData } from "@/lib/telegram-auth";
 import { emptyStore } from "@/lib/types";
+import { sessionSecret } from "@/lib/web-account";
 import { isValidTimeZone } from "@/lib/zoned";
-
-function initDataFrom(req: Request): string | null {
-  return req.headers.get("x-telegram-init-data");
-}
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
@@ -28,17 +25,13 @@ function misconfigured() {
 }
 
 export async function GET(req: Request) {
-  if (!redisConfigured() || !process.env.BOT_TOKEN?.trim()) {
-    return misconfigured();
-  }
-  const initData = initDataFrom(req);
-  if (!initData) return unauthorized();
-  const validated = validateInitData(initData);
-  if (!validated) return unauthorized();
+  if (!redisConfigured() || !sessionSecret()) return misconfigured();
+  const actor = await actorFromRequest(req);
+  if (!actor) return unauthorized();
 
-  const store = await loadUserStore(validated.user.id);
-  const timeZone = await getUserTimezone(validated.user.id);
-  await rememberUser(validated.user.id);
+  const store = await loadUserStore(actor.id);
+  const timeZone = await getUserTimezone(actor.id);
+  await rememberUser(actor.id);
 
   return NextResponse.json({
     ok: true,
@@ -48,13 +41,9 @@ export async function GET(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  if (!redisConfigured() || !process.env.BOT_TOKEN?.trim()) {
-    return misconfigured();
-  }
-  const initData = initDataFrom(req);
-  if (!initData) return unauthorized();
-  const validated = validateInitData(initData);
-  if (!validated) return unauthorized();
+  if (!redisConfigured() || !sessionSecret()) return misconfigured();
+  const actor = await actorFromRequest(req);
+  if (!actor) return unauthorized();
 
   let body: unknown;
   try {
@@ -69,10 +58,10 @@ export async function PUT(req: Request) {
     return NextResponse.json({ ok: false, error: "invalid_store" }, { status: 400 });
   }
 
-  await saveUserStore(validated.user.id, store);
+  await saveUserStore(actor.id, store);
 
   if (typeof payload.timeZone === "string" && isValidTimeZone(payload.timeZone)) {
-    await setUserTimezone(validated.user.id, payload.timeZone);
+    await setUserTimezone(actor.id, payload.timeZone);
   }
 
   return NextResponse.json({ ok: true });

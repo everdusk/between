@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Literata, Manrope } from "next/font/google";
+import { Literata, Manrope, Unbounded } from "next/font/google";
 import { ProductAnalyticsConfig } from "@/components/product-analytics-config";
 import { SplashScreen } from "@/components/splash-screen";
 import { LandingPage } from "@/components/landing-page";
 import { LandingSurface } from "@/components/landing-surface";
-import { SURFACE_BOOT_SCRIPT, WEB_SURFACE_CSS, YANDEX_METRIKA_NOSCRIPT, YANDEX_METRIKA_SCRIPT } from "@/lib/landing";
+import { APP_SURFACE_CSS, SURFACE_BOOT_SCRIPT, WEB_SURFACE_CSS, YANDEX_METRIKA_NOSCRIPT, YANDEX_METRIKA_SCRIPT } from "@/lib/landing";
 import { landingJsonLd, landingMetadata } from "@/lib/landing-seo";
 import { LAUNCH_THEME_SCRIPT, SPLASH_COVER_CSS } from "@/lib/launch-theme";
 import { posthogBrowserConfig } from "@/lib/posthog-env";
@@ -20,6 +20,15 @@ const manrope = Manrope({
   variable: "--font-sans",
   subsets: ["latin", "latin-ext", "cyrillic"],
 });
+
+const unbounded = Unbounded({
+  variable: "--font-unbounded",
+  subsets: ["latin", "latin-ext", "cyrillic"],
+  weight: ["500", "600", "700"],
+});
+
+/** `/journal` is the browser app. The boot script only looks at the Telegram hash, so this runs before Metrika. */
+const JOURNAL_SURFACE_SCRIPT = `try{var p=location.pathname||"";if(p==="/journal"||p.indexOf("/journal/")===0){document.documentElement.setAttribute("data-between","app");document.documentElement.setAttribute("data-journal","web");var s=document.getElementById("between-surface");if(s)s.textContent=${JSON.stringify(APP_SURFACE_CSS)};}}catch(e){}`;
 
 export const metadata: Metadata = landingMetadata;
 
@@ -38,7 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="ru"
       data-splash=""
-      className={`${literata.variable} ${manrope.variable} h-full antialiased`}
+      className={`${literata.variable} ${manrope.variable} ${unbounded.variable} h-full antialiased`}
       style={{ backgroundColor: SPLASH_CHROME }}
       suppressHydrationWarning
     >
@@ -47,6 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <style dangerouslySetInnerHTML={{ __html: SPLASH_COVER_CSS }} />
         <script dangerouslySetInnerHTML={{ __html: LAUNCH_THEME_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: SURFACE_BOOT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: JOURNAL_SURFACE_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: YANDEX_METRIKA_SCRIPT }} />
         <link rel="preload" href="/splash.webp" as="image" fetchPriority="high" />
       </head>
