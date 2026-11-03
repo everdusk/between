@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
 import { Lock, Star } from "lucide-react";
+import { LegalLinks } from "@/components/legal-links";
 import { useI18n } from "@/components/locale-provider";
 import { trackAnalytics } from "@/lib/analytics-client";
 import { captureProduct } from "@/lib/product-analytics";
@@ -257,6 +258,7 @@ export function WeekTab({
                   {payError}
                 </p>
               )}
+              <LegalLinks className="text-center text-xs leading-relaxed text-ink-foreground/80" />
             </div>
           </div>
         </section>

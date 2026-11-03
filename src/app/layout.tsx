@@ -4,7 +4,7 @@ import { ProductAnalyticsConfig } from "@/components/product-analytics-config";
 import { SplashScreen } from "@/components/splash-screen";
 import { LandingPage } from "@/components/landing-page";
 import { LandingSurface } from "@/components/landing-surface";
-import { APP_SURFACE_CSS, SURFACE_BOOT_SCRIPT, WEB_SURFACE_CSS, YANDEX_METRIKA_NOSCRIPT, YANDEX_METRIKA_SCRIPT } from "@/lib/landing";
+import { APP_SURFACE_CSS, LEGAL_SURFACE_CSS, SURFACE_BOOT_SCRIPT, WEB_SURFACE_CSS, YANDEX_METRIKA_NOSCRIPT, YANDEX_METRIKA_SCRIPT } from "@/lib/landing";
 import { landingJsonLd, landingMetadata } from "@/lib/landing-seo";
 import { LAUNCH_THEME_SCRIPT, SPLASH_COVER_CSS } from "@/lib/launch-theme";
 import { posthogBrowserConfig } from "@/lib/posthog-env";
@@ -28,7 +28,7 @@ const unbounded = Unbounded({
 });
 
 /** `/journal` is the browser app. The boot script only looks at the Telegram hash, so this runs before Metrika. */
-const JOURNAL_SURFACE_SCRIPT = `try{var p=location.pathname||"";if(p==="/journal"||p.indexOf("/journal/")===0){document.documentElement.setAttribute("data-between","app");document.documentElement.setAttribute("data-journal","web");var scheme="night";try{var saved=localStorage.getItem("between:scheme");if(saved==="day"||saved==="night")scheme=saved;}catch(e){}document.documentElement.setAttribute("data-scheme",scheme);var s=document.getElementById("between-surface");if(s)s.textContent=${JSON.stringify(APP_SURFACE_CSS)};}}catch(e){}`;
+const JOURNAL_SURFACE_SCRIPT = `try{var p=location.pathname||"";if(p.length>1&&p.charAt(p.length-1)==="/")p=p.slice(0,-1);var legal=p==="/terms"||p==="/privacy";var journal=p==="/journal"||p.indexOf("/journal/")===0;if(legal||journal){document.documentElement.setAttribute("data-between","app");document.documentElement.setAttribute("data-journal","web");var scheme="night";if(journal){try{var saved=localStorage.getItem("between:scheme");if(saved==="day"||saved==="night")scheme=saved;}catch(e){}}document.documentElement.setAttribute("data-scheme",scheme);if(legal)document.documentElement.removeAttribute("data-splash");var s=document.getElementById("between-surface");if(s)s.textContent=legal?${JSON.stringify(LEGAL_SURFACE_CSS)}:${JSON.stringify(APP_SURFACE_CSS)};}}catch(e){}`;
 
 export const metadata: Metadata = landingMetadata;
 

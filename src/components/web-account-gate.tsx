@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LegalAgree } from "@/components/legal-links";
 import { useI18n } from "@/components/locale-provider";
 import type { WebAccount } from "@/hooks/use-web-account";
 import { formatDayLabel, formatTime, toDateKey } from "@/lib/dates";
@@ -393,6 +394,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
             </button>
           </form>
         )}
+        <LegalAgree className="mt-5 text-center text-xs leading-relaxed text-muted-foreground" />
       </section>
     </main>
   );

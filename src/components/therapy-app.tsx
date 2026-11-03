@@ -6,6 +6,7 @@ import { CalendarDays, PenLine, Waves } from "lucide-react";
 import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
 import { JournalPanel } from "@/components/journal-panel";
 import { LanguageSwitch } from "@/components/language-switch";
+import { LegalLinks } from "@/components/legal-links";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import { SchemeSwitch } from "@/components/scheme-switch";
 import { SessionsPanel } from "@/components/sessions-panel";
@@ -174,6 +175,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
           ? ` · ${t("syncOffline")}`
           : ` · ${t("syncDevice")}`}
       {!telegram.inTelegram && telegram.ready ? ` · ${t("outsideTelegram")}` : null}
+      <LegalLinks className="mt-2" />
     </footer>
   );
 
