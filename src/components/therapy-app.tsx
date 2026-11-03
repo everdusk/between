@@ -171,7 +171,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
       initData={telegram.initData}
     >
     <div
-      className="fixed inset-x-0 flex flex-col overflow-hidden"
+      className="journal-shell fixed inset-x-0 flex flex-col overflow-hidden"
       style={{
         top: "var(--vv-top, 0px)",
         height: "var(--vv-height, var(--tg-viewport-height, 100dvh))",

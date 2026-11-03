@@ -10,15 +10,19 @@ import {
   setUserTimezone,
 } from "./redis";
 import type { LocaleId } from "./i18n";
+import type { OauthProvider } from "./oauth";
 import {
   hashPassword,
   journalStorageId,
   newAccountId,
   newLinkCode,
+  normalizeEmail,
   passwordMatches,
   webStorageId,
   LINK_TTL_SECONDS,
 } from "./web-account";
+
+export type AccountProviders = Partial<Record<OauthProvider, string>>;
 
 export type AccountRecord = {
   id: string;
@@ -27,11 +31,13 @@ export type AccountRecord = {
   hash: string;
   telegramUserId: number | null;
   createdAt: string;
+  providers: AccountProviders;
 };
 
 export type PublicAccount = {
   email: string;
   telegramLinked: boolean;
+  providers: OauthProvider[];
 };
 
 function emailKey(email: string): string {
@@ -50,6 +56,20 @@ function linkKey(code: string): string {
   return `between:link:${code}`;
 }
 
+function oauthKey(provider: OauthProvider, subject: string): string {
+  return `between:acct:oauth:${provider}:${subject}`;
+}
+
+function readProviders(raw: unknown): AccountProviders {
+  const out: AccountProviders = {};
+  if (!raw || typeof raw !== "object") return out;
+  for (const key of ["vk", "yandex", "sber"] as const) {
+    const value = (raw as Record<string, unknown>)[key];
+    if (typeof value === "string" && value) out[key] = value;
+  }
+  return out;
+}
+
 function asAccount(raw: unknown): AccountRecord | null {
   const value = typeof raw === "string" ? safeJson(raw) : raw;
   if (!value || typeof value !== "object") return null;
@@ -63,6 +83,7 @@ function asAccount(raw: unknown): AccountRecord | null {
     hash: row.hash,
     telegramUserId: typeof row.telegramUserId === "number" ? row.telegramUserId : null,
     createdAt: typeof row.createdAt === "string" ? row.createdAt : "",
+    providers: readProviders((row as { providers?: unknown }).providers),
   };
 }
 
@@ -75,7 +96,11 @@ function safeJson(raw: string): unknown {
 }
 
 export function toPublicAccount(account: AccountRecord): PublicAccount {
-  return { email: account.email, telegramLinked: account.telegramUserId != null };
+  return {
+    email: account.email,
+    telegramLinked: account.telegramUserId != null,
+    providers: (["vk", "yandex", "sber"] as const).filter((key) => Boolean(account.providers[key])),
+  };
 }
 
 export async function loadAccount(id: string): Promise<AccountRecord | null> {
@@ -113,6 +138,7 @@ export async function createAccount(
     hash: passwordRecord.hash,
     telegramUserId: null,
     createdAt: new Date().toISOString(),
+    providers: {},
   };
   await redis.set(accountKey(id), account);
   return account;
@@ -180,4 +206,67 @@ export async function claimTelegramLink(code: string, telegramUserId: number): P
   await redis.set(telegramKey(telegramUserId), accountId);
   await rememberUser(telegramUserId);
   return "ok";
+}
+
+export async function upsertOauthAccount(input: {
+  provider: OauthProvider;
+  providerUserId: string;
+  altIds?: string[];
+  email: string | null;
+}): Promise<AccountRecord | "taken" | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const email = input.email ? normalizeEmail(input.email) : null;
+  const ids = [input.providerUserId, ...(input.altIds ?? [])].filter(
+    (id, index, all) => id && all.indexOf(id) === index,
+  );
+  let found: AccountRecord | null = null;
+  for (const subject of ids) {
+    const accountId = await redis.get<string>(oauthKey(input.provider, subject));
+    if (typeof accountId !== "string") continue;
+    const account = await loadAccount(accountId);
+    if (!account) continue;
+    if (found && found.id !== account.id) return "taken";
+    found = account;
+  }
+  if (!found && email) {
+    const existingId = await redis.get<string>(emailKey(email));
+    if (typeof existingId === "string") found = await loadAccount(existingId);
+  }
+  if (found) {
+    const current = found.providers[input.provider];
+    if (current && !ids.includes(current)) return "taken";
+    found.providers = { ...found.providers, [input.provider]: input.providerUserId };
+    if (!found.email && email) {
+      const claimed = await redis.set(emailKey(email), found.id, { nx: true });
+      if (claimed === "OK") found.email = email;
+    }
+    await redis.set(accountKey(found.id), found);
+    for (const subject of ids) await redis.set(oauthKey(input.provider, subject), found.id);
+    return found;
+  }
+
+  const id = newAccountId();
+  if (email) {
+    const claimed = await redis.set(emailKey(email), id, { nx: true });
+    if (claimed !== "OK") {
+      const winner = await redis.get<string>(emailKey(email));
+      if (typeof winner !== "string") return "taken";
+      const account = await loadAccount(winner);
+      if (!account) return "taken";
+      return upsertOauthAccount({ ...input, email });
+    }
+  }
+  const account: AccountRecord = {
+    id,
+    email: email ?? "",
+    salt: "",
+    hash: "",
+    telegramUserId: null,
+    createdAt: new Date().toISOString(),
+    providers: { [input.provider]: input.providerUserId },
+  };
+  await redis.set(accountKey(id), account);
+  for (const subject of ids) await redis.set(oauthKey(input.provider, subject), id);
+  return account;
 }

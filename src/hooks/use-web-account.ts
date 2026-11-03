@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 export type WebAccount = {
   email: string;
   telegramLinked: boolean;
+  providers?: ("vk" | "yandex" | "sber")[];
 };
 
 type Status = "idle" | "loading" | "ready" | "unavailable";

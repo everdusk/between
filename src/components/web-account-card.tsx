@@ -41,7 +41,14 @@ export function WebAccountCard({
   return (
     <section className="glass mb-4 rounded-3xl p-5 sm:p-6">
       <h2 className="font-display text-xl tracking-tight text-foreground">{t("webAccount")}</h2>
-      <p className="mt-2 truncate text-sm text-muted-foreground">{account.email}</p>
+      {account.email ? <p className="mt-2 truncate text-sm text-muted-foreground">{account.email}</p> : null}
+      {account.providers?.length ? (
+        <p className="mt-2 text-sm text-muted-foreground">
+          {account.providers
+            .map((provider) => t(provider === "vk" ? "webVk" : provider === "yandex" ? "webYandex" : "webSber"))
+            .join(" · ")}
+        </p>
+      ) : null}
       {account.telegramLinked ? (
         <p className="mt-3 text-sm leading-relaxed text-foreground">{t("webBotLinked")}</p>
       ) : (

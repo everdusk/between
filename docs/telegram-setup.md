@@ -95,7 +95,9 @@ curl -sS "https://between-rouge.vercel.app/api/telegram/webhook"
 
 ## Дневник в браузере
 
-`https://between-rouge.vercel.app/journal` — тот же дневник без Telegram. Вход по почте и паролю, заметки на сервере. На вкладке «Сеансы» кнопка «Подключить бота» открывает `https://t.me/BetweenJournalBot?start=link_…`. Код живёт 15 минут. После Start этот чат и браузер пишут в один дневник. Мини-приложение без связки по-прежнему хранит дневник на числовом id Telegram.
+`https://between-rouge.vercel.app/journal` — тот же дневник без Telegram. Вход по почте и паролю или через VK, Яндекс и Сбер. Заметки на сервере. На вкладке «Сеансы» кнопка «Подключить бота» открывает `https://t.me/BetweenJournalBot?start=link_…`. Код живёт 15 минут. После Start этот чат и браузер пишут в один дневник. Мини-приложение без связки по-прежнему хранит дневник на числовом id Telegram.
+
+Для кнопок входа в кабинете провайдера регистрируется ровно этот callback: `https://between-rouge.vercel.app/api/account/oauth/vk/callback`, и то же для `yandex` и `sber`. Ключи — `VK_CLIENT_ID`, `VK_SERVICE_TOKEN`, `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET`, `SBER_CLIENT_ID`, `SBER_CLIENT_SECRET`. Сбер ещё ждёт сертификат партнёра в `SBER_CLIENT_CERT` и `SBER_CLIENT_KEY`. Пока ключа нет, кнопка возвращает на дневник с «этот вход ещё не подключён».
 
 ## Как пользоваться
 
