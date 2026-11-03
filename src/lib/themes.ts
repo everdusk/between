@@ -836,7 +836,10 @@ export function patternAlreadyCurrent(
   return Boolean(text) && savedStamp === stamp;
 }
 
-/** One pattern call for the themes already on the week. A stuck judge must not hide it. */
+/**
+ * One pattern call after the week's notes have been judged.
+ * Asking while a judge is still landing restarts the call for every note.
+ */
 export function patternShouldRequest(input: {
   hasInitData: boolean;
   disabled: boolean;
@@ -848,7 +851,7 @@ export function patternShouldRequest(input: {
   gaveUp: boolean;
   inFlight: boolean;
 }): boolean {
-  if (!input.hasInitData || input.disabled) return false;
+  if (!input.hasInitData || input.disabled || input.judging) return false;
   if (input.themeCount === 0 || input.gaveUp || input.inFlight) return false;
   return !patternAlreadyCurrent(input.savedStamp, input.stamp, input.savedText);
 }

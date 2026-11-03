@@ -541,7 +541,7 @@ describe("session brief", () => {
     assert.match(facts, /Открытые темы/);
   });
 
-  it("asks for a pattern even while another note is still being judged", () => {
+  it("waits to ask for a pattern until the notes on the week are judged", () => {
     const ready = {
       hasInitData: true,
       disabled: false,
@@ -554,7 +554,7 @@ describe("session brief", () => {
       inFlight: false,
     };
     assert.equal(patternShouldRequest(ready), true);
-    assert.equal(patternShouldRequest({ ...ready, judging: true }), true);
+    assert.equal(patternShouldRequest({ ...ready, judging: true }), false);
     assert.equal(patternShouldRequest({ ...ready, savedStamp: ready.stamp, savedText: "Уже есть." }), false);
     assert.equal(patternShouldRequest({ ...ready, inFlight: true }), false);
     assert.equal(patternShouldRequest({ ...ready, gaveUp: true }), false);

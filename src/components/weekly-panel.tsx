@@ -209,22 +209,23 @@ export function WeeklyPanel({
     ) {
       return;
     }
-    patternAttempt.current = patternStamp;
+    const stamp = patternStamp;
     const facts = patternFactText;
-    let cancelled = false;
-    void (async () => {
-      const result = await requestBrief(initData as string, facts, patternStamp, locale, "pattern");
-      if (cancelled) return;
-      if (!result.ok || !result.text) {
-        patternGaveUp.add(patternStamp);
-        return;
-      }
-      onSavePattern(key, clipPattern(0, result.text), patternStamp);
-    })();
-    return () => {
-      cancelled = true;
-      if (patternAttempt.current === patternStamp) patternAttempt.current = null;
-    };
+    // Judges land one note at a time. Wait until that burst is quiet, then call once.
+    const timer = window.setTimeout(() => {
+      if (patternAttempt.current === stamp) return;
+      patternAttempt.current = stamp;
+      void (async () => {
+        const result = await requestBrief(initData as string, facts, stamp, locale, "pattern");
+        if (patternAttempt.current !== stamp) return;
+        if (!result.ok || !result.text) {
+          patternGaveUp.add(stamp);
+          return;
+        }
+        onSavePattern(key, clipPattern(0, result.text), stamp);
+      })();
+    }, 600);
+    return () => window.clearTimeout(timer);
   }, [
     agenda.length,
     disabled,
