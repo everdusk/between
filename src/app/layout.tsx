@@ -28,7 +28,7 @@ const unbounded = Unbounded({
 });
 
 /** `/journal` is the browser app. The boot script only looks at the Telegram hash, so this runs before Metrika. */
-const JOURNAL_SURFACE_SCRIPT = `try{var p=location.pathname||"";if(p==="/journal"||p.indexOf("/journal/")===0){document.documentElement.setAttribute("data-between","app");document.documentElement.setAttribute("data-journal","web");var s=document.getElementById("between-surface");if(s)s.textContent=${JSON.stringify(APP_SURFACE_CSS)};}}catch(e){}`;
+const JOURNAL_SURFACE_SCRIPT = `try{var p=location.pathname||"";if(p==="/journal"||p.indexOf("/journal/")===0){document.documentElement.setAttribute("data-between","app");document.documentElement.setAttribute("data-journal","web");var scheme="night";try{var saved=localStorage.getItem("between:scheme");if(saved==="day"||saved==="night")scheme=saved;}catch(e){}document.documentElement.setAttribute("data-scheme",scheme);var s=document.getElementById("between-surface");if(s)s.textContent=${JSON.stringify(APP_SURFACE_CSS)};}}catch(e){}`;
 
 export const metadata: Metadata = landingMetadata;
 

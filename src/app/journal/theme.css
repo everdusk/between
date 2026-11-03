@@ -74,3 +74,159 @@ html[data-journal="web"]:not([data-telegram-theme]) [data-slot="tabs-trigger"][d
   background-clip: text;
   color: transparent;
 }
+
+/* Day palette. Coral is the only standalone accent. No mint. */
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) {
+  color-scheme: light;
+  --background: #f4ede8;
+  --foreground: #1c242f;
+  --card: #ede2dc;
+  --card-foreground: #1c242f;
+  --popover: #faf6f3;
+  --popover-foreground: #1c242f;
+  --primary: #f3544e;
+  --primary-foreground: #faf6f3;
+  --secondary: #e7dbd4;
+  --secondary-foreground: #1c242f;
+  --muted: rgba(28, 36, 47, 0.06);
+  --muted-foreground: rgba(28, 36, 47, 0.62);
+  --accent: rgba(86, 136, 151, 0.16);
+  --accent-foreground: #568897;
+  --destructive: #f3544e;
+  --border: #c9bbb7;
+  --input: rgba(28, 36, 47, 0.06);
+  --ring: #f3544e;
+  --ink: #1c242f;
+  --ink-foreground: #faf6f3;
+  --ink-muted: rgba(250, 246, 243, 0.72);
+  --glass-fill: #ede2dc;
+  --glass-fill-strong: #faf6f3;
+  --glass-border: #c9bbb7;
+  --glass-highlight: rgba(255, 255, 255, 0.7);
+  --glass-shadow: rgba(28, 36, 47, 0.12);
+  --section-header: #568897;
+  --subtitle: rgba(28, 36, 47, 0.62);
+  --accent-text: #568897;
+  --link: #f3544e;
+}
+
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]),
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) body {
+  background-color: #f4ede8 !important;
+  background-image:
+    radial-gradient(closest-side at 8% 0%, rgba(243, 84, 78, 0.22), transparent 74%),
+    radial-gradient(closest-side at 100% 12%, rgba(86, 136, 151, 0.2), transparent 70%) !important;
+  color: #1c242f;
+}
+
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) .atmosphere-blob-a {
+  background: rgba(243, 84, 78, 0.22);
+}
+
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) .atmosphere-blob-b {
+  background: rgba(86, 136, 151, 0.2);
+}
+
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) [data-slot="button"].bg-primary,
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) [data-slot="tabs-trigger"][data-active] {
+  background-image: none;
+  background-color: #f3544e;
+  color: #faf6f3;
+  box-shadow: 0 12px 28px -12px rgba(243, 84, 78, 0.4);
+}
+
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) .brand-words {
+  background-image: none;
+  color: #f3544e;
+  -webkit-text-fill-color: #f3544e;
+}
+
+/* Phone shell stays until the website is wide. Telegram never gets this frame. */
+.journal-side {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-frame {
+    flex-direction: row;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-side {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 18.5rem;
+    flex-shrink: 0;
+    min-height: 0;
+    padding: 1.5rem 1.15rem 1.25rem;
+    border-inline-end: 1px solid var(--border);
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-side-scroll {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-side-account {
+    margin-top: auto;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-shell header,
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-phone-brand,
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-mobile-tools,
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-dock,
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-account-inline {
+    display: none;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-column {
+    max-width: 72rem;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-stage {
+    padding-top: 0.5rem;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-board {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-board > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-gate {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+    column-gap: 2.5rem;
+    align-items: start;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-top: 1.5rem;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-gate-form {
+    position: sticky;
+    top: 0;
+    margin-top: 0;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-gate-jump {
+    display: none;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-preview {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    align-items: start;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-preview > p {
+    grid-column: 1 / -1;
+  }
+}
