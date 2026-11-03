@@ -21,7 +21,7 @@ import {
   recordPaidAnalytics,
 } from "@/lib/analytics";
 import { linkCodeFromStart } from "@/lib/web-account";
-import { claimTelegramLink } from "@/lib/web-account-store";
+import { claimTelegramLink, resolveJournalId } from "@/lib/web-account-store";
 import {
   isLandingStart,
   LANDING_COUNT_KEY,
@@ -200,8 +200,9 @@ async function handlePayment(message: TelegramMessage) {
   const paidUntil = paidUntilForPlan(plan, new Date(), payment.subscription_expiration_date);
 
   if (redisConfigured()) {
-    const current = await loadWeekAccess(userId);
-    await saveWeekAccess(userId, grantWeekPaidUntil(current, paidUntil));
+    const owner = await resolveJournalId(userId);
+    const current = await loadWeekAccess(owner);
+    await saveWeekAccess(owner, grantWeekPaidUntil(current, paidUntil));
   }
   await recordPaidAnalytics(userId, payment.telegram_payment_charge_id);
 
@@ -229,14 +230,15 @@ async function handleVoice(
     return;
   }
 
-  const loaded = await loadWeekAccess(userId);
+  const owner = await resolveJournalId(userId);
+  const loaded = await loadWeekAccess(owner);
   const resolved = accessForUser(
     loaded,
     { id: userId, username: message.from?.username },
     process.env.WEEK_EXEMPT_USER_IDS,
     new Date(),
   );
-  if (resolved.changed) await saveWeekAccess(userId, resolved.record);
+  if (resolved.changed) await saveWeekAccess(owner, resolved.record);
   const premium = resolved.view.status === "paid";
   if (!premium) {
     await say(translate(reply, "botVoicePremium"));
@@ -355,7 +357,7 @@ export async function POST(req: Request) {
   if (isBotCommand(text, "start") || isBotCommand(text, "help")) {
     const linkCode = linkCodeFromStart(startPayload(text) ?? "");
     if (linkCode && userId) {
-      const linked = await claimTelegramLink(linkCode, userId);
+      const linked = await claimTelegramLink(linkCode, userId, message.from?.username);
       const key = linked === "ok" ? "botLinkOk" : linked === "taken" ? "botLinkTaken" : "botLinkBad";
       await telegramRequest("sendMessage", {
         chat_id: chatId,
@@ -393,7 +395,8 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({ ok: true });
     }
-    const loaded = await loadWeekAccess(userId);
+    const owner = await resolveJournalId(userId);
+    const loaded = await loadWeekAccess(owner);
     const resolved = accessForUser(
       loaded,
       { id: userId, username: message.from?.username },
@@ -401,7 +404,7 @@ export async function POST(req: Request) {
       new Date(),
       starPriceFromEnv(process.env.WEEK_STAR_PRICE),
     );
-    if (resolved.changed) await saveWeekAccess(userId, resolved.record);
+    if (resolved.changed) await saveWeekAccess(owner, resolved.record);
     await telegramRequest("sendMessage", {
       chat_id: chatId,
       text: formatPremiumStatus(reply, resolved.view),

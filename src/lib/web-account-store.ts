@@ -4,13 +4,17 @@ import {
   getUserTimezone,
   loadUserLocale,
   loadUserStore,
+  loadWeekAccess,
   rememberUser,
   saveUserLocale,
   saveUserStore,
+  saveWeekAccess,
   setUserTimezone,
 } from "./redis";
 import type { LocaleId } from "./i18n";
 import type { OauthProvider } from "./oauth";
+import { OTP_TTL_MS, otpMatches } from "./otp-mail";
+import { absorbWeekPremium } from "./week-access";
 import {
   hashPassword,
   journalStorageId,
@@ -18,6 +22,7 @@ import {
   newLinkCode,
   normalizeEmail,
   passwordMatches,
+  reviewLoginFromEnv,
   webStorageId,
   LINK_TTL_SECONDS,
 } from "./web-account";
@@ -30,6 +35,7 @@ export type AccountRecord = {
   salt: string;
   hash: string;
   telegramUserId: number | null;
+  telegramUsername: string | null;
   createdAt: string;
   providers: AccountProviders;
 };
@@ -54,6 +60,10 @@ function telegramKey(userId: number): string {
 
 function linkKey(code: string): string {
   return `between:link:${code}`;
+}
+
+function otpKey(email: string): string {
+  return `between:otp:${email}`;
 }
 
 function oauthKey(provider: OauthProvider, subject: string): string {
@@ -82,6 +92,10 @@ function asAccount(raw: unknown): AccountRecord | null {
     salt: row.salt,
     hash: row.hash,
     telegramUserId: typeof row.telegramUserId === "number" ? row.telegramUserId : null,
+    telegramUsername:
+      typeof row.telegramUsername === "string" && row.telegramUsername.trim()
+        ? row.telegramUsername.trim().replace(/^@/, "")
+        : null,
     createdAt: typeof row.createdAt === "string" ? row.createdAt : "",
     providers: readProviders((row as { providers?: unknown }).providers),
   };
@@ -137,11 +151,93 @@ export async function createAccount(
     salt: passwordRecord.salt,
     hash: passwordRecord.hash,
     telegramUserId: null,
+    telegramUsername: null,
     createdAt: new Date().toISOString(),
     providers: {},
   };
   await redis.set(accountKey(id), account);
   return account;
+}
+
+const OTP_RESEND_MS = 60_000;
+const OTP_ATTEMPTS = 5;
+
+type OtpRow = { hash: string; attempts: number; sentAt: number };
+
+function asOtp(raw: unknown): OtpRow | null {
+  const value = typeof raw === "string" ? safeJson(raw) : raw;
+  if (!value || typeof value !== "object") return null;
+  const row = value as Partial<OtpRow>;
+  if (typeof row.hash !== "string" || typeof row.attempts !== "number" || typeof row.sentAt !== "number") {
+    return null;
+  }
+  return { hash: row.hash, attempts: row.attempts, sentAt: row.sentAt };
+}
+
+/** Open the journal for this email, creating it when the person is new. */
+export async function openAccountByEmail(email: string): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const existingId = await redis.get<string>(emailKey(email));
+  if (typeof existingId === "string") {
+    const existing = await loadAccount(existingId);
+    if (existing) return existing;
+  }
+  const id = newAccountId();
+  const claimed = await redis.set(emailKey(email), id, { nx: true });
+  if (claimed !== "OK") {
+    const winner = await redis.get<string>(emailKey(email));
+    return typeof winner === "string" ? loadAccount(winner) : null;
+  }
+  const account: AccountRecord = {
+    id,
+    email,
+    salt: "",
+    hash: "",
+    telegramUserId: null,
+    telegramUsername: null,
+    createdAt: new Date().toISOString(),
+    providers: {},
+  };
+  await redis.set(accountKey(id), account);
+  return account;
+}
+
+/** "soon" while the last code is less than a minute old. */
+export async function otpSendAllowed(email: string, now = Date.now()): Promise<"ok" | "soon" | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const row = asOtp(await redis.get<unknown>(otpKey(email)));
+  if (row && now - row.sentAt < OTP_RESEND_MS) return "soon";
+  return "ok";
+}
+
+export async function saveOtp(email: string, hash: string, now = Date.now()): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return false;
+  const row: OtpRow = { hash, attempts: 0, sentAt: now };
+  await redis.set(otpKey(email), row, { ex: Math.ceil(OTP_TTL_MS / 1000) });
+  return true;
+}
+
+export async function consumeOtp(
+  email: string,
+  code: string,
+  secret: string,
+): Promise<"ok" | "bad" | "missing" | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const key = otpKey(email);
+  const row = asOtp(await redis.get<unknown>(key));
+  if (!row) return "missing";
+  if (!otpMatches(code, secret, row.hash)) {
+    const attempts = row.attempts + 1;
+    if (attempts >= OTP_ATTEMPTS) await redis.del(key);
+    else await redis.set(key, { ...row, attempts }, { ex: Math.ceil(OTP_TTL_MS / 1000) });
+    return "bad";
+  }
+  await redis.del(key);
+  return "ok";
 }
 
 export async function loginAccount(
@@ -158,6 +254,33 @@ export async function loginAccount(
   return ok ? account : null;
 }
 
+/** Review credentials open or reset that one account. Everyone else uses their own password. */
+export async function loginForSite(email: string, password: string): Promise<AccountRecord | null> {
+  const review = reviewLoginFromEnv();
+  if (review && email === review.email && password === review.password) {
+    return ensureReviewAccount(email, password);
+  }
+  return loginAccount(email, password);
+}
+
+async function ensureReviewAccount(email: string, password: string): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const existingId = await redis.get<string>(emailKey(email));
+  if (typeof existingId === "string") {
+    const account = await loadAccount(existingId);
+    if (!account) return null;
+    if (await passwordMatches(password, account.salt, account.hash)) return account;
+    const passwordRecord = await hashPassword(password);
+    account.salt = passwordRecord.salt;
+    account.hash = passwordRecord.hash;
+    await redis.set(accountKey(account.id), account);
+    return account;
+  }
+  const created = await createAccount(email, password);
+  return created && created !== "taken" ? created : null;
+}
+
 export async function issueBotLink(accountId: string): Promise<string | null> {
   const redis = getRedis();
   if (!redis) return null;
@@ -169,7 +292,11 @@ export async function issueBotLink(accountId: string): Promise<string | null> {
 export type LinkResult = "ok" | "bad" | "taken";
 
 /** Bind a Telegram user to the account that asked for this code. One journal after that. */
-export async function claimTelegramLink(code: string, telegramUserId: number): Promise<LinkResult> {
+export async function claimTelegramLink(
+  code: string,
+  telegramUserId: number,
+  username?: string,
+): Promise<LinkResult> {
   const redis = getRedis();
   if (!redis) return "bad";
   const accountId = await redis.get<string>(linkKey(code.toLowerCase()));
@@ -184,6 +311,15 @@ export async function claimTelegramLink(code: string, telegramUserId: number): P
   if (existing && existing !== accountId) return "taken";
 
   const webId = webStorageId(accountId);
+  if (account.telegramUserId == null) {
+    const telegramAccess = await loadWeekAccess(telegramUserId);
+    const absorbed = absorbWeekPremium(await loadWeekAccess(webId), telegramAccess, new Date());
+    await saveWeekAccess(webId, absorbed.web);
+    if (absorbed.telegram.paidUntil !== telegramAccess.paidUntil) {
+      await saveWeekAccess(telegramUserId, absorbed.telegram);
+    }
+  }
+
   const merged = mergeStores(
     await loadUserStore(webId),
     await loadUserStore(telegramUserId),
@@ -202,6 +338,8 @@ export async function claimTelegramLink(code: string, telegramUserId: number): P
   }
 
   account.telegramUserId = telegramUserId;
+  const handle = username?.trim().replace(/^@/, "");
+  if (handle) account.telegramUsername = handle;
   await redis.set(accountKey(accountId), account);
   await redis.set(telegramKey(telegramUserId), accountId);
   await rememberUser(telegramUserId);
@@ -263,6 +401,7 @@ export async function upsertOauthAccount(input: {
     salt: "",
     hash: "",
     telegramUserId: null,
+    telegramUsername: null,
     createdAt: new Date().toISOString(),
     providers: { [input.provider]: input.providerUserId },
   };

@@ -75,11 +75,19 @@ export function surfaceFromLocation(
 
 export const APP_SURFACE_CSS = ".between-landing{display:none!important}";
 
+/** Terms and privacy are public pages, not the Mini App and not the landing. */
+export function isLegalPath(pathname: string): boolean {
+  const path = pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  return path === "/terms" || path === "/privacy";
+}
+
+export const LEGAL_SURFACE_CSS = `${APP_SURFACE_CSS}.splash-screen{display:none!important}`;
+
 export const WEB_SURFACE_CSS = [
   "html[data-splash] .splash-screen{display:none!important}",
   "html[data-splash] .app-root,.app-root{display:none!important}",
   ".between-landing{display:block!important}",
-  "html[data-between=web],html[data-between=web] body{background-color:#0c1412!important;background-image:none!important;color-scheme:dark}",
+  "html[data-between=web],html[data-between=web] body{background-color:#0c1412!important;background-image:none!important;color-scheme:only dark}",
 ].join("");
 
 export const SURFACE_BOOT_SCRIPT = `try{var stored=null;try{stored=sessionStorage.getItem("__telegram__initParams")}catch(e){}var surface=(${surfaceFromLocation.toString()})(location.hash||"",location.search||"",stored);var css=surface==="app"?"${APP_SURFACE_CSS}":"${WEB_SURFACE_CSS}";var style=document.getElementById("between-surface");if(!style){style=document.createElement("style");style.id="between-surface";document.head.appendChild(style);}style.textContent=css;document.documentElement.setAttribute("data-between",surface);}catch(e){}`;

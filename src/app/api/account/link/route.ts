@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { accountReady, accountUnavailable } from "@/lib/account-http";
+import { countryFromHeaders, telegramNeedsVpn } from "@/lib/request-country";
 import { issueBotLink, loadAccount } from "@/lib/web-account-store";
 import { botLinkUrl, readSession, sessionSecret, sessionTokenFromRequest } from "@/lib/web-account";
 
@@ -15,5 +16,11 @@ export async function POST(req: Request) {
   }
   const code = await issueBotLink(account.id);
   if (!code) return accountUnavailable();
-  return NextResponse.json({ ok: true, linked: false, url: botLinkUrl(code) });
+  const country = countryFromHeaders((name) => req.headers.get(name));
+  return NextResponse.json({
+    ok: true,
+    linked: false,
+    url: botLinkUrl(code),
+    vpn: telegramNeedsVpn(country),
+  });
 }

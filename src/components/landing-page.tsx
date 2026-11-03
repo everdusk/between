@@ -1,6 +1,7 @@
 "use client";
 
 import { LANDING_BOT_URL, LANDING_START_PARAM } from "@/lib/landing";
+import { LEGAL_INN, LEGAL_NAME } from "@/lib/legal";
 import { feelingFill } from "@/lib/spectrum";
 import type { Feeling } from "@/lib/types";
 import type { MouseEvent, ReactNode } from "react";
@@ -62,7 +63,7 @@ const VIDEO_HTML = `<video class="bl-video" autoplay muted loop playsinline prel
 
 const CSS = `
 @layer components{
-.between-landing{--bl-bg:#07090d;--bl-fg:#f3f6f4;--bl-muted:#a9b4ae;--bl-dim:#74827b;--bl-teal:#5ee7c5;--bl-line:rgba(255,255,255,.1);background:#07090d;color:var(--bl-fg);color-scheme:dark;-webkit-font-smoothing:antialiased}
+.between-landing{--bl-bg:#07090d;--bl-fg:#f3f6f4;--bl-muted:#a9b4ae;--bl-dim:#74827b;--bl-teal:#5ee7c5;--bl-line:rgba(255,255,255,.1);background:#07090d;color:var(--bl-fg);color-scheme:only dark;-webkit-font-smoothing:antialiased}
 .between-landing ::selection{background:rgba(94,231,197,.28)}
 .bl-wash{position:absolute;inset:0 0 auto 0;height:58rem;pointer-events:none;background:
   radial-gradient(38rem 30rem at 78% 22%,rgba(36,150,112,.55),transparent 62%),
@@ -330,10 +331,20 @@ export function LandingPage() {
           </section>
         </main>
 
-        <footer className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-3 px-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:px-8">
-          <p className="text-sm" style={{ color: "var(--bl-dim)" }}>
-            Between — дневник между сессиями терапии
-          </p>
+        <footer className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-3 px-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-end sm:px-8">
+          <div>
+            <p className="text-sm" style={{ color: "var(--bl-dim)" }}>
+              Between — дневник между сессиями терапии
+            </p>
+            <p className="mt-2 text-sm" style={{ color: "var(--bl-dim)" }}>
+              <a href="/terms">Условия использования</a>
+              {" · "}
+              <a href="/privacy">Политика конфиденциальности</a>
+            </p>
+            <p className="mt-1 text-sm" style={{ color: "var(--bl-dim)" }}>
+              {LEGAL_NAME}, самозанятая · ИНН {LEGAL_INN}
+            </p>
+          </div>
           <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM} className="text-sm" style={{ color: "var(--bl-muted)" }}>
             @BetweenJournalBot
           </a>

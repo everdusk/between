@@ -56,6 +56,8 @@ export const landingMetadata: Metadata = {
     description: LANDING_DESCRIPTION,
     images: [LANDING_OG_IMAGE],
   },
+  // The journal has its own languages. Chrome's translate bar otherwise paints a faint "Google" strip on the dark page.
+  other: { google: "notranslate" },
 };
 
 /** Structured data for the public page. The Mini App is the same document, so the graph stays about the site. */

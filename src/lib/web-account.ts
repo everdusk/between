@@ -22,6 +22,16 @@ export function normalizeEmail(value: unknown): string | null {
   return email;
 }
 
+/** Site login for a reviewer. Empty or a short password means the door stays shut. */
+export function reviewLoginFromEnv(
+  env: Record<string, string | undefined> = process.env,
+): { email: string; password: string } | null {
+  const email = normalizeEmail(env.REVIEW_EMAIL);
+  const password = env.REVIEW_PASSWORD ?? "";
+  if (!email || passwordProblem(password)) return null;
+  return { email, password };
+}
+
 export function passwordProblem(value: unknown): "short" | "long" | null {
   if (typeof value !== "string") return "short";
   if (value.length < 8) return "short";

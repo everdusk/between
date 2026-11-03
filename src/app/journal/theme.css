@@ -9,7 +9,7 @@
 }
 
 html[data-journal="web"]:not([data-telegram-theme]) {
-  color-scheme: dark;
+  color-scheme: only dark;
   --background: #060b09;
   --foreground: #f2f7f4;
   --card: rgba(255, 255, 255, 0.09);
@@ -77,7 +77,7 @@ html[data-journal="web"]:not([data-telegram-theme]) [data-slot="tabs-trigger"][d
 
 /* Day palette. Coral is the only standalone accent. No mint. */
 html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) {
-  color-scheme: light;
+  color-scheme: only light;
   --background: #f4ede8;
   --foreground: #1c242f;
   --card: #ede2dc;
