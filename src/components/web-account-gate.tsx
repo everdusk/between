@@ -123,8 +123,7 @@ function JournalPreview() {
 
 export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccount) => void }) {
   const { t } = useI18n();
-  const [step, setStep] = useState<"email" | "code">("email");
-  const [review, setReview] = useState(false);
+  const [step, setStep] = useState<"email" | "code" | "password">("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -134,7 +133,6 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   const formRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get("review") === "1") setReview(true);
     const code = new URLSearchParams(window.location.search).get("oauth");
     if (code === "off") setError(t("webOAuthOff"));
     else if (code === "taken") setError(t("webOAuthTaken"));
@@ -203,7 +201,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
     }
   }
 
-  async function reviewLogin(event: FormEvent) {
+  async function passwordLogin(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     setError(null);
@@ -254,50 +252,11 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
       </section>
 
       <section ref={formRef} className="journal-gate-form glass mt-6 scroll-mt-4 rounded-[22px] px-5 py-6 sm:px-6">
-        <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">
-          {review ? t("webReviewTitle") : t("webFormCreate")}
-        </h2>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          {review ? t("webReviewLead") : t("webFormLead")}
-        </p>
+        <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{t("webFormCreate")}</h2>
+        {step === "password" ? null : (
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t("webFormLead")}</p>
+        )}
 
-        {review ? (
-          <form className="mt-5 space-y-4" onSubmit={reviewLogin}>
-            <div className="space-y-2">
-              <Label htmlFor="web-review-login">{t("webReviewLogin")}</Label>
-              <Input
-                id="web-review-login"
-                type="email"
-                autoComplete="username"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="web-password">{t("webPassword")}</Label>
-              <Input
-                id="web-password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-            </div>
-            {error ? (
-              <p className="text-sm text-destructive" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <Button type="submit" className="w-full" size="lg" disabled={busy}>
-              {t("webEnter")}
-            </Button>
-          </form>
-        ) : null}
-
-        {review ? null : (
-        <>
         <div className="mt-5">
           <p className="mb-2 text-[0.6875rem] font-extrabold tracking-[0.14em] text-muted-foreground uppercase">
             {t("webOAuth")}
@@ -340,6 +299,61 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
             <Button type="submit" className="w-full" size="lg" disabled={busy}>
               {t("webSendCode")}
             </Button>
+            <button
+              type="button"
+              className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
+              onClick={() => {
+                setStep("password");
+                setError(null);
+                setNote(null);
+              }}
+            >
+              {t("webUsePassword")}
+            </button>
+          </form>
+        ) : step === "password" ? (
+          <form className="space-y-4" onSubmit={passwordLogin}>
+            <div className="space-y-2">
+              <Label htmlFor="web-email">{t("webEmail")}</Label>
+              <Input
+                id="web-email"
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="web-password">{t("webPassword")}</Label>
+              <Input
+                id="web-password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+              />
+            </div>
+            {error ? (
+              <p className="text-sm text-destructive" role="alert">
+                {error}
+              </p>
+            ) : null}
+            <Button type="submit" className="w-full" size="lg" disabled={busy}>
+              {t("webEnter")}
+            </Button>
+            <button
+              type="button"
+              className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
+              onClick={() => {
+                setStep("email");
+                setPassword("");
+                setError(null);
+              }}
+            >
+              {t("webUseCode")}
+            </button>
           </form>
         ) : (
           <form className="space-y-4" onSubmit={verifyCode}>
@@ -378,8 +392,6 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
               {t("webOtherEmail")}
             </button>
           </form>
-        )}
-        </>
         )}
       </section>
     </main>
