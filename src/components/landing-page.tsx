@@ -81,6 +81,10 @@ const CSS = `
 .bl-cta:hover{filter:saturate(1.08) brightness(1.04)}
 .bl-cta:active,.bl-ghost:active{transform:scale(.98)}
 .bl-cta-sm{height:2.3rem;padding:0 .95rem;font-size:.84rem}
+.bl-cta-qr{height:auto;justify-content:flex-start;gap:.85rem;padding:.42rem 1.2rem .42rem .42rem;border-radius:1.55rem}
+.bl-cta-qr:hover{filter:none}
+.bl-qr{display:block;width:10.5rem;height:10.5rem;flex:none;border-radius:1.2rem;background:#fff;padding:.5rem}
+.bl-qr svg{display:block;width:100%;height:100%}
 .bl-ghost{display:inline-flex;align-items:center;justify-content:center;height:2.85rem;padding:0 1.15rem;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#e7eeea;font-weight:500;font-size:.95rem;white-space:nowrap}
 .bl-ghost:hover{background:rgba(255,255,255,.08)}
 .bl-cta:focus-visible,.bl-ghost:focus-visible,.bl-bar a:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(94,231,197,.28)}
@@ -100,6 +104,8 @@ const CSS = `
   .bl-bar{gap:.55rem;padding-left:.7rem}
   .bl-cta,.bl-ghost{width:100%}
   .bl-cta-sm{width:auto;height:2.15rem;padding:0 .75rem;font-size:.78rem}
+  .bl-cta-qr{flex-direction:column;align-items:center;padding:.7rem .9rem .95rem;text-align:center}
+  .bl-qr{width:min(16rem,72vw);height:auto;aspect-ratio:1}
   .bl-kicker{letter-spacing:.12em}
   .bl-close{padding-left:1.15rem;padding-right:1.15rem}
 }
@@ -119,11 +125,27 @@ const CSS = `
 }
 `;
 
-function OpenLink({ children, className }: { children: ReactNode; className: string }) {
+const BOT_QR_PATH = "M4 4.5h7m1 0h1m5 0h5m1 0h2m1 0h1m2 0h2m1 0h1m1 0h1m2 0h7M4 5.5h1m5 0h1m1 0h1m1 0h1m1 0h1m5 0h4m5 0h1m2 0h1m1 0h1m1 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m2 0h2m1 0h1m1 0h1m1 0h2m1 0h1m1 0h2m3 0h1m1 0h1m1 0h1m3 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m1 0h1m2 0h1m3 0h1m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h4m1 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m1 0h2m1 0h2m1 0h1m1 0h1m1 0h1m2 0h1m1 0h3m1 0h2m1 0h1m3 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h1m1 0h1m3 0h1m1 0h3m1 0h1m2 0h3m1 0h1m2 0h2m2 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M13 11.5h1m3 0h1m1 0h1m1 0h4m2 0h3m2 0h2m2 0h1M7 12.5h1m2 0h1m3 0h1m2 0h1m1 0h4m1 0h3m3 0h1m1 0h1m1 0h1m1 0h1m2 0h3m1 0h2M4 13.5h4m1 0h1m7 0h2m1 0h2m1 0h1m7 0h3m2 0h1m1 0h1m2 0h4M5 14.5h1m4 0h5m1 0h1m1 0h1m2 0h4m4 0h2m1 0h4m1 0h7M5 15.5h1m2 0h2m3 0h1m3 0h1m2 0h5m3 0h1m3 0h1m4 0h2m3 0h2M6 16.5h1m1 0h1m1 0h3m1 0h1m1 0h3m1 0h3m2 0h4m2 0h3m1 0h1m1 0h1m3 0h1m1 0h2M4 17.5h1m2 0h1m1 0h1m2 0h1m1 0h1m1 0h2m1 0h2m3 0h1m2 0h5m1 0h1m3 0h2m2 0h1M6 18.5h1m3 0h1m1 0h1m5 0h1m4 0h3m1 0h8m1 0h1m1 0h1m1 0h1m3 0h1M4 19.5h3m2 0h1m1 0h1m1 0h2m1 0h1m1 0h1m2 0h3m3 0h4m1 0h2m1 0h1m2 0h1m4 0h1M4 20.5h2m4 0h4m3 0h4m4 0h1m2 0h1m1 0h2m1 0h1m1 0h2m2 0h1m3 0h1M7 21.5h1m4 0h2m5 0h2m4 0h1m1 0h2m3 0h1m1 0h1m3 0h2m4 0h1M4 22.5h1m4 0h2m1 0h1m2 0h2m3 0h2m1 0h1m8 0h1m1 0h1m2 0h1m2 0h2m1 0h2M5 23.5h1m1 0h2m4 0h4m2 0h1m1 0h1m2 0h3m1 0h4m1 0h2m1 0h2m1 0h1m1 0h1m2 0h1M4 24.5h1m1 0h3m1 0h1m2 0h1m7 0h1m1 0h1m1 0h2m4 0h14M5 25.5h4m5 0h1m6 0h1m1 0h5m3 0h2m1 0h1m1 0h2m1 0h1m1 0h4M5 26.5h2m3 0h2m1 0h1m4 0h1m2 0h1m5 0h2m1 0h1m2 0h1m1 0h1m3 0h1m2 0h2M4 27.5h1m2 0h3m1 0h1m1 0h1m2 0h2m3 0h1m7 0h4m4 0h3m2 0h2M5 28.5h3m2 0h3m1 0h2m3 0h1m1 0h1m1 0h3m1 0h1m1 0h1m1 0h3m1 0h4m5 0h1M5 29.5h1m1 0h1m1 0h1m2 0h1m1 0h2m4 0h1m3 0h1m1 0h2m2 0h1m1 0h1m2 0h1m5 0h1m1 0h1M4 30.5h1m1 0h1m1 0h1m1 0h1m2 0h2m2 0h2m3 0h5m1 0h1m7 0h1m1 0h3m2 0h2M6 31.5h1m4 0h1m1 0h3m2 0h1m2 0h1m3 0h1m3 0h5m2 0h1m6 0h2M5 32.5h1m4 0h2m5 0h6m1 0h1m2 0h1m1 0h2m1 0h2m2 0h1m6 0h2M5 33.5h1m1 0h1m1 0h1m2 0h1m1 0h2m1 0h3m1 0h1m2 0h2m1 0h3m1 0h1m3 0h1m3 0h1m2 0h1m1 0h1M4 34.5h1m1 0h6m3 0h2m2 0h1m2 0h2m4 0h2m4 0h3m2 0h3m1 0h2M7 35.5h1m3 0h2m2 0h1m1 0h3m2 0h1m2 0h1m1 0h1m1 0h5m1 0h3m3 0h1M4 36.5h1m2 0h2m1 0h1m2 0h2m2 0h1m1 0h1m1 0h5m1 0h2m3 0h2m1 0h6m1 0h2M12 37.5h1m3 0h1m1 0h8m2 0h2m2 0h1m1 0h1m1 0h1m3 0h2m1 0h2M4 38.5h7m4 0h1m4 0h3m1 0h1m3 0h1m1 0h1m1 0h2m2 0h1m1 0h1m1 0h1m2 0h1M4 39.5h1m5 0h1m2 0h1m3 0h1m2 0h1m5 0h3m3 0h2m1 0h2m3 0h1m1 0h3M4 40.5h1m1 0h3m1 0h1m2 0h2m2 0h1m1 0h1m1 0h2m3 0h1m1 0h1m2 0h2m3 0h6m2 0h1M4 41.5h1m1 0h3m1 0h1m1 0h6m1 0h1m1 0h3m1 0h2m1 0h2m7 0h2m1 0h3M4 42.5h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h4m4 0h3m2 0h1m2 0h1m1 0h1m4 0h1m1 0h1m1 0h1M4 43.5h1m5 0h1m6 0h2m1 0h1m1 0h2m3 0h5m1 0h7m3 0h1M4 44.5h7m3 0h3m3 0h2m2 0h1m2 0h2m1 0h1m2 0h1m2 0h1m1 0h4m1 0h1";
+
+function QrMark() {
   return (
-    <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM} className={className}>
-      {children}
-      <span aria-hidden>→</span>
+    <span className="bl-qr" aria-hidden>
+      <svg viewBox="0 0 49 49" shapeRendering="crispEdges">
+        <path fill="#ffffff" d="M0 0h49v49H0z" />
+        <path stroke="#000000" strokeWidth="1" d={BOT_QR_PATH} />
+      </svg>
+    </span>
+  );
+}
+
+function OpenLink({ children, className, qr = false }: { children: ReactNode; className: string; qr?: boolean }) {
+  return (
+    <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM} className={qr ? `${className} bl-cta-qr` : className}>
+      {qr ? <QrMark /> : null}
+      <span>
+        {children}
+        <span aria-hidden> →</span>
+      </span>
     </a>
   );
 }
@@ -224,7 +246,7 @@ export function LandingPage() {
                 собрано.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <OpenLink className="bl-cta">Открыть Between</OpenLink>
+                <OpenLink className="bl-cta" qr>Открыть Between</OpenLink>
                 <a href="#kak" onClick={(event) => jump(event, "kak")} className="bl-ghost">
                   Как это работает
                 </a>
@@ -323,7 +345,7 @@ export function LandingPage() {
               Именно там Between и живёт. Откройте бота и напишите первую запись — она займёт минуту. Дальше он сам.
             </p>
             <div className="mt-8">
-              <OpenLink className="bl-cta">Открыть в Telegram</OpenLink>
+              <OpenLink className="bl-cta" qr>Открыть в Telegram</OpenLink>
             </div>
             <p className="mt-4 text-sm" style={{ color: "var(--bl-dim)" }}>
               Работает везде, где есть Telegram: телефон, планшет, компьютер.
