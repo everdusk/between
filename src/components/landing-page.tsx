@@ -1,7 +1,7 @@
 "use client";
 
 import { LANDING_BOT_URL, LANDING_START_PARAM } from "@/lib/landing";
-import { LEGAL_INN, LEGAL_NAME } from "@/lib/legal";
+import { LEGAL_INN } from "@/lib/legal";
 import { feelingFill } from "@/lib/spectrum";
 import type { Feeling } from "@/lib/types";
 import type { MouseEvent, ReactNode } from "react";
@@ -373,7 +373,7 @@ export function LandingPage() {
               <a href="/privacy">Политика конфиденциальности</a>
             </p>
             <p className="mt-1 text-sm" style={{ color: "var(--bl-dim)" }}>
-              {LEGAL_NAME}, самозанятая · ИНН {LEGAL_INN}
+              ИНН {LEGAL_INN}
             </p>
           </div>
           <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM} className="text-sm" style={{ color: "var(--bl-muted)" }}>
