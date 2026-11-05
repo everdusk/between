@@ -104,8 +104,8 @@ const CSS = `
   .bl-bar{gap:.55rem;padding-left:.7rem}
   .bl-cta,.bl-ghost{width:100%}
   .bl-cta-sm{width:auto;height:2.15rem;padding:0 .75rem;font-size:.78rem}
-  .bl-cta-qr{flex-direction:column;align-items:center;padding:.7rem .9rem .95rem;text-align:center}
-  .bl-qr{width:min(16rem,72vw);height:auto;aspect-ratio:1}
+  .bl-qr{display:none}
+  .bl-cta-qr{height:2.85rem;justify-content:center;gap:.4rem;padding:0 1.15rem;border-radius:999px}
   .bl-kicker{letter-spacing:.12em}
   .bl-close{padding-left:1.15rem;padding-right:1.15rem}
 }
