@@ -81,9 +81,9 @@ const CSS = `
 .bl-cta:hover{filter:saturate(1.08) brightness(1.04)}
 .bl-cta:active,.bl-ghost:active{transform:scale(.98)}
 .bl-cta-sm{height:2.3rem;padding:0 .95rem;font-size:.84rem}
-.bl-qrcard{display:inline-flex;align-items:center;gap:.9rem;padding:.5rem .95rem .5rem .5rem;border-radius:1.25rem;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.035);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:#c9d4ce;font-size:.8rem;line-height:1.4;text-align:left;white-space:nowrap}
-.bl-qrcard b{display:block;color:#e7eeea;font-weight:600}
-.bl-qr{display:block;width:6.75rem;height:6.75rem;flex:none;border-radius:.9rem;background:#f2f6f3;padding:.4rem}
+.bl-qrcard{display:inline-flex;align-items:center;gap:.7rem;padding:.4rem .85rem .4rem .4rem;border-radius:1.1rem;border:1px solid rgba(94,231,197,.22);background:rgba(94,231,197,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:#c9d4ce;font-size:.78rem;line-height:1.35;text-align:left;white-space:nowrap}
+.bl-qrcard b{display:block;color:#5ee7c5;font-weight:600}
+.bl-qr{display:block;width:5.15rem;height:5.15rem;flex:none;border-radius:.75rem;background:#c8f8c4;padding:.28rem}
 .bl-qr svg{display:block;width:100%;height:100%}
 .bl-ghost{display:inline-flex;align-items:center;justify-content:center;height:2.85rem;padding:0 1.15rem;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#e7eeea;font-weight:500;font-size:.95rem;white-space:nowrap}
 .bl-ghost:hover{background:rgba(255,255,255,.08)}
@@ -132,8 +132,8 @@ function QrCard() {
     <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM} className="bl-qrcard">
       <span className="bl-qr" aria-hidden>
         <svg viewBox="0 0 49 49" shapeRendering="crispEdges">
-          <path fill="#f2f6f3" d="M0 0h49v49H0z" />
-          <path stroke="#0a1412" strokeWidth="1" d={BOT_QR_PATH} />
+          <path fill="#c8f8c4" d="M0 0h49v49H0z" />
+          <path stroke="#062018" strokeWidth="1" d={BOT_QR_PATH} />
         </svg>
       </span>
       <span>
