@@ -33,7 +33,6 @@ import {
   maxAudioName,
   maxAudioUrl,
   maxLocaleCode,
-  maxLoginKeyboard,
   maxOpenKeyboard,
   maxText,
   maxToken,
@@ -83,14 +82,15 @@ async function say(userId: number, text: string, keyboard?: MaxKeyboard) {
 }
 
 export async function GET() {
-  const subscribed = maxToken() ? await ensureMaxSubscription() : false;
+  const subscription = maxToken() ? await ensureMaxSubscription() : { ok: false, reason: "no_token" };
   return NextResponse.json({
     ok: true,
     service: "between-max-webhook",
     redis: redisConfigured(),
     botToken: Boolean(maxToken()),
     username: Boolean(process.env.MAX_BOT_USERNAME?.trim()),
-    subscribed,
+    subscribed: subscription.ok,
+    subscription: subscription.reason,
   });
 }
 
@@ -202,7 +202,8 @@ async function handleStart(
   await trackServerEvent({ userId, event: "visit", messenger: "max" });
   const loginToken = loginTokenFromStart(payload);
   if (loginToken) {
-    await say(userId, translate(reply, "botLoginAsk"), maxLoginKeyboard(loginToken, reply));
+    const account = await finishMaxLogin(loginToken, userId, username);
+    await say(userId, translate(reply, account ? "botLoginOk" : "botLinkBad"), keyboard);
     return;
   }
   const linkCode = linkCodeFromStart(payload);

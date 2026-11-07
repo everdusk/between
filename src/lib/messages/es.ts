@@ -93,7 +93,7 @@ export const es: Catalog = {
   webMaxOff:
     "El bot de MAX aún no está conectado.",
   webMaxLogin: "MAX",
-  webMaxLoginWait: "Abran MAX y pulsen Entrar en el chat. Esta pantalla entra sola.",
+  webMaxLoginWait: "Abran MAX y arranquen el bot. Esta pantalla entra sola.",
   webMaxLoginFail: "MAX no confirmó el acceso. Pulsen el botón otra vez.",
   webLogout: "Salir",
   webServer: "El servidor aún no está listo.",

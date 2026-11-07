@@ -93,7 +93,7 @@ export const en: Catalog = {
   webMaxOff:
     "The MAX bot is not connected yet.",
   webMaxLogin: "MAX",
-  webMaxLoginWait: "Open MAX and press Sign in in the chat. This screen signs in by itself.",
+  webMaxLoginWait: "Open MAX and start the bot. This screen signs in on its own.",
   webMaxLoginFail: "MAX did not confirm the sign-in. Press the button again.",
   webLogout: "Sign out",
   webServer: "The server is not ready yet.",

@@ -91,7 +91,7 @@ export const ru = {
   webMaxOff:
     "Бот в MAX ещё не подключён.",
   webMaxLogin: "MAX",
-  webMaxLoginWait: "Откройте MAX и в чате нажмите «Войти». Этот экран войдёт сам.",
+  webMaxLoginWait: "Откройте MAX и запустите бота. Этот экран войдёт сам.",
   webMaxLoginFail: "MAX не подтвердил вход. Нажмите кнопку ещё раз.",
   webLogout: "Выйти",
   webServer: "Сервер ещё не готов.",

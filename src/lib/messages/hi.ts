@@ -93,7 +93,7 @@ export const hi: Catalog = {
   webMaxOff:
     "MAX बॉट अभी जुड़ा नहीं है।",
   webMaxLogin: "MAX",
-  webMaxLoginWait: "MAX खोलें और चैट में «आएँ» दबाएँ। यह स्क्रीन अपने आप प्रवेश कर लेगी।",
+  webMaxLoginWait: "MAX खोलें और बॉट शुरू करें। यह स्क्रीन खुद प्रवेश कर लेगी।",
   webMaxLoginFail: "MAX ने प्रवेश की पुष्टि नहीं की। बटन फिर दबाएँ।",
   webLogout: "बाहर",
   webServer: "सर्वर अभी तैयार नहीं है।",
