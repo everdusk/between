@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { LOCALES } from "./i18n";
-import { isLegalPath } from "./landing";
+import { isLegalPath, isQuietPath } from "./landing";
 import { LEGAL_INN, LEGAL_NAME, legalDocument } from "./legal";
 import { translate } from "./messages";
 
@@ -35,5 +35,7 @@ describe("legal documents", () => {
     assert.equal(isLegalPath("/terms/"), true);
     assert.equal(isLegalPath("/privacy"), true);
     assert.equal(isLegalPath("/journal"), false);
+    assert.equal(isQuietPath("/reset"), true);
+    assert.equal(isQuietPath("/journal"), false);
   });
 });

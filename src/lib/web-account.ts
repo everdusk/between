@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 
 const scryptAsync = promisify(scrypt);
@@ -133,4 +133,18 @@ export function linkCodeFromStart(payload: string): string | null {
 
 export function botLinkUrl(code: string): string {
   return `https://t.me/BetweenJournalBot?start=link_${code}`;
+}
+
+export const RESET_TTL_SECONDS = 30 * 60;
+
+export function newResetToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+export function hashResetToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export function resetUrl(origin: string, token: string): string {
+  return `${origin.replace(/\/$/, "")}/reset?token=${encodeURIComponent(token)}`;
 }

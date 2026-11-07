@@ -17,11 +17,14 @@ import { OTP_TTL_MS, otpMatches } from "./otp-mail";
 import { absorbWeekPremium } from "./week-access";
 import {
   hashPassword,
+  hashResetToken,
   journalStorageId,
   newAccountId,
   newLinkCode,
+  newResetToken,
   normalizeEmail,
   passwordMatches,
+  RESET_TTL_SECONDS,
   reviewLoginFromEnv,
   webStorageId,
   LINK_TTL_SECONDS,
@@ -238,6 +241,191 @@ export async function consumeOtp(
   }
   await redis.del(key);
   return "ok";
+}
+
+type SignupRow = {
+  salt: string;
+  hash: string;
+  codeHash: string;
+  attempts: number;
+  sentAt: number;
+};
+
+function signupKey(email: string): string {
+  return `between:signup:${email}`;
+}
+
+function asSignup(raw: unknown): SignupRow | null {
+  const value = typeof raw === "string" ? safeJson(raw) : raw;
+  if (!value || typeof value !== "object") return null;
+  const row = value as Partial<SignupRow>;
+  if (
+    typeof row.salt !== "string" ||
+    typeof row.hash !== "string" ||
+    typeof row.codeHash !== "string" ||
+    typeof row.attempts !== "number" ||
+    typeof row.sentAt !== "number"
+  ) {
+    return null;
+  }
+  return {
+    salt: row.salt,
+    hash: row.hash,
+    codeHash: row.codeHash,
+    attempts: row.attempts,
+    sentAt: row.sentAt,
+  };
+}
+
+export async function accountByEmail(email: string): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const id = await redis.get<string>(emailKey(email));
+  if (typeof id !== "string") return null;
+  return loadAccount(id);
+}
+
+/** "soon" while the last signup code is less than a minute old. */
+export async function signupSendAllowed(email: string, now = Date.now()): Promise<"ok" | "soon" | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const row = asSignup(await redis.get<unknown>(signupKey(email)));
+  if (row && now - row.sentAt < OTP_RESEND_MS) return "soon";
+  return "ok";
+}
+
+export async function saveSignup(
+  email: string,
+  salt: string,
+  hash: string,
+  codeHash: string,
+  now = Date.now(),
+): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return false;
+  const row: SignupRow = { salt, hash, codeHash, attempts: 0, sentAt: now };
+  await redis.set(signupKey(email), row, { ex: Math.ceil(OTP_TTL_MS / 1000) });
+  return true;
+}
+
+/** Checks the signup code and returns the stored password hash. The password itself is not here. */
+export async function consumeSignup(
+  email: string,
+  code: string,
+  secret: string,
+): Promise<{ salt: string; hash: string } | "bad" | "missing" | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const key = signupKey(email);
+  const row = asSignup(await redis.get<unknown>(key));
+  if (!row) return "missing";
+  if (!otpMatches(code, secret, row.codeHash)) {
+    const attempts = row.attempts + 1;
+    if (attempts >= OTP_ATTEMPTS) await redis.del(key);
+    else await redis.set(key, { ...row, attempts }, { ex: Math.ceil(OTP_TTL_MS / 1000) });
+    return "bad";
+  }
+  await redis.del(key);
+  return { salt: row.salt, hash: row.hash };
+}
+
+export async function createVerifiedAccount(
+  email: string,
+  salt: string,
+  hash: string,
+): Promise<AccountRecord | "taken" | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const id = newAccountId();
+  const claimed = await redis.set(emailKey(email), id, { nx: true });
+  if (claimed !== "OK") return "taken";
+  const account: AccountRecord = {
+    id,
+    email,
+    salt,
+    hash,
+    telegramUserId: null,
+    telegramUsername: null,
+    createdAt: new Date().toISOString(),
+    providers: {},
+  };
+  await redis.set(accountKey(id), account);
+  return account;
+}
+
+function resetWaitKey(email: string): string {
+  return `between:reset-wait:${email}`;
+}
+
+function resetTokenKey(tokenHash: string): string {
+  return `between:reset:${tokenHash}`;
+}
+
+function resetActiveKey(email: string): string {
+  return `between:reset-active:${email}`;
+}
+
+function asMillis(raw: unknown): number | null {
+  const value = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : NaN;
+  return Number.isFinite(value) ? value : null;
+}
+
+/** A fresh link, or "absent" when this email has no journal. The token is not a password. */
+export async function prepareReset(
+  email: string,
+  now = Date.now(),
+): Promise<{ token: string } | "soon" | "absent" | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const waited = asMillis(await redis.get<unknown>(resetWaitKey(email)));
+  if (waited != null && now - waited < OTP_RESEND_MS) return "soon";
+  const id = await redis.get<string>(emailKey(email));
+  if (typeof id !== "string") return "absent";
+  const account = await loadAccount(id);
+  if (!account) return "absent";
+  const previous = await redis.get<string>(resetActiveKey(email));
+  if (typeof previous === "string" && previous) await redis.del(resetTokenKey(previous));
+  const token = newResetToken();
+  const tokenHash = hashResetToken(token);
+  await redis.set(resetTokenKey(tokenHash), account.id, { ex: RESET_TTL_SECONDS });
+  await redis.set(resetActiveKey(email), tokenHash, { ex: RESET_TTL_SECONDS });
+  return { token };
+}
+
+export async function finishResetMail(email: string, now = Date.now()): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(resetWaitKey(email), now, { ex: Math.ceil(OTP_RESEND_MS / 1000) });
+}
+
+export async function revokeReset(token: string): Promise<void> {
+  const redis = getRedis();
+  if (!redis || !token) return;
+  const tokenHash = hashResetToken(token);
+  const id = await redis.get<string>(resetTokenKey(tokenHash));
+  await redis.del(resetTokenKey(tokenHash));
+  if (typeof id !== "string") return;
+  const account = await loadAccount(id);
+  if (!account?.email) return;
+  const active = await redis.get<string>(resetActiveKey(account.email));
+  if (active === tokenHash) await redis.del(resetActiveKey(account.email));
+}
+
+export async function completeReset(token: string, password: string): Promise<AccountRecord | "bad" | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const tokenHash = hashResetToken(token);
+  const id = await redis.get<string>(resetTokenKey(tokenHash));
+  if (typeof id !== "string" || !id.startsWith("w")) return "bad";
+  const account = await loadAccount(id);
+  if (!account) return "bad";
+  const passwordRecord = await hashPassword(password);
+  account.salt = passwordRecord.salt;
+  account.hash = passwordRecord.hash;
+  await redis.set(accountKey(account.id), account);
+  await redis.del(resetTokenKey(tokenHash));
+  if (account.email) await redis.del(resetActiveKey(account.email));
+  return account;
 }
 
 export async function loginAccount(
