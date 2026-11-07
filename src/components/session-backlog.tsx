@@ -198,7 +198,13 @@ export function SessionBacklog({
         )}
       </div>
 
-      {live.length === 0 && archive.length === 0 && !refreshing ? (
+      {live.length === 0 && archive.length === 0 && refreshing ? (
+        <div className="mt-5 space-y-3" role="status" aria-label={t("backlogRefreshing")}>
+          <div className="skeleton h-4 w-full rounded-full" />
+          <div className="skeleton h-4 w-3/4 rounded-full" />
+          <div className="skeleton h-4 w-1/2 rounded-full" />
+        </div>
+      ) : live.length === 0 && archive.length === 0 ? (
         <p className="mt-5 rounded-2xl border border-dashed border-[color:var(--glass-border)] px-4 py-5 text-center text-sm text-muted-foreground">
           {t("backlogEmpty")}
         </p>

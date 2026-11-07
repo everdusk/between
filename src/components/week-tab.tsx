@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
 import { Lock, Star } from "lucide-react";
+import { WeekSkeleton } from "@/components/journal-skeleton";
 import { LegalLinks } from "@/components/legal-links";
 import { useI18n } from "@/components/locale-provider";
 import { trackAnalytics } from "@/lib/analytics-client";
@@ -66,7 +67,7 @@ export function WeekTab({
   }
 
   useEffect(() => {
-    if (!active || !ready || inTelegram) return;
+    if (!ready || inTelegram) return;
     let cancelled = false;
 
     async function start() {
@@ -85,10 +86,10 @@ export function WeekTab({
     return () => {
       cancelled = true;
     };
-  }, [active, ready, inTelegram]);
+  }, [ready, inTelegram]);
 
   useEffect(() => {
-    if (!active || !ready || !inTelegram) return;
+    if (!ready || !inTelegram) return;
     let cancelled = false;
 
     async function start() {
@@ -110,7 +111,7 @@ export function WeekTab({
     return () => {
       cancelled = true;
     };
-  }, [active, ready, inTelegram, initData]);
+  }, [ready, inTelegram, initData]);
 
   useEffect(() => {
     if (!active || !access) return;
@@ -208,14 +209,7 @@ export function WeekTab({
 
   if (!access) {
     if (failedOpen) return <>{children}</>;
-    return (
-      <div className="glass rounded-3xl px-6 py-14 text-center" role="status">
-        <div className="mx-auto mb-4 h-1 w-28 overflow-hidden rounded-full bg-foreground/[0.08]">
-          <div className="loading-bar h-full w-1/2 rounded-full bg-primary/70" />
-        </div>
-        <p className="text-sm text-muted-foreground">{t("opening")}</p>
-      </div>
-    );
+    return <WeekSkeleton />;
   }
 
   if (access.status === "locked") {
