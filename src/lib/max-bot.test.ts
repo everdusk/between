@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
+import { X509Certificate } from "node:crypto";
 import { afterEach, describe, it } from "node:test";
 import { digestChannel, maxUserIdFromDigest } from "./digest";
 import { maxBotLinkUrl, maxStorageId } from "./web-account";
 import { toPublicAccount } from "./web-account-store";
+import { RUSSIAN_TRUSTED_ROOT_CA, RUSSIAN_TRUSTED_SUB_CA } from "./max-ca";
 import {
   feelingFromMaxPayload,
   isMaxPrivate,
   maxWebhookSecretMatches,
+  maxWebhookSecretValue,
   maxAudioUrl,
   maxFeelingKeyboard,
   maxLoginKeyboard,
@@ -112,6 +115,20 @@ describe("MAX bot", () => {
     assert.equal(maxWebhookSecretMatches("right", " right "), true);
     assert.equal(maxWebhookSecretMatches("wrong", "right"), false);
     assert.equal(maxWebhookSecretMatches(null, "right"), false);
+    const hashed = maxWebhookSecretValue("not a token");
+    assert.equal(/^[a-f0-9]{64}$/.test(hashed), true);
+    assert.equal(maxWebhookSecretMatches(hashed, "not a token"), true);
+  });
+
+  it("trusts the Russian CA that signs the MAX API", () => {
+    assert.match(new X509Certificate(RUSSIAN_TRUSTED_ROOT_CA).subject, /Russian Trusted Root CA/);
+    assert.match(new X509Certificate(RUSSIAN_TRUSTED_SUB_CA).subject, /Russian Trusted Sub CA/);
+  });
+
+  it("reads a MAX user id that arrived as text", () => {
+    const started: MaxUpdate = { update_type: "bot_started", user: { user_id: Number("15") } };
+    assert.equal(maxUserId({ ...started, user: { user_id: 15 } }), 15);
+    assert.equal(maxUserId({ update_type: "bot_started", user: { user_id: "15" as unknown as number } }), 15);
   });
 
   it("puts the same callback payload on every mood button", () => {
@@ -126,7 +143,7 @@ describe("MAX bot", () => {
     assert.equal(keyboard.payload.buttons.every((row) => row.length <= 7), true);
   });
 
-  it("asks for a sign-in tap instead of logging in on Start", () => {
+  it("keeps a callback button for an older sign-in message", () => {
     const keyboard = maxLoginKeyboard("abcdefghjkmnpqrstuvwxyz234567892", "ru");
     const button = keyboard.payload.buttons[0][0];
     assert.equal(button.type, "callback");

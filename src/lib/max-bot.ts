@@ -1,8 +1,17 @@
+import { createHash } from "node:crypto";
+import { rootCertificates } from "node:tls";
+import { Agent, fetch as maxHttps } from "undici";
 import type { LocaleId } from "./i18n";
+import { RUSSIAN_TRUSTED_ROOT_CA, RUSSIAN_TRUSTED_SUB_CA } from "./max-ca";
 import { translate } from "./messages";
 import { appUrl } from "./telegram-auth";
 import { feelingKeyboard, parseFeelingCallback } from "./telegram-bot";
 import type { CheckinSlot } from "./types";
+
+/** MAX presents a certificate the public trust store rejects. Trust only this connection. */
+const maxDispatcher = new Agent({
+  connect: { ca: [...rootCertificates, RUSSIAN_TRUSTED_ROOT_CA, RUSSIAN_TRUSTED_SUB_CA] },
+});
 
 const API = "https://platform-api2.max.ru";
 
@@ -51,12 +60,14 @@ export function maxToken(): string | null {
 
 /** When a secret is configured, MAX must send it back as `X-Max-Bot-Api-Secret`. */
 export function maxWebhookSecretMatches(header: string | null, expected: string | undefined): boolean {
-  const secret = expected?.trim();
-  if (!secret) return true;
-  return header === secret;
+  const raw = expected?.trim() ?? "";
+  if (!raw) return true;
+  const secret = maxWebhookSecretValue(expected);
+  return header === raw || header === secret;
 }
 
 function positiveId(value: unknown): number | null {
+  if (typeof value === "string" && /^\d+$/.test(value)) value = Number(value);
   return typeof value === "number" && Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
@@ -155,12 +166,15 @@ export function feelingFromMaxPayload(payload: string | null | undefined) {
   return parseFeelingCallback(payload);
 }
 
-async function maxFetch(path: string, body?: unknown): Promise<Response | null> {
+type MaxResponse = { ok: boolean; status: number; json: () => Promise<unknown> };
+
+async function maxFetch(path: string, body?: unknown): Promise<MaxResponse | null> {
   const token = maxToken();
   if (!token) return null;
   try {
-    return await fetch(`${API}${path}`, {
+    return await maxHttps(`${API}${path}`, {
       method: body === undefined ? "GET" : "POST",
+      dispatcher: maxDispatcher,
       headers: {
         Authorization: token,
         ...(body === undefined ? {} : { "Content-Type": "application/json" }),
@@ -172,32 +186,42 @@ async function maxFetch(path: string, body?: unknown): Promise<Response | null> 
   }
 }
 
-async function accepted(res: Response | null): Promise<boolean> {
+async function accepted(res: MaxResponse | null): Promise<boolean> {
   if (!res?.ok) return false;
   const data = (await res.json().catch(() => null)) as { success?: unknown } | null;
   if (data && data.success === false) return false;
   return true;
 }
 
+/** MAX only accepts this alphabet. A secret with other characters is hashed into it. */
+export function maxWebhookSecretValue(configured: string | undefined): string {
+  const raw = configured?.trim() ?? "";
+  if (!raw || /^[A-Za-z0-9_-]{5,256}$/.test(raw)) return raw;
+  return createHash("sha256").update(raw).digest("hex");
+}
+
 let subscribedFor = "";
 
-/** Tells MAX where to deliver events. Safe to call again: POST updates the subscription. */
-export async function ensureMaxSubscription(): Promise<boolean> {
-  const secret = process.env.MAX_WEBHOOK_SECRET?.trim() ?? "";
-  if (secret && !/^[A-Za-z0-9_-]{5,256}$/.test(secret)) return false;
+export type MaxSubscription = { ok: boolean; reason: string };
+
+/** Tells MAX where to deliver events, including the deep-link open. Safe to call again. */
+export async function ensureMaxSubscription(): Promise<MaxSubscription> {
+  const secret = maxWebhookSecretValue(process.env.MAX_WEBHOOK_SECRET);
   const url = `${appUrl()}/api/max/webhook`;
   const stamp = `${url}|${secret}`;
-  if (!maxToken()) return false;
-  if (subscribedFor === stamp) return true;
-  const ok = await accepted(
-    await maxFetch("/subscriptions", {
-      url,
-      update_types: ["message_created", "message_callback", "bot_started"],
-      ...(secret ? { secret } : {}),
-    }),
-  );
-  if (ok) subscribedFor = stamp;
-  return ok;
+  if (!maxToken()) return { ok: false, reason: "no_token" };
+  if (subscribedFor === stamp) return { ok: true, reason: "ok" };
+  const res = await maxFetch("/subscriptions", {
+    url,
+    update_types: ["message_created", "message_callback", "bot_started"],
+    ...(secret ? { secret } : {}),
+  });
+  if (!res) return { ok: false, reason: "unreachable" };
+  if (!res.ok) return { ok: false, reason: `http_${res.status}` };
+  const data = (await res.json().catch(() => null)) as { success?: unknown } | null;
+  if (data && data.success === false) return { ok: false, reason: "rejected" };
+  subscribedFor = stamp;
+  return { ok: true, reason: "ok" };
 }
 
 export async function sendMaxMessage(

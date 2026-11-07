@@ -93,7 +93,7 @@ export const vi: Catalog = {
   webMaxOff:
     "Bot MAX chưa được kết nối.",
   webMaxLogin: "MAX",
-  webMaxLoginWait: "Mở MAX và nhấn Vào trong chat. Màn hình này sẽ tự đăng nhập.",
+  webMaxLoginWait: "Mở MAX và khởi động bot. Màn hình này tự đăng nhập.",
   webMaxLoginFail: "MAX chưa xác nhận đăng nhập. Hãy nhấn nút lần nữa.",
   webLogout: "Thoát",
   webServer: "Máy chủ chưa sẵn sàng.",

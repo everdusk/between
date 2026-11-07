@@ -93,7 +93,7 @@ export const fa: Catalog = {
   webMaxOff:
     "ربات MAX هنوز وصل نشده است.",
   webMaxLogin: "MAX",
-  webMaxLoginWait: "MAX را باز کنید و در گفتگو «ورود» را بزنید. این صفحه خودش وارد می‌شود.",
+  webMaxLoginWait: "MAX را باز کنید و ربات را شروع کنید. این صفحه خودش وارد می‌شود.",
   webMaxLoginFail: "MAX ورود را تأیید نکرد. دکمه را دوباره بزنید.",
   webLogout: "خروج",
   webServer: "سرور هنوز آماده نیست.",
