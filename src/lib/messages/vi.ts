@@ -20,10 +20,10 @@ export const vi: Catalog = {
   webHeadline: "Nhà trị liệu nhờ bạn viết nhật ký.",
   webHeadlineAccent: "Bạn đã thật sự cố gắng.",
   webLead:
-    "Between sống trong Telegram: tối bot tự hỏi ngày đã qua thế nào. Trả lời vài dòng, và đến buổi gặp bạn có bản tóm tắt sẵn: điều gì lặp lại trong tuần và điều gì đáng kể.",
+    "Between sống trong trình nhắn tin của bạn: tối bot tự hỏi ngày đã qua thế nào. Trả lời vài dòng, và đến buổi gặp bạn có bản tóm tắt sẵn: điều gì lặp lại trong tuần và điều gì đáng kể.",
   webWhy1: "Một phút cho một ghi chú: cảm xúc một chạm, suy nghĩ vài dòng",
   webWhy2: "Tuần thành bức tranh và chủ đề cho buổi gặp",
-  webWhy3: "Không cần cài gì: nhật ký đã ở trong Telegram của bạn",
+  webWhy3: "Không cần cài gì: nhật ký đã ở trong trình nhắn tin của bạn",
   webSample: "Ví dụ",
   webSampleLock: "Đây là ví dụ. Nhật ký của bạn mở sau khi đăng nhập: ghi chú nằm trên máy chủ và mở được trên mọi thiết bị.",
   webSampleNote1: "Dậy trước báo thức, trong đầu toàn cuộc họp. Không muốn đi.",

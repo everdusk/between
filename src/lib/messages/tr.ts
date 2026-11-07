@@ -20,10 +20,10 @@ export const tr: Catalog = {
   webHeadline: "Terapist günlük tutmanızı istedi.",
   webHeadlineAccent: "Siz dürüstçe denediniz.",
   webLead:
-    "Between Telegram’da yaşar: akşam bot günün nasıl geçtiğini sorar. Birkaç satırla cevap verirsiniz, seansa hazır bir özet gelir: hafta boyunca ne tekrarladı ve neyi anlatmak gerekir.",
+    "Between mesajlaşmanızda yaşar: akşam bot günün nasıl geçtiğini sorar. Birkaç satırla cevap verirsiniz, seansa hazır bir özet gelir: hafta boyunca ne tekrarladı ve neyi anlatmak gerekir.",
   webWhy1: "Bir dakikada kayıt: bir dokunuşla duygu, birkaç satırla düşünce",
   webWhy2: "Hafta bir tabloya ve seans konularına dönüşür",
-  webWhy3: "Kurulacak bir şey yok: günlük zaten Telegram’ınızda",
+  webWhy3: "Kurulacak bir şey yok: günlük zaten mesajlaşmanızda",
   webSample: "Örnek",
   webSampleLock: "Bu bir örnek. Kendi günlüğünüz girişten sonra açılır: notlar sunucuda durur ve her cihazda açılır.",
   webSampleNote1: "Alarmdan önce uyandım, kafamda toplantı. Gitmek istemiyorum.",

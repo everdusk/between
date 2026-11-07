@@ -20,10 +20,10 @@ export const es: Catalog = {
   webHeadline: "El terapeuta pidió llevar un diario.",
   webHeadlineAccent: "Ustedes lo intentaron de verdad.",
   webLead:
-    "Between vive en Telegram: por la noche el bot pregunta cómo fue el día. Responda en un par de líneas y, para la sesión, tendrá un resumen listo: qué se repitió en la semana y de qué conviene hablar.",
+    "Between vive en su mensajero: por la noche el bot pregunta cómo fue el día. Responda en un par de líneas y, para la sesión, tendrá un resumen listo: qué se repitió en la semana y de qué conviene hablar.",
   webWhy1: "Una nota en un minuto: el ánimo en un toque, los pensamientos en un par de líneas",
   webWhy2: "La semana se convierte en un cuadro y en temas para la sesión",
-  webWhy3: "No hay nada que instalar: el diario ya está en su Telegram",
+  webWhy3: "No hay nada que instalar: el diario ya está en su mensajero",
   webSample: "Ejemplo",
   webSampleLock: "Esto es un ejemplo. Su diario se abre al entrar: las notas se guardan en el servidor y se abren en cualquier dispositivo.",
   webSampleNote1: "Me desperté antes del despertador pensando en la reunión. No quiero ir.",

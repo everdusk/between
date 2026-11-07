@@ -20,10 +20,10 @@ export const uz: Catalog = {
   webHeadline: "Terapevt kundalik yuritishni so‘radi.",
   webHeadlineAccent: "Siz chin dildan urinib ko‘rdingiz.",
   webLead:
-    "Between Telegramda yashaydi: kechqurun bot o‘zi kun qanday o‘tganini so‘raydi. Ikki qator yozasiz, sessiyaga esa tayyor xulosa keladi: haftada nima takrorlandi va nima haqida aytish kerak.",
+    "Between messenjeringizda yashaydi: kechqurun bot o‘zi kun qanday o‘tganini so‘raydi. Ikki qator yozasiz, sessiyaga esa tayyor xulosa keladi: haftada nima takrorlandi va nima haqida aytish kerak.",
   webWhy1: "Bir daqiqada yozuv: kayfiyat bir tegishda, fikr ikki qatorda",
   webWhy2: "Hafta manzara va sessiya mavzulariga aylanadi",
-  webWhy3: "Hech narsa o‘rnatish shart emas: kundalik allaqachon Telegramingizda",
+  webWhy3: "Hech narsa o‘rnatish shart emas: kundalik allaqachon messenjeringizda",
   webSample: "Namuna",
   webSampleLock: "Bu namuna. O‘z kundaligingiz kirgandan keyin ochiladi: qaydlar serverda saqlanadi va istalgan qurilmada ochiladi.",
   webSampleNote1: "Budilnikdan oldin uyg‘ondim, boshimda yig‘ilish. Borgim kelmayapti.",

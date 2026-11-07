@@ -20,10 +20,10 @@ export const id: Catalog = {
   webHeadline: "Terapis meminta Anda menulis jurnal.",
   webHeadlineAccent: "Anda sungguh sudah mencoba.",
   webLead:
-    "Between tinggal di Telegram: malam hari bot bertanya bagaimana hari Anda. Jawab beberapa baris, dan menjelang sesi Anda mendapat ringkasan siap: apa yang berulang seminggu ini dan apa yang perlu diceritakan.",
+    "Between tinggal di pesan Anda: malam hari bot bertanya bagaimana hari Anda. Jawab beberapa baris, dan menjelang sesi Anda mendapat ringkasan siap: apa yang berulang seminggu ini dan apa yang perlu diceritakan.",
   webWhy1: "Catatan dalam semenit: suasana satu sentuhan, pikiran dua baris",
   webWhy2: "Minggu menjadi gambaran dan topik untuk sesi",
-  webWhy3: "Tidak perlu memasang apa pun: jurnal sudah ada di Telegram Anda",
+  webWhy3: "Tidak perlu memasang apa pun: jurnal sudah ada di pesan Anda",
   webSample: "Contoh",
   webSampleLock: "Ini contoh. Jurnal Anda terbuka setelah masuk: catatan tersimpan di server dan terbuka di perangkat mana pun.",
   webSampleNote1: "Bangun sebelum alarm, kepala penuh rapat. Tidak mau ke sana.",

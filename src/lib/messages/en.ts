@@ -20,10 +20,10 @@ export const en: Catalog = {
   webHeadline: "Your therapist asked you to keep a journal.",
   webHeadlineAccent: "You honestly tried.",
   webLead:
-    "Between lives in Telegram: in the evening the bot asks how the day went. Answer in a couple of lines, and by the session you get a ready brief: what kept coming back through the week and what is worth saying.",
+    "Between lives in your messenger: in the evening the bot asks how the day went. Answer in a couple of lines, and by the session you get a ready brief: what kept coming back through the week and what is worth saying.",
   webWhy1: "A note in a minute: mood in one tap, thoughts in a couple of lines",
   webWhy2: "The week turns into a picture and topics for the session",
-  webWhy3: "Nothing to install: the journal is already in your Telegram",
+  webWhy3: "Nothing to install: the journal is already in your messenger",
   webSample: "Example",
   webSampleLock: "This is an example. Your own journal opens after sign-in: notes live on the server and open on any device.",
   webSampleNote1: "Woke up before the alarm with the team meeting in my head. Don't want to go.",
