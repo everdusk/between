@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   digestAction,
   digestChannel,
+  duePoll,
   maxUserIdFromDigest,
   nudgeText,
   pollText,
@@ -73,19 +74,25 @@ async function runDigest() {
       const timeZone = await getUserTimezone(owner);
       const clock = zonedParts(now, timeZone);
       const store = await loadUserStore(owner);
-      const slotName = slotForHour(clock.hour);
+      const exact = slotForHour(clock.hour);
+      const due = exact ? null : duePoll({ store, dateKey: clock.dateKey, hour: clock.hour });
+      const slotName = exact ?? due;
       if (!slotName) {
         skipped += 1;
         continue;
       }
 
       const claimed = await claimDigestSlot(userId, clock.dateKey, slotName);
-      const action = digestAction({
-        localHour: clock.hour,
-        dateKey: clock.dateKey,
-        store,
-        alreadySent: !claimed,
-      });
+      const action = exact
+        ? digestAction({
+            localHour: clock.hour,
+            dateKey: clock.dateKey,
+            store,
+            alreadySent: !claimed,
+          })
+        : claimed && due
+          ? { type: "poll" as const, slot: due }
+          : { type: "skip" as const };
 
       if (action.type === "skip") {
         skipped += 1;
