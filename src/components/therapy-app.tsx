@@ -167,6 +167,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
         }}
       />
     ) : null;
+  const botLinked = Boolean(web.account?.telegramLinked || web.account?.maxLinked);
 
   const footer = (
     <footer className="py-8 text-center text-[0.6875rem] leading-relaxed tracking-wide text-muted-foreground/80">
@@ -211,8 +212,10 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
               <p className="font-display text-[1.65rem] leading-none text-foreground">Between</p>
               {webSurface ? null : <p className="mt-2 truncate text-xs text-subtitle">{greeting}</p>}
             </div>
-            <SchemeSwitch className="w-full" />
-            <LanguageSwitch />
+            <div className="flex flex-wrap items-center gap-2">
+              <LanguageSwitch />
+              <SchemeSwitch />
+            </div>
           </div>
           <div className="journal-side-scroll">
             {!showGate && status === "ready" ? (
@@ -235,7 +238,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                 })}
               </nav>
             ) : null}
-            {accountCard() ? <div className="journal-side-account">{accountCard()}</div> : null}
+            {accountCard() && !botLinked ? <div className="journal-side-account">{accountCard()}</div> : null}
           </div>
         </aside>
       ) : null}
@@ -258,16 +261,14 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
             </p>
             {webSurface ? null : <p className="mt-1.5 truncate text-xs text-subtitle">{greeting}</p>}
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-2">
+          <div className={`flex shrink-0 items-center gap-2 ${webSurface ? "journal-mobile-tools" : ""}`}>
             {!telegram.inTelegram && telegram.ready && !webEntry && (
               <span className="eyebrow hidden rounded-full border border-[color:var(--glass-border)] bg-background/50 px-2.5 py-2 text-muted-foreground sm:inline-flex">
                 localhost
               </span>
             )}
-            <div className={webSurface ? "journal-mobile-tools" : undefined}>
-              <LanguageSwitch />
-            </div>
-            {webSurface ? <SchemeSwitch className="journal-mobile-tools" /> : null}
+            <LanguageSwitch />
+            {webSurface ? <SchemeSwitch /> : null}
           </div>
         </div>
       </header>
@@ -313,7 +314,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
             className="flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden"
           >
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-3 pr-[max(1rem,var(--safe-right))] pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]">
-            {accountCard() ? (
+            {accountCard() && !botLinked ? (
               <div className="journal-account-inline mb-4">{accountCard()}</div>
             ) : null}
             <div
@@ -371,6 +372,9 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
               </TabsContent>
             </div>
             {footer}
+            {section === "sessions" && botLinked ? (
+              <div className="pb-6">{accountCard()}</div>
+            ) : null}
             </div>
 
             <div className="journal-dock z-30 flex shrink-0 justify-center pt-2 pr-[max(1rem,var(--safe-right))] pb-[max(1.25rem,var(--safe-bottom))] pl-[max(1rem,var(--safe-left))]">
