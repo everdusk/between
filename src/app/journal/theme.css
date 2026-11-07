@@ -146,6 +146,12 @@ html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) .brand-wo
   display: none;
 }
 
+/* Inside MAX the journal is the screen. The account card is a Telegram pitch and fills the phone. */
+html[data-max] .journal-account-inline,
+html[data-max] .journal-side-account {
+  display: none;
+}
+
 @media (min-width: 960px) {
   html[data-journal="web"]:not([data-telegram-theme]) .journal-frame {
     flex-direction: row;
