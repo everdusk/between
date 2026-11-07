@@ -52,6 +52,7 @@ export const vi: Catalog = {
   webEnter: "Vào",
   webCreate: "Tạo nhật ký",
   webSwitchCreate: "Chưa có tài khoản",
+  webRegisterFold: "Tạo nhật ký bằng email",
   webSwitchEnter: "Đã có tài khoản",
   webBadLogin: "Email hoặc mật khẩu không khớp",
   webEmailTaken: "Email này đã được dùng. Hãy vào, hoặc xin liên kết để đặt mật khẩu.",

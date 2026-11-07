@@ -12,7 +12,6 @@ import {
   setUserTimezone,
 } from "./redis";
 import type { LocaleId } from "./i18n";
-import type { OauthProvider } from "./oauth";
 import { OTP_TTL_MS, otpMatches } from "./otp-mail";
 import { absorbWeekPremium } from "./week-access";
 import {
@@ -30,6 +29,8 @@ import {
   webStorageId,
   LINK_TTL_SECONDS,
 } from "./web-account";
+
+type OauthProvider = "vk" | "yandex" | "sber";
 
 export type AccountProviders = Partial<Record<OauthProvider, string>>;
 

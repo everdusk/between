@@ -52,6 +52,7 @@ export const fa: Catalog = {
   webEnter: "ورود",
   webCreate: "ساخت دفتر",
   webSwitchCreate: "حساب ندارم",
+  webRegisterFold: "دفتر را با ایمیل بسازید",
   webSwitchEnter: "حساب دارم",
   webBadLogin: "ایمیل یا گذرواژه درست نبود",
   webEmailTaken: "این ایمیل گرفته شده. وارد شوید یا پیوند گذرواژه بخواهید.",

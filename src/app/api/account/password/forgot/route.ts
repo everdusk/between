@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { accountReady, accountUnavailable } from "@/lib/account-http";
-import { requestOrigin } from "@/lib/oauth";
+import { accountReady, accountUnavailable, requestOrigin } from "@/lib/account-http";
 import { mailConfigFromEnv, sendResetMail } from "@/lib/otp-mail";
 import { finishResetMail, prepareReset, revokeReset } from "@/lib/web-account-store";
 import { normalizeEmail, resetUrl } from "@/lib/web-account";

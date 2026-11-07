@@ -52,6 +52,7 @@ export const id: Catalog = {
   webEnter: "Masuk",
   webCreate: "Buat jurnal",
   webSwitchCreate: "Belum punya akun",
+  webRegisterFold: "Buat jurnal dengan email",
   webSwitchEnter: "Sudah punya akun",
   webBadLogin: "Email atau kata sandi tidak cocok",
   webEmailTaken: "Email ini sudah dipakai. Masuk, atau minta tautan untuk kata sandi.",

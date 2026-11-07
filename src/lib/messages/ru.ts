@@ -50,6 +50,7 @@ export const ru = {
   webEnter: "Войти",
   webCreate: "Создать дневник",
   webSwitchCreate: "Нет аккаунта",
+  webRegisterFold: "Создать дневник по почте",
   webSwitchEnter: "Уже есть аккаунт",
   webBadLogin: "Почта или пароль не подошли",
   webEmailTaken: "Эта почта уже занята. Войдите или запросите ссылку для пароля.",

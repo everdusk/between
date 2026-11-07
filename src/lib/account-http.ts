@@ -1,6 +1,15 @@
 import { NextResponse } from "next/server";
 import { redisConfigured } from "./redis";
+import { appUrl } from "./telegram-auth";
 import { SESSION_COOKIE, sessionSecret, signSession } from "./web-account";
+
+/** The site the person is actually on, so a reset link matches that host. */
+export function requestOrigin(req: Request): string {
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  const proto = req.headers.get("x-forwarded-proto") ?? "https";
+  if (host) return `${proto}://${host}`;
+  return appUrl();
+}
 
 export function accountReady(): boolean {
   return redisConfigured() && Boolean(sessionSecret());

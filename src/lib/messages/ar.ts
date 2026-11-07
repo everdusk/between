@@ -52,6 +52,7 @@ export const ar: Catalog = {
   webEnter: "دخول",
   webCreate: "إنشاء يوميات",
   webSwitchCreate: "لا حساب",
+  webRegisterFold: "أنشئوا اليوميات بالبريد",
   webSwitchEnter: "لدي حساب",
   webBadLogin: "البريد أو كلمة السر غير مناسبين",
   webEmailTaken: "هذا البريد مستخدم. ادخلوا أو اطلبوا رابط كلمة السر.",

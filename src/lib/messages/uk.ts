@@ -52,6 +52,7 @@ export const uk: Catalog = {
   webEnter: "Увійти",
   webCreate: "Створити щоденник",
   webSwitchCreate: "Немає акаунта",
+  webRegisterFold: "Створити щоденник поштою",
   webSwitchEnter: "Вже є акаунт",
   webBadLogin: "Пошта або пароль не підійшли",
   webEmailTaken: "Ця пошта вже зайнята. Увійдіть або запросіть посилання для пароля.",
