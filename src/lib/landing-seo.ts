@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 /** Public site. Apex redirects here, so search engines should keep a single address. */
 export const LANDING_ORIGIN = "https://www.between-journal.ru";
 
-export const LANDING_TITLE = "Between — дневник между сессиями терапии";
+export const LANDING_TITLE = "Between: дневник между сессиями терапии";
 
 export const LANDING_DESCRIPTION =
   "Дневник в Telegram для тех, кто в терапии. Between сам спрашивает, как прошёл день, и собирает записи к следующей сессии. Без установки приложения.";

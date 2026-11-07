@@ -385,7 +385,8 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
       <section className="journal-gate-pitch">
         <p className="eyebrow text-[color:var(--accent-text)]">{t("webKicker")}</p>
         <h1 className="mt-3 font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
-          {t("webHeadline")} <span className="brand-words">{t("webHeadlineAccent")}</span>
+          {t("webHeadline")}{" "}
+          <span className="brand-words block">{t("webHeadlineAccent")}</span>
         </h1>
         <p className="mt-4 max-w-xl text-[1rem] leading-relaxed text-muted-foreground">{t("webLead")}</p>
         <ul className="mt-5 grid gap-2.5">

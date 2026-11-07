@@ -55,11 +55,11 @@ const STEPS = [
     title: "Приходите подготовленным",
     body: "Ко встрече с терапевтом уже ждёт выкладка: что обсудить, что повторялось, о чём спросить. Никаких «я хз, я норм».",
     image: "/landing/step-3.webp",
-    alt: "Темы к сеансу: граница с работой, звонок мамы",
+    alt: "Темы к сессии: граница с работой, звонок мамы",
   },
 ];
 
-const VIDEO_HTML = `<video class="bl-video" autoplay muted loop playsinline preload="metadata" poster="/landing/poster.webp" aria-label="Нажатие «тревожно», заметка своими словами, спектр недели, темы к сеансу, настройка даты сессии и заставка Between"><source src="/landing/screen-ru.webm" type="video/webm"><source src="/landing/screen-ru.mp4" type="video/mp4"></video>`;
+const VIDEO_HTML = `<video class="bl-video" autoplay muted loop playsinline preload="metadata" poster="/landing/poster.webp" aria-label="Нажатие «тревожно», заметка своими словами, спектр недели, темы к сессии, настройка даты сессии и заставка Between"><source src="/landing/screen-ru.webm" type="video/webm"><source src="/landing/screen-ru.mp4" type="video/mp4"></video>`;
 
 const CSS = `
 @layer components{
@@ -365,7 +365,7 @@ export function LandingPage() {
         <footer className="relative z-10 mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-3 px-5 pb-[max(2rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-end sm:px-8">
           <div>
             <p className="text-sm" style={{ color: "var(--bl-dim)" }}>
-              Between — дневник между сессиями терапии
+              Between: дневник между сессиями терапии
             </p>
             <p className="mt-2 text-sm" style={{ color: "var(--bl-dim)" }}>
               <a href="/terms">Условия использования</a>
