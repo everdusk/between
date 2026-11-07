@@ -56,6 +56,17 @@ export const tr: Catalog = {
   webBadLogin: "E-posta veya parola uyuşmadı",
   webEmailTaken: "Bu e-posta zaten alınmış. Girin veya parola bağlantısı isteyin.",
   webPasswordShort: "8 ile 200 karakter",
+  webPasswordShow: "Şifreyi göster",
+  webPasswordHide: "Şifreyi gizle",
+  webCapsLock: "Caps Lock açık",
+  webPasswordRule: "8 ile 200 karakter",
+  webPasswordShortNow: "Şu an {n}. En az 8 olmalı.",
+  webPasswordLongNow: "Şu an {n}. En fazla 200.",
+  webBotOffer: "Günlüğü unutmamak ve notu tek mesajla eklemek için mesajlaşmada bir bot bağlayın.",
+  webBotDisconnect: "Botu ayır",
+  webTgLogin: "Telegram",
+  webTgLoginWait: "Telegram’ı açın ve sohbette Giriş’e basın. Bu ekran kendiliğinden girer.",
+  webTgLoginFail: "Telegram girişi onaylamadı. Düğmeye bir kez daha basın.",
   webForgot: "Parolayı mı unuttunuz?",
   webForgotLead: "Parolayı kendiniz belirlemeniz için bir bağlantı göndeririz. Parola e-postada yer almaz.",
   webForgotSent: "{email} için bir günlük varsa bağlantı yola çıktı. Orada yeni parolayı siz belirlersiniz.",
@@ -69,15 +80,13 @@ export const tr: Catalog = {
   webResetMissing: "Bağlantıda kod yok. E-postayı yeniden açın.",
   webBadEmail: "E-posta doğru görünmüyor",
   webAccount: "Hesap",
-  webConnectBot: "Telegram botu",
-  webBotLinked: "Telegram botu bağlı. Günün nasıl geçtiğini sorar, sohbetteki not burada görünür.",
+  webConnectBot: "Telegram",
+  webBotLinked: "Telegram botu bağlı.",
   webBotHint:
     "Bu bir Telegram botu. Akşam günün nasıl geçtiğini sorar ve yanıtı bu günlüğe kaydeder. Günlük botsuz da çalışır: bot hatırlatmak ve sohbette not almak içindir. Telegram açılır — Start’a basın, bot bu günlüğe bağlanır.",
   webBotVpn: "Rusya’dan Telegram VPN olmadan açılmaz. VPN’i açın, sonra düğmeye basın.",
-  webConnectMax:
-    "MAX botu",
-  webMaxLinked:
-    "MAX botu bağlı. Günün nasıl geçtiğini sorar, sohbetteki not burada görünür.",
+  webConnectMax: "MAX",
+  webMaxLinked: "MAX botu bağlı.",
   webMaxHint:
     "Aynı bot MAX’te. Akşam günün nasıl geçtiğini sorar, sohbetteki not burada görünür. MAX açılır — Başlat’a basın.",
   webMaxOff:

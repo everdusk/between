@@ -621,6 +621,86 @@ export async function beginMaxLogin(token: string): Promise<boolean> {
   return true;
 }
 
+/** The journal for this Telegram user, creating it on the first website sign-in. */
+export async function ensureTelegramAccount(
+  telegramUserId: number,
+  username?: string,
+): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const existingId = await accountIdForTelegram(telegramUserId);
+  if (existingId) {
+    const account = await loadAccount(existingId);
+    if (!account) return null;
+    const handle = username?.trim().replace(/^@/, "");
+    if (handle && handle !== account.telegramUsername) {
+      account.telegramUsername = handle;
+      await redis.set(accountKey(account.id), account);
+    }
+    return account;
+  }
+
+  const id = newAccountId();
+  const handle = username?.trim().replace(/^@/, "") || null;
+  const account: AccountRecord = {
+    id,
+    email: "",
+    salt: "",
+    hash: "",
+    telegramUserId,
+    telegramUsername: handle,
+    maxUserId: null,
+    maxUsername: null,
+    createdAt: new Date().toISOString(),
+    providers: {},
+  };
+  const claimed = await redis.set(telegramKey(telegramUserId), id, { nx: true });
+  if (claimed !== "OK") {
+    const winner = await accountIdForTelegram(telegramUserId);
+    return winner ? loadAccount(winner) : null;
+  }
+  await redis.set(accountKey(id), account);
+
+  const webId = webStorageId(id);
+  const telegramAccess = await loadWeekAccess(telegramUserId);
+  const absorbed = absorbWeekPremium(await loadWeekAccess(webId), telegramAccess, new Date());
+  await saveWeekAccess(webId, absorbed.web);
+  if (absorbed.telegram.paidUntil !== telegramAccess.paidUntil) {
+    await saveWeekAccess(telegramUserId, absorbed.telegram);
+  }
+  const merged = mergeStores(await loadUserStore(webId), await loadUserStore(telegramUserId));
+  await saveUserStore(webId, merged);
+  const tz = await getUserTimezone(telegramUserId);
+  if (tz) await setUserTimezone(webId, tz);
+  const locale = await loadUserLocale(telegramUserId);
+  if (locale) await saveUserLocale(webId, locale as LocaleId);
+  await rememberUser(telegramUserId);
+  return account;
+}
+
+/** Drop one messenger from this journal so another one can be linked. The notes stay. */
+export async function unlinkMessenger(
+  accountId: string,
+  which: "telegram" | "max",
+): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const account = await loadAccount(accountId);
+  if (!account) return null;
+  if (which === "telegram" && account.telegramUserId != null) {
+    await redis.del(telegramKey(account.telegramUserId));
+    account.telegramUserId = null;
+    account.telegramUsername = null;
+  }
+  if (which === "max" && account.maxUserId != null) {
+    await redis.del(maxKey(account.maxUserId));
+    account.maxUserId = null;
+    account.maxUsername = null;
+  }
+  await redis.set(accountKey(account.id), account);
+  return account;
+}
+
 /** Bind the MAX user to a journal and let the waiting browser pick up the session. */
 export async function finishMaxLogin(
   token: string,
@@ -636,6 +716,26 @@ export async function finishMaxLogin(
   }
   if (state !== "pending") return null;
   const account = await ensureMaxAccount(maxUserId, username);
+  if (!account) return null;
+  await redis.set(maxLoginKey(token), account.id, { ex: MAX_LOGIN_TTL_SECONDS });
+  return account;
+}
+
+/** Bind the Telegram user to a journal and let the waiting browser pick up the session. */
+export async function finishTelegramLogin(
+  token: string,
+  telegramUserId: number,
+  username?: string,
+): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const state = await redis.get<string>(maxLoginKey(token));
+  if (typeof state === "string" && /^w[0-9a-f]{32}$/.test(state)) {
+    const ready = await loadAccount(state);
+    return ready?.telegramUserId === telegramUserId ? ready : null;
+  }
+  if (state !== "pending") return null;
+  const account = await ensureTelegramAccount(telegramUserId, username);
   if (!account) return null;
   await redis.set(maxLoginKey(token), account.id, { ex: MAX_LOGIN_TTL_SECONDS });
   return account;

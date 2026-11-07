@@ -56,6 +56,17 @@ export const pt: Catalog = {
   webBadLogin: "E-mail ou senha não conferem",
   webEmailTaken: "Este e-mail já está em uso. Entre ou peça um link para a senha.",
   webPasswordShort: "De 8 a 200 caracteres",
+  webPasswordShow: "Mostrar a senha",
+  webPasswordHide: "Ocultar a senha",
+  webCapsLock: "Caps Lock está ligado",
+  webPasswordRule: "De 8 a 200 caracteres",
+  webPasswordShortNow: "Agora {n}. Precisa de pelo menos 8.",
+  webPasswordLongNow: "Agora {n}. No máximo 200.",
+  webBotOffer: "Liguem um bot no mensageiro para não esquecer o diário e acrescentar notas com uma mensagem.",
+  webBotDisconnect: "Desligar o bot",
+  webTgLogin: "Telegram",
+  webTgLoginWait: "Abram o Telegram e toquem em Entrar no chat. Este ecrã entra sozinho.",
+  webTgLoginFail: "O Telegram não confirmou a entrada. Toquem no botão outra vez.",
   webForgot: "Esqueceu a senha?",
   webForgotLead: "Enviamos um link para você mesma escolher a senha. A senha não vai no e-mail.",
   webForgotSent: "Se {email} tem um diário, o link já foi enviado. Nele você escolhe uma senha nova.",
@@ -69,15 +80,13 @@ export const pt: Catalog = {
   webResetMissing: "O link não tem código. Abra o e-mail de novo.",
   webBadEmail: "Este e-mail não parece válido",
   webAccount: "Conta",
-  webConnectBot: "Bot do Telegram",
-  webBotLinked: "O bot do Telegram está conectado. Ele pergunta como foi o dia, e a nota do chat aparece aqui.",
+  webConnectBot: "Telegram",
+  webBotLinked: "O bot do Telegram está conectado.",
   webBotHint:
     "É um bot do Telegram. De noite ele pergunta como foi o dia e guarda a resposta neste diário. O diário funciona sem o bot: o bot serve para lembrar e para receber uma nota no chat. O Telegram vai abrir — toque em Start, e o bot se liga a este diário.",
   webBotVpn: "Da Rússia o Telegram não abre sem VPN. Ligue uma VPN e toque no botão.",
-  webConnectMax:
-    "Bot do MAX",
-  webMaxLinked:
-    "O bot do MAX está conectado. Ele pergunta como foi o dia, e a nota do chat aparece aqui.",
+  webConnectMax: "MAX",
+  webMaxLinked: "O bot do MAX está conectado.",
   webMaxHint:
     "O mesmo bot no MAX. À noite ele pergunta como foi o dia, e a nota do chat aparece aqui. O MAX vai abrir — toque em Iniciar.",
   webMaxOff:

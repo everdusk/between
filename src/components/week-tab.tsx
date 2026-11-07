@@ -113,13 +113,21 @@ export function WeekTab({
   }, [active, ready, inTelegram, initData]);
 
   useEffect(() => {
-    if (!active || !inTelegram || !initData || !access) return;
-    trackAnalytics("week", initData);
+    if (!active || !access) return;
+    if (inTelegram) {
+      if (initData) trackAnalytics("week", initData);
+      return;
+    }
+    trackAnalytics("week", "");
   }, [active, inTelegram, initData, access]);
 
   useEffect(() => {
-    if (!active || !inTelegram || !initData || access?.status !== "locked") return;
-    trackAnalytics("paywall", initData);
+    if (!active || access?.status !== "locked") return;
+    if (inTelegram) {
+      if (initData) trackAnalytics("paywall", initData);
+      return;
+    }
+    trackAnalytics("paywall", "");
   }, [active, inTelegram, initData, access?.status]);
 
   async function dismissIntro() {

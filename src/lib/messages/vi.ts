@@ -56,6 +56,17 @@ export const vi: Catalog = {
   webBadLogin: "Email hoặc mật khẩu không khớp",
   webEmailTaken: "Email này đã được dùng. Hãy vào, hoặc xin liên kết để đặt mật khẩu.",
   webPasswordShort: "Từ 8 đến 200 ký tự",
+  webPasswordShow: "Hiện mật khẩu",
+  webPasswordHide: "Ẩn mật khẩu",
+  webCapsLock: "Caps Lock đang bật",
+  webPasswordRule: "Từ 8 đến 200 ký tự",
+  webPasswordShortNow: "Hiện có {n}. Cần ít nhất 8.",
+  webPasswordLongNow: "Hiện có {n}. Không quá 200.",
+  webBotOffer: "Kết nối bot trong trình nhắn tin để khỏi quên nhật ký và thêm ghi chú bằng một tin nhắn.",
+  webBotDisconnect: "Ngắt bot",
+  webTgLogin: "Telegram",
+  webTgLoginWait: "Mở Telegram và nhấn Vào trong chat. Màn hình này sẽ tự đăng nhập.",
+  webTgLoginFail: "Telegram chưa xác nhận đăng nhập. Hãy nhấn nút lần nữa.",
   webForgot: "Quên mật khẩu?",
   webForgotLead: "Chúng tôi gửi một liên kết để bạn tự đặt mật khẩu. Mật khẩu không có trong email.",
   webForgotSent: "Nếu {email} có nhật ký, liên kết đã được gửi. Ở đó bạn đặt mật khẩu mới.",
@@ -69,15 +80,13 @@ export const vi: Catalog = {
   webResetMissing: "Liên kết không có mã. Hãy mở lại email.",
   webBadEmail: "Email này không đúng dạng",
   webAccount: "Tài khoản",
-  webConnectBot: "Bot Telegram",
-  webBotLinked: "Bot Telegram đã kết nối. Bot hỏi ngày của bạn thế nào, và ghi chú từ chat hiện ở đây.",
+  webConnectBot: "Telegram",
+  webBotLinked: "Bot Telegram đã kết nối.",
   webBotHint:
     "Đây là bot Telegram. Tối bot hỏi ngày đã qua thế nào và lưu câu trả lời vào nhật ký này. Nhật ký vẫn chạy khi không có bot: bot để nhắc và để nhận ghi chú trong chat. Telegram sẽ mở — nhấn Start, bot nối với nhật ký này.",
   webBotVpn: "Từ Nga, Telegram không mở nếu không có VPN. Bật VPN rồi nhấn nút.",
-  webConnectMax:
-    "Bot MAX",
-  webMaxLinked:
-    "Bot MAX đã kết nối. Bot hỏi ngày của bạn thế nào, và ghi chú từ chat hiện ở đây.",
+  webConnectMax: "MAX",
+  webMaxLinked: "Bot MAX đã kết nối.",
   webMaxHint:
     "Cùng một bot trong MAX. Buổi tối bot hỏi ngày của bạn thế nào, và ghi chú từ chat hiện ở đây. MAX sẽ mở — nhấn Bắt đầu.",
   webMaxOff:

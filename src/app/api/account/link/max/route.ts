@@ -14,6 +14,9 @@ export async function POST(req: Request) {
   if (account.maxUserId != null) {
     return NextResponse.json({ ok: true, linked: true, url: null });
   }
+  if (account.telegramUserId != null) {
+    return NextResponse.json({ ok: false, error: "one_bot" }, { status: 409 });
+  }
   if (!maxBotReady()) {
     return NextResponse.json({ ok: false, error: "max_off" }, { status: 503 });
   }

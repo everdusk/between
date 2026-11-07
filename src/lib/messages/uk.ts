@@ -56,6 +56,17 @@ export const uk: Catalog = {
   webBadLogin: "Пошта або пароль не підійшли",
   webEmailTaken: "Ця пошта вже зайнята. Увійдіть або запросіть посилання для пароля.",
   webPasswordShort: "Пароль — від 8 до 200 символів",
+  webPasswordShow: "Показати пароль",
+  webPasswordHide: "Сховати пароль",
+  webCapsLock: "Увімкнено Caps Lock",
+  webPasswordRule: "Від 8 до 200 символів",
+  webPasswordShortNow: "Зараз {n}. Потрібно не менше 8.",
+  webPasswordLongNow: "Зараз {n}. Потрібно не більше 200.",
+  webBotOffer: "Підключіть бота в месенджері, щоб не забути про щоденник і додавати записи одним повідомленням.",
+  webBotDisconnect: "Відключити бота",
+  webTgLogin: "Telegram",
+  webTgLoginWait: "Відкрийте Telegram і в чаті натисніть «Увійти». Цей екран увійде сам.",
+  webTgLoginFail: "Telegram не підтвердив вхід. Натисніть кнопку ще раз.",
   webForgot: "Забули пароль?",
   webForgotLead: "Надішлемо посилання, за яким ви самі задасте пароль. Пароль у листі не надсилаємо.",
   webForgotSent: "Якщо на {email} є щоденник, посилання вже надіслано. За ним ви задаєте новий пароль.",
@@ -69,15 +80,13 @@ export const uk: Catalog = {
   webResetMissing: "У посиланні немає коду. Відкрийте лист ще раз.",
   webBadEmail: "Пошта виглядає не так",
   webAccount: "Акаунт",
-  webConnectBot: "Telegram бот",
-  webBotLinked: "Бота в Telegram підключено. Він запитає, як минув день, і нотатка з чату з’явиться тут.",
+  webConnectBot: "Telegram",
+  webBotLinked: "Бота в Telegram підключено.",
   webBotHint:
     "Це бот у Telegram. Увечері він запитає, як минув день, і збереже відповідь у цей щоденник. Щоденник працює і без бота: бот потрібен, щоб нагадати і прийняти нотатку просто в чаті. Відкриється Telegram — натисніть Start, і бот зв’яжеться з цим щоденником.",
   webBotVpn: "З Росії Telegram без VPN не відкриється. Увімкніть VPN і натисніть кнопку.",
-  webConnectMax:
-    "Бот у MAX",
-  webMaxLinked:
-    "Бота в MAX підключено. Він запитає, як минув день, і нотатка з чату з’явиться тут.",
+  webConnectMax: "MAX",
+  webMaxLinked: "Бота в MAX підключено.",
   webMaxHint:
     "Той самий бот у MAX. Увечері запитає, як минув день, і нотатка з чату з’явиться тут. Натисніть кнопку і в MAX — «Почати».",
   webMaxOff:

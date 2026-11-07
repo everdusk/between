@@ -56,6 +56,17 @@ export const ar: Catalog = {
   webBadLogin: "البريد أو كلمة السر غير مناسبين",
   webEmailTaken: "هذا البريد مستخدم. ادخلوا أو اطلبوا رابط كلمة السر.",
   webPasswordShort: "من 8 إلى 200 حرف",
+  webPasswordShow: "أظهروا كلمة السر",
+  webPasswordHide: "أخفوا كلمة السر",
+  webCapsLock: "مفتاح الأحرف الكبيرة يعمل",
+  webPasswordRule: "من 8 إلى 200 حرف",
+  webPasswordShortNow: "الآن {n}. المطلوب 8 على الأقل.",
+  webPasswordLongNow: "الآن {n}. الحد 200.",
+  webBotOffer: "صلوا بوتًا في المرسال كي لا يُنسى اليوميات وتُضاف الملاحظة برسالة واحدة.",
+  webBotDisconnect: "افصلوا البوت",
+  webTgLogin: "Telegram",
+  webTgLoginWait: "افتحوا Telegram واضغطوا «دخول» في الدردشة. هذه الشاشة تدخل وحدها.",
+  webTgLoginFail: "لم يؤكد Telegram الدخول. اضغطوا الزر مرة أخرى.",
   webForgot: "نسيتم كلمة السر؟",
   webForgotLead: "نرسل رابطًا لتختاروا كلمة السر بأنفسكم. كلمة السر لا تأتي في الرسالة.",
   webForgotSent: "إذا كان لـ {email} يوميات، فالرابط في الطريق. هناك تختارون كلمة سر جديدة.",
@@ -69,15 +80,13 @@ export const ar: Catalog = {
   webResetMissing: "الرابط بلا رمز. افتحوا الرسالة مرة أخرى.",
   webBadEmail: "البريد لا يبدو صحيحًا",
   webAccount: "الحساب",
-  webConnectBot: "بوت تيليغرام",
-  webBotLinked: "بوت تيليغرام مربوط. يسأل كيف مضى اليوم، وملاحظة الدردشة تظهر هنا.",
+  webConnectBot: "Telegram",
+  webBotLinked: "بوت تيليغرام مربوط.",
   webBotHint:
     "هذا بوت في تيليغرام. مساءً يسأل كيف مضى اليوم ويحفظ الجواب في هذه اليوميات. اليوميات تعمل من دونه: البوت للتذكير ولقبول ملاحظة في الدردشة. سيُفتح تيليغرام — اضغطوا Start ليربط البوت بهذه اليوميات.",
   webBotVpn: "من روسيا لا يُفتح تيليغرام بلا VPN. شغّلوا VPN ثم اضغطوا الزر.",
-  webConnectMax:
-    "بوت MAX",
-  webMaxLinked:
-    "بوت MAX مربوط. يسأل كيف مضى اليوم، وملاحظة الدردشة تظهر هنا.",
+  webConnectMax: "MAX",
+  webMaxLinked: "بوت MAX مربوط.",
   webMaxHint:
     "البوت نفسه في MAX. مساءً يسأل كيف مضى اليوم، وملاحظة الدردشة تظهر هنا. سيفتح MAX — اضغطوا ابدأ.",
   webMaxOff:

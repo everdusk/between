@@ -56,6 +56,17 @@ export const id: Catalog = {
   webBadLogin: "Email atau kata sandi tidak cocok",
   webEmailTaken: "Email ini sudah dipakai. Masuk, atau minta tautan untuk kata sandi.",
   webPasswordShort: "8 sampai 200 karakter",
+  webPasswordShow: "Tampilkan kata sandi",
+  webPasswordHide: "Sembunyikan kata sandi",
+  webCapsLock: "Caps Lock menyala",
+  webPasswordRule: "8 sampai 200 karakter",
+  webPasswordShortNow: "Sekarang {n}. Perlu minimal 8.",
+  webPasswordLongNow: "Sekarang {n}. Paling banyak 200.",
+  webBotOffer: "Hubungkan bot di messenger agar jurnal tidak terlupa dan catatan cukup satu pesan.",
+  webBotDisconnect: "Putuskan bot",
+  webTgLogin: "Telegram",
+  webTgLoginWait: "Buka Telegram dan tekan Masuk di chat. Layar ini masuk sendiri.",
+  webTgLoginFail: "Telegram belum mengonfirmasi masuk. Tekan tombol sekali lagi.",
   webForgot: "Lupa kata sandi?",
   webForgotLead: "Kami kirim tautan agar Anda sendiri yang menentukan kata sandi. Kata sandi tidak ada di email.",
   webForgotSent: "Jika {email} punya jurnal, tautannya sudah dikirim. Di sana Anda menentukan kata sandi baru.",
@@ -69,15 +80,13 @@ export const id: Catalog = {
   webResetMissing: "Tautan ini tidak berisi kode. Buka emailnya lagi.",
   webBadEmail: "Email ini tidak terlihat benar",
   webAccount: "Akun",
-  webConnectBot: "Bot Telegram",
-  webBotLinked: "Bot Telegram terhubung. Ia bertanya bagaimana hari Anda, dan catatan dari chat muncul di sini.",
+  webConnectBot: "Telegram",
+  webBotLinked: "Bot Telegram terhubung.",
   webBotHint:
     "Ini bot Telegram. Malam hari ia bertanya bagaimana hari berjalan dan menyimpan jawaban di jurnal ini. Jurnal tetap jalan tanpa bot: bot untuk mengingatkan dan menerima catatan di chat. Telegram akan terbuka — tekan Start, dan bot terhubung ke jurnal ini.",
   webBotVpn: "Dari Rusia Telegram tidak terbuka tanpa VPN. Nyalakan VPN, lalu tekan tombol.",
-  webConnectMax:
-    "Bot MAX",
-  webMaxLinked:
-    "Bot MAX terhubung. Ia bertanya bagaimana hari Anda, dan catatan dari chat muncul di sini.",
+  webConnectMax: "MAX",
+  webMaxLinked: "Bot MAX terhubung.",
   webMaxHint:
     "Bot yang sama di MAX. Malam hari ia bertanya bagaimana hari Anda, dan catatan dari chat muncul di sini. MAX akan terbuka — tekan Mulai.",
   webMaxOff:

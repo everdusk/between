@@ -78,10 +78,20 @@ describe("analytics", () => {
     assert.equal(redis.keys.get(analyticsCounterKey("2026-11-01", "visit", "telegram")), 1);
     assert.equal(redis.keys.get(analyticsCounterKey("2026-11-01", "visit", "max")), 1);
     assert.equal(redis.keys.has(analyticsCounterKey("2026-11-01", "visit")), false);
+    const site = await recordAnalytics(redis, {
+      userId: "web:abc123device",
+      event: "note",
+      messenger: "web",
+      day: "2026-11-01",
+      pepper: "pepper",
+    });
+    assert.equal(site, "counted");
+    assert.equal(redis.keys.get(analyticsCounterKey("2026-11-01", "note", "web")), 1);
+    assert.equal(redis.keys.has(analyticsCounterKey("2026-11-01", "note", "telegram")), false);
     assert.equal(redis.keys.get(analyticsCohortKey("2026-11-01", 0, "telegram")), 1);
     assert.equal(redis.keys.has(analyticsCohortKey("2026-10-01", 31, "telegram")), false);
     const stored = [...redis.sets.keys(), ...redis.keys.keys(), ...[...redis.sets.values()].flatMap((set) => [...set])];
-    assert.equal(stored.some((value) => value.includes("424242")), false);
+    assert.equal(stored.some((value) => value.includes("424242") || value.includes("abc123device")), false);
     assert.equal([...redis.sets.keys()].includes(analyticsDedupKey("2026-11-01")), true);
   });
 
@@ -149,13 +159,20 @@ describe("analytics", () => {
       [{ day: "2026-11-01", counts: { visit: 1, note: 1, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
       [],
     );
+    const web = snapshotFromReads(
+      "2026-11-01",
+      [{ day: "2026-11-01", counts: { visit: 9, note: 0, week: 2, paywall: 0, checkout: 0, paid: 0 } }],
+      [],
+    );
     const text = formatAnalyticsReport({
       today: telegram.today,
       windowDays: telegram.windowDays,
-      messengers: { telegram, max },
+      messengers: { telegram, max, web },
     });
     assert.match(text, /Telegram[\s\S]*Визит 4/);
     assert.match(text, /MAX[\s\S]*Визит 1/);
+    assert.match(text, /Сайт[\s\S]*Визит 9/);
+    assert.doesNotMatch(text.slice(0, text.indexOf("Сайт")), /Визит 9/);
     assert.match(text, /Пейволл 1/);
     assert.match(text, /1 ноя — 4 новых, следующий день ещё нет/);
     assert.match(text, /20 окт — 8 новых, следующий день 3 из 8, день 7: 2 из 8/);
@@ -216,6 +233,7 @@ describe("analytics", () => {
     assert.equal(messengerEventName("telegram", "paid"), "telegram_paid");
     assert.deepEqual(parseMessengerEvent("telegram_paid"), { messenger: "telegram", event: "paid" });
     assert.equal(parseMessengerEvent("visit"), null);
+    assert.deepEqual(parseMessengerEvent("web_week"), { messenger: "web", event: "week" });
     assert.equal(JSON.stringify(kept).includes("тяжело"), false);
 
     assert.equal(scrubProductEvent({ event: "$pageview", properties: { distinct_id: "anon" } }), null);

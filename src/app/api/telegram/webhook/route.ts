@@ -21,8 +21,8 @@ import {
   recordPaidAnalytics,
   trackServerEvent,
 } from "@/lib/analytics";
-import { linkCodeFromStart } from "@/lib/web-account";
-import { claimTelegramLink, resolveJournalId } from "@/lib/web-account-store";
+import { linkCodeFromStart, loginTokenFromStart } from "@/lib/web-account";
+import { claimTelegramLink, finishTelegramLogin, resolveJournalId } from "@/lib/web-account-store";
 import {
   isLandingStart,
   LANDING_COUNT_KEY,
@@ -144,6 +144,16 @@ export async function GET() {
 }
 
 async function handleCallback(callback: TelegramCallback) {
+  const login = /^lin:([a-z0-9]{32})$/i.exec(callback.data ?? "");
+  if (login && callback.from?.id) {
+    const { reply } = await localesFor(callback.from);
+    const account = await finishTelegramLogin(login[1].toLowerCase(), callback.from.id, callback.from.username);
+    await telegramRequest("answerCallbackQuery", {
+      callback_query_id: callback.id,
+      text: translate(reply, account ? "botLoginOk" : "botLinkBad"),
+    });
+    return;
+  }
   const parsed = callback.data ? parseFeelingCallback(callback.data) : null;
   if (!parsed || !callback.from?.id) {
     await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
@@ -357,6 +367,17 @@ export async function POST(req: Request) {
   }
 
   if (isBotCommand(text, "start") || isBotCommand(text, "help")) {
+    const loginToken = loginTokenFromStart(startPayload(text) ?? "");
+    if (loginToken && userId) {
+      await telegramRequest("sendMessage", {
+        chat_id: chatId,
+        text: translate(reply, "botLoginAsk"),
+        reply_markup: {
+          inline_keyboard: [[{ text: translate(reply, "botLoginYes"), callback_data: `lin:${loginToken}` }]],
+        },
+      });
+      return NextResponse.json({ ok: true });
+    }
     const linkCode = linkCodeFromStart(startPayload(text) ?? "");
     if (linkCode && userId) {
       const linked = await claimTelegramLink(linkCode, userId, message.from?.username);

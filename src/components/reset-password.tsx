@@ -3,9 +3,8 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
+import { PasswordField } from "@/components/password-field";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import "@/app/journal/theme.css";
 import { LEGAL_SURFACE_CSS } from "@/lib/landing";
 import { markSplashReady } from "@/lib/splash";
@@ -84,28 +83,26 @@ function ResetForm() {
             </p>
           ) : (
             <form className="mt-5 space-y-4" onSubmit={save}>
-              <div className="space-y-2">
-                <Label htmlFor="reset-password">{t("webPassword")}</Label>
-                <Input
-                  id="reset-password"
-                  type="password"
-                  autoComplete="new-password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="reset-password-again">{t("webPasswordAgain")}</Label>
-                <Input
-                  id="reset-password-again"
-                  type="password"
-                  autoComplete="new-password"
-                  value={passwordAgain}
-                  onChange={(event) => setPasswordAgain(event.target.value)}
-                  required
-                />
-              </div>
+              <PasswordField
+                id="reset-password"
+                label={t("webPassword")}
+                value={password}
+                onChange={setPassword}
+                autoComplete="new-password"
+                showRules
+              />
+              <PasswordField
+                id="reset-password-again"
+                label={t("webPasswordAgain")}
+                value={passwordAgain}
+                onChange={setPasswordAgain}
+                autoComplete="new-password"
+              />
+              {passwordAgain.length > 0 && passwordAgain !== password ? (
+                <p className="text-sm text-destructive" role="status">
+                  {t("webPasswordMismatch")}
+                </p>
+              ) : null}
               {error ? (
                 <p className="text-sm text-destructive" role="alert">
                   {error}

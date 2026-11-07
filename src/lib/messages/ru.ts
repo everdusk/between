@@ -54,6 +54,17 @@ export const ru = {
   webBadLogin: "Почта или пароль не подошли",
   webEmailTaken: "Эта почта уже занята. Войдите или запросите ссылку для пароля.",
   webPasswordShort: "Пароль — от 8 до 200 символов",
+  webPasswordShow: "Показать пароль",
+  webPasswordHide: "Скрыть пароль",
+  webCapsLock: "Включён Caps Lock",
+  webPasswordRule: "От 8 до 200 символов",
+  webPasswordShortNow: "Сейчас {n}. Нужно не меньше 8.",
+  webPasswordLongNow: "Сейчас {n}. Нужно не больше 200.",
+  webBotOffer: "Подключите бота в мессенджере, чтобы не забыть про дневник и добавлять записи одним сообщением.",
+  webBotDisconnect: "Отключить бота",
+  webTgLogin: "Telegram",
+  webTgLoginWait: "Откройте Telegram и в чате нажмите «Войти». Этот экран войдёт сам.",
+  webTgLoginFail: "Telegram не подтвердил вход. Нажмите кнопку ещё раз.",
   webForgot: "Забыли пароль?",
   webForgotLead: "Пришлём ссылку, по которой вы сами зададите пароль. Пароль в письме не приходит.",
   webForgotSent: "Если на {email} есть дневник, ссылка уже отправлена. По ней вы задаёте новый пароль.",
@@ -67,15 +78,13 @@ export const ru = {
   webResetMissing: "В ссылке нет кода. Откройте письмо ещё раз.",
   webBadEmail: "Почта выглядит не так",
   webAccount: "Аккаунт",
-  webConnectBot: "Telegram бот",
-  webBotLinked: "Бот в Telegram подключён. Он спросит, как прошёл день, и заметка из чата появится здесь.",
+  webConnectBot: "Telegram",
+  webBotLinked: "Бот в Telegram подключён.",
   webBotHint:
     "Это бот в Telegram. Вечером он спросит, как прошёл день, и сохранит ответ в этот дневник. Дневник работает и без бота: бот нужен, чтобы напомнить и принять заметку прямо в чате. Откроется Telegram — нажмите Start, и бот свяжется с этим дневником.",
   webBotVpn: "Из России Telegram без VPN не откроется. Включите VPN и нажмите кнопку.",
-  webConnectMax:
-    "Бот в MAX",
-  webMaxLinked:
-    "Бот в MAX подключён. Он спросит, как прошёл день, и заметка из чата появится здесь.",
+  webConnectMax: "MAX",
+  webMaxLinked: "Бот в MAX подключён.",
   webMaxHint:
     "Тот же бот в MAX. Вечером спросит, как прошёл день, и заметка из чата появится здесь. Нажмите кнопку и в MAX — «Начать».",
   webMaxOff:

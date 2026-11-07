@@ -56,6 +56,17 @@ export const hi: Catalog = {
   webBadLogin: "ईमेल या पासवर्ड नहीं मिला",
   webEmailTaken: "यह ईमेल पहले से लिया है। आएँ, या पासवर्ड की लिंक माँगें।",
   webPasswordShort: "8 से 200 अक्षर",
+  webPasswordShow: "पासवर्ड दिखाएँ",
+  webPasswordHide: "पासवर्ड छिपाएँ",
+  webCapsLock: "Caps Lock चालू है",
+  webPasswordRule: "8 से 200 अक्षर",
+  webPasswordShortNow: "अभी {n}. कम से कम 8 चाहिए.",
+  webPasswordLongNow: "अभी {n}. 200 से ज़्यादा नहीं.",
+  webBotOffer: "मेसेंजर में बॉट जोड़ें, ताकि डायरी याद रहे और नोट एक संदेश से जुड़ जाए.",
+  webBotDisconnect: "बॉट हटाएँ",
+  webTgLogin: "Telegram",
+  webTgLoginWait: "Telegram खोलें और चैट में «आएँ» दबाएँ। यह स्क्रीन अपने आप प्रवेश कर लेगी.",
+  webTgLoginFail: "Telegram ने प्रवेश की पुष्टि नहीं की। बटन फिर दबाएँ.",
   webForgot: "पासवर्ड भूल गए?",
   webForgotLead: "हम लिंक भेजेंगे, पासवर्ड आप खुद रखेंगे। पासवर्ड ईमेल में नहीं आता।",
   webForgotSent: "अगर {email} पर डायरी है, लिंक भेज दी गई है। वहीं नया पासवर्ड रखें।",
@@ -69,15 +80,13 @@ export const hi: Catalog = {
   webResetMissing: "लिंक में कोड नहीं है। ईमेल फिर खोलें।",
   webBadEmail: "ईमेल सही नहीं लग रहा",
   webAccount: "अकाउंट",
-  webConnectBot: "Telegram बॉट",
-  webBotLinked: "Telegram बॉट जुड़ गया। वह पूछेगा दिन कैसा रहा, और चैट का नोट यहाँ दिखेगा।",
+  webConnectBot: "Telegram",
+  webBotLinked: "Telegram बॉट जुड़ गया.",
   webBotHint:
     "यह Telegram का बॉट है। शाम को वह पूछता है दिन कैसा रहा और जवाब इस डायरी में रखता है। डायरी बॉट के बिना भी चलती है: बॉट याद दिलाने और चैट में नोट लेने के लिए है। Telegram खुलेगा — Start दबाएँ, और बॉट इस डायरी से जुड़ जाएगा।",
   webBotVpn: "रूस से Telegram VPN के बिना नहीं खुलता। VPN चालू करें, फिर बटन दबाएँ।",
-  webConnectMax:
-    "MAX बॉट",
-  webMaxLinked:
-    "MAX बॉट जुड़ गया। वह पूछेगा दिन कैसा रहा, और चैट का नोट यहाँ दिखेगा।",
+  webConnectMax: "MAX",
+  webMaxLinked: "MAX बॉट जुड़ गया.",
   webMaxHint:
     "वही बॉट MAX में. शाम को पूछेगा दिन कैसा रहा, और चैट का नोट यहाँ दिखेगा. MAX खुलेगा — शुरू दबाएँ.",
   webMaxOff:

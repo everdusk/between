@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LegalAgree } from "@/components/legal-links";
+import { PasswordField } from "@/components/password-field";
 import { useI18n } from "@/components/locale-provider";
 import type { WebAccount } from "@/hooks/use-web-account";
 import { formatDayLabel, formatTime, toDateKey } from "@/lib/dates";
@@ -135,7 +136,10 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [maxUrl, setMaxUrl] = useState<string | null>(null);
+  const [messengerUrl, setMessengerUrl] = useState<string | null>(null);
+  const [messengerKind, setMessengerKind] = useState<"max" | "telegram">("max");
+  const [telegramVpn, setTelegramVpn] = useState(false);
+  const [oauthReady, setOauthReady] = useState<string[] | null>(null);
   const formRef = useRef<HTMLElement>(null);
   const codeRef = useRef<HTMLInputElement>(null);
   const maxTried = useRef(false);
@@ -156,6 +160,22 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   useEffect(() => {
     if (mode === "code") codeRef.current?.focus();
   }, [mode]);
+
+  useEffect(() => {
+    let stopped = false;
+    void fetch("/api/account/oauth/ready")
+      .then((res) => res.json())
+      .then((data: { providers?: unknown }) => {
+        if (stopped) return;
+        setOauthReady(Array.isArray(data.providers) ? data.providers.filter((item) => typeof item === "string") : []);
+      })
+      .catch(() => {
+        if (!stopped) setOauthReady([]);
+      });
+    return () => {
+      stopped = true;
+    };
+  }, []);
 
   useEffect(() => () => {
     maxPoll.current += 1;
@@ -223,29 +243,49 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
     return true;
   }
 
-  async function loginWithMax() {
+  async function loginWithMessenger(kind: "max" | "telegram") {
+    const popup = window.open("about:blank", "_blank");
     const mine = ++maxPoll.current;
     const current = () => mine === maxPoll.current;
     setBusy(true);
     setError(null);
     setNote(null);
-    setMaxUrl(null);
+    setMessengerUrl(null);
+    setTelegramVpn(false);
+    setMessengerKind(kind);
     try {
-      const res = await fetch("/api/account/max/start", { method: "POST" });
-      const data = (await res.json().catch(() => ({}))) as { token?: string; url?: string; error?: string };
-      if (!current()) return;
+      const res = await fetch(kind === "max" ? "/api/account/max/start" : "/api/account/telegram/start", {
+        method: "POST",
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        token?: string;
+        url?: string;
+        error?: string;
+        vpn?: boolean;
+      };
+      if (!current()) {
+        popup?.close();
+        return;
+      }
       if (!res.ok || !data.token || !data.url) {
+        popup?.close();
         setError(data.error === "max_off" ? t("webMaxOff") : t("webServer"));
         return;
       }
-      const opened = window.open(data.url, "_blank");
-      if (opened) opened.opener = null;
-      else setMaxUrl(data.url);
-      setNote(t("webMaxLoginWait"));
+      if (data.vpn) setTelegramVpn(true);
+      if (popup && !popup.closed) {
+        popup.location.replace(data.url);
+        popup.opener = null;
+      } else {
+        popup?.close();
+        setMessengerUrl(data.url);
+      }
+      setNote(t(kind === "max" ? "webMaxLoginWait" : "webTgLoginWait"));
+      const waitUrl = kind === "max" ? "/api/account/max/wait" : "/api/account/telegram/wait";
       for (let attempt = 0; attempt < 40; attempt += 1) {
         await new Promise((resolve) => window.setTimeout(resolve, 1500));
         if (!current()) return;
-        const wait = await fetch("/api/account/max/wait", {
+        const wait = await fetch(waitUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token: data.token }),
@@ -258,8 +298,9 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
         }
       }
       setNote(null);
-      setError(t("webMaxLoginFail"));
+      setError(t(kind === "max" ? "webMaxLoginFail" : "webTgLoginFail"));
     } catch {
+      popup?.close();
       if (current()) setError(t("webServer"));
     } finally {
       if (current()) setBusy(false);
@@ -413,35 +454,52 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
               <p className="mb-2 text-[0.6875rem] font-extrabold tracking-[0.14em] text-muted-foreground uppercase">
                 {t("webOAuth")}
               </p>
-              <div className="grid grid-cols-3 gap-2">
-                {PROVIDERS.map((provider) => (
-                  <a
-                    key={provider.id}
-                    href={provider.href}
-                    className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full px-2")}
-                  >
-                    {t(provider.label)}
-                  </a>
-                ))}
-              </div>
+              {PROVIDERS.some((provider) => oauthReady?.includes(provider.id)) ? (
+                <div className="grid grid-cols-3 gap-2">
+                  {PROVIDERS.filter((provider) => oauthReady?.includes(provider.id)).map((provider) => (
+                    <a
+                      key={provider.id}
+                      href={provider.href}
+                      className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full px-2")}
+                    >
+                      {t(provider.label)}
+                    </a>
+                  ))}
+                </div>
+              ) : null}
               <Button
                 type="button"
                 variant="outline"
                 size="lg"
                 className="mt-2 w-full"
                 disabled={busy}
-                onClick={() => void loginWithMax()}
+                onClick={() => void loginWithMessenger("telegram")}
+              >
+                {t("webTgLogin")}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="mt-2 w-full"
+                disabled={busy}
+                onClick={() => void loginWithMessenger("max")}
               >
                 {t("webMaxLogin")}
               </Button>
-              {maxUrl ? (
+              {telegramVpn ? (
+                <p className="text-sm leading-relaxed text-muted-foreground" role="status">
+                  {t("webBotVpn")}
+                </p>
+              ) : null}
+              {messengerUrl ? (
                 <a
-                  href={maxUrl}
+                  href={messengerUrl}
                   className={cn(buttonVariants({ variant: "outline", size: "lg" }), "mt-2 w-full")}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  {t("webMaxLogin")}
+                  {t(messengerKind === "max" ? "webMaxLogin" : "webTgLogin")}
                 </a>
               ) : null}
               {note ? <p className="mt-3 text-sm leading-relaxed text-foreground">{note}</p> : null}
@@ -465,28 +523,26 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="web-password">{t("webPassword")}</Label>
-              <Input
-                id="web-password"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="web-password-again">{t("webPasswordAgain")}</Label>
-              <Input
-                id="web-password-again"
-                type="password"
-                autoComplete="new-password"
-                value={passwordAgain}
-                onChange={(event) => setPasswordAgain(event.target.value)}
-                required
-              />
-            </div>
+            <PasswordField
+              id="web-password"
+              label={t("webPassword")}
+              value={password}
+              onChange={setPassword}
+              autoComplete="new-password"
+              showRules
+            />
+            <PasswordField
+              id="web-password-again"
+              label={t("webPasswordAgain")}
+              value={passwordAgain}
+              onChange={setPasswordAgain}
+              autoComplete="new-password"
+            />
+            {passwordAgain.length > 0 && passwordAgain !== password ? (
+              <p className="text-sm text-destructive" role="status">
+                {t("webPasswordMismatch")}
+              </p>
+            ) : null}
             {error ? (
               <p className="text-sm text-destructive" role="alert">
                 {error}
@@ -518,17 +574,13 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="web-password">{t("webPassword")}</Label>
-              <Input
-                id="web-password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-            </div>
+            <PasswordField
+              id="web-password"
+              label={t("webPassword")}
+              value={password}
+              onChange={setPassword}
+              autoComplete="current-password"
+            />
             {error ? (
               <p className="text-sm text-destructive" role="alert">
                 {error}

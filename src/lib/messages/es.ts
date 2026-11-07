@@ -56,6 +56,17 @@ export const es: Catalog = {
   webBadLogin: "El correo o la contraseña no coinciden",
   webEmailTaken: "Este correo ya está en uso. Entre o pida un enlace para la contraseña.",
   webPasswordShort: "De 8 a 200 caracteres",
+  webPasswordShow: "Mostrar la contraseña",
+  webPasswordHide: "Ocultar la contraseña",
+  webCapsLock: "Bloq Mayús está activado",
+  webPasswordRule: "De 8 a 200 caracteres",
+  webPasswordShortNow: "Ahora {n}. Hacen falta al menos 8.",
+  webPasswordLongNow: "Ahora {n}. No más de 200.",
+  webBotOffer: "Conecten un bot en el mensajero para no olvidar el diario y añadir notas con un mensaje.",
+  webBotDisconnect: "Desconectar el bot",
+  webTgLogin: "Telegram",
+  webTgLoginWait: "Abran Telegram y pulsen Entrar en el chat. Esta pantalla entra sola.",
+  webTgLoginFail: "Telegram no confirmó el acceso. Pulsen el botón otra vez.",
   webForgot: "¿Olvidó la contraseña?",
   webForgotLead: "Enviaremos un enlace para que usted elija la contraseña. La contraseña no va en el correo.",
   webForgotSent: "Si {email} tiene un diario, el enlace ya va en camino. Ahí elige una contraseña nueva.",
@@ -69,15 +80,13 @@ export const es: Catalog = {
   webResetMissing: "El enlace no trae código. Abra el correo otra vez.",
   webBadEmail: "El correo no parece válido",
   webAccount: "Cuenta",
-  webConnectBot: "Bot de Telegram",
-  webBotLinked: "El bot de Telegram está conectado. Preguntará cómo fue el día, y la nota del chat aparecerá aquí.",
+  webConnectBot: "Telegram",
+  webBotLinked: "El bot de Telegram está conectado.",
   webBotHint:
     "Es un bot de Telegram. Por la noche pregunta cómo fue el día y guarda la respuesta en este diario. El diario funciona sin el bot: el bot sirve para recordar y para tomar una nota en el chat. Se abrirá Telegram: pulse Start y el bot se vincula a este diario.",
   webBotVpn: "Desde Rusia Telegram no se abre sin VPN. Active una VPN y pulse el botón.",
-  webConnectMax:
-    "Bot de MAX",
-  webMaxLinked:
-    "El bot de MAX está conectado. Preguntará cómo fue el día, y la nota del chat aparecerá aquí.",
+  webConnectMax: "MAX",
+  webMaxLinked: "El bot de MAX está conectado.",
   webMaxHint:
     "El mismo bot en MAX. Por la noche pregunta cómo fue el día, y la nota del chat aparece aquí. Se abrirá MAX — pulse Iniciar.",
   webMaxOff:
