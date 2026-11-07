@@ -16,6 +16,20 @@ export type DigestAction =
   | { type: "poll"; slot: CheckinSlot }
   | { type: "nudge" };
 
+/** Telegram users are stored by numeric id. MAX users are `max:<id>`, so the two never share a journal by accident. */
+export function digestChannel(userId: string): "telegram" | "max" | null {
+  if (/^\d+$/.test(userId)) return "telegram";
+  if (/^max:\d+$/.test(userId)) return "max";
+  return null;
+}
+
+export function maxUserIdFromDigest(userId: string): number | null {
+  const match = /^max:(\d+)$/.exec(userId);
+  if (!match) return null;
+  const id = Number(match[1]);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
 export function slotForHour(hour: number): DigestSlot | null {
   if (hour === POLL_HOURS.morning) return "morning";
   if (hour === POLL_HOURS.day) return "day";

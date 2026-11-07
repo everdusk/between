@@ -16,11 +16,13 @@ export function WebAccountCard({
 }) {
   const { t } = useI18n();
   const [url, setUrl] = useState<string | null>(null);
+  const [maxUrl, setMaxUrl] = useState<string | null>(null);
   const [vpn, setVpn] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [maxOff, setMaxOff] = useState(false);
+  const [busy, setBusy] = useState<"telegram" | "max" | null>(null);
 
-  async function connect() {
-    setBusy(true);
+  async function connectTelegram() {
+    setBusy("telegram");
     try {
       const res = await fetch("/api/account/link", { method: "POST" });
       const data = (await res.json().catch(() => ({}))) as {
@@ -35,7 +37,30 @@ export function WebAccountCard({
       if (data.vpn) setVpn(true);
       if (data.url) setUrl(data.url);
     } finally {
-      setBusy(false);
+      setBusy(null);
+    }
+  }
+
+  async function connectMax() {
+    setBusy("max");
+    try {
+      const res = await fetch("/api/account/link/max", { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as {
+        url?: string | null;
+        linked?: boolean;
+        error?: string;
+      };
+      if (data.linked) {
+        onRefresh();
+        return;
+      }
+      if (data.error === "max_off") {
+        setMaxOff(true);
+        return;
+      }
+      if (data.url) setMaxUrl(data.url);
+    } finally {
+      setBusy(null);
     }
   }
 
@@ -79,8 +104,34 @@ export function WebAccountCard({
               {t("webConnectBot")}
             </a>
           ) : (
-            <Button type="button" className="w-full" disabled={busy} onClick={() => void connect()}>
+            <Button type="button" className="w-full" disabled={busy !== null} onClick={() => void connectTelegram()}>
               {t("webConnectBot")}
+            </Button>
+          )}
+        </div>
+      )}
+      {account.maxLinked ? (
+        <p className="mt-3 text-sm leading-relaxed text-foreground">{t("webMaxLinked")}</p>
+      ) : (
+        <div className="mt-4 space-y-3">
+          <p className="text-sm leading-relaxed text-foreground">{t("webMaxHint")}</p>
+          {maxOff ? (
+            <p className="text-sm leading-relaxed text-muted-foreground" role="status">
+              {t("webMaxOff")}
+            </p>
+          ) : maxUrl ? (
+            <a
+              href={maxUrl}
+              className="inline-flex h-11 w-full items-center justify-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
+              onClick={() => {
+                window.setTimeout(onRefresh, 1500);
+              }}
+            >
+              {t("webConnectMax")}
+            </a>
+          ) : (
+            <Button type="button" className="w-full" disabled={busy !== null} onClick={() => void connectMax()}>
+              {t("webConnectMax")}
             </Button>
           )}
         </div>

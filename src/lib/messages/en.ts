@@ -74,6 +74,14 @@ export const en: Catalog = {
   webBotHint:
     "This is a Telegram bot. In the evening it asks how the day went and saves the answer in this journal. The journal works without the bot: the bot is there to remind you and to take a note in chat. Telegram will open — press Start, and the bot links to this journal.",
   webBotVpn: "Telegram will not open from Russia without a VPN. Turn a VPN on, then press the button.",
+  webConnectMax:
+    "MAX bot",
+  webMaxLinked:
+    "The MAX bot is connected. It will ask how the day went, and the note from chat will show up here.",
+  webMaxHint:
+    "The same bot in MAX. In the evening it asks how the day went, and the note from chat shows up here. MAX will open — press Start.",
+  webMaxOff:
+    "The MAX bot is not connected yet.",
   webLogout: "Sign out",
   webServer: "The server is not ready yet.",
   webOAuth: "Sign in with",
@@ -87,6 +95,8 @@ export const en: Catalog = {
   botLinkOk: "Done. This chat writes to your journal.",
   botLinkBad: "That code did not work. Request a new one in the browser, on the account card.",
   botLinkTaken: "This Telegram is already linked to another journal.",
+  botLinkTakenMax:
+    "This MAX account is already linked to another journal.",
   language: "Language",
   tabJournal: "Journal",
   tabWeek: "Week",
@@ -288,6 +298,8 @@ export const en: Catalog = {
   botOpen: "Open Between",
   botHelp:
     "Between is a journal for the session.\n\nThe journal is free. Any text here becomes a note for today. I can ask how you are in the morning, afternoon, and evening.\n\nWeek gathers the spectrum, the pattern, and topics for the session. The first 7 days after you open the tab are free. Then {price} Stars for 30 days.\n\nA voice note is saved as text only after Week is paid, up to 10 a day. The 7 free days do not include it.",
+  botHelpMax:
+    "Between is a journal for the session.\n\nThe journal is free. Any text here becomes a note for today. I can ask how you are in the morning, afternoon, and evening.\n\nWeek gathers the spectrum, the pattern, and topics for the session. The first 7 days after you open the tab are free. Then {price} ₽ for 30 days, paid on the site.\n\nA voice note is saved as text only after Week is paid, up to 10 a day. The 7 free days do not include it.",
   botUnknown:
     "Send text and I will save a note.",
   botNotReady:
@@ -313,6 +325,8 @@ export const en: Catalog = {
   botPremiumTrial: "Week is still free for {days}.",
   botPaySupport:
     "Week is paid in Telegram Stars.\n\n30 days is a subscription: cancel it in Telegram, and access stays until the paid period ends. 3 months and a year are one-time payments.\n\nIf Stars were charged and Week did not open, or you need a refund, write in this chat what happened and when. We will sort it out here.",
+  botPaySupportMax:
+    "Week is paid on the site, inside the journal.\n\n30 days, 3 months, and a year open there. This chat does not send an invoice.\n\nIf the payment went through and Week did not open, or you need a refund, write here what happened and when.",
   botPollMorning: "Morning. How are you?",
   botPollDay: "Afternoon. How are you?",
   botPollEvening: "Evening. How are you?",

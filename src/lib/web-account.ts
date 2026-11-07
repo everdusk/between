@@ -135,6 +135,29 @@ export function botLinkUrl(code: string): string {
   return `https://t.me/BetweenJournalBot?start=link_${code}`;
 }
 
+/** Journal key for a MAX user who has not linked a site account. Never a bare number. */
+export function maxStorageId(userId: number): string {
+  return `max:${userId}`;
+}
+
+/** Public nick without @. Self-employed bots get a name like `se123_bot`. */
+export function maxBotUsername(): string | null {
+  const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
+  if (!/^[A-Za-z0-9_]{3,64}$/.test(name)) return null;
+  return name;
+}
+
+export function maxBotReady(): boolean {
+  return Boolean(process.env.MAX_BOT_TOKEN?.trim() && maxBotUsername());
+}
+
+/** Opens the bot chat. `bot_started.payload` arrives as `link_<code>`. */
+export function maxBotLinkUrl(code: string): string | null {
+  const name = maxBotUsername();
+  if (!name) return null;
+  return `https://max.ru/${name}?start=${encodeURIComponent(`link_${code}`)}`;
+}
+
 export const RESET_TTL_SECONDS = 30 * 60;
 
 export function newResetToken(): string {
