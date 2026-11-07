@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalDocument } from "@/components/legal-document";
 
 export const metadata: Metadata = {
-  title: { absolute: "Политика конфиденциальности — Between" },
+  title: { absolute: "Политика конфиденциальности: Between" },
   description:
     "Политика конфиденциальности дневника Between. Самозанятая Ляторовская Анастасия Борисовна, ИНН 770507475005.",
   alternates: { canonical: "/privacy" },
