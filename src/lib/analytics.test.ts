@@ -8,9 +8,12 @@ import {
   analyticsDedupKey,
   formatAnalyticsReport,
   isAnalyticsOwner,
+  messengerEventName,
+  parseMessengerEvent,
   planAnalyticsSend,
   scrubProductEvent,
   snapshotFromReads,
+  sumCountRows,
 } from "./analytics-model";
 import { posthogBrowserConfig } from "./posthog-env";
 
@@ -47,6 +50,7 @@ describe("analytics", () => {
     const first = await recordAnalytics(redis, {
       userId: 424242,
       event: "visit",
+      messenger: "telegram",
       day: "2026-11-01",
       cohort: "2026-11-01",
       offset: 0,
@@ -55,16 +59,27 @@ describe("analytics", () => {
     const again = await recordAnalytics(redis, {
       userId: 424242,
       event: "visit",
+      messenger: "telegram",
       day: "2026-11-01",
       cohort: "2026-10-01",
       offset: 31,
       pepper: "pepper",
     });
+    const other = await recordAnalytics(redis, {
+      userId: 424242,
+      event: "visit",
+      messenger: "max",
+      day: "2026-11-01",
+      pepper: "pepper",
+    });
     assert.equal(first, "counted");
     assert.equal(again, "duplicate");
-    assert.equal(redis.keys.get(analyticsCounterKey("2026-11-01", "visit")), 1);
-    assert.equal(redis.keys.get(analyticsCohortKey("2026-11-01", 0)), 1);
-    assert.equal(redis.keys.has(analyticsCohortKey("2026-10-01", 31)), false);
+    assert.equal(other, "counted");
+    assert.equal(redis.keys.get(analyticsCounterKey("2026-11-01", "visit", "telegram")), 1);
+    assert.equal(redis.keys.get(analyticsCounterKey("2026-11-01", "visit", "max")), 1);
+    assert.equal(redis.keys.has(analyticsCounterKey("2026-11-01", "visit")), false);
+    assert.equal(redis.keys.get(analyticsCohortKey("2026-11-01", 0, "telegram")), 1);
+    assert.equal(redis.keys.has(analyticsCohortKey("2026-10-01", 31, "telegram")), false);
     const stored = [...redis.sets.keys(), ...redis.keys.keys(), ...[...redis.sets.values()].flatMap((set) => [...set])];
     assert.equal(stored.some((value) => value.includes("424242")), false);
     assert.equal([...redis.sets.keys()].includes(analyticsDedupKey("2026-11-01")), true);
@@ -75,14 +90,15 @@ describe("analytics", () => {
     const input = {
       userId: 7,
       event: "paid" as const,
+      messenger: "telegram" as const,
       day: "2026-11-01",
       salt: "charge-1",
       pepper: "pepper",
     };
     assert.equal(await recordAnalytics(redis, input), "counted");
     assert.equal(await recordAnalytics(redis, { ...input, day: "2026-11-02" }), "duplicate");
-    assert.equal(redis.keys.get(analyticsCounterKey("2026-11-01", "paid")), 1);
-    assert.equal(redis.keys.has(analyticsCounterKey("2026-11-02", "paid")), false);
+    assert.equal(redis.keys.get(analyticsCounterKey("2026-11-01", "paid", "telegram")), 1);
+    assert.equal(redis.keys.has(analyticsCounterKey("2026-11-02", "paid", "telegram")), false);
   });
 
   it("rejects a client trying to report a payment or a distant day", () => {
@@ -113,29 +129,43 @@ describe("analytics", () => {
     assert.deepEqual(next.state.sent["2026-11-02"], ["note"]);
   });
 
-  it("hides day 7 until that day has arrived", () => {
-    const text = formatAnalyticsReport(
-      snapshotFromReads(
-        "2026-11-01",
-        [
-          {
-            day: "2026-11-01",
-            counts: { visit: 4, note: 2, week: 3, paywall: 1, checkout: 1, paid: 0 },
-          },
-        ],
-        [
-          { day: "2026-10-20", d0: 8, d1: 3, d7: 2 },
-          { day: "2026-11-01", d0: 4, d1: 9, d7: 9 },
-          { day: "2026-10-01", d0: 0, d1: 0, d7: 0 },
-        ],
-      ),
+  it("hides day 7 until that day has arrived and keeps the messengers apart", () => {
+    const telegram = snapshotFromReads(
+      "2026-11-01",
+      [
+        {
+          day: "2026-11-01",
+          counts: { visit: 4, note: 2, week: 3, paywall: 1, checkout: 1, paid: 0 },
+        },
+      ],
+      [
+        { day: "2026-10-20", d0: 8, d1: 3, d7: 2 },
+        { day: "2026-11-01", d0: 4, d1: 9, d7: 9 },
+        { day: "2026-10-01", d0: 0, d1: 0, d7: 0 },
+      ],
     );
-    assert.match(text, /Визит 4/);
+    const max = snapshotFromReads(
+      "2026-11-01",
+      [{ day: "2026-11-01", counts: { visit: 1, note: 1, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
+      [],
+    );
+    const text = formatAnalyticsReport({
+      today: telegram.today,
+      windowDays: telegram.windowDays,
+      messengers: { telegram, max },
+    });
+    assert.match(text, /Telegram[\s\S]*Визит 4/);
+    assert.match(text, /MAX[\s\S]*Визит 1/);
     assert.match(text, /Пейволл 1/);
     assert.match(text, /1 ноя — 4 новых, следующий день ещё нет/);
     assert.match(text, /20 окт — 8 новых, следующий день 3 из 8, день 7: 2 из 8/);
     assert.doesNotMatch(text, /1 окт/);
     assert.equal(text.includes("424242"), false);
+    const merged = sumCountRows(
+      [{ day: "2026-11-01", counts: telegram.todayCounts }],
+      [{ day: "2026-11-01", counts: { visit: 3, note: 0, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
+    );
+    assert.equal(merged[0].counts.visit, 7);
   });
 
   it("sends a funnel step to PostHog without a person, an ip, or the launch hash", () => {
@@ -176,6 +206,16 @@ describe("analytics", () => {
     assert.equal(kept.$set_once, undefined);
     assert.equal(kept.$unset, undefined);
     assert.equal(JSON.stringify(kept).includes("424242"), false);
+    const split = scrubProductEvent({
+      event: "max_note",
+      properties: { distinct_id: "anon", messenger: "telegram", note: "сегодня тяжело" },
+    });
+    assert.equal(split?.event, "max_note");
+    assert.equal(split?.properties?.messenger, "max");
+    assert.equal(split?.properties?.note, undefined);
+    assert.equal(messengerEventName("telegram", "paid"), "telegram_paid");
+    assert.deepEqual(parseMessengerEvent("telegram_paid"), { messenger: "telegram", event: "paid" });
+    assert.equal(parseMessengerEvent("visit"), null);
     assert.equal(JSON.stringify(kept).includes("тяжело"), false);
 
     assert.equal(scrubProductEvent({ event: "$pageview", properties: { distinct_id: "anon" } }), null);

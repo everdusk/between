@@ -19,6 +19,7 @@ import {
   isAnalyticsOwner,
   loadAnalyticsReport,
   recordPaidAnalytics,
+  trackServerEvent,
 } from "@/lib/analytics";
 import { linkCodeFromStart } from "@/lib/web-account";
 import { claimTelegramLink, resolveJournalId } from "@/lib/web-account-store";
@@ -294,6 +295,7 @@ async function handleVoice(
 
   try {
     await appendBotMessageToToday(userId, body);
+    await trackServerEvent({ userId, event: "note", messenger: "telegram" });
     await say(translate(reply, "botVoiceSaved", { text: voiceReplyPreview(body) }));
   } catch {
     await say(translate(reply, "botSaveFail"));
@@ -364,6 +366,7 @@ export async function POST(req: Request) {
         text: translate(reply, key),
         reply_markup: keyboard,
       });
+      await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
       return NextResponse.json({ ok: true });
     }
     if (userId && isLandingStart(text)) {
@@ -383,6 +386,7 @@ export async function POST(req: Request) {
       }),
       reply_markup: miniAppKeyboard(appUrl(), greeting),
     });
+    if (userId) await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
     return NextResponse.json({ ok: true });
   }
 
@@ -477,6 +481,7 @@ export async function POST(req: Request) {
 
   try {
     await appendBotMessageToToday(userId, text);
+    await trackServerEvent({ userId, event: "note", messenger: "telegram" });
     await telegramRequest("sendMessage", {
       chat_id: chatId,
       text: translate(reply, "botSaved"),

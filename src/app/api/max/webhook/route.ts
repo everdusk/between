@@ -18,6 +18,7 @@ import {
   formatAnalyticsReport,
   isAnalyticsOwner,
   loadAnalyticsReport,
+  trackServerEvent,
 } from "@/lib/analytics";
 import { linkCodeFromStart, maxStorageId } from "@/lib/web-account";
 import { claimMaxLink, resolveMaxJournalId } from "@/lib/web-account-store";
@@ -176,6 +177,7 @@ async function handleVoice(
   }
   try {
     await appendBotMessageForOwner(owner, body);
+    await trackServerEvent({ userId, event: "note", messenger: "max" });
     await say(userId, translate(reply, "botVoiceSaved", { text: voiceReplyPreview(body) }), keyboard);
   } catch {
     await say(userId, translate(reply, "botSaveFail"), keyboard);
@@ -190,6 +192,7 @@ async function handleStart(
   reply: LocaleId,
   keyboard: MaxKeyboard,
 ) {
+  await trackServerEvent({ userId, event: "visit", messenger: "max" });
   const linkCode = linkCodeFromStart(payload);
   if (linkCode) {
     const linked = await claimMaxLink(linkCode, userId, username);
@@ -298,6 +301,7 @@ export async function POST(req: Request) {
 
     try {
       await appendBotMessageForOwner(owner, text);
+      await trackServerEvent({ userId, event: "note", messenger: "max" });
       await say(userId, translate(reply, "botSaved"), keyboard);
     } catch {
       await say(userId, translate(reply, "botSaveFail"), keyboard);
