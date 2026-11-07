@@ -76,9 +76,18 @@ export function surfaceFromLocation(
 export const APP_SURFACE_CSS = ".between-landing{display:none!important}";
 
 /** Terms and privacy are public pages, not the Mini App and not the landing. */
+function barePath(pathname: string): string {
+  return pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+
 export function isLegalPath(pathname: string): boolean {
-  const path = pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  const path = barePath(pathname);
   return path === "/terms" || path === "/privacy";
+}
+
+/** Public page that hides the landing and the splash, same as the legal pages. */
+export function isDeletePath(pathname: string): boolean {
+  return barePath(pathname) === "/delete";
 }
 
 export const LEGAL_SURFACE_CSS = `${APP_SURFACE_CSS}.splash-screen{display:none!important}`;
