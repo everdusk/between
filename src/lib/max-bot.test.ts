@@ -9,6 +9,7 @@ import {
   maxWebhookSecretMatches,
   maxAudioUrl,
   maxFeelingKeyboard,
+  maxLoginKeyboard,
   maxText,
   maxUserId,
   type MaxUpdate,
@@ -123,5 +124,14 @@ describe("MAX bot", () => {
       assert.ok(parseFeelingCallback(payload));
     }
     assert.equal(keyboard.payload.buttons.every((row) => row.length <= 7), true);
+  });
+
+  it("asks for a sign-in tap instead of logging in on Start", () => {
+    const keyboard = maxLoginKeyboard("abcdefghjkmnpqrstuvwxyz234567892", "ru");
+    const button = keyboard.payload.buttons[0][0];
+    assert.equal(button.type, "callback");
+    if (button.type !== "callback") return;
+    assert.equal(button.payload, "lin:abcdefghjkmnpqrstuvwxyz234567892");
+    assert.equal(feelingFromMaxPayload(button.payload), null);
   });
 });

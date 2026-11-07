@@ -82,6 +82,9 @@ export const pt: Catalog = {
     "O mesmo bot no MAX. À noite ele pergunta como foi o dia, e a nota do chat aparece aqui. O MAX vai abrir — toque em Iniciar.",
   webMaxOff:
     "O bot do MAX ainda não está conectado.",
+  webMaxLogin: "MAX",
+  webMaxLoginWait: "Abram o MAX e toquem em Entrar no chat. Este ecrã entra sozinho.",
+  webMaxLoginFail: "O MAX não confirmou a entrada. Toquem no botão outra vez.",
   webLogout: "Sair",
   webServer: "O servidor ainda não está pronto.",
   webOAuth: "Entrar com",
@@ -94,6 +97,9 @@ export const pt: Catalog = {
   webOAuthTaken: "Esta conta já está ligada a outro diário.",
   botLinkOk: "Pronto. Este chat escreve no seu diário.",
   botLinkBad: "O código não serviu. Peça outro no navegador, no cartão da conta.",
+  botLoginAsk: "O site pede para abrir o seu diário. Se forem vocês, toquem em Entrar.",
+  botLoginYes: "Entrar",
+  botLoginOk: "Pronto. Voltem ao navegador — o diário já está aberto.",
   botLinkTaken: "Este Telegram já está ligado a outro diário.",
   botLinkTakenMax:
     "Este MAX já está ligado a outro diário.",

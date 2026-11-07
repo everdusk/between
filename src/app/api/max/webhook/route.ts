@@ -20,8 +20,8 @@ import {
   loadAnalyticsReport,
   trackServerEvent,
 } from "@/lib/analytics";
-import { linkCodeFromStart, maxStorageId } from "@/lib/web-account";
-import { claimMaxLink, resolveMaxJournalId } from "@/lib/web-account-store";
+import { linkCodeFromStart, loginTokenFromStart, maxStorageId } from "@/lib/web-account";
+import { claimMaxLink, finishMaxLogin, resolveMaxJournalId } from "@/lib/web-account-store";
 import { startPayload } from "@/lib/landing";
 import { isBotCommand } from "@/lib/telegram-bot";
 import {
@@ -33,6 +33,7 @@ import {
   maxAudioName,
   maxAudioUrl,
   maxLocaleCode,
+  maxLoginKeyboard,
   maxOpenKeyboard,
   maxText,
   maxToken,
@@ -96,8 +97,14 @@ export async function GET() {
 async function handleCallback(update: MaxUpdate, userId: number) {
   const callbackId = update.callback?.callback_id;
   if (!callbackId) return;
-  const parsed = feelingFromMaxPayload(update.callback?.payload);
+  const login = /^lin:([a-z0-9]{32})$/i.exec(update.callback?.payload ?? "");
   const { reply, owner } = await localesFor(userId, maxLocaleCode(update));
+  if (login) {
+    const account = await finishMaxLogin(login[1].toLowerCase(), userId, maxUsername(update));
+    await answerMaxCallback(callbackId, translate(reply, account ? "botLoginOk" : "botLinkBad"));
+    return;
+  }
+  const parsed = feelingFromMaxPayload(update.callback?.payload);
   if (!parsed || !maxToken() || !redisConfigured()) {
     await answerMaxCallback(callbackId, translate(reply, "botCheckinNotReady"));
     return;
@@ -193,6 +200,11 @@ async function handleStart(
   keyboard: MaxKeyboard,
 ) {
   await trackServerEvent({ userId, event: "visit", messenger: "max" });
+  const loginToken = loginTokenFromStart(payload);
+  if (loginToken) {
+    await say(userId, translate(reply, "botLoginAsk"), maxLoginKeyboard(loginToken, reply));
+    return;
+  }
   const linkCode = linkCodeFromStart(payload);
   if (linkCode) {
     const linked = await claimMaxLink(linkCode, userId, username);

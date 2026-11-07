@@ -158,6 +158,26 @@ export function maxBotLinkUrl(code: string): string | null {
   return `https://max.ru/${name}?start=${encodeURIComponent(`link_${code}`)}`;
 }
 
+export function newMaxLoginToken(): string {
+  const bytes = randomBytes(32);
+  let token = "";
+  for (let i = 0; i < 32; i += 1) token += CODE_ALPHABET[bytes[i] % CODE_ALPHABET.length];
+  return token;
+}
+
+/** `login_<32 chars>` from a bot start payload, or null. */
+export function loginTokenFromStart(payload: string): string | null {
+  const match = /^login_([a-z0-9]{32})$/i.exec(payload.trim());
+  return match ? match[1].toLowerCase() : null;
+}
+
+/** Opens the bot. After Start, the site that asked for this token receives the session. */
+export function maxBotLoginUrl(token: string): string | null {
+  const name = maxBotUsername();
+  if (!name) return null;
+  return `https://max.ru/${name}?start=${encodeURIComponent(`login_${token}`)}`;
+}
+
 export const RESET_TTL_SECONDS = 30 * 60;
 
 export function newResetToken(): string {

@@ -82,6 +82,9 @@ export const en: Catalog = {
     "The same bot in MAX. In the evening it asks how the day went, and the note from chat shows up here. MAX will open — press Start.",
   webMaxOff:
     "The MAX bot is not connected yet.",
+  webMaxLogin: "MAX",
+  webMaxLoginWait: "Open MAX and press Sign in in the chat. This screen signs in by itself.",
+  webMaxLoginFail: "MAX did not confirm the sign-in. Press the button again.",
   webLogout: "Sign out",
   webServer: "The server is not ready yet.",
   webOAuth: "Sign in with",
@@ -94,6 +97,9 @@ export const en: Catalog = {
   webOAuthTaken: "This account is already linked to another journal.",
   botLinkOk: "Done. This chat writes to your journal.",
   botLinkBad: "That code did not work. Request a new one in the browser, on the account card.",
+  botLoginAsk: "The site asks to open your journal. If this is you, press Sign in.",
+  botLoginYes: "Sign in",
+  botLoginOk: "Done. Go back to the browser — the journal is open.",
   botLinkTaken: "This Telegram is already linked to another journal.",
   botLinkTakenMax:
     "This MAX account is already linked to another journal.",

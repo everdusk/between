@@ -82,6 +82,9 @@ export const id: Catalog = {
     "Bot yang sama di MAX. Malam hari ia bertanya bagaimana hari Anda, dan catatan dari chat muncul di sini. MAX akan terbuka — tekan Mulai.",
   webMaxOff:
     "Bot MAX belum terhubung.",
+  webMaxLogin: "MAX",
+  webMaxLoginWait: "Buka MAX dan tekan Masuk di chat. Layar ini masuk sendiri.",
+  webMaxLoginFail: "MAX belum mengonfirmasi masuk. Tekan tombol sekali lagi.",
   webLogout: "Keluar",
   webServer: "Server belum siap.",
   webOAuth: "Masuk dengan",
@@ -94,6 +97,9 @@ export const id: Catalog = {
   webOAuthTaken: "Akun ini sudah terhubung ke jurnal lain.",
   botLinkOk: "Selesai. Chat ini menulis ke jurnal Anda.",
   botLinkBad: "Kode tidak cocok. Minta yang baru di peramban, pada kartu akun.",
+  botLoginAsk: "Situs meminta membuka jurnal Anda. Jika ini Anda, tekan Masuk.",
+  botLoginYes: "Masuk",
+  botLoginOk: "Selesai. Kembali ke peramban — jurnal sudah terbuka.",
   botLinkTaken: "Telegram ini sudah terhubung ke jurnal lain.",
   botLinkTakenMax:
     "MAX ini sudah terhubung ke jurnal lain.",

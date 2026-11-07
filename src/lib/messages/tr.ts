@@ -82,6 +82,9 @@ export const tr: Catalog = {
     "Aynı bot MAX’te. Akşam günün nasıl geçtiğini sorar, sohbetteki not burada görünür. MAX açılır — Başlat’a basın.",
   webMaxOff:
     "MAX botu henüz bağlı değil.",
+  webMaxLogin: "MAX",
+  webMaxLoginWait: "MAX’i açın ve sohbette Giriş’e basın. Bu ekran kendiliğinden girer.",
+  webMaxLoginFail: "MAX girişi onaylamadı. Düğmeye bir kez daha basın.",
   webLogout: "Çıkış",
   webServer: "Sunucu henüz hazır değil.",
   webOAuth: "Şununla gir",
@@ -94,6 +97,9 @@ export const tr: Catalog = {
   webOAuthTaken: "Bu hesap başka bir günlüğe bağlı.",
   botLinkOk: "Tamam. Bu sohbet günlüğünüze yazar.",
   botLinkBad: "Kod uymadı. Tarayıcıda, hesap kartından yenisini isteyin.",
+  botLoginAsk: "Site günlüğünüzü açmak istiyor. Sizseniz Giriş’e basın.",
+  botLoginYes: "Giriş",
+  botLoginOk: "Tamam. Tarayıcıya dönün — günlük açık.",
   botLinkTaken: "Bu Telegram başka bir günlüğe bağlı.",
   botLinkTakenMax:
     "Bu MAX başka bir günlüğe bağlı.",

@@ -131,11 +131,21 @@ export function maxFeelingKeyboard(slot: CheckinSlot, locale: LocaleId = "ru"): 
   };
 }
 
+/** Confirms a website sign-in. Start alone does not hand the journal to the browser. */
+export function maxLoginKeyboard(token: string, locale: LocaleId = "ru"): MaxKeyboard {
+  return {
+    type: "inline_keyboard",
+    payload: {
+      buttons: [[{ type: "callback", text: translate(locale, "botLoginYes"), payload: `lin:${token}` }]],
+    },
+  };
+}
+
 export function maxOpenKeyboard(locale: LocaleId = "ru"): MaxKeyboard {
   return {
     type: "inline_keyboard",
     payload: {
-      buttons: [[{ type: "link", text: translate(locale, "botOpen"), url: appUrl() }]],
+      buttons: [[{ type: "link", text: translate(locale, "botOpen"), url: `${appUrl()}/journal` }]],
     },
   };
 }

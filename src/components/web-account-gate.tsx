@@ -11,6 +11,7 @@ import { LegalAgree } from "@/components/legal-links";
 import { useI18n } from "@/components/locale-provider";
 import type { WebAccount } from "@/hooks/use-web-account";
 import { formatDayLabel, formatTime, toDateKey } from "@/lib/dates";
+import { readMaxInitData } from "@/lib/max-webapp";
 import { feelingFill } from "@/lib/spectrum";
 import type { Feeling } from "@/lib/types";
 import { cn } from "cn";
@@ -134,8 +135,11 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [maxUrl, setMaxUrl] = useState<string | null>(null);
   const formRef = useRef<HTMLElement>(null);
   const codeRef = useRef<HTMLInputElement>(null);
+  const maxTried = useRef(false);
+  const maxPoll = useRef(0);
 
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get("oauth");
@@ -152,6 +156,48 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   useEffect(() => {
     if (mode === "code") codeRef.current?.focus();
   }, [mode]);
+
+  useEffect(() => () => {
+    maxPoll.current += 1;
+  }, []);
+
+  useEffect(() => {
+    if (maxTried.current) return;
+    let stopped = false;
+    async function enter(initData: string) {
+      if (stopped || maxTried.current) return;
+      maxTried.current = true;
+      setBusy(true);
+      try {
+        const res = await fetch("/api/account/max", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ initData }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { account?: WebAccount };
+        if (!stopped && res.ok && data.account) onSignedIn(data.account);
+      } catch {
+        // The form stays. MAX did not confirm this launch.
+      } finally {
+        if (!stopped) setBusy(false);
+      }
+    }
+    const first = readMaxInitData();
+    if (first) {
+      void enter(first);
+      return () => {
+        stopped = true;
+      };
+    }
+    const timer = window.setTimeout(() => {
+      const later = readMaxInitData();
+      if (later) void enter(later);
+    }, 400);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+    };
+  }, [onSignedIn]);
 
   function formError(value: string | undefined): string {
     if (value === "bad_email") return t("webBadEmail");
@@ -175,6 +221,49 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
       return false;
     }
     return true;
+  }
+
+  async function loginWithMax() {
+    const mine = ++maxPoll.current;
+    const current = () => mine === maxPoll.current;
+    setBusy(true);
+    setError(null);
+    setNote(null);
+    setMaxUrl(null);
+    try {
+      const res = await fetch("/api/account/max/start", { method: "POST" });
+      const data = (await res.json().catch(() => ({}))) as { token?: string; url?: string; error?: string };
+      if (!current()) return;
+      if (!res.ok || !data.token || !data.url) {
+        setError(data.error === "max_off" ? t("webMaxOff") : t("webServer"));
+        return;
+      }
+      const opened = window.open(data.url, "_blank");
+      if (opened) opened.opener = null;
+      else setMaxUrl(data.url);
+      setNote(t("webMaxLoginWait"));
+      for (let attempt = 0; attempt < 40; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1500));
+        if (!current()) return;
+        const wait = await fetch("/api/account/max/wait", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: data.token }),
+        });
+        const body = (await wait.json().catch(() => ({}))) as { pending?: boolean; account?: WebAccount };
+        if (!current()) return;
+        if (wait.ok && body.account && !body.pending) {
+          onSignedIn(body.account);
+          return;
+        }
+      }
+      setNote(null);
+      setError(t("webMaxLoginFail"));
+    } catch {
+      if (current()) setError(t("webServer"));
+    } finally {
+      if (current()) setBusy(false);
+    }
   }
 
   function openMode(next: GateMode) {
@@ -334,6 +423,27 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
                   </a>
                 ))}
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="mt-2 w-full"
+                disabled={busy}
+                onClick={() => void loginWithMax()}
+              >
+                {t("webMaxLogin")}
+              </Button>
+              {maxUrl ? (
+                <a
+                  href={maxUrl}
+                  className={cn(buttonVariants({ variant: "outline", size: "lg" }), "mt-2 w-full")}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t("webMaxLogin")}
+                </a>
+              ) : null}
+              {note ? <p className="mt-3 text-sm leading-relaxed text-foreground">{note}</p> : null}
             </div>
             <p className="my-4 text-center text-xs font-bold tracking-[0.16em] text-muted-foreground uppercase">
               {t("webOr")}

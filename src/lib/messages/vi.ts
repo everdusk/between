@@ -82,6 +82,9 @@ export const vi: Catalog = {
     "Cùng một bot trong MAX. Buổi tối bot hỏi ngày của bạn thế nào, và ghi chú từ chat hiện ở đây. MAX sẽ mở — nhấn Bắt đầu.",
   webMaxOff:
     "Bot MAX chưa được kết nối.",
+  webMaxLogin: "MAX",
+  webMaxLoginWait: "Mở MAX và nhấn Vào trong chat. Màn hình này sẽ tự đăng nhập.",
+  webMaxLoginFail: "MAX chưa xác nhận đăng nhập. Hãy nhấn nút lần nữa.",
   webLogout: "Thoát",
   webServer: "Máy chủ chưa sẵn sàng.",
   webOAuth: "Vào bằng",
@@ -94,6 +97,9 @@ export const vi: Catalog = {
   webOAuthTaken: "Tài khoản này đã nối với nhật ký khác.",
   botLinkOk: "Xong. Chat này ghi vào nhật ký của bạn.",
   botLinkBad: "Mã không đúng. Hãy xin mã mới trên trình duyệt, ở thẻ tài khoản.",
+  botLoginAsk: "Trang web xin mở nhật ký của bạn. Nếu là bạn, hãy nhấn Vào.",
+  botLoginYes: "Vào",
+  botLoginOk: "Xong. Quay lại trình duyệt — nhật ký đã mở.",
   botLinkTaken: "Telegram này đã nối với nhật ký khác.",
   botLinkTakenMax:
     "MAX này đã nối với nhật ký khác.",

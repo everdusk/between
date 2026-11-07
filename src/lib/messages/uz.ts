@@ -82,6 +82,9 @@ export const uz: Catalog = {
     "O‘sha bot MAX’da. Kechqurun kun qanday o‘tganini so‘raydi, chatdagi qayd shu yerda ko‘rinadi. MAX ochiladi — Boshlashni bosing.",
   webMaxOff:
     "MAX boti hali ulanmagan.",
+  webMaxLogin: "MAX",
+  webMaxLoginWait: "MAX ni oching va chatda «Kirish» ni bosing. Bu ekran o‘zi kiradi.",
+  webMaxLoginFail: "MAX kirishni tasdiqlamadi. Tugmani yana bosing.",
   webLogout: "Chiqish",
   webServer: "Server hali tayyor emas.",
   webOAuth: "Shu orqali kirish",
@@ -94,6 +97,9 @@ export const uz: Catalog = {
   webOAuthTaken: "Bu hisob boshqa kundalikka ulangan.",
   botLinkOk: "Tayyor. Bu chat kundaligingizga yozadi.",
   botLinkBad: "Kod mos kelmadi. Brauzerda, hisob kartasida yangisini so‘rang.",
+  botLoginAsk: "Sayt kundaligingizni ochmoqchi. Agar bu siz bo‘lsangiz, «Kirish» ni bosing.",
+  botLoginYes: "Kirish",
+  botLoginOk: "Tayyor. Brauzerga qayting — kundalik ochiq.",
   botLinkTaken: "Bu Telegram boshqa kundalikka ulangan.",
   botLinkTakenMax:
     "Bu MAX boshqa kundalikka ulangan.",

@@ -607,6 +607,105 @@ export async function claimMaxLink(
   return "ok";
 }
 
+const MAX_LOGIN_TTL_SECONDS = 5 * 60;
+
+function maxLoginKey(token: string): string {
+  return `between:maxlogin:${token}`;
+}
+
+/** A browser is waiting for this person to press Start in MAX. */
+export async function beginMaxLogin(token: string): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return false;
+  await redis.set(maxLoginKey(token), "pending", { ex: MAX_LOGIN_TTL_SECONDS });
+  return true;
+}
+
+/** Bind the MAX user to a journal and let the waiting browser pick up the session. */
+export async function finishMaxLogin(
+  token: string,
+  maxUserId: number,
+  username?: string,
+): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const state = await redis.get<string>(maxLoginKey(token));
+  if (typeof state === "string" && /^w[0-9a-f]{32}$/.test(state)) {
+    const ready = await loadAccount(state);
+    return ready?.maxUserId === maxUserId ? ready : null;
+  }
+  if (state !== "pending") return null;
+  const account = await ensureMaxAccount(maxUserId, username);
+  if (!account) return null;
+  await redis.set(maxLoginKey(token), account.id, { ex: MAX_LOGIN_TTL_SECONDS });
+  return account;
+}
+
+/** One-time read for the browser that asked to sign in. */
+export async function takeMaxLogin(token: string): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const state = await redis.get<string>(maxLoginKey(token));
+  if (typeof state !== "string" || !/^w[0-9a-f]{32}$/.test(state)) return null;
+  await redis.del(maxLoginKey(token));
+  return loadAccount(state);
+}
+
+/** The journal for this MAX user, creating it on the first signed launch. */
+export async function ensureMaxAccount(
+  maxUserId: number,
+  username?: string,
+): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const existingId = await accountIdForMax(maxUserId);
+  if (existingId) {
+    const account = await loadAccount(existingId);
+    if (!account) return null;
+    const handle = username?.trim().replace(/^@/, "");
+    if (handle && handle !== account.maxUsername) {
+      account.maxUsername = handle;
+      await redis.set(accountKey(account.id), account);
+    }
+    return account;
+  }
+
+  const id = newAccountId();
+  const handle = username?.trim().replace(/^@/, "") || null;
+  const account: AccountRecord = {
+    id,
+    email: "",
+    salt: "",
+    hash: "",
+    telegramUserId: null,
+    telegramUsername: null,
+    maxUserId,
+    maxUsername: handle,
+    createdAt: new Date().toISOString(),
+    providers: {},
+  };
+  const claimed = await redis.set(maxKey(maxUserId), id, { nx: true });
+  if (claimed !== "OK") {
+    const winner = await accountIdForMax(maxUserId);
+    return winner ? loadAccount(winner) : null;
+  }
+  await redis.set(accountKey(id), account);
+
+  const webId = webStorageId(id);
+  const fromId = maxStorageId(maxUserId);
+  const maxAccess = await loadWeekAccess(fromId);
+  const absorbed = absorbWeekPremium(await loadWeekAccess(webId), maxAccess, new Date());
+  await saveWeekAccess(webId, absorbed.web);
+  const merged = mergeStores(await loadUserStore(webId), await loadUserStore(fromId));
+  await saveUserStore(webId, merged);
+  const tz = await getUserTimezone(fromId);
+  if (tz) await setUserTimezone(webId, tz);
+  const locale = await loadUserLocale(fromId);
+  if (locale) await saveUserLocale(webId, locale as LocaleId);
+  await rememberUser(fromId);
+  return account;
+}
+
 export async function accountIdForMax(userId: number): Promise<string | null> {
   const redis = getRedis();
   if (!redis) return null;
