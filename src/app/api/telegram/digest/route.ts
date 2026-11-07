@@ -99,11 +99,14 @@ async function runDigest() {
         continue;
       }
 
-      const locale = resolveBotLocale(
-        await loadUserLocale(owner),
-        await loadDeviceLocale(owner),
-        null,
-      );
+      const locale =
+        channel === "max"
+          ? "ru"
+          : resolveBotLocale(
+              await loadUserLocale(owner),
+              await loadDeviceLocale(owner),
+              null,
+            );
       const ok =
         channel === "max" && maxId
           ? action.type === "poll"

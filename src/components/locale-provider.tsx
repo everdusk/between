@@ -49,10 +49,12 @@ function applyDocument(locale: LocaleId) {
 export function LocaleProvider({
   telegramLanguage,
   initData = "",
+  lockLocale = null,
   children,
 }: {
   telegramLanguage?: string | null;
   initData?: string;
+  lockLocale?: LocaleId | null;
   children: ReactNode;
 }) {
   const [locale, setLocaleState] = useState<LocaleId>("ru");
@@ -60,6 +62,13 @@ export function LocaleProvider({
   const [deviceLocale, setDeviceLocale] = useState<LocaleId>("ru");
 
   useLayoutEffect(() => {
+    if (lockLocale) {
+      setLocaleState(lockLocale);
+      setChosen(lockLocale);
+      setDeviceLocale(lockLocale);
+      applyDocument(lockLocale);
+      return;
+    }
     const device = deviceLocaleFromNavigator();
     let stored: string | null = null;
     let explicit: LocaleId | null = null;
@@ -81,9 +90,10 @@ export function LocaleProvider({
       device,
       ...(isLocale(stored) ? { locale: stored } : {}),
     });
-  }, [telegramLanguage, initData]);
+  }, [telegramLanguage, initData, lockLocale]);
 
   const setLocale = useCallback((next: LocaleId) => {
+    if (lockLocale) return;
     setLocaleState(next);
     setChosen(next);
     applyDocument(next);
@@ -93,7 +103,7 @@ export function LocaleProvider({
       // Private mode can block storage; the choice still applies for this visit.
     }
     syncLocale(initData, { locale: next });
-  }, [initData]);
+  }, [initData, lockLocale]);
 
   const value = useMemo<I18nValue>(() => {
     const slotKey = {
@@ -101,16 +111,17 @@ export function LocaleProvider({
       day: "slotDay",
       evening: "slotEvening",
     } as const;
+    const active = lockLocale ?? locale;
     return {
-      locale,
-      greetingLocale: resolveAppGreetingLocale(chosen, deviceLocale),
+      locale: active,
+      greetingLocale: lockLocale ?? resolveAppGreetingLocale(chosen, deviceLocale),
       setLocale,
-      t: (key, vars) => translate(locale, key, vars),
-      count: (amount, stem) => countPhrase(locale, amount, stem),
-      feeling: (feeling) => feelingLabel(locale, feeling),
-      slot: (slot) => translate(locale, slotKey[slot]),
+      t: (key, vars) => translate(active, key, vars),
+      count: (amount, stem) => countPhrase(active, amount, stem),
+      feeling: (feeling) => feelingLabel(active, feeling),
+      slot: (slot) => translate(active, slotKey[slot]),
     };
-  }, [locale, chosen, deviceLocale, setLocale]);
+  }, [locale, lockLocale, chosen, deviceLocale, setLocale]);
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }
