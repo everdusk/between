@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { CalendarDays, PenLine, Waves } from "lucide-react";
 import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
 import { JournalPanel } from "@/components/journal-panel";
+import { JournalSkeleton } from "@/components/journal-skeleton";
 import { LanguageSwitch } from "@/components/language-switch";
 import { LegalLinks } from "@/components/legal-links";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
@@ -113,6 +114,22 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   });
 
   const [section, setSection] = useState<SectionId>("journal");
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const scrollTops = useRef<Partial<Record<SectionId, number>>>({});
+
+  function selectSection(next: string) {
+    const id = next as SectionId;
+    if (id === section) return;
+    const el = scrollerRef.current;
+    if (el) scrollTops.current[section] = el.scrollTop;
+    setSection(id);
+  }
+
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollTop = scrollTops.current[section] ?? 0;
+  }, [section]);
   const [premium, setPremium] = useState(false);
 
   useEffect(() => {
@@ -148,15 +165,12 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     setPremium(view.status === "paid");
   }
 
+  const authSettled =
+    !webEntry || telegram.inTelegram || web.status === "ready" || web.status === "unavailable";
   const showGate =
-    webEntry &&
-    telegram.ready &&
-    !telegram.inTelegram &&
-    !web.account &&
-    (web.status === "ready" || web.status === "unavailable");
-  const accountPending =
-    webEntry && !telegram.inTelegram && (web.status === "idle" || web.status === "loading");
-  const shellReady = telegram.ready && !accountPending && (showGate || status !== "loading");
+    webEntry && telegram.ready && !telegram.inTelegram && authSettled && !web.account;
+  const accountPending = webEntry && !telegram.inTelegram && !authSettled;
+  const shellReady = telegram.ready;
   useEffect(() => {
     if (shellReady) markSplashReady();
   }, [shellReady]);
@@ -240,7 +254,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                       type="button"
                       aria-current={on ? "page" : undefined}
                       className={`flex items-center gap-2 rounded-full px-3 py-2.5 text-start text-sm font-extrabold ${on ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-foreground/[0.06]"}`}
-                      onClick={() => setSection(id)}
+                      onClick={() => selectSection(id)}
                     >
                       <Icon aria-hidden className="size-4" />
                       <span>{t(SECTION_KEY[id])}</span>
@@ -287,20 +301,22 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
       <div className="journal-column relative z-10 mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col">
         {showGate ? (
           <WebAccountGate onSignedIn={web.setAccount} />
-        ) : status !== "ready" && (
-          <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] pt-3 sm:pl-[max(1.25rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))]">
-            {status === "loading" && (
-              <div
-                className="glass rounded-3xl px-6 py-14 text-center"
-                role="status"
-              >
-                <div className="mx-auto mb-4 h-1 w-28 overflow-hidden rounded-full bg-foreground/[0.08]">
-                  <div className="loading-bar h-full w-1/2 rounded-full bg-primary/70" />
-                </div>
-                <p className="text-sm text-muted-foreground">{t("loadingEntries")}</p>
-              </div>
-            )}
-            {status === "error" && (
+        ) : (
+          <Tabs
+            value={section}
+            onValueChange={selectSection}
+            className="flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden"
+          >
+            <div
+              ref={scrollerRef}
+              className="journal-scroll pt-3 pr-[max(1rem,var(--safe-right))] pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]"
+            >
+            {accountCard() && !botLinked ? (
+              <div className="journal-account-inline mb-4">{accountCard()}</div>
+            ) : null}
+            {accountPending || status === "loading" ? (
+              <JournalSkeleton />
+            ) : status === "error" ? (
               <div
                 className="glass rounded-3xl border-destructive/20 px-6 py-7"
                 role="alert"
@@ -313,26 +329,9 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                   {t("startOver")}
                 </Button>
               </div>
-            )}
-            {footer}
-          </main>
-        )}
-
-        {!showGate && status === "ready" && (
-          <Tabs
-            value={section}
-            onValueChange={(v) => setSection(v as SectionId)}
-            className="flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden"
-          >
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-3 pr-[max(1rem,var(--safe-right))] pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]">
-            {accountCard() && !botLinked ? (
-              <div className="journal-account-inline mb-4">{accountCard()}</div>
-            ) : null}
-            <div
-              key={section}
-              className="animate-in fade-in slide-in-from-bottom-2 duration-500 ease-out"
-            >
-              <TabsContent value="journal" className="mt-0 outline-none">
+            ) : (
+            <div>
+              <TabsContent keepMounted value="journal" className="mt-0 outline-none">
                 <JournalPanel
                   entries={store.entries}
                   onSave={upsertEntry}
@@ -341,7 +340,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                   initData={telegram.inTelegram ? telegram.initData : ""}
                 />
               </TabsContent>
-              <TabsContent value="week" className="mt-0 outline-none">
+              <TabsContent keepMounted value="week" className="mt-0 outline-none">
                 <WeekTab
                   active={section === "week"}
                   ready={telegram.ready}
@@ -369,7 +368,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                   />
                 </WeekTab>
               </TabsContent>
-              <TabsContent value="sessions" className="mt-0 outline-none">
+              <TabsContent keepMounted value="sessions" className="mt-0 outline-none">
                 <SessionsPanel
                   sessions={store.sessions}
                   plan={store.sessionPlan}
@@ -382,7 +381,8 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                 />
               </TabsContent>
             </div>
-            {footer}
+            )}
+            {status === "ready" && !accountPending ? footer : null}
             {section === "sessions" && botLinked ? (
               <div className="pb-6">{accountCard()}</div>
             ) : null}
