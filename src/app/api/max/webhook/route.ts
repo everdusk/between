@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
-import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale, type LocaleId } from "@/lib/i18n";
+import { type LocaleId } from "@/lib/i18n";
 import { addCheckinForOwner, appendBotMessageForOwner } from "@/lib/journal-server";
 import { feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
 import {
   claimDigestSlot,
   getUserTimezone,
-  loadDeviceLocale,
-  loadUserLocale,
   loadUserStore,
   loadWeekAccess,
   redisConfigured,
   releaseDigestSlot,
-  rememberDeviceLocale,
   rememberUser,
   saveWeekAccess,
   takeBriefAttempt,
@@ -38,7 +35,6 @@ import {
   maxAudioName,
   maxAudioUrl,
   maxFeelingKeyboard,
-  maxLocaleCode,
   maxOpenKeyboard,
   maxText,
   maxToken,
@@ -66,20 +62,15 @@ function verifyWebhookSecret(req: Request): boolean {
   );
 }
 
-async function localesFor(userId: number, code: string | null): Promise<{
+async function localesFor(userId: number): Promise<{
   reply: LocaleId;
   greeting: LocaleId;
   owner: string;
 }> {
-  const owner = await resolveMaxJournalId(userId);
-  const seen = localeFromTelegram(code);
-  if (seen && redisConfigured()) await rememberDeviceLocale(owner, seen);
-  const selected = redisConfigured() ? await loadUserLocale(owner) : null;
-  const device = redisConfigured() ? await loadDeviceLocale(owner) : null;
   return {
-    owner,
-    reply: resolveBotLocale(selected, device, code),
-    greeting: resolveGreetingLocale(null, device, code),
+    owner: await resolveMaxJournalId(userId),
+    reply: "ru",
+    greeting: "ru",
   };
 }
 
@@ -116,7 +107,7 @@ async function handleCallback(update: MaxUpdate, userId: number) {
   const callbackId = update.callback?.callback_id;
   if (!callbackId) return;
   const login = /^lin:([a-z0-9]{32})$/i.exec(update.callback?.payload ?? "");
-  const { reply, owner } = await localesFor(userId, maxLocaleCode(update));
+  const { reply, owner } = await localesFor(userId);
   if (login) {
     const account = await finishMaxLogin(login[1].toLowerCase(), userId, maxUsername(update));
     await answerMaxCallback(callbackId, translate(reply, account ? "botLoginOk" : "botLinkBad"));
@@ -276,7 +267,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    const { reply, greeting, owner } = await localesFor(userId, maxLocaleCode(update));
+    const { reply, greeting, owner } = await localesFor(userId);
     const keyboard = maxOpenKeyboard(reply) ?? undefined;
     const username = maxUsername(update);
     const text = maxText(update);

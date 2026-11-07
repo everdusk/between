@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { CalendarDays, PenLine, Waves } from "lucide-react";
 import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
@@ -22,6 +22,7 @@ import { useWebAccount } from "@/hooks/use-web-account";
 import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { markSplashReady } from "@/lib/splash";
+import { inMaxClient } from "@/lib/max-webapp";
 import { clearStore, WEB_STORAGE_KEY } from "@/lib/storage";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
 import { trackAnalytics } from "@/lib/analytics-client";
@@ -46,14 +47,24 @@ const SECTION_ICON = {
 
 export function TherapyApp() {
   const telegram = useTelegram();
+  const inMax = useInMax();
   return (
     <LocaleProvider
       telegramLanguage={telegram.user?.language_code}
       initData={telegram.inTelegram ? telegram.initData : ""}
+      lockLocale={inMax ? "ru" : null}
     >
-      <TherapyShell telegram={telegram} />
+      <TherapyShell telegram={telegram} inMax={inMax} />
     </LocaleProvider>
   );
+}
+
+function useInMax(): boolean {
+  const [inside, setInside] = useState(false);
+  useLayoutEffect(() => {
+    setInside(inMaxClient());
+  }, []);
+  return inside;
 }
 
 function shownName(displayName: string, guest: string): string {
@@ -71,7 +82,7 @@ function localizeStorageError(
   return error ?? "";
 }
 
-function TherapyShell({ telegram }: { telegram: TelegramSession }) {
+function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: boolean }) {
   const { t, locale, greetingLocale } = useI18n();
   const pathname = usePathname();
   const webEntry = pathname === "/journal" || pathname.startsWith("/journal/");
@@ -213,7 +224,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
               {webSurface ? null : <p className="mt-2 truncate text-xs text-subtitle">{greeting}</p>}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <LanguageSwitch />
+              {inMax ? null : <LanguageSwitch />}
               <SchemeSwitch />
             </div>
           </div>
@@ -267,7 +278,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                 localhost
               </span>
             )}
-            <LanguageSwitch />
+            {inMax ? null : <LanguageSwitch />}
             {webSurface ? <SchemeSwitch /> : null}
           </div>
         </div>

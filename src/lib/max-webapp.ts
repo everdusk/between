@@ -10,3 +10,55 @@ export function readMaxInitData(): string | null {
   const init = app?.initData?.trim();
   return init || null;
 }
+
+export const MAX_CLIENT_COOKIE = "between-max";
+
+/** True when this page was opened by the MAX client, not by a normal browser. */
+export function maxClientFrom(input: {
+  hash?: string;
+  referrer?: string;
+  requestedWith?: string;
+  hasWebApp?: boolean;
+  cookie?: boolean;
+}): boolean {
+  if (input.cookie || input.hasWebApp) return true;
+  const hash = input.hash?.replace(/^#/, "") ?? "";
+  if (hash) {
+    const params = new URLSearchParams(hash);
+    if (params.get("WebAppData") || params.get("WebAppPlatform")) return true;
+  }
+  const requested = input.requestedWith ?? "";
+  if (/oneme/i.test(requested)) return true;
+  return maxHost(input.referrer ?? "");
+}
+
+function maxHost(value: string): boolean {
+  if (!value) return false;
+  if (/^android-app:\/\/ru\.oneme\.app/i.test(value)) return true;
+  try {
+    const host = new URL(value).hostname;
+    return host === "max.ru" || host.endsWith(".max.ru");
+  } catch {
+    return false;
+  }
+}
+
+/** The open journal is inside MAX. A normal browser tab stays false. */
+export function inMaxClient(): boolean {
+  if (typeof window === "undefined") return false;
+  const app = (window as unknown as { WebApp?: { initData?: string; platform?: string } }).WebApp;
+  const cookie = document.cookie.split(";").some((part) => part.trim() === `${MAX_CLIENT_COOKIE}=1`);
+  const detected = maxClientFrom({
+    hash: window.location.hash,
+    referrer: document.referrer,
+    hasWebApp: Boolean(app && (app.initData || app.platform)),
+    cookie,
+  });
+  try {
+    if (detected) sessionStorage.setItem(MAX_CLIENT_COOKIE, "1");
+    if (!detected && sessionStorage.getItem(MAX_CLIENT_COOKIE) === "1") return true;
+  } catch {
+    /* private mode */
+  }
+  return detected;
+}

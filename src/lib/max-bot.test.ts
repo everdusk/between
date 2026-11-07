@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { X509Certificate } from "node:crypto";
 import { afterEach, describe, it } from "node:test";
 import { digestChannel, maxUserIdFromDigest } from "./digest";
+import { maxClientFrom } from "./max-webapp";
 import { maxBotLinkUrl, maxBotLoginUrl, maxStorageId } from "./web-account";
 import { toPublicAccount } from "./web-account-store";
 import { RUSSIAN_TRUSTED_ROOT_CA, RUSSIAN_TRUSTED_SUB_CA } from "./max-ca";
@@ -166,5 +167,16 @@ describe("MAX bot", () => {
     if (button.type !== "callback") return;
     assert.equal(button.payload, "lin:abcdefghjkmnpqrstuvwxyz234567892");
     assert.equal(feelingFromMaxPayload(button.payload), null);
+  });
+});
+
+describe("MAX client", () => {
+  it("recognises the mini app, the MAX site, and the Android package", () => {
+    assert.equal(maxClientFrom({}), false);
+    assert.equal(maxClientFrom({ hash: "#WebAppPlatform=android&WebAppData=abc" }), true);
+    assert.equal(maxClientFrom({ referrer: "https://web.max.ru/se14938561_bot" }), true);
+    assert.equal(maxClientFrom({ referrer: "https://www.between-journal.ru/journal" }), false);
+    assert.equal(maxClientFrom({ requestedWith: "ru.oneme.app" }), true);
+    assert.equal(maxClientFrom({ cookie: true }), true);
   });
 });
