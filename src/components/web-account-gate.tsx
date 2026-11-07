@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LegalAgree } from "@/components/legal-links";
+import { PasswordField } from "@/components/password-field";
 import { useI18n } from "@/components/locale-provider";
 import type { WebAccount } from "@/hooks/use-web-account";
 import { formatDayLabel, formatTime, toDateKey } from "@/lib/dates";
@@ -15,12 +16,6 @@ import { readMaxInitData } from "@/lib/max-webapp";
 import { feelingFill } from "@/lib/spectrum";
 import type { Feeling } from "@/lib/types";
 import { cn } from "cn";
-
-const PROVIDERS = [
-  { id: "vk", href: "/api/account/oauth/vk", label: "webVk" },
-  { id: "yandex", href: "/api/account/oauth/yandex", label: "webYandex" },
-  { id: "sber", href: "/api/account/oauth/sber", label: "webSber" },
-] as const;
 
 const SAMPLE_NOTES: {
   hour: number;
@@ -123,11 +118,11 @@ function JournalPreview() {
   );
 }
 
-type GateMode = "register" | "login" | "forgot" | "code";
+type GateMode = "login" | "forgot" | "code";
 
 export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccount) => void }) {
   const { t } = useI18n();
-  const [mode, setMode] = useState<GateMode>("register");
+  const [mode, setMode] = useState<GateMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordAgain, setPasswordAgain] = useState("");
@@ -135,23 +130,14 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [maxUrl, setMaxUrl] = useState<string | null>(null);
+  const [messengerUrl, setMessengerUrl] = useState<string | null>(null);
+  const [messengerKind, setMessengerKind] = useState<"max" | "telegram">("max");
+  const [telegramVpn, setTelegramVpn] = useState(false);
+  const [errorScope, setErrorScope] = useState<"login" | "register" | "other">("other");
   const formRef = useRef<HTMLElement>(null);
   const codeRef = useRef<HTMLInputElement>(null);
   const maxTried = useRef(false);
   const maxPoll = useRef(0);
-
-  useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get("oauth");
-    if (code === "off") setError(t("webOAuthOff"));
-    else if (code === "taken") setError(t("webOAuthTaken"));
-    else if (code === "bad") setError(t("webOAuthBad"));
-    if (code) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("oauth");
-      window.history.replaceState(null, "", `${url.pathname}${url.search}`);
-    }
-  }, [t]);
 
   useEffect(() => {
     if (mode === "code") codeRef.current?.focus();
@@ -212,6 +198,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   }
 
   function passwordReady(): boolean {
+    setErrorScope("register");
     if (password !== passwordAgain) {
       setError(t("webPasswordMismatch"));
       return false;
@@ -223,29 +210,49 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
     return true;
   }
 
-  async function loginWithMax() {
+  async function loginWithMessenger(kind: "max" | "telegram") {
+    const popup = window.open("about:blank", "_blank");
     const mine = ++maxPoll.current;
     const current = () => mine === maxPoll.current;
     setBusy(true);
     setError(null);
     setNote(null);
-    setMaxUrl(null);
+    setMessengerUrl(null);
+    setTelegramVpn(false);
+    setMessengerKind(kind);
     try {
-      const res = await fetch("/api/account/max/start", { method: "POST" });
-      const data = (await res.json().catch(() => ({}))) as { token?: string; url?: string; error?: string };
-      if (!current()) return;
+      const res = await fetch(kind === "max" ? "/api/account/max/start" : "/api/account/telegram/start", {
+        method: "POST",
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        token?: string;
+        url?: string;
+        error?: string;
+        vpn?: boolean;
+      };
+      if (!current()) {
+        popup?.close();
+        return;
+      }
       if (!res.ok || !data.token || !data.url) {
+        popup?.close();
         setError(data.error === "max_off" ? t("webMaxOff") : t("webServer"));
         return;
       }
-      const opened = window.open(data.url, "_blank");
-      if (opened) opened.opener = null;
-      else setMaxUrl(data.url);
-      setNote(t("webMaxLoginWait"));
+      if (data.vpn) setTelegramVpn(true);
+      if (popup && !popup.closed) {
+        popup.location.replace(data.url);
+        popup.opener = null;
+      } else {
+        popup?.close();
+        setMessengerUrl(data.url);
+      }
+      setNote(t(kind === "max" ? "webMaxLoginWait" : "webTgLoginWait"));
+      const waitUrl = kind === "max" ? "/api/account/max/wait" : "/api/account/telegram/wait";
       for (let attempt = 0; attempt < 40; attempt += 1) {
         await new Promise((resolve) => window.setTimeout(resolve, 1500));
         if (!current()) return;
-        const wait = await fetch("/api/account/max/wait", {
+        const wait = await fetch(waitUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token: data.token }),
@@ -258,8 +265,9 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
         }
       }
       setNote(null);
-      setError(t("webMaxLoginFail"));
+      setError(t(kind === "max" ? "webMaxLoginFail" : "webTgLoginFail"));
     } catch {
+      popup?.close();
       if (current()) setError(t("webServer"));
     } finally {
       if (current()) setBusy(false);
@@ -269,6 +277,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   function openMode(next: GateMode) {
     setMode(next);
     setError(null);
+    setErrorScope("other");
     setNote(null);
     setCode("");
   }
@@ -277,6 +286,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
     event.preventDefault();
     if (!passwordReady()) return;
     setBusy(true);
+    setErrorScope("register");
     setError(null);
     setNote(null);
     try {
@@ -325,6 +335,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   async function passwordLogin(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
+    setErrorScope("login");
     setError(null);
     try {
       const res = await fetch("/api/account/login", {
@@ -370,15 +381,13 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   }
 
   function jumpToForm() {
-    openMode("register");
+    openMode("login");
     formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     formRef.current?.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
   }
 
-  const title =
-    mode === "login" ? t("webFormEnter") : mode === "forgot" ? t("webForgot") : mode === "code" ? t("webCode") : t("webFormCreate");
-  const lead =
-    mode === "login" ? t("webFormEnterLead") : mode === "forgot" ? t("webForgotLead") : mode === "code" ? null : t("webFormLead");
+  const title = mode === "forgot" ? t("webForgot") : mode === "code" ? t("webCode") : t("webFormEnter");
+  const lead = mode === "forgot" ? t("webForgotLead") : mode === "login" ? t("webFormEnterLead") : null;
 
   return (
     <main className="journal-gate min-h-0 flex-1 overflow-y-auto overscroll-y-contain pt-3 pr-[max(1rem,var(--safe-right))] pb-10 pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]">
@@ -407,41 +416,45 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
         <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{title}</h2>
         {lead ? <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{lead}</p> : null}
 
-        {mode === "register" || mode === "login" ? (
+        {mode === "login" ? (
           <>
             <div className="mt-5">
               <p className="mb-2 text-[0.6875rem] font-extrabold tracking-[0.14em] text-muted-foreground uppercase">
                 {t("webOAuth")}
               </p>
-              <div className="grid grid-cols-3 gap-2">
-                {PROVIDERS.map((provider) => (
-                  <a
-                    key={provider.id}
-                    href={provider.href}
-                    className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-full px-2")}
-                  >
-                    {t(provider.label)}
-                  </a>
-                ))}
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full"
+                disabled={busy}
+                onClick={() => void loginWithMessenger("telegram")}
+              >
+                {t("webTgLogin")}
+              </Button>
               <Button
                 type="button"
                 variant="outline"
                 size="lg"
                 className="mt-2 w-full"
                 disabled={busy}
-                onClick={() => void loginWithMax()}
+                onClick={() => void loginWithMessenger("max")}
               >
                 {t("webMaxLogin")}
               </Button>
-              {maxUrl ? (
+              {telegramVpn ? (
+                <p className="text-sm leading-relaxed text-muted-foreground" role="status">
+                  {t("webBotVpn")}
+                </p>
+              ) : null}
+              {messengerUrl ? (
                 <a
-                  href={maxUrl}
+                  href={messengerUrl}
                   className={cn(buttonVariants({ variant: "outline", size: "lg" }), "mt-2 w-full")}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  {t("webMaxLogin")}
+                  {t(messengerKind === "max" ? "webMaxLogin" : "webTgLogin")}
                 </a>
               ) : null}
               {note ? <p className="mt-3 text-sm leading-relaxed text-foreground">{note}</p> : null}
@@ -450,59 +463,6 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
               {t("webOr")}
             </p>
           </>
-        ) : null}
-
-        {mode === "register" ? (
-          <form className="space-y-4" onSubmit={register}>
-            <div className="space-y-2">
-              <Label htmlFor="web-email">{t("webEmail")}</Label>
-              <Input
-                id="web-email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="web-password">{t("webPassword")}</Label>
-              <Input
-                id="web-password"
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="web-password-again">{t("webPasswordAgain")}</Label>
-              <Input
-                id="web-password-again"
-                type="password"
-                autoComplete="new-password"
-                value={passwordAgain}
-                onChange={(event) => setPasswordAgain(event.target.value)}
-                required
-              />
-            </div>
-            {error ? (
-              <p className="text-sm text-destructive" role="alert">
-                {error}
-              </p>
-            ) : null}
-            <Button type="submit" className="w-full" size="lg" disabled={busy}>
-              {t("webCreate")}
-            </Button>
-            <button
-              type="button"
-              className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
-              onClick={() => openMode("login")}
-            >
-              {t("webSwitchEnter")}
-            </button>
-          </form>
         ) : null}
 
         {mode === "login" ? (
@@ -518,18 +478,14 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
                 required
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="web-password">{t("webPassword")}</Label>
-              <Input
-                id="web-password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-            </div>
-            {error ? (
+            <PasswordField
+              id="web-password"
+              label={t("webPassword")}
+              value={password}
+              onChange={setPassword}
+              autoComplete="current-password"
+            />
+            {error && errorScope === "login" ? (
               <p className="text-sm text-destructive" role="alert">
                 {error}
               </p>
@@ -544,14 +500,54 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
             >
               {t("webForgot")}
             </button>
-            <button
-              type="button"
-              className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
-              onClick={() => openMode("register")}
-            >
-              {t("webSwitchCreate")}
-            </button>
           </form>
+        ) : null}
+
+        {mode === "login" ? (
+          <details className="mt-5 border-t border-[color:var(--glass-border)] pt-4">
+            <summary className="cursor-pointer text-sm text-muted-foreground">{t("webRegisterFold")}</summary>
+            <form className="mt-4 space-y-4" onSubmit={register}>
+              <div className="space-y-2">
+                <Label htmlFor="web-register-email">{t("webEmail")}</Label>
+                <Input
+                  id="web-register-email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </div>
+              <PasswordField
+                id="web-register-password"
+                label={t("webPassword")}
+                value={password}
+                onChange={setPassword}
+                autoComplete="new-password"
+                showRules
+              />
+              <PasswordField
+                id="web-register-password-again"
+                label={t("webPasswordAgain")}
+                value={passwordAgain}
+                onChange={setPasswordAgain}
+                autoComplete="new-password"
+              />
+              {passwordAgain.length > 0 && passwordAgain !== password ? (
+                <p className="text-sm text-destructive" role="status">
+                  {t("webPasswordMismatch")}
+                </p>
+              ) : null}
+              {error && errorScope === "register" ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {error}
+                </p>
+              ) : null}
+              <Button type="submit" className="w-full" size="lg" disabled={busy}>
+                {t("webCreate")}
+              </Button>
+            </form>
+          </details>
         ) : null}
 
         {mode === "forgot" ? (
@@ -620,7 +616,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
             <button
               type="button"
               className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
-              onClick={() => openMode("register")}
+              onClick={() => openMode("login")}
             >
               {t("webOtherEmail")}
             </button>

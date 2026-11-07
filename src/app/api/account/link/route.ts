@@ -14,6 +14,9 @@ export async function POST(req: Request) {
   if (account.telegramUserId != null) {
     return NextResponse.json({ ok: true, linked: true, url: null });
   }
+  if (account.maxUserId != null) {
+    return NextResponse.json({ ok: false, error: "one_bot" }, { status: 409 });
+  }
   const code = await issueBotLink(account.id);
   if (!code) return accountUnavailable();
   const country = countryFromHeaders((name) => req.headers.get(name));

@@ -47,7 +47,7 @@ export function analyticsDedupToken(pepper: string, material: string): string {
 export async function recordAnalytics(
   redis: AnalyticsRedis,
   input: {
-    userId: number;
+    userId: number | string;
     event: AnalyticsEvent;
     messenger: AnalyticsMessenger;
     day: string;
@@ -143,11 +143,13 @@ export async function loadAnalyticsReport(
   const byMessenger = {
     telegram: readDays(),
     max: readDays(),
+    web: readDays(),
   };
   const legacyDays = readDays();
   const cohorts = {
     telegram: readCohorts(),
     max: readCohorts(),
+    web: readCohorts(),
   };
   const legacyCohorts = readCohorts();
   byMessenger.telegram = sumCountRows(byMessenger.telegram, legacyDays);

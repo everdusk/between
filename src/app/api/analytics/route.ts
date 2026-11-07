@@ -27,6 +27,41 @@ export async function POST(req: Request) {
   if (!redisConfigured() || !process.env.BOT_TOKEN?.trim()) {
     return NextResponse.json({ ok: false, error: "server_not_configured" }, { status: 503 });
   }
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ ok: false, error: "bad_json" }, { status: 400 });
+  }
+  const payload = body as { event?: unknown; cohort?: unknown; day?: unknown; messenger?: unknown };
+  const accepted = acceptClientEvent(payload, todayInTimeZone(DEFAULT_TIME_ZONE));
+  if (!accepted.ok) {
+    return NextResponse.json({ ok: false, error: accepted.error }, { status: 400 });
+  }
+
+  const redis = analyticsRedis();
+  const pepper = process.env.BOT_TOKEN?.trim() || process.env.APP_SECRET?.trim();
+  if (!redis || !pepper) {
+    return NextResponse.json({ ok: false, error: "server_not_configured" }, { status: 503 });
+  }
+
+  if (payload.messenger === "web") {
+    const device = req.headers.get("x-between-device") ?? "";
+    if (!/^[a-z0-9]{32}$/.test(device)) {
+      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    }
+    await recordAnalytics(redis, {
+      userId: `web:${device}`,
+      event: accepted.event,
+      messenger: "web",
+      day: accepted.day,
+      cohort: accepted.cohort,
+      offset: accepted.offset,
+      pepper,
+    });
+    return NextResponse.json({ ok: true });
+  }
+
   const initData = req.headers.get("x-telegram-init-data");
   if (!initData) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
@@ -34,24 +69,6 @@ export async function POST(req: Request) {
   const validated = validateInitData(initData);
   if (!validated) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
-  }
-
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ ok: false, error: "bad_json" }, { status: 400 });
-  }
-  const payload = body as { event?: unknown; cohort?: unknown; day?: unknown };
-  const accepted = acceptClientEvent(payload, todayInTimeZone(DEFAULT_TIME_ZONE));
-  if (!accepted.ok) {
-    return NextResponse.json({ ok: false, error: accepted.error }, { status: 400 });
-  }
-
-  const redis = analyticsRedis();
-  const pepper = process.env.BOT_TOKEN?.trim();
-  if (!redis || !pepper) {
-    return NextResponse.json({ ok: false, error: "server_not_configured" }, { status: 503 });
   }
   await recordAnalytics(redis, {
     userId: validated.user.id,

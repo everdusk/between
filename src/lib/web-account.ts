@@ -178,6 +178,11 @@ export function maxBotLoginUrl(token: string): string | null {
   return `https://max.ru/${name}?start=${encodeURIComponent(`login_${token}`)}`;
 }
 
+/** Same confirmation as MAX, through the Telegram bot that already exists. */
+export function telegramBotLoginUrl(token: string): string {
+  return `https://t.me/BetweenJournalBot?start=login_${token}`;
+}
+
 export const RESET_TTL_SECONDS = 30 * 60;
 
 export function newResetToken(): string {

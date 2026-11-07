@@ -9,8 +9,8 @@ export type ClientAnalyticsEvent = (typeof CLIENT_ANALYTICS_EVENTS)[number];
 export const PRODUCT_PLANS = ["month", "quarter", "year"] as const;
 export type ProductPlan = (typeof PRODUCT_PLANS)[number];
 
-/** Where the step happened. Web Mini App counts as Telegram. */
-export const ANALYTICS_MESSENGERS = ["telegram", "max"] as const;
+/** Where the step happened. The website is its own stream, not Telegram and not MAX. */
+export const ANALYTICS_MESSENGERS = ["telegram", "max", "web"] as const;
 export type AnalyticsMessenger = (typeof ANALYTICS_MESSENGERS)[number];
 
 const DROPPED_PRODUCT_KEYS = new Set(["$set", "$set_once", "$unset", "$ip"]);
@@ -104,7 +104,7 @@ export function messengerEventName(messenger: AnalyticsMessenger, event: Analyti
 export function parseMessengerEvent(
   name: string,
 ): { messenger: AnalyticsMessenger; event: AnalyticsEvent } | null {
-  const match = /^(telegram|max)_(visit|note|week|paywall|checkout|paid)$/.exec(name);
+  const match = /^(telegram|max|web)_(visit|note|week|paywall|checkout|paid)$/.exec(name);
   if (!match) return null;
   const messenger = match[1] as AnalyticsMessenger;
   const event = match[2] as AnalyticsEvent;
@@ -315,6 +315,7 @@ function ruDay(iso: string): string {
 const MESSENGER_TITLE: Record<AnalyticsMessenger, string> = {
   telegram: "Telegram",
   max: "MAX",
+  web: "Сайт",
 };
 
 function formatMessengerBlock(title: string, part: MessengerReport): string[] {

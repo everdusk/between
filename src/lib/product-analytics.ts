@@ -53,7 +53,7 @@ function load(): Promise<PostHogClient | null> {
   return booting;
 }
 
-/** One funnel step in PostHog, named `telegram_note` or `max_note`. No-op until the public token is set. */
+/** One funnel step in PostHog, named `telegram_note`, `max_note`, or `web_note`. No-op until the public token is set. */
 export function captureProduct(
   event: AnalyticsEvent,
   detail?: { plan?: ProductPlan; messenger?: AnalyticsMessenger },
