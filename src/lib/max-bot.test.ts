@@ -13,6 +13,7 @@ import {
   maxAudioUrl,
   maxFeelingKeyboard,
   maxLoginKeyboard,
+  maxOpenKeyboard,
   maxText,
   maxUserId,
   type MaxUpdate,
@@ -146,6 +147,16 @@ describe("MAX bot", () => {
       assert.ok(parseFeelingCallback(payload));
     }
     assert.equal(keyboard.payload.buttons.every((row) => row.length <= 7), true);
+  });
+
+  it("opens Between through the MAX mini app, not the site webview", () => {
+    process.env.MAX_BOT_USERNAME = "se14938561_bot";
+    const keyboard = maxOpenKeyboard("ru");
+    const button = keyboard?.payload.buttons[0][0];
+    assert.equal(button?.type, "open_app");
+    if (button?.type !== "open_app") return;
+    assert.equal(button.web_app, "se14938561_bot");
+    assert.equal("url" in button, false);
   });
 
   it("keeps a callback button for an older sign-in message", () => {

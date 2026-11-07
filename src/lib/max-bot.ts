@@ -47,7 +47,8 @@ export type MaxUpdate = {
 
 type MaxButton =
   | { type: "callback"; text: string; payload: string }
-  | { type: "link"; text: string; url: string };
+  | { type: "link"; text: string; url: string }
+  | { type: "open_app"; text: string; web_app: string };
 
 export type MaxKeyboard = {
   type: "inline_keyboard";
@@ -152,11 +153,14 @@ export function maxLoginKeyboard(token: string, locale: LocaleId = "ru"): MaxKey
   };
 }
 
-export function maxOpenKeyboard(locale: LocaleId = "ru"): MaxKeyboard {
+/** Opens the MAX mini app. A link to the site becomes a plain webview, which only Telegram uses. */
+export function maxOpenKeyboard(locale: LocaleId = "ru"): MaxKeyboard | null {
+  const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
+  if (!/^[A-Za-z0-9_]{3,64}$/.test(name)) return null;
   return {
     type: "inline_keyboard",
     payload: {
-      buttons: [[{ type: "link", text: translate(locale, "botOpen"), url: `${appUrl()}/journal` }]],
+      buttons: [[{ type: "open_app", text: translate(locale, "botOpen"), web_app: name }]],
     },
   };
 }
@@ -228,14 +232,17 @@ export async function sendMaxMessage(
   userId: number,
   text: string,
   keyboard?: MaxKeyboard,
+  chatId?: number,
 ): Promise<boolean> {
-  const body = {
-    text: text.slice(0, 4000),
-    ...(keyboard ? { attachments: [keyboard] } : {}),
-  };
-  const ok = await accepted(await maxFetch(`/messages?user_id=${userId}`, body));
-  if (ok || !keyboard) return ok;
-  return accepted(await maxFetch(`/messages?user_id=${userId}`, { text: body.text }));
+  const textOnly = { text: text.slice(0, 4000) };
+  const withKeys = keyboard ? { ...textOnly, attachments: [keyboard] } : textOnly;
+  const paths = [`/messages?user_id=${userId}`];
+  if (chatId && chatId !== userId) paths.push(`/messages?chat_id=${chatId}`);
+  for (const path of paths) {
+    if (await accepted(await maxFetch(path, withKeys))) return true;
+    if (keyboard && (await accepted(await maxFetch(path, textOnly)))) return true;
+  }
+  return false;
 }
 
 /** Replaces the message that held the mood buttons. */

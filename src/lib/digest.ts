@@ -89,6 +89,21 @@ const POLL_KEY = {
   evening: "botPollEvening",
 } as const;
 
+/** The latest mood question whose hour has passed today and is still unanswered. */
+export function duePoll(input: {
+  store: TherapyStore;
+  dateKey: string;
+  hour: number;
+}): CheckinSlot | null {
+  if (!input.store.notify.moodPolls) return null;
+  let due: CheckinSlot | null = null;
+  for (const slot of ["morning", "day", "evening"] as const) {
+    if (input.hour < POLL_HOURS[slot]) break;
+    if (!hasCheckin(input.store, input.dateKey, slot)) due = slot;
+  }
+  return due;
+}
+
 export function pollText(slot: CheckinSlot, locale: LocaleId = "ru"): string {
   return translate(locale, POLL_KEY[slot]);
 }

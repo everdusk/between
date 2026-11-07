@@ -21,7 +21,7 @@ import { catalogsShareKeys, countPhrase, feelingLabel, formatPremiumStatus, tran
 import { pollText } from "./digest";
 import { feelingKeyboard, isBotCommand, parseFeelingCallback } from "./telegram-bot";
 import { buildWeekSpectrum, spectrumHeadline } from "./spectrum";
-import { digestAction } from "./digest";
+import { digestAction, duePoll } from "./digest";
 import { mergeStores } from "./journal-api";
 import { normalizeStore } from "./migrate";
 import { nextWeeklyOccurrence, previousWeeklyOccurrence } from "./session-plan";
@@ -1509,6 +1509,17 @@ describe("digest", () => {
     });
     assert.equal(morning.type, "poll");
     if (morning.type === "poll") assert.equal(morning.slot, "morning");
+  });
+
+  it("asks the latest missed mood question when the chat opens late", () => {
+    const store = emptyStore();
+    assert.equal(duePoll({ store, dateKey: "2026-10-09", hour: 8 }), null);
+    assert.equal(duePoll({ store, dateKey: "2026-10-09", hour: 10 }), "morning");
+    assert.equal(duePoll({ store, dateKey: "2026-10-09", hour: 18 }), "evening");
+    store.entries = [note({ id: "e", body: "вечер", slot: "evening", feelings: ["спокойно"] })];
+    assert.equal(duePoll({ store, dateKey: "2026-10-09", hour: 18 }), "day");
+    store.notify = { moodPolls: false, eveningNudge: true, updatedAt: "1" };
+    assert.equal(duePoll({ store, dateKey: "2026-10-09", hour: 18 }), null);
   });
 });
 
