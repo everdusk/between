@@ -7,7 +7,10 @@ import {
   passwordMatches,
   passwordProblem,
   hashPassword,
+  hashResetToken,
+  newResetToken,
   readSession,
+  resetUrl,
   signSession,
 } from "./web-account";
 
@@ -41,6 +44,17 @@ describe("web account", () => {
   it("keeps an unlinked Telegram journal on its own key", () => {
     assert.equal(journalStorageId(42, null), "42");
     assert.equal(journalStorageId(42, "wabc"), "web:wabc");
+  });
+
+  it("builds a reset link without treating the token as the stored hash", () => {
+    const token = newResetToken();
+    const hash = hashResetToken(token);
+    assert.notEqual(hash, token);
+    assert.equal(hashResetToken(token), hash);
+    assert.equal(
+      resetUrl("https://www.between-journal.ru/", token),
+      `https://www.between-journal.ru/reset?token=${encodeURIComponent(token)}`,
+    );
   });
 
   it("reads only a link code from the start payload", () => {

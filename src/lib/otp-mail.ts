@@ -22,13 +22,62 @@ export function otpSubject(code: string): string {
   return `${code} — код для Between`;
 }
 
+/** The code is the whole first line, so a mail app can select and copy it. */
 export function otpBody(code: string): string {
   return [
-    `Код для входа в Between: ${code}`,
+    code,
     "",
-    "Тот же код написан в теме письма. Он действует 10 минут.",
+    "Код для Between. Он действует 10 минут.",
+    "Выделите строку с кодом выше и скопируйте её целиком.",
+    "Тот же код написан в теме письма.",
     "Если вы не запрашивали код, ничего делать не нужно.",
   ].join("\n");
+}
+
+export function otpHtml(code: string): string {
+  const safe = code.replace(/\D/g, "");
+  return [
+    `<pre style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:28px;font-weight:700;letter-spacing:0;margin:0 0 16px">${safe}</pre>`,
+    `<p style="font-family:sans-serif;font-size:15px;line-height:1.5">Код для Between. Он действует 10 минут. Выделите цифры и скопируйте.</p>`,
+    `<p style="font-family:sans-serif;font-size:15px;line-height:1.5">Тот же код написан в теме письма. Если вы не запрашивали код, ничего делать не нужно.</p>`,
+  ].join("");
+}
+
+export const RESET_TTL_MS = 30 * 60 * 1000;
+
+export function resetSubject(): string {
+  return "Ссылка, чтобы задать пароль Between";
+}
+
+/** A link to choose a new password. The letter never contains a password. */
+export function resetBody(url: string): string {
+  return [
+    "Чтобы задать новый пароль, откройте ссылку. Она действует 30 минут и сработает один раз.",
+    "",
+    url,
+    "",
+    "Пароль в письме не приходит. Если вы не просили ссылку, ничего делать не нужно.",
+  ].join("\n");
+}
+
+export function resetHtml(url: string): string {
+  const href = escapeHtml(url);
+  return [
+    `<p style="font-family:sans-serif;font-size:16px;line-height:1.5">Чтобы задать новый пароль, откройте ссылку. Она действует 30 минут и сработает один раз.</p>`,
+    `<p style="margin:24px 0"><a href="${href}" style="font-family:sans-serif;font-size:16px;font-weight:700">Задать новый пароль</a></p>`,
+    `<p style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;line-height:1.5;word-break:break-all">${href}</p>`,
+    `<p style="font-family:sans-serif;font-size:14px;line-height:1.5">Пароль в письме не приходит. Если вы не просили ссылку, ничего делать не нужно.</p>`,
+  ].join("");
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (ch) => {
+    if (ch === "&") return "&amp;";
+    if (ch === "<") return "&lt;";
+    if (ch === ">") return "&gt;";
+    if (ch === '"') return "&quot;";
+    return "&#39;";
+  });
 }
 
 export function hashOtp(code: string, secret: string): string {
@@ -133,9 +182,44 @@ async function expect(io: Reader, ok: number[]): Promise<void> {
   if (!ok.includes(code)) throw new Error(`smtp ${code}`);
 }
 
+function messageData(
+  config: MailConfig,
+  message: { to: string; subject: string; text: string; html?: string },
+): string {
+  const headers = [
+    `From: ${config.from}`,
+    `To: ${message.to}`,
+    `Subject: ${encodeHeader(message.subject)}`,
+    "MIME-Version: 1.0",
+  ];
+  if (!message.html) {
+    return [...headers, "Content-Type: text/plain; charset=UTF-8", "", dotStuff(message.text), "."].join(
+      "\r\n",
+    );
+  }
+  const boundary = "between-alt";
+  return [
+    ...headers,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    "",
+    `--${boundary}`,
+    "Content-Type: text/plain; charset=UTF-8",
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    dotStuff(message.text),
+    `--${boundary}`,
+    "Content-Type: text/html; charset=UTF-8",
+    "Content-Transfer-Encoding: 8bit",
+    "",
+    dotStuff(message.html),
+    `--${boundary}--`,
+    ".",
+  ].join("\r\n");
+}
+
 export async function smtpSend(
   config: MailConfig,
-  message: { to: string; subject: string; text: string },
+  message: { to: string; subject: string; text: string; html?: string },
   connect?: () => Socket,
 ): Promise<void> {
   const socket =
@@ -160,17 +244,7 @@ export async function smtpSend(
     await expect(io, [250]);
     io.write("DATA");
     await expect(io, [354]);
-    const data = [
-      `From: ${config.from}`,
-      `To: ${message.to}`,
-      `Subject: ${encodeHeader(message.subject)}`,
-      "MIME-Version: 1.0",
-      "Content-Type: text/plain; charset=UTF-8",
-      "",
-      dotStuff(message.text),
-      ".",
-    ].join("\r\n");
-    socket.write(`${data}\r\n`);
+    socket.write(`${messageData(config, message)}\r\n`);
     await expect(io, [250]);
     io.write("QUIT");
   } finally {
@@ -181,6 +255,24 @@ export async function smtpSend(
 export async function sendOtpMail(to: string, code: string): Promise<boolean> {
   const config = mailConfigFromEnv();
   if (!config) return false;
-  await smtpSend(config, { to, subject: otpSubject(code), text: otpBody(code) });
+  await smtpSend(config, {
+    to,
+    subject: otpSubject(code),
+    text: otpBody(code),
+    html: otpHtml(code),
+  });
+  return true;
+}
+
+/** Sends the link for choosing a new password. The password itself is not a parameter. */
+export async function sendResetMail(to: string, url: string): Promise<boolean> {
+  const config = mailConfigFromEnv();
+  if (!config) return false;
+  await smtpSend(config, {
+    to,
+    subject: resetSubject(),
+    text: resetBody(url),
+    html: resetHtml(url),
+  });
   return true;
 }

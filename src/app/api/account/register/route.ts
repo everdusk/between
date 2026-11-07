@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
-import { accountReady, accountUnavailable, withSession } from "@/lib/account-http";
-import { createAccount, toPublicAccount } from "@/lib/web-account-store";
-import { normalizeEmail, passwordProblem } from "@/lib/web-account";
+import { accountReady, accountUnavailable } from "@/lib/account-http";
+import { hashOtp, mailConfigFromEnv, newOtpCode, sendOtpMail } from "@/lib/otp-mail";
+import { accountByEmail, saveSignup, signupSendAllowed } from "@/lib/web-account-store";
+import { hashPassword, normalizeEmail, passwordProblem, sessionSecret } from "@/lib/web-account";
 
 export async function POST(req: Request) {
   if (!accountReady()) return accountUnavailable();
+  if (!mailConfigFromEnv()) {
+    return NextResponse.json({ ok: false, error: "mail_off" }, { status: 503 });
+  }
   let body: unknown;
   try {
     body = await req.json();
@@ -17,13 +21,21 @@ export async function POST(req: Request) {
   if (passwordProblem(payload.password)) {
     return NextResponse.json({ ok: false, error: "short_password" }, { status: 400 });
   }
-  const created = await createAccount(email, payload.password as string);
-  if (created === "taken") {
-    return NextResponse.json({ ok: false, error: "taken" }, { status: 409 });
+  const secret = sessionSecret();
+  if (!secret) return accountUnavailable();
+  const existing = await accountByEmail(email);
+  if (existing) return NextResponse.json({ ok: false, error: "taken" }, { status: 409 });
+  const allowed = await signupSendAllowed(email);
+  if (allowed === "soon") return NextResponse.json({ ok: false, error: "soon" }, { status: 429 });
+  if (allowed !== "ok") return accountUnavailable();
+  const code = newOtpCode();
+  const passwordRecord = await hashPassword(payload.password as string);
+  try {
+    await sendOtpMail(email, code);
+  } catch {
+    return NextResponse.json({ ok: false, error: "mail_fail" }, { status: 502 });
   }
-  if (!created) return accountUnavailable();
-  return withSession(
-    NextResponse.json({ ok: true, account: toPublicAccount(created) }),
-    created.id,
-  );
+  const saved = await saveSignup(email, passwordRecord.salt, passwordRecord.hash, hashOtp(code, secret));
+  if (!saved) return accountUnavailable();
+  return NextResponse.json({ ok: true });
 }
