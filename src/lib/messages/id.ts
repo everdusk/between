@@ -93,7 +93,8 @@ export const id: Catalog = {
   webMaxOff:
     "Bot MAX belum terhubung.",
   webMaxLogin: "MAX",
-  webMaxLoginWait: "Buka MAX dan mulai bot. Layar ini masuk sendiri.",
+  webMaxLoginWait: "Masuk ke MAX di tab yang terbuka. Layar ini masuk sendiri.",
+  webOpenTab: "Buka tab",
   webMaxLoginFail: "MAX belum mengonfirmasi masuk. Tekan tombol sekali lagi.",
   webLogout: "Keluar",
   webServer: "Server belum siap.",

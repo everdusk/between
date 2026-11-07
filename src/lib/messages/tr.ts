@@ -93,7 +93,8 @@ export const tr: Catalog = {
   webMaxOff:
     "MAX botu henüz bağlı değil.",
   webMaxLogin: "MAX",
-  webMaxLoginWait: "MAX’i açın ve botu başlatın. Bu ekran kendisi girer.",
+  webMaxLoginWait: "Açılan sekmede MAX’e girin. Bu ekran kendisi girer.",
+  webOpenTab: "Sekmeyi aç",
   webMaxLoginFail: "MAX girişi onaylamadı. Düğmeye bir kez daha basın.",
   webLogout: "Çıkış",
   webServer: "Sunucu henüz hazır değil.",

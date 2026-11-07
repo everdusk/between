@@ -93,7 +93,8 @@ export const uk: Catalog = {
   webMaxOff:
     "Бота в MAX ще не підключено.",
   webMaxLogin: "MAX",
-  webMaxLoginWait: "Відкрийте MAX і запустіть бота. Цей екран увійде сам.",
+  webMaxLoginWait: "Увійдіть у MAX у вкладці, що відкрилася. Цей екран увійде сам.",
+  webOpenTab: "Відкрити вкладку",
   webMaxLoginFail: "MAX не підтвердив вхід. Натисніть кнопку ще раз.",
   webLogout: "Вийти",
   webServer: "Сервер ще не готовий.",

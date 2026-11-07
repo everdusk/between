@@ -171,11 +171,14 @@ export function loginTokenFromStart(payload: string): string | null {
   return match ? match[1].toLowerCase() : null;
 }
 
-/** Opens the bot. After Start, the site that asked for this token receives the session. */
+/**
+ * Opens the bot in the MAX web client. The max.ru page's "Запустить бота" is a
+ * `max://` link, and a desktop browser does nothing with it.
+ */
 export function maxBotLoginUrl(token: string): string | null {
   const name = maxBotUsername();
   if (!name) return null;
-  return `https://max.ru/${name}?start=${encodeURIComponent(`login_${token}`)}`;
+  return `https://web.max.ru/${name}?start=${encodeURIComponent(`login_${token}`)}`;
 }
 
 /** Same confirmation as MAX, through the Telegram bot that already exists. */
