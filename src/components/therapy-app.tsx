@@ -149,9 +149,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
   const name = shownName(telegram.displayName, translate(greetingLocale, "guest"));
   const greeting = !telegram.ready
     ? translate(greetingLocale, "loading")
-    : webEntry && !telegram.inTelegram
-      ? t("webHello")
-      : translate(greetingLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
+    : translate(greetingLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
 
   const webSurface = webEntry && !telegram.inTelegram;
   const accountCard = () =>
@@ -207,7 +205,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
           <div className="journal-side-top relative z-20 grid gap-4">
             <div>
               <p className="font-display text-[1.65rem] leading-none text-foreground">Between</p>
-              <p className="mt-2 truncate text-xs text-subtitle">{greeting}</p>
+              {webSurface ? null : <p className="mt-2 truncate text-xs text-subtitle">{greeting}</p>}
             </div>
             <SchemeSwitch className="w-full" />
             <LanguageSwitch />
@@ -254,7 +252,7 @@ function TherapyShell({ telegram }: { telegram: TelegramSession }) {
                 </span>
               ) : null}
             </p>
-            <p className="mt-1.5 truncate text-xs text-subtitle">{greeting}</p>
+            {webSurface ? null : <p className="mt-1.5 truncate text-xs text-subtitle">{greeting}</p>}
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2">
             {!telegram.inTelegram && telegram.ready && !webEntry && (
