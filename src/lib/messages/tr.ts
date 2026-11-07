@@ -74,6 +74,17 @@ export const tr: Catalog = {
   webBotHint:
     "Bu bir Telegram botu. Akşam günün nasıl geçtiğini sorar ve yanıtı bu günlüğe kaydeder. Günlük botsuz da çalışır: bot hatırlatmak ve sohbette not almak içindir. Telegram açılır — Start’a basın, bot bu günlüğe bağlanır.",
   webBotVpn: "Rusya’dan Telegram VPN olmadan açılmaz. VPN’i açın, sonra düğmeye basın.",
+  webConnectMax:
+    "MAX botu",
+  webMaxLinked:
+    "MAX botu bağlı. Günün nasıl geçtiğini sorar, sohbetteki not burada görünür.",
+  webMaxHint:
+    "Aynı bot MAX’te. Akşam günün nasıl geçtiğini sorar, sohbetteki not burada görünür. MAX açılır — Başlat’a basın.",
+  webMaxOff:
+    "MAX botu henüz bağlı değil.",
+  webMaxLogin: "MAX",
+  webMaxLoginWait: "MAX’i açın ve sohbette Giriş’e basın. Bu ekran kendiliğinden girer.",
+  webMaxLoginFail: "MAX girişi onaylamadı. Düğmeye bir kez daha basın.",
   webLogout: "Çıkış",
   webServer: "Sunucu henüz hazır değil.",
   webOAuth: "Şununla gir",
@@ -86,7 +97,12 @@ export const tr: Catalog = {
   webOAuthTaken: "Bu hesap başka bir günlüğe bağlı.",
   botLinkOk: "Tamam. Bu sohbet günlüğünüze yazar.",
   botLinkBad: "Kod uymadı. Tarayıcıda, hesap kartından yenisini isteyin.",
+  botLoginAsk: "Site günlüğünüzü açmak istiyor. Sizseniz Giriş’e basın.",
+  botLoginYes: "Giriş",
+  botLoginOk: "Tamam. Tarayıcıya dönün — günlük açık.",
   botLinkTaken: "Bu Telegram başka bir günlüğe bağlı.",
+  botLinkTakenMax:
+    "Bu MAX başka bir günlüğe bağlı.",
   language: "Dil",
   tabJournal: "Günlük",
   tabWeek: "Hafta",
@@ -282,6 +298,8 @@ export const tr: Catalog = {
   botOpen: "Between’i aç",
   botHelp:
     "Between, seans için bir günlük.\n\nGünlük ücretsiz. Buradaki her metin bugünün notu olur. Sabah, öğlen ve akşam nasıl olduğunu sorabilirim.\n\nHafta, spektrumu, örüntüyü ve seans konularını toplar. Sekmeyi açtıktan sonraki ilk 7 gün ücretsiz. Sonra 30 gün için {price} Stars.\n\nSesli not, Hafta ödendikten sonra metin olur, günde 10’a kadar. 7 ücretsiz gün bunu kapsamaz.",
+  botHelpMax:
+    "Between, seans için bir günlük.\n\nGünlük ücretsiz. Buradaki her metin bugünün notu olur. Sabah, öğlen ve akşam nasıl olduğunu sorabilirim.\n\nHafta, spektrumu, örüntüyü ve seans konularını toplar. Sekmeyi açtıktan sonraki ilk 7 gün ücretsiz. Sonra sitede 30 gün için {price} ₽.\n\nSesli not, Hafta ödendikten sonra metin olur, günde 10’a kadar. 7 ücretsiz gün bunu kapsamaz.",
   botUnknown:
     "Metin yazın, not olarak kaydederim.",
   botNotReady:
@@ -307,6 +325,8 @@ export const tr: Catalog = {
   botPremiumTrial: "Hafta {days} daha ücretsiz.",
   botPaySupport:
     "Hafta ödemesi Telegram Stars ile yapılır.\n\n30 gün aboneliktir: Telegram’da iptal edilir, erişim ödenen sürenin sonuna kadar sürer. 3 ay ve bir yıl tek seferlik ödemedir.\n\nStars çekildiyse ve Hafta açılmadıysa ya da iade gerekiyorsa, ne olduğunu ve ne zaman olduğunu bu sohbete yazın. Burada bakarız.",
+  botPaySupportMax:
+    "Hafta ödemesi sitede, günlüğün içinde yapılır.\n\n30 gün, 3 ay ve bir yıl orada açılır. Bu sohbet fatura göndermez.\n\nÖdeme geçtiyse ve Hafta açılmadıysa ya da iade gerekiyorsa, ne olduğunu ve ne zaman olduğunu buraya yazın.",
   botPollMorning: "Sabah. Nasılsınız?",
   botPollDay: "Gün. Nasılsınız?",
   botPollEvening: "Akşam. Nasılsınız?",

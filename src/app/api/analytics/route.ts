@@ -56,6 +56,7 @@ export async function POST(req: Request) {
   await recordAnalytics(redis, {
     userId: validated.user.id,
     event: accepted.event,
+    messenger: "telegram",
     day: accepted.day,
     cohort: accepted.cohort,
     offset: accepted.offset,

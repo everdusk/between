@@ -74,6 +74,17 @@ export const es: Catalog = {
   webBotHint:
     "Es un bot de Telegram. Por la noche pregunta cómo fue el día y guarda la respuesta en este diario. El diario funciona sin el bot: el bot sirve para recordar y para tomar una nota en el chat. Se abrirá Telegram: pulse Start y el bot se vincula a este diario.",
   webBotVpn: "Desde Rusia Telegram no se abre sin VPN. Active una VPN y pulse el botón.",
+  webConnectMax:
+    "Bot de MAX",
+  webMaxLinked:
+    "El bot de MAX está conectado. Preguntará cómo fue el día, y la nota del chat aparecerá aquí.",
+  webMaxHint:
+    "El mismo bot en MAX. Por la noche pregunta cómo fue el día, y la nota del chat aparece aquí. Se abrirá MAX — pulse Iniciar.",
+  webMaxOff:
+    "El bot de MAX aún no está conectado.",
+  webMaxLogin: "MAX",
+  webMaxLoginWait: "Abran MAX y pulsen Entrar en el chat. Esta pantalla entra sola.",
+  webMaxLoginFail: "MAX no confirmó el acceso. Pulsen el botón otra vez.",
   webLogout: "Salir",
   webServer: "El servidor aún no está listo.",
   webOAuth: "Entrar con",
@@ -86,7 +97,12 @@ export const es: Catalog = {
   webOAuthTaken: "Esta cuenta ya está vinculada a otro diario.",
   botLinkOk: "Listo. Este chat escribe en su diario.",
   botLinkBad: "El código no sirvió. Pida uno nuevo en el navegador, en la tarjeta de la cuenta.",
+  botLoginAsk: "El sitio pide abrir su diario. Si son ustedes, pulsen Entrar.",
+  botLoginYes: "Entrar",
+  botLoginOk: "Listo. Vuelvan al navegador: el diario ya está abierto.",
   botLinkTaken: "Este Telegram ya está vinculado a otro diario.",
+  botLinkTakenMax:
+    "Este MAX ya está vinculado a otro diario.",
   language: "Idioma",
   tabJournal: "Diario",
   tabWeek: "Semana",
@@ -282,6 +298,8 @@ export const es: Catalog = {
   botOpen: "Abrir Between",
   botHelp:
     "Between es un diario para la sesión.\n\nEl diario es gratis. Cualquier texto aquí se vuelve una nota de hoy. Puedo preguntar cómo estás por la mañana, por la tarde y por la noche.\n\nSemana reúne el espectro, el patrón y los temas para la sesión. Los primeros 7 días tras abrir la pestaña son gratis. Luego, {price} Stars por 30 días.\n\nLa nota de voz se guarda como texto solo con la Semana pagada, hasta 10 al día. Los 7 días gratis no la incluyen.",
+  botHelpMax:
+    "Between es un diario para la sesión.\n\nEl diario es gratis. Cualquier texto aquí se vuelve una nota de hoy. Puedo preguntar cómo estás por la mañana, por la tarde y por la noche.\n\nSemana reúne el espectro, el patrón y los temas para la sesión. Los primeros 7 días tras abrir la pestaña son gratis. Luego, {price} ₽ por 30 días, en el sitio.\n\nLa nota de voz se guarda como texto solo con la Semana pagada, hasta 10 al día. Los 7 días gratis no la incluyen.",
   botUnknown:
     "Escribe un texto y lo guardo como nota.",
   botNotReady:
@@ -307,6 +325,8 @@ export const es: Catalog = {
   botPremiumTrial: "Semana sigue gratis {days}.",
   botPaySupport:
     "Semana se paga con Telegram Stars.\n\n30 días es una suscripción: se cancela en Telegram y el acceso sigue hasta el fin del periodo pagado. 3 meses y un año son un pago único.\n\nSi se cobraron Stars y Semana no se abrió, o necesitas un reembolso, escribe aquí qué pasó y cuándo. Lo vemos en este chat.",
+  botPaySupportMax:
+    "Semana se paga en el sitio, dentro del diario.\n\n30 días, 3 meses y un año se abren allí. Este chat no envía una factura.\n\nSi el pago se hizo y Semana no se abrió, o necesita un reembolso, escriba aquí qué pasó y cuándo.",
   botPollMorning: "Mañana. ¿Cómo estás?",
   botPollDay: "Día. ¿Cómo estás?",
   botPollEvening: "Noche. ¿Cómo estás?",

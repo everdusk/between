@@ -74,6 +74,17 @@ export const uz: Catalog = {
   webBotHint:
     "Bu Telegram boti. Kechqurun kun qanday o‘tganini so‘raydi va javobni shu kundalikka saqlaydi. Kundalik botsiz ham ishlaydi: bot eslatish va chatda qayd olish uchun. Telegram ochiladi — Start ni bosing, bot shu kundalikka ulanadi.",
   webBotVpn: "Rossiyadan Telegram VPN siz ochilmaydi. VPN ni yoqing, keyin tugmani bosing.",
+  webConnectMax:
+    "MAX boti",
+  webMaxLinked:
+    "MAX boti ulangan. Kun qanday o‘tganini so‘raydi, chatdagi qayd shu yerda ko‘rinadi.",
+  webMaxHint:
+    "O‘sha bot MAX’da. Kechqurun kun qanday o‘tganini so‘raydi, chatdagi qayd shu yerda ko‘rinadi. MAX ochiladi — Boshlashni bosing.",
+  webMaxOff:
+    "MAX boti hali ulanmagan.",
+  webMaxLogin: "MAX",
+  webMaxLoginWait: "MAX ni oching va chatda «Kirish» ni bosing. Bu ekran o‘zi kiradi.",
+  webMaxLoginFail: "MAX kirishni tasdiqlamadi. Tugmani yana bosing.",
   webLogout: "Chiqish",
   webServer: "Server hali tayyor emas.",
   webOAuth: "Shu orqali kirish",
@@ -86,7 +97,12 @@ export const uz: Catalog = {
   webOAuthTaken: "Bu hisob boshqa kundalikka ulangan.",
   botLinkOk: "Tayyor. Bu chat kundaligingizga yozadi.",
   botLinkBad: "Kod mos kelmadi. Brauzerda, hisob kartasida yangisini so‘rang.",
+  botLoginAsk: "Sayt kundaligingizni ochmoqchi. Agar bu siz bo‘lsangiz, «Kirish» ni bosing.",
+  botLoginYes: "Kirish",
+  botLoginOk: "Tayyor. Brauzerga qayting — kundalik ochiq.",
   botLinkTaken: "Bu Telegram boshqa kundalikka ulangan.",
+  botLinkTakenMax:
+    "Bu MAX boshqa kundalikka ulangan.",
   language: "Til",
   tabJournal: "Kundalik",
   tabWeek: "Hafta",
@@ -282,6 +298,8 @@ export const uz: Catalog = {
   botOpen: "Between’ni ochish",
   botHelp:
     "Between — seans uchun kundalik.\n\nKundalik bepul. Bu yerdagi har qanday matn bugungi yozuv bo‘ladi. Ertalab, kunduzi va kechqurun holingizni so‘rashim mumkin.\n\n«Hafta» spektr, naqsh va seans mavzularini yig‘adi. Varaq ochilgandan keyingi dastlabki 7 kun bepul. So‘ng 30 kunga {price} Stars.\n\nOvozli xabar matnga faqat «Hafta» to‘langach aylanadi, kuniga 10 tagacha. Bepul 7 kun bunga kirmaydi.",
+  botHelpMax:
+    "Between — seans uchun kundalik.\n\nKundalik bepul. Bu yerdagi har qanday matn bugungi yozuv bo‘ladi. Ertalab, kunduzi va kechqurun holingizni so‘rashim mumkin.\n\n«Hafta» spektr, naqsh va seans mavzularini yig‘adi. Varaq ochilgandan keyingi dastlabki 7 kun bepul. So‘ng saytda 30 kunga {price} ₽.\n\nOvozli xabar matnga faqat «Hafta» to‘langach aylanadi, kuniga 10 tagacha. Bepul 7 kun bunga kirmaydi.",
   botUnknown: "Matn yozing, yozuv qilib saqlayman.",
   botNotReady:
     "Hozir saqlay olmayman.",
@@ -306,6 +324,8 @@ export const uz: Catalog = {
   botPremiumTrial: "«Hafta» yana {days} bepul.",
   botPaySupport:
     "«Hafta» to‘lovi Telegram Stars orqali.\n\n30 kun — obuna: Telegramda bekor qilinadi, kirish to‘langan muddat oxirigacha qoladi. 3 oy va bir yil — bir martalik to‘lov.\n\nStars yechilgan, lekin «Hafta» ochilmagan bo‘lsa yoki qaytarish kerak bo‘lsa, shu chatga nima bo‘lganini va qachonligini yozing. Shu yerda ko‘ramiz.",
+  botPaySupportMax:
+    "«Hafta» to‘lovi saytda, kundalik ichida o‘tadi.\n\n30 kun, 3 oy va bir yil u yerda ochiladi. Bu chat hisob yubormaydi.\n\nPul yechilgan, lekin «Hafta» ochilmagan bo‘lsa yoki qaytarish kerak bo‘lsa, shu yerga nima bo‘lganini va qachonligini yozing.",
   botPollMorning: "Ertalab. Qandaysiz?",
   botPollDay: "Kun. Qandaysiz?",
   botPollEvening: "Kechqurun. Qandaysiz?",

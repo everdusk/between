@@ -74,6 +74,17 @@ export const id: Catalog = {
   webBotHint:
     "Ini bot Telegram. Malam hari ia bertanya bagaimana hari berjalan dan menyimpan jawaban di jurnal ini. Jurnal tetap jalan tanpa bot: bot untuk mengingatkan dan menerima catatan di chat. Telegram akan terbuka — tekan Start, dan bot terhubung ke jurnal ini.",
   webBotVpn: "Dari Rusia Telegram tidak terbuka tanpa VPN. Nyalakan VPN, lalu tekan tombol.",
+  webConnectMax:
+    "Bot MAX",
+  webMaxLinked:
+    "Bot MAX terhubung. Ia bertanya bagaimana hari Anda, dan catatan dari chat muncul di sini.",
+  webMaxHint:
+    "Bot yang sama di MAX. Malam hari ia bertanya bagaimana hari Anda, dan catatan dari chat muncul di sini. MAX akan terbuka — tekan Mulai.",
+  webMaxOff:
+    "Bot MAX belum terhubung.",
+  webMaxLogin: "MAX",
+  webMaxLoginWait: "Buka MAX dan tekan Masuk di chat. Layar ini masuk sendiri.",
+  webMaxLoginFail: "MAX belum mengonfirmasi masuk. Tekan tombol sekali lagi.",
   webLogout: "Keluar",
   webServer: "Server belum siap.",
   webOAuth: "Masuk dengan",
@@ -86,7 +97,12 @@ export const id: Catalog = {
   webOAuthTaken: "Akun ini sudah terhubung ke jurnal lain.",
   botLinkOk: "Selesai. Chat ini menulis ke jurnal Anda.",
   botLinkBad: "Kode tidak cocok. Minta yang baru di peramban, pada kartu akun.",
+  botLoginAsk: "Situs meminta membuka jurnal Anda. Jika ini Anda, tekan Masuk.",
+  botLoginYes: "Masuk",
+  botLoginOk: "Selesai. Kembali ke peramban — jurnal sudah terbuka.",
   botLinkTaken: "Telegram ini sudah terhubung ke jurnal lain.",
+  botLinkTakenMax:
+    "MAX ini sudah terhubung ke jurnal lain.",
   language: "Bahasa",
   tabJournal: "Jurnal",
   tabWeek: "Minggu",
@@ -282,6 +298,8 @@ export const id: Catalog = {
   botOpen: "Buka Between",
   botHelp:
     "Between adalah jurnal untuk sesi.\n\nJurnalnya gratis. Teks apa pun di sini menjadi catatan hari ini. Saya bisa bertanya kabarmu pagi, siang, dan malam.\n\nMinggu mengumpulkan spektrum, pola, dan topik untuk sesi. 7 hari pertama setelah membuka tab gratis. Lalu {price} Stars untuk 30 hari.\n\nCatatan suara disimpan sebagai teks hanya setelah Minggu dibayar, sampai 10 sehari. 7 hari gratis tidak mencakupnya.",
+  botHelpMax:
+    "Between adalah jurnal untuk sesi.\n\nJurnalnya gratis. Teks apa pun di sini menjadi catatan hari ini. Saya bisa bertanya kabarmu pagi, siang, dan malam.\n\nMinggu mengumpulkan spektrum, pola, dan topik untuk sesi. 7 hari pertama setelah membuka tab gratis. Lalu {price} ₽ untuk 30 hari, dibayar di situs.\n\nCatatan suara disimpan sebagai teks hanya setelah Minggu dibayar, sampai 10 sehari. 7 hari gratis tidak mencakupnya.",
   botUnknown:
     "Kirim teks, saya simpan sebagai catatan.",
   botNotReady:
@@ -307,6 +325,8 @@ export const id: Catalog = {
   botPremiumTrial: "Minggu masih gratis {days}.",
   botPaySupport:
     "Minggu dibayar dengan Telegram Stars.\n\n30 hari adalah langganan: batalkan di Telegram, akses tetap sampai akhir masa yang dibayar. 3 bulan dan setahun adalah pembayaran sekali.\n\nJika Stars terpotong dan Minggu tidak terbuka, atau Anda perlu pengembalian, tulis di chat ini apa yang terjadi dan kapan. Kami urus di sini.",
+  botPaySupportMax:
+    "Minggu dibayar di situs, di dalam jurnal.\n\n30 hari, 3 bulan, dan setahun terbuka di sana. Chat ini tidak mengirim tagihan.\n\nJika pembayaran lolos dan Minggu tidak terbuka, atau Anda perlu pengembalian, tulis di sini apa yang terjadi dan kapan.",
   botPollMorning: "Pagi. Bagaimana Anda?",
   botPollDay: "Siang. Bagaimana Anda?",
   botPollEvening: "Sore. Bagaimana Anda?",

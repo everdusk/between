@@ -1,6 +1,7 @@
 import { createHmac } from "node:crypto";
 import {
   ANALYTICS_EVENTS,
+  ANALYTICS_MESSENGERS,
   analyticsCohortKey,
   analyticsCount,
   analyticsCounterKey,
@@ -9,9 +10,13 @@ import {
   reportDaySpan,
   shiftDay,
   snapshotFromReads,
+  sumCountRows,
   type AnalyticsEvent,
+  type AnalyticsMessenger,
   type AnalyticsSnapshot,
+  type MessengerReport,
 } from "./analytics-model";
+import { captureServerProduct } from "./product-analytics-server";
 import { getRedis } from "./redis";
 import { DEFAULT_TIME_ZONE } from "./types";
 import { todayInTimeZone } from "./zoned";
@@ -44,6 +49,7 @@ export async function recordAnalytics(
   input: {
     userId: number;
     event: AnalyticsEvent;
+    messenger: AnalyticsMessenger;
     day: string;
     cohort?: string;
     offset?: number;
@@ -53,17 +59,17 @@ export async function recordAnalytics(
   },
 ): Promise<"counted" | "duplicate"> {
   const material = input.salt
-    ? `${input.userId}:${input.event}:${input.salt}`
-    : `${input.userId}:${input.event}:${input.day}`;
+    ? `${input.messenger}:${input.userId}:${input.event}:${input.salt}`
+    : `${input.messenger}:${input.userId}:${input.event}:${input.day}`;
   const token = analyticsDedupToken(input.pepper, material);
   const dedupKey = input.salt ? "between:analytics:dedup:paid" : analyticsDedupKey(input.day);
   const added = await redis.sadd(dedupKey, token);
   await redis.expire(dedupKey, input.salt ? PAID_DEDUP_TTL_SEC : DEDUP_TTL_SEC);
   if (added === 0) return "duplicate";
 
-  const keys = [analyticsCounterKey(input.day, input.event)];
+  const keys = [analyticsCounterKey(input.day, input.event, input.messenger)];
   if (input.event === "visit" && input.cohort && input.offset != null) {
-    keys.push(analyticsCohortKey(input.cohort, input.offset));
+    keys.push(analyticsCohortKey(input.cohort, input.offset, input.messenger));
   }
   for (const key of keys) {
     await redis.incr(key);
@@ -90,8 +96,22 @@ export async function loadAnalyticsReport(
   }
 
   const keys: string[] = [];
+  for (const messenger of ANALYTICS_MESSENGERS) {
+    for (const day of days) {
+      for (const event of ANALYTICS_EVENTS) keys.push(analyticsCounterKey(day, event, messenger));
+    }
+  }
   for (const day of days) {
     for (const event of ANALYTICS_EVENTS) keys.push(analyticsCounterKey(day, event));
+  }
+  for (const messenger of ANALYTICS_MESSENGERS) {
+    for (const day of cohortDays) {
+      keys.push(
+        analyticsCohortKey(day, 0, messenger),
+        analyticsCohortKey(day, 1, messenger),
+        analyticsCohortKey(day, 7, messenger),
+      );
+    }
   }
   for (const day of cohortDays) {
     keys.push(analyticsCohortKey(day, 0), analyticsCohortKey(day, 1), analyticsCohortKey(day, 7));
@@ -99,25 +119,56 @@ export async function loadAnalyticsReport(
   const raw = keys.length ? await redis.mget(...keys) : [];
 
   let cursor = 0;
-  const dayCounts = days.map((day) => {
-    const counts = emptyAnalyticsCounts();
-    for (const event of ANALYTICS_EVENTS) {
-      counts[event] = analyticsCount(raw[cursor]);
-      cursor += 1;
-    }
-    return { day, counts };
-  });
-  const cohorts = cohortDays.map((day) => {
-    const row = {
-      day,
-      d0: analyticsCount(raw[cursor]),
-      d1: analyticsCount(raw[cursor + 1]),
-      d7: analyticsCount(raw[cursor + 2]),
+  const readDays = () =>
+    days.map((day) => {
+      const counts = emptyAnalyticsCounts();
+      for (const event of ANALYTICS_EVENTS) {
+        counts[event] = analyticsCount(raw[cursor]);
+        cursor += 1;
+      }
+      return { day, counts };
+    });
+  const readCohorts = () =>
+    cohortDays.map((day) => {
+      const row = {
+        day,
+        d0: analyticsCount(raw[cursor]),
+        d1: analyticsCount(raw[cursor + 1]),
+        d7: analyticsCount(raw[cursor + 2]),
+      };
+      cursor += 3;
+      return row;
+    });
+
+  const byMessenger = {
+    telegram: readDays(),
+    max: readDays(),
+  };
+  const legacyDays = readDays();
+  const cohorts = {
+    telegram: readCohorts(),
+    max: readCohorts(),
+  };
+  const legacyCohorts = readCohorts();
+  byMessenger.telegram = sumCountRows(byMessenger.telegram, legacyDays);
+  cohorts.telegram = cohorts.telegram.map((row, index) => ({
+    day: row.day,
+    d0: row.d0 + legacyCohorts[index].d0,
+    d1: row.d1 + legacyCohorts[index].d1,
+    d7: row.d7 + legacyCohorts[index].d7,
+  }));
+
+  const messengers = {} as AnalyticsSnapshot["messengers"];
+  for (const messenger of ANALYTICS_MESSENGERS) {
+    const shot = snapshotFromReads(today, byMessenger[messenger], cohorts[messenger]);
+    const part: MessengerReport = {
+      todayCounts: shot.todayCounts,
+      totals: shot.totals,
+      cohorts: shot.cohorts,
     };
-    cursor += 3;
-    return row;
-  });
-  return snapshotFromReads(today, dayCounts, cohorts);
+    messengers[messenger] = part;
+  }
+  return { today, windowDays: days.length, messengers };
 }
 
 export function analyticsRedis(): AnalyticsRedis | null {
@@ -143,8 +194,36 @@ export async function recordPaidAnalytics(
   await recordAnalytics(redis, {
     userId,
     event: "paid",
+    messenger: "telegram",
     day,
     salt: chargeId || undefined,
     pepper,
   });
+}
+
+/** A bot step. The Mini App still reports through `/api/analytics`. One person, one step, one messenger, one day. */
+export async function trackServerEvent(input: {
+  userId: number;
+  event: AnalyticsEvent;
+  messenger: AnalyticsMessenger;
+}): Promise<void> {
+  const redis = analyticsRedis();
+  const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
+  let counted = !redis || !pepper;
+  try {
+    if (redis && pepper) {
+      const result = await recordAnalytics(redis, {
+        userId: input.userId,
+        event: input.event,
+        messenger: input.messenger,
+        day: todayInTimeZone(DEFAULT_TIME_ZONE),
+        pepper,
+      });
+      counted = result === "counted";
+    }
+  } catch {
+    // The reply is already on its way. A missed counter can wait for the next message.
+    counted = false;
+  }
+  if (counted) await captureServerProduct(input);
 }

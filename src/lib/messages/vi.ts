@@ -74,6 +74,17 @@ export const vi: Catalog = {
   webBotHint:
     "Đây là bot Telegram. Tối bot hỏi ngày đã qua thế nào và lưu câu trả lời vào nhật ký này. Nhật ký vẫn chạy khi không có bot: bot để nhắc và để nhận ghi chú trong chat. Telegram sẽ mở — nhấn Start, bot nối với nhật ký này.",
   webBotVpn: "Từ Nga, Telegram không mở nếu không có VPN. Bật VPN rồi nhấn nút.",
+  webConnectMax:
+    "Bot MAX",
+  webMaxLinked:
+    "Bot MAX đã kết nối. Bot hỏi ngày của bạn thế nào, và ghi chú từ chat hiện ở đây.",
+  webMaxHint:
+    "Cùng một bot trong MAX. Buổi tối bot hỏi ngày của bạn thế nào, và ghi chú từ chat hiện ở đây. MAX sẽ mở — nhấn Bắt đầu.",
+  webMaxOff:
+    "Bot MAX chưa được kết nối.",
+  webMaxLogin: "MAX",
+  webMaxLoginWait: "Mở MAX và nhấn Vào trong chat. Màn hình này sẽ tự đăng nhập.",
+  webMaxLoginFail: "MAX chưa xác nhận đăng nhập. Hãy nhấn nút lần nữa.",
   webLogout: "Thoát",
   webServer: "Máy chủ chưa sẵn sàng.",
   webOAuth: "Vào bằng",
@@ -86,7 +97,12 @@ export const vi: Catalog = {
   webOAuthTaken: "Tài khoản này đã nối với nhật ký khác.",
   botLinkOk: "Xong. Chat này ghi vào nhật ký của bạn.",
   botLinkBad: "Mã không đúng. Hãy xin mã mới trên trình duyệt, ở thẻ tài khoản.",
+  botLoginAsk: "Trang web xin mở nhật ký của bạn. Nếu là bạn, hãy nhấn Vào.",
+  botLoginYes: "Vào",
+  botLoginOk: "Xong. Quay lại trình duyệt — nhật ký đã mở.",
   botLinkTaken: "Telegram này đã nối với nhật ký khác.",
+  botLinkTakenMax:
+    "MAX này đã nối với nhật ký khác.",
   language: "Ngôn ngữ",
   tabJournal: "Nhật ký",
   tabWeek: "Tuần",
@@ -282,6 +298,8 @@ export const vi: Catalog = {
   botOpen: "Mở Between",
   botHelp:
     "Between là nhật ký cho buổi trị liệu.\n\nNhật ký miễn phí. Chữ nào ở đây cũng thành ghi chép hôm nay. Sáng, trưa và tối tôi có thể hỏi bạn thế nào.\n\nTuần gom phổ cảm xúc, mẫu lặp và chủ đề cho buổi trị liệu. 7 ngày đầu sau khi mở tab là miễn phí. Sau đó {price} Stars cho 30 ngày.\n\nTin nhắn thoại thành chữ chỉ sau khi trả Tuần, tối đa 10 một ngày. 7 ngày miễn phí không gồm.",
+  botHelpMax:
+    "Between là nhật ký cho buổi trị liệu.\n\nNhật ký miễn phí. Chữ nào ở đây cũng thành ghi chép hôm nay. Sáng, trưa và tối tôi có thể hỏi bạn thế nào.\n\nTuần gom phổ cảm xúc, mẫu lặp và chủ đề cho buổi trị liệu. 7 ngày đầu sau khi mở tab là miễn phí. Sau đó {price} ₽ cho 30 ngày, trả trên trang.\n\nTin nhắn thoại thành chữ chỉ sau khi trả Tuần, tối đa 10 một ngày. 7 ngày miễn phí không gồm.",
   botUnknown: "Gửi chữ, tôi lưu thành ghi chép.",
   botNotReady:
     "Lúc này không lưu được.",
@@ -306,6 +324,8 @@ export const vi: Catalog = {
   botPremiumTrial: "Tuần vẫn miễn phí {days}.",
   botPaySupport:
     "Tuần được trả bằng Telegram Stars.\n\n30 ngày là đăng ký: hủy trong Telegram, quyền truy cập giữ đến hết kỳ đã trả. 3 tháng và một năm là trả một lần.\n\nNếu Stars đã bị trừ mà Tuần không mở, hoặc bạn cần hoàn tiền, hãy viết vào cuộc trò chuyện này chuyện gì đã xảy ra và khi nào. Chúng tôi xử lý tại đây.",
+  botPaySupportMax:
+    "Tuần được trả trên trang, trong nhật ký.\n\n30 ngày, 3 tháng và một năm mở ở đó. Cuộc trò chuyện này không gửi hóa đơn.\n\nNếu tiền đã trừ mà Tuần không mở, hoặc bạn cần hoàn tiền, hãy viết ở đây chuyện gì đã xảy ra và khi nào.",
   botPollMorning: "Sáng. Bạn thế nào?",
   botPollDay: "Trưa. Bạn thế nào?",
   botPollEvening: "Tối. Bạn thế nào?",

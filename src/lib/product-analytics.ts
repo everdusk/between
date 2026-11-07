@@ -1,4 +1,10 @@
-import { scrubProductEvent, type AnalyticsEvent, type ProductPlan } from "./analytics-model";
+import {
+  messengerEventName,
+  scrubProductEvent,
+  type AnalyticsEvent,
+  type AnalyticsMessenger,
+  type ProductPlan,
+} from "./analytics-model";
 import { readPosthogBrowserConfig } from "./posthog-env";
 
 type PostHogClient = {
@@ -47,11 +53,16 @@ function load(): Promise<PostHogClient | null> {
   return booting;
 }
 
-/** One funnel step in PostHog. No-op until the public project token is set. Never calls identify. */
-export function captureProduct(event: AnalyticsEvent, detail?: { plan?: ProductPlan }): void {
+/** One funnel step in PostHog, named `telegram_note` or `max_note`. No-op until the public token is set. */
+export function captureProduct(
+  event: AnalyticsEvent,
+  detail?: { plan?: ProductPlan; messenger?: AnalyticsMessenger },
+): void {
   if (!readPosthogBrowserConfig()) return;
-  const properties = detail?.plan ? { plan: detail.plan } : undefined;
+  const messenger = detail?.messenger ?? "telegram";
+  const properties: Record<string, unknown> = { messenger };
+  if (detail?.plan) properties.plan = detail.plan;
   void load().then((posthog) => {
-    posthog?.capture(event, properties);
+    posthog?.capture(messengerEventName(messenger, event), properties);
   });
 }

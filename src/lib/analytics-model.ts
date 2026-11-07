@@ -5,9 +5,13 @@ export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
 export const CLIENT_ANALYTICS_EVENTS = ["visit", "note", "week", "paywall", "checkout"] as const;
 export type ClientAnalyticsEvent = (typeof CLIENT_ANALYTICS_EVENTS)[number];
 
-/** The only custom property a product event may carry. */
+/** The only custom properties a product event may carry. */
 export const PRODUCT_PLANS = ["month", "quarter", "year"] as const;
 export type ProductPlan = (typeof PRODUCT_PLANS)[number];
+
+/** Where the step happened. Web Mini App counts as Telegram. */
+export const ANALYTICS_MESSENGERS = ["telegram", "max"] as const;
+export type AnalyticsMessenger = (typeof ANALYTICS_MESSENGERS)[number];
 
 const DROPPED_PRODUCT_KEYS = new Set(["$set", "$set_once", "$unset", "$ip"]);
 
@@ -27,12 +31,16 @@ const LABELS: Record<AnalyticsEvent, string> = {
   paid: "Оплата",
 };
 
-export type AnalyticsSnapshot = {
-  today: string;
-  windowDays: number;
+export type MessengerReport = {
   todayCounts: Record<AnalyticsEvent, number>;
   totals: Record<AnalyticsEvent, number>;
   cohorts: { day: string; size: number; d1: number | null; d7: number | null }[];
+};
+
+export type AnalyticsSnapshot = {
+  today: string;
+  windowDays: number;
+  messengers: Record<AnalyticsMessenger, MessengerReport>;
 };
 
 /** Calendar day index for a real YYYY-MM-DD, or null. */
@@ -69,12 +77,38 @@ export function shiftDay(iso: string, delta: number): string | null {
   return `${year}-${month}-${day}`;
 }
 
-export function analyticsCounterKey(day: string, event: AnalyticsEvent): string {
+/** Legacy key, from before counters were split. New writes use `messenger`. */
+export function analyticsCounterKey(
+  day: string,
+  event: AnalyticsEvent,
+  messenger?: AnalyticsMessenger,
+): string {
+  if (messenger) return `between:analytics:day:${day}:${messenger}:${event}`;
   return `between:analytics:day:${day}:${event}`;
 }
 
-export function analyticsCohortKey(cohort: string, offset: number): string {
+export function analyticsCohortKey(
+  cohort: string,
+  offset: number,
+  messenger?: AnalyticsMessenger,
+): string {
+  if (messenger) return `between:analytics:cohort:${messenger}:${cohort}:d${offset}`;
   return `between:analytics:cohort:${cohort}:d${offset}`;
+}
+
+/** PostHog event name. `note` becomes `telegram_note` or `max_note`. */
+export function messengerEventName(messenger: AnalyticsMessenger, event: AnalyticsEvent): string {
+  return `${messenger}_${event}`;
+}
+
+export function parseMessengerEvent(
+  name: string,
+): { messenger: AnalyticsMessenger; event: AnalyticsEvent } | null {
+  const match = /^(telegram|max)_(visit|note|week|paywall|checkout|paid)$/.exec(name);
+  if (!match) return null;
+  const messenger = match[1] as AnalyticsMessenger;
+  const event = match[2] as AnalyticsEvent;
+  return { messenger, event };
 }
 
 export function analyticsDedupKey(day: string): string {
@@ -152,11 +186,23 @@ export function isAnalyticsOwner(username: string | undefined, owners: string): 
     .includes(name);
 }
 
+export function sumCountRows(
+  left: { day: string; counts: Record<AnalyticsEvent, number> }[],
+  right: { day: string; counts: Record<AnalyticsEvent, number> }[],
+): { day: string; counts: Record<AnalyticsEvent, number> }[] {
+  return left.map((row, index) => {
+    const extra = right[index]?.counts ?? emptyAnalyticsCounts();
+    const counts = emptyAnalyticsCounts();
+    for (const event of ANALYTICS_EVENTS) counts[event] = row.counts[event] + (extra[event] ?? 0);
+    return { day: row.day, counts };
+  });
+}
+
 export function snapshotFromReads(
   today: string,
   dayCounts: { day: string; counts: Record<AnalyticsEvent, number> }[],
   cohorts: { day: string; d0: number; d1: number; d7: number }[],
-): AnalyticsSnapshot {
+): MessengerReport & { today: string; windowDays: number } {
   const totals = emptyAnalyticsCounts();
   const todayCounts = emptyAnalyticsCounts();
   for (const row of dayCounts) {
@@ -199,7 +245,13 @@ export type ProductEvent = {
 function keepProductKey(key: string): boolean {
   if (DROPPED_PRODUCT_KEYS.has(key)) return false;
   if (/user.?id|username|init.?data|tgWebApp/i.test(key)) return false;
-  return key.startsWith("$") || key === "distinct_id" || key === "token" || key === "plan";
+  return (
+    key.startsWith("$") ||
+    key === "distinct_id" ||
+    key === "token" ||
+    key === "plan" ||
+    key === "messenger"
+  );
 }
 
 /** Origin and path only, so a Telegram launch hash never leaves the device. */
@@ -221,7 +273,8 @@ function quietProductValue(value: unknown): unknown {
  * Drops person profiles, IP, note text, and anything that is not `plan`.
  */
 export function scrubProductEvent(event: ProductEvent): (ProductEvent & { properties: Record<string, unknown> }) | null {
-  if (!(ANALYTICS_EVENTS as readonly string[]).includes(event.event)) return null;
+  const named = parseMessengerEvent(event.event);
+  if (!named && !(ANALYTICS_EVENTS as readonly string[]).includes(event.event)) return null;
   const source =
     event.properties && typeof event.properties === "object" && !Array.isArray(event.properties)
       ? event.properties
@@ -237,9 +290,16 @@ export function scrubProductEvent(event: ProductEvent): (ProductEvent & { proper
       if ((PRODUCT_PLANS as readonly string[]).includes(String(value))) properties.plan = String(value);
       continue;
     }
+    if (key === "messenger") {
+      if ((ANALYTICS_MESSENGERS as readonly string[]).includes(String(value))) {
+        properties.messenger = String(value);
+      }
+      continue;
+    }
     const quiet = quietProductValue(value);
     if (quiet !== undefined) properties[key] = quiet;
   }
+  if (named) properties.messenger = named.messenger;
   const next = { ...event, properties };
   delete next.$set;
   delete next.$set_once;
@@ -252,21 +312,22 @@ function ruDay(iso: string): string {
   return `${Number(day)} ${MONTHS[Number(month) - 1] ?? ""}`.trim();
 }
 
-export function formatAnalyticsReport(report: AnalyticsSnapshot): string {
-  const any = ANALYTICS_EVENTS.some((event) => report.totals[event] > 0) || report.cohorts.length > 0;
-  if (!any) return "Пока никто не открывал Between.";
+const MESSENGER_TITLE: Record<AnalyticsMessenger, string> = {
+  telegram: "Telegram",
+  max: "MAX",
+};
 
-  const lines = [`Between за ${report.windowDays} дн., по Москве`, ""];
+function formatMessengerBlock(title: string, part: MessengerReport): string[] {
+  const lines = [title];
   for (const event of ANALYTICS_EVENTS) {
-    lines.push(`${LABELS[event]} ${report.totals[event]}`);
+    lines.push(`${LABELS[event]} ${part.totals[event]}`);
   }
   lines.push(
-    "",
-    `Сегодня: визит ${report.todayCounts.visit}, пейволл ${report.todayCounts.paywall}, оплата ${report.todayCounts.paid}`,
+    `Сегодня: визит ${part.todayCounts.visit}, пейволл ${part.todayCounts.paywall}, оплата ${part.todayCounts.paid}`,
   );
-  if (report.cohorts.length) {
-    lines.push("", "Возвраты");
-    for (const row of [...report.cohorts].reverse()) {
+  if (part.cohorts.length) {
+    lines.push("Возвраты");
+    for (const row of [...part.cohorts].reverse()) {
       const next =
         row.d1 == null ? "следующий день ещё нет" : `следующий день ${row.d1} из ${row.size}`;
       let line = `${ruDay(row.day)} — ${row.size} новых, ${next}`;
@@ -274,5 +335,21 @@ export function formatAnalyticsReport(report: AnalyticsSnapshot): string {
       lines.push(line);
     }
   }
-  return lines.join("\n");
+  return lines;
+}
+
+export function formatAnalyticsReport(report: AnalyticsSnapshot): string {
+  const any = ANALYTICS_MESSENGERS.some(
+    (messenger) =>
+      ANALYTICS_EVENTS.some((event) => report.messengers[messenger].totals[event] > 0) ||
+      report.messengers[messenger].cohorts.length > 0,
+  );
+  if (!any) return "Пока никто не открывал Between.";
+
+  const lines = [`Between за ${report.windowDays} дн., по Москве`, ""];
+  for (const messenger of ANALYTICS_MESSENGERS) {
+    lines.push(...formatMessengerBlock(MESSENGER_TITLE[messenger], report.messengers[messenger]));
+    lines.push("");
+  }
+  return lines.join("\n").trimEnd();
 }

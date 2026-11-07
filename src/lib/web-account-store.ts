@@ -26,6 +26,7 @@ import {
   passwordMatches,
   RESET_TTL_SECONDS,
   reviewLoginFromEnv,
+  maxStorageId,
   webStorageId,
   LINK_TTL_SECONDS,
 } from "./web-account";
@@ -39,6 +40,8 @@ export type AccountRecord = {
   hash: string;
   telegramUserId: number | null;
   telegramUsername: string | null;
+  maxUserId: number | null;
+  maxUsername: string | null;
   createdAt: string;
   providers: AccountProviders;
 };
@@ -46,6 +49,7 @@ export type AccountRecord = {
 export type PublicAccount = {
   email: string;
   telegramLinked: boolean;
+  maxLinked: boolean;
   providers: OauthProvider[];
 };
 
@@ -59,6 +63,10 @@ function accountKey(id: string): string {
 
 function telegramKey(userId: number): string {
   return `between:acct:tg:${userId}`;
+}
+
+function maxKey(userId: number): string {
+  return `between:acct:max:${userId}`;
 }
 
 function linkKey(code: string): string {
@@ -99,6 +107,11 @@ function asAccount(raw: unknown): AccountRecord | null {
       typeof row.telegramUsername === "string" && row.telegramUsername.trim()
         ? row.telegramUsername.trim().replace(/^@/, "")
         : null,
+    maxUserId: typeof row.maxUserId === "number" ? row.maxUserId : null,
+    maxUsername:
+      typeof row.maxUsername === "string" && row.maxUsername.trim()
+        ? row.maxUsername.trim().replace(/^@/, "")
+        : null,
     createdAt: typeof row.createdAt === "string" ? row.createdAt : "",
     providers: readProviders((row as { providers?: unknown }).providers),
   };
@@ -116,6 +129,7 @@ export function toPublicAccount(account: AccountRecord): PublicAccount {
   return {
     email: account.email,
     telegramLinked: account.telegramUserId != null,
+    maxLinked: account.maxUserId != null,
     providers: (["vk", "yandex", "sber"] as const).filter((key) => Boolean(account.providers[key])),
   };
 }
@@ -155,6 +169,8 @@ export async function createAccount(
     hash: passwordRecord.hash,
     telegramUserId: null,
     telegramUsername: null,
+    maxUserId: null,
+    maxUsername: null,
     createdAt: new Date().toISOString(),
     providers: {},
   };
@@ -199,6 +215,8 @@ export async function openAccountByEmail(email: string): Promise<AccountRecord |
     hash: "",
     telegramUserId: null,
     telegramUsername: null,
+    maxUserId: null,
+    maxUsername: null,
     createdAt: new Date().toISOString(),
     providers: {},
   };
@@ -346,6 +364,8 @@ export async function createVerifiedAccount(
     hash,
     telegramUserId: null,
     telegramUsername: null,
+    maxUserId: null,
+    maxUsername: null,
     createdAt: new Date().toISOString(),
     providers: {},
   };
@@ -534,6 +554,170 @@ export async function claimTelegramLink(
   return "ok";
 }
 
+/** Bind a MAX user to the account that asked for this code. Storage stays `max:<id>` until then. */
+export async function claimMaxLink(
+  code: string,
+  maxUserId: number,
+  username?: string,
+): Promise<LinkResult> {
+  const redis = getRedis();
+  if (!redis) return "bad";
+  const accountId = await redis.get<string>(linkKey(code.toLowerCase()));
+  if (typeof accountId !== "string" || !accountId.startsWith("w")) return "bad";
+  await redis.del(linkKey(code.toLowerCase()));
+
+  const account = await loadAccount(accountId);
+  if (!account) return "bad";
+  if (account.maxUserId != null && account.maxUserId !== maxUserId) return "taken";
+
+  const existing = await accountIdForMax(maxUserId);
+  if (existing && existing !== accountId) return "taken";
+
+  const webId = webStorageId(accountId);
+  const fromId = maxStorageId(maxUserId);
+  if (account.maxUserId == null) {
+    const maxAccess = await loadWeekAccess(fromId);
+    const absorbed = absorbWeekPremium(await loadWeekAccess(webId), maxAccess, new Date());
+    await saveWeekAccess(webId, absorbed.web);
+    if (absorbed.telegram.paidUntil !== maxAccess.paidUntil) {
+      await saveWeekAccess(fromId, absorbed.telegram);
+    }
+  }
+
+  const merged = mergeStores(await loadUserStore(webId), await loadUserStore(fromId));
+  await saveUserStore(webId, merged);
+
+  const webTz = await getUserTimezone(webId);
+  if (!webTz) {
+    const tz = await getUserTimezone(fromId);
+    if (tz) await setUserTimezone(webId, tz);
+  }
+  const webLocale = await loadUserLocale(webId);
+  if (!webLocale) {
+    const locale = await loadUserLocale(fromId);
+    if (locale) await saveUserLocale(webId, locale as LocaleId);
+  }
+
+  account.maxUserId = maxUserId;
+  const handle = username?.trim().replace(/^@/, "");
+  if (handle) account.maxUsername = handle;
+  await redis.set(accountKey(accountId), account);
+  await redis.set(maxKey(maxUserId), accountId);
+  await rememberUser(fromId);
+  return "ok";
+}
+
+const MAX_LOGIN_TTL_SECONDS = 5 * 60;
+
+function maxLoginKey(token: string): string {
+  return `between:maxlogin:${token}`;
+}
+
+/** A browser is waiting for this person to press Start in MAX. */
+export async function beginMaxLogin(token: string): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return false;
+  await redis.set(maxLoginKey(token), "pending", { ex: MAX_LOGIN_TTL_SECONDS });
+  return true;
+}
+
+/** Bind the MAX user to a journal and let the waiting browser pick up the session. */
+export async function finishMaxLogin(
+  token: string,
+  maxUserId: number,
+  username?: string,
+): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const state = await redis.get<string>(maxLoginKey(token));
+  if (typeof state === "string" && /^w[0-9a-f]{32}$/.test(state)) {
+    const ready = await loadAccount(state);
+    return ready?.maxUserId === maxUserId ? ready : null;
+  }
+  if (state !== "pending") return null;
+  const account = await ensureMaxAccount(maxUserId, username);
+  if (!account) return null;
+  await redis.set(maxLoginKey(token), account.id, { ex: MAX_LOGIN_TTL_SECONDS });
+  return account;
+}
+
+/** One-time read for the browser that asked to sign in. */
+export async function takeMaxLogin(token: string): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const state = await redis.get<string>(maxLoginKey(token));
+  if (typeof state !== "string" || !/^w[0-9a-f]{32}$/.test(state)) return null;
+  await redis.del(maxLoginKey(token));
+  return loadAccount(state);
+}
+
+/** The journal for this MAX user, creating it on the first signed launch. */
+export async function ensureMaxAccount(
+  maxUserId: number,
+  username?: string,
+): Promise<AccountRecord | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const existingId = await accountIdForMax(maxUserId);
+  if (existingId) {
+    const account = await loadAccount(existingId);
+    if (!account) return null;
+    const handle = username?.trim().replace(/^@/, "");
+    if (handle && handle !== account.maxUsername) {
+      account.maxUsername = handle;
+      await redis.set(accountKey(account.id), account);
+    }
+    return account;
+  }
+
+  const id = newAccountId();
+  const handle = username?.trim().replace(/^@/, "") || null;
+  const account: AccountRecord = {
+    id,
+    email: "",
+    salt: "",
+    hash: "",
+    telegramUserId: null,
+    telegramUsername: null,
+    maxUserId,
+    maxUsername: handle,
+    createdAt: new Date().toISOString(),
+    providers: {},
+  };
+  const claimed = await redis.set(maxKey(maxUserId), id, { nx: true });
+  if (claimed !== "OK") {
+    const winner = await accountIdForMax(maxUserId);
+    return winner ? loadAccount(winner) : null;
+  }
+  await redis.set(accountKey(id), account);
+
+  const webId = webStorageId(id);
+  const fromId = maxStorageId(maxUserId);
+  const maxAccess = await loadWeekAccess(fromId);
+  const absorbed = absorbWeekPremium(await loadWeekAccess(webId), maxAccess, new Date());
+  await saveWeekAccess(webId, absorbed.web);
+  const merged = mergeStores(await loadUserStore(webId), await loadUserStore(fromId));
+  await saveUserStore(webId, merged);
+  const tz = await getUserTimezone(fromId);
+  if (tz) await setUserTimezone(webId, tz);
+  const locale = await loadUserLocale(fromId);
+  if (locale) await saveUserLocale(webId, locale as LocaleId);
+  await rememberUser(fromId);
+  return account;
+}
+
+export async function accountIdForMax(userId: number): Promise<string | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const id = await redis.get<string>(maxKey(userId));
+  return typeof id === "string" && id.startsWith("w") ? id : null;
+}
+
+export async function resolveMaxJournalId(maxUserId: number): Promise<string> {
+  const accountId = await accountIdForMax(maxUserId);
+  return accountId ? webStorageId(accountId) : maxStorageId(maxUserId);
+}
+
 export async function upsertOauthAccount(input: {
   provider: OauthProvider;
   providerUserId: string;
@@ -590,6 +774,8 @@ export async function upsertOauthAccount(input: {
     hash: "",
     telegramUserId: null,
     telegramUsername: null,
+    maxUserId: null,
+    maxUsername: null,
     createdAt: new Date().toISOString(),
     providers: { [input.provider]: input.providerUserId },
   };

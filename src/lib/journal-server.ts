@@ -16,7 +16,14 @@ export async function appendBotMessageToToday(
   userId: number,
   text: string,
 ): Promise<{ date: string; store: TherapyStore }> {
-  const owner = await resolveJournalId(userId);
+  return appendBotMessageForOwner(await resolveJournalId(userId), text);
+}
+
+/** `owner` is the journal key: a Telegram id, `max:<id>`, or `web:<account>`. */
+export async function appendBotMessageForOwner(
+  owner: string,
+  text: string,
+): Promise<{ date: string; store: TherapyStore }> {
   const tz = await getUserTimezone(owner);
   const date = todayInTimeZone(tz);
   const body = text.trim();
@@ -49,7 +56,14 @@ export async function addCheckin(
   slot: CheckinSlot,
   feeling: Feeling,
 ): Promise<TherapyStore> {
-  const owner = await resolveJournalId(userId);
+  return addCheckinForOwner(await resolveJournalId(userId), slot, feeling);
+}
+
+export async function addCheckinForOwner(
+  owner: string,
+  slot: CheckinSlot,
+  feeling: Feeling,
+): Promise<TherapyStore> {
   const tz = await getUserTimezone(owner);
   const date = todayInTimeZone(tz);
   const now = new Date().toISOString();
