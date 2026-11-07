@@ -3,6 +3,7 @@
 import { useLayoutEffect } from "react";
 import { TherapyApp } from "@/components/therapy-app";
 import { holdAppSurface } from "@/lib/landing";
+import { insideMaxApp } from "@/lib/max-webapp";
 import "./theme.css";
 
 export default function JournalPage() {
@@ -17,9 +18,16 @@ export default function JournalPage() {
       /* private mode */
     }
     document.documentElement.setAttribute("data-scheme", scheme);
+    const markMax = () => {
+      if (insideMaxApp()) document.documentElement.setAttribute("data-max", "1");
+    };
+    markMax();
+    const later = window.setTimeout(markMax, 400);
     return () => {
+      window.clearTimeout(later);
       document.documentElement.removeAttribute("data-journal");
       document.documentElement.removeAttribute("data-scheme");
+      document.documentElement.removeAttribute("data-max");
     };
   }, []);
   return <TherapyApp />;
