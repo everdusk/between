@@ -93,7 +93,8 @@ export const ar: Catalog = {
   webMaxOff:
     "بوت MAX غير مربوط بعد.",
   webMaxLogin: "MAX",
-  webMaxLoginWait: "افتحوا MAX وشغّلوا البوت. تدخل هذه الشاشة وحدها.",
+  webMaxLoginWait: "ادخلوا إلى MAX في اللسان الذي فُتح. تدخل هذه الشاشة وحدها.",
+  webOpenTab: "افتحوا اللسان",
   webMaxLoginFail: "لم يؤكد MAX الدخول. اضغطوا الزر مرة أخرى.",
   webLogout: "خروج",
   webServer: "الخادم ليس جاهزًا بعد.",

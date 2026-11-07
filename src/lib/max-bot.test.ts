@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { X509Certificate } from "node:crypto";
 import { afterEach, describe, it } from "node:test";
 import { digestChannel, maxUserIdFromDigest } from "./digest";
-import { maxBotLinkUrl, maxStorageId } from "./web-account";
+import { maxBotLinkUrl, maxBotLoginUrl, maxStorageId } from "./web-account";
 import { toPublicAccount } from "./web-account-store";
 import { RUSSIAN_TRUSTED_ROOT_CA, RUSSIAN_TRUSTED_SUB_CA } from "./max-ca";
 import {
@@ -59,6 +59,11 @@ describe("MAX bot", () => {
     assert.equal(maxBotLinkUrl("abcd2345"), "https://max.ru/se123_bot?start=link_abcd2345");
     process.env.MAX_BOT_USERNAME = "has space";
     assert.equal(maxBotLinkUrl("abcd2345"), null);
+    process.env.MAX_BOT_USERNAME = "se14938561_bot";
+    assert.equal(
+      maxBotLoginUrl("abcdefghjkmnpqrstuvwxyz234567892"),
+      "https://web.max.ru/se14938561_bot?start=login_abcdefghjkmnpqrstuvwxyz234567892",
+    );
   });
 
   it("reads a private note, a mood tap, and a voice url", () => {

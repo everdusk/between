@@ -93,7 +93,8 @@ export const uz: Catalog = {
   webMaxOff:
     "MAX boti hali ulanmagan.",
   webMaxLogin: "MAX",
-  webMaxLoginWait: "MAX’ni oching va botni ishga tushiring. Bu ekran o‘zi kiradi.",
+  webMaxLoginWait: "Ochilgan varaqda MAX’ga kiring. Bu ekran o‘zi kiradi.",
+  webOpenTab: "Varaqni ochish",
   webMaxLoginFail: "MAX kirishni tasdiqlamadi. Tugmani yana bosing.",
   webLogout: "Chiqish",
   webServer: "Server hali tayyor emas.",

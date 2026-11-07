@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { Bot, Check, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +14,6 @@ import { formatDayLabel, formatTime, toDateKey } from "@/lib/dates";
 import { readMaxInitData } from "@/lib/max-webapp";
 import { feelingFill } from "@/lib/spectrum";
 import type { Feeling } from "@/lib/types";
-import { cn } from "cn";
 
 const SAMPLE_NOTES: {
   hour: number;
@@ -131,7 +129,6 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [messengerUrl, setMessengerUrl] = useState<string | null>(null);
-  const [messengerKind, setMessengerKind] = useState<"max" | "telegram">("max");
   const [telegramVpn, setTelegramVpn] = useState(false);
   const [errorScope, setErrorScope] = useState<"login" | "register" | "other">("other");
   const formRef = useRef<HTMLElement>(null);
@@ -257,12 +254,10 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   async function loginWithMessenger(kind: "max" | "telegram") {
     const popup = window.open("about:blank", "_blank");
     const mine = ++maxPoll.current;
-    setBusy(true);
     setError(null);
     setNote(null);
     setMessengerUrl(null);
     setTelegramVpn(false);
-    setMessengerKind(kind);
     try {
       const res = await fetch(kind === "max" ? "/api/account/max/start" : "/api/account/telegram/start", {
         method: "POST",
@@ -283,17 +278,17 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
         return;
       }
       if (data.vpn) setTelegramVpn(true);
-      setMessengerUrl(data.url);
       if (popup && !popup.closed) popup.location.replace(data.url);
-      else popup?.close();
+      else {
+        popup?.close();
+        setMessengerUrl(data.url);
+      }
       rememberLogin(kind, data.token);
       setNote(t(kind === "max" ? "webMaxLoginWait" : "webTgLoginWait"));
       await pollMessenger(kind, data.token, mine);
     } catch {
       popup?.close();
       if (mine === maxPoll.current) setError(t("webServer"));
-    } finally {
-      if (mine === maxPoll.current) setBusy(false);
     }
   }
 
@@ -308,12 +303,8 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
     if (!pending || (pending.kind !== "max" && pending.kind !== "telegram") || typeof pending.token !== "string") return;
     const kind = pending.kind;
     const mine = ++maxPoll.current;
-    setBusy(true);
-    setMessengerKind(kind);
     setNote(t(kind === "max" ? "webMaxLoginWait" : "webTgLoginWait"));
-    void pollMessenger(kind, pending.token, mine).finally(() => {
-      if (mine === maxPoll.current) setBusy(false);
-    });
+    void pollMessenger(kind, pending.token, mine);
     return () => {
       maxPoll.current += 1;
     };
@@ -492,17 +483,17 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
                   {t("webBotVpn")}
                 </p>
               ) : null}
+              {note ? <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{note}</p> : null}
               {messengerUrl ? (
                 <a
                   href={messengerUrl}
-                  className={cn(buttonVariants({ variant: "outline", size: "lg" }), "mt-2 w-full")}
+                  className="mt-2 block text-center text-sm text-foreground underline-offset-4 hover:underline"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  {t(messengerKind === "max" ? "webMaxLogin" : "webTgLogin")}
+                  {t("webOpenTab")}
                 </a>
               ) : null}
-              {note ? <p className="mt-3 text-sm leading-relaxed text-foreground">{note}</p> : null}
             </div>
             <p className="my-4 text-center text-xs font-bold tracking-[0.16em] text-muted-foreground uppercase">
               {t("webOr")}
