@@ -55,6 +55,7 @@ export const pt: Catalog = {
   webRegisterFold: "Criar o diário com o e-mail",
   webSwitchEnter: "Já tenho conta",
   webBadLogin: "E-mail ou senha não conferem",
+  webLoginLimited: "Tentativas demais. Esperem um pouco e entrem de novo.",
   webEmailTaken: "Este e-mail já está em uso. Entre ou peça um link para a senha.",
   webPasswordShort: "De 8 a 200 caracteres",
   webPasswordShow: "Mostrar a senha",

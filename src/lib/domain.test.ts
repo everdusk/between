@@ -87,6 +87,7 @@ import {
   planDays,
   planFromPayload,
   planPrice,
+  starsChargeAccepted,
   rubPriceFromEnv,
   starPriceFromEnv,
   TRIAL_MS,
@@ -202,6 +203,41 @@ describe("merge", () => {
       merged.entries.map((entry) => entry.id),
       ["keep"],
     );
+    assert.deepEqual(merged.droppedEntryIds, ["gone"]);
+  });
+
+  it("does not bring a deleted note back from an older copy", () => {
+    const remote = emptyStore();
+    remote.entries = [note({ id: "gone", body: "удалено" }), note({ id: "keep", body: "жива" })];
+    const local = emptyStore();
+    local.droppedEntryIds = ["gone"];
+    const merged = mergeStores(local, remote);
+    assert.deepEqual(
+      merged.entries.map((entry) => entry.id),
+      ["keep"],
+    );
+    const again = applyJournalWrite(remote, merged);
+    assert.deepEqual(again.entries.map((entry) => entry.id), ["keep"]);
+    assert.deepEqual(again.droppedEntryIds, ["gone"]);
+  });
+
+  it("keeps talk notes when a newer week only carries the pattern", () => {
+    const older = emptyStore();
+    older.weekPreps = [
+      { weekKey: "2026-W40", talkNotes: "important", updatedAt: "2026-10-01T00:00:00.000Z" },
+    ];
+    const newer = emptyStore();
+    newer.weekPreps = [
+      {
+        weekKey: "2026-W40",
+        talkNotes: "",
+        updatedAt: "2026-10-02T00:00:00.000Z",
+        patternText: "pattern",
+      },
+    ];
+    const merged = mergeStores(older, newer);
+    assert.equal(merged.weekPreps[0]?.talkNotes, "important");
+    assert.equal(merged.weekPreps[0]?.patternText, "pattern");
   });
 });
 
@@ -1383,6 +1419,10 @@ describe("week access", () => {
     assert.equal(planFromPayload("between-week-quarter"), "quarter");
     assert.equal(planFromPayload("between-week-year"), "year");
     assert.equal(planFromPayload("other"), null);
+    assert.equal(starsChargeAccepted("month", "XTR", 150, 150), true);
+    assert.equal(starsChargeAccepted("quarter", "XTR", 360, 150), true);
+    assert.equal(starsChargeAccepted("year", "XTR", 150, 150), false);
+    assert.equal(starsChargeAccepted("month", "RUB", 150, 150), false);
 
     const exp = Math.floor(now.getTime() / 1000) + 10 * 24 * 60 * 60;
     assert.equal(paidUntilForPlan("month", now, exp), new Date(exp * 1000).toISOString());

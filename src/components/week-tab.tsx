@@ -53,8 +53,11 @@ export function WeekTab({
   const [payingPlan, setPayingPlan] = useState<PremiumPlan | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
   const onAccessRef = useRef(onAccess);
-  onAccessRef.current = onAccess;
   const alive = useRef(true);
+
+  useEffect(() => {
+    onAccessRef.current = onAccess;
+  }, [onAccess]);
 
   useEffect(() => {
     alive.current = true;

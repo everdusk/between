@@ -55,6 +55,7 @@ export const hi: Catalog = {
   webRegisterFold: "ईमेल से डायरी बनाएँ",
   webSwitchEnter: "अकाउंट पहले से है",
   webBadLogin: "ईमेल या पासवर्ड नहीं मिला",
+  webLoginLimited: "बहुत अधिक प्रयास। थोड़ी देर रुककर फिर कोशिश करें।",
   webEmailTaken: "यह ईमेल पहले से लिया है। आएँ, या पासवर्ड की लिंक माँगें।",
   webPasswordShort: "8 से 200 अक्षर",
   webPasswordShow: "पासवर्ड दिखाएँ",

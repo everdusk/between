@@ -50,12 +50,9 @@ export function useWebAccount(active: boolean) {
   }, [active]);
 
   useEffect(() => {
-    if (!active) {
-      setStatus("idle");
-      setAccount(null);
-      return;
-    }
-    setStatus("loading");
+    if (!active) return;
+    // The signed-in account is read from the server once this page is the web journal.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
   }, [active, refresh]);
 
@@ -73,5 +70,10 @@ export function useWebAccount(active: boolean) {
     };
   }, [active, refresh]);
 
-  return { status, account, refresh, setAccount };
+  return {
+    status: active ? (status === "idle" ? "loading" : status) : "idle",
+    account: active ? account : null,
+    refresh,
+    setAccount,
+  };
 }

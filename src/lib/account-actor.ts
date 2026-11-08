@@ -1,7 +1,7 @@
 import { validateMaxInitData } from "./max-auth";
 import { validateInitData } from "./telegram-auth";
-import { ensureMaxAccount, loadAccount, resolveJournalId } from "./web-account-store";
-import { maxStorageId, readSession, sessionSecret, sessionTokenFromRequest, webStorageId } from "./web-account";
+import { accountFromSession, ensureMaxAccount, resolveJournalId } from "./web-account-store";
+import { maxStorageId, sessionSecret, sessionTokenFromRequest, webStorageId } from "./web-account";
 
 export type Actor = {
   id: string;
@@ -75,9 +75,7 @@ export async function actorFromRequest(req: Request): Promise<Actor | null> {
   }
 
   if (!secret || !token) return null;
-  const accountId = readSession(token, secret);
-  if (!accountId) return null;
-  const account = await loadAccount(accountId);
+  const account = await accountFromSession(token, secret);
   if (!account) return null;
   return {
     id: webStorageId(account.id),

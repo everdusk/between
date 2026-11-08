@@ -55,6 +55,7 @@ export const uk: Catalog = {
   webRegisterFold: "Створити щоденник поштою",
   webSwitchEnter: "Вже є акаунт",
   webBadLogin: "Пошта або пароль не підійшли",
+  webLoginLimited: "Забагато спроб. Зачекайте трохи і увійдіть знову.",
   webEmailTaken: "Ця пошта вже зайнята. Увійдіть або запросіть посилання для пароля.",
   webPasswordShort: "Пароль — від 8 до 200 символів",
   webPasswordShow: "Показати пароль",

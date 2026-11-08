@@ -35,6 +35,7 @@ import {
   maxAudioName,
   maxAudioUrl,
   maxFeelingKeyboard,
+  maxLoginKeyboard,
   maxOpenKeyboard,
   maxText,
   maxToken,
@@ -229,9 +230,7 @@ async function handleStart(
   await trackServerEvent({ userId, event: "visit", messenger: "max" });
   const loginToken = loginTokenFromStart(payload);
   if (loginToken) {
-    const account = await finishMaxLogin(loginToken, userId, username);
-    await say(userId, translate(reply, account ? "botLoginOk" : "botLinkBad"), undefined, chatId);
-    if (account) await greet(userId, greeting, reply, keyboard, chatId);
+    await say(userId, translate(reply, "botLoginAsk"), maxLoginKeyboard(loginToken, reply), chatId);
     return;
   }
   const linkCode = linkCodeFromStart(payload);

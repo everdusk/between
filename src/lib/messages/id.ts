@@ -55,6 +55,7 @@ export const id: Catalog = {
   webRegisterFold: "Buat jurnal dengan email",
   webSwitchEnter: "Sudah punya akun",
   webBadLogin: "Email atau kata sandi tidak cocok",
+  webLoginLimited: "Terlalu banyak percobaan. Tunggu sebentar, lalu masuk lagi.",
   webEmailTaken: "Email ini sudah dipakai. Masuk, atau minta tautan untuk kata sandi.",
   webPasswordShort: "8 sampai 200 karakter",
   webPasswordShow: "Tampilkan kata sandi",

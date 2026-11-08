@@ -23,6 +23,14 @@ import {
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
+function idList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const ids = value.filter(
+    (item): item is string => typeof item === "string" && item.length > 0 && item.length < 80,
+  );
+  return [...new Set(ids)].slice(-400);
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object") return null;
   return value as Record<string, unknown>;
@@ -350,7 +358,7 @@ export function normalizeStore(value: unknown): TherapyStore | null {
     return null;
   }
 
-  return {
+  const normalized: TherapyStore = {
     version: 2,
     entries: store.entries
       .map(normalizeEntry)
@@ -373,6 +381,11 @@ export function normalizeStore(value: unknown): TherapyStore | null {
       ? store.judgeSettled.filter((item): item is string => typeof item === "string" && item.length < 80).slice(0, 400)
       : [],
   };
+  const droppedEntryIds = idList(store.droppedEntryIds);
+  const droppedSessionIds = idList(store.droppedSessionIds);
+  if (droppedEntryIds.length) normalized.droppedEntryIds = droppedEntryIds;
+  if (droppedSessionIds.length) normalized.droppedSessionIds = droppedSessionIds;
+  return normalized;
 }
 
 export function storeChangedShape(raw: unknown, normalized: TherapyStore): boolean {

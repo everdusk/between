@@ -55,6 +55,7 @@ export const en: Catalog = {
   webRegisterFold: "Create a journal with email",
   webSwitchEnter: "I already have an account",
   webBadLogin: "Email or password did not match",
+  webLoginLimited: "Too many attempts. Wait a moment and sign in again.",
   webEmailTaken: "This email is already taken. Sign in, or ask for a password link.",
   webPasswordShort: "Use 8 to 200 characters",
   webPasswordShow: "Show password",

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { accountReady, accountUnavailable, withSession } from "@/lib/account-http";
 import { validateMaxInitData } from "@/lib/max-auth";
-import { loginTokenFromStart } from "@/lib/web-account";
-import { ensureMaxAccount, finishMaxLogin, toPublicAccount } from "@/lib/web-account-store";
+import { ensureMaxAccount, toPublicAccount } from "@/lib/web-account-store";
 
 /** Sign in from inside MAX. The launch string is checked with MAX_BOT_TOKEN. */
 export async function POST(req: Request) {
@@ -20,14 +19,11 @@ export async function POST(req: Request) {
   const validated = validateMaxInitData(initData, process.env.MAX_BOT_TOKEN);
   if (!validated) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
 
-  const loginToken = validated.startParam ? loginTokenFromStart(validated.startParam) : null;
-  const finished = loginToken
-    ? await finishMaxLogin(loginToken, validated.user.id, validated.user.username)
-    : null;
-  const account = finished ?? (await ensureMaxAccount(validated.user.id, validated.user.username));
+  const account = await ensureMaxAccount(validated.user.id, validated.user.username);
   if (!account) return accountUnavailable();
   return withSession(
     NextResponse.json({ ok: true, account: toPublicAccount(account) }),
     account.id,
+    account.sessionVersion ?? 0,
   );
 }

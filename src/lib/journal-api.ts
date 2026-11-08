@@ -142,15 +142,49 @@ function mergeById<T extends { id: string; updatedAt: string }>(
   return [...map.values()];
 }
 
+function filled(value: string | undefined): boolean {
+  return Boolean(value?.trim());
+}
+
+/**
+ * A newer week must not wipe a field it left blank.
+ * When both sides have text, the newer `updatedAt` wins.
+ */
+function mergeWeekPrep(prev: WeekPrep, item: WeekPrep): WeekPrep {
+  const newer = prev.updatedAt < item.updatedAt ? item : prev;
+  const older = newer === item ? prev : item;
+  const next: WeekPrep = { ...newer };
+  if (!filled(next.talkNotes) && filled(older.talkNotes)) next.talkNotes = older.talkNotes;
+  if (!filled(next.briefText) && filled(older.briefText)) {
+    next.briefText = older.briefText;
+    next.briefStamp = older.briefStamp;
+  }
+  if (!filled(next.patternText) && filled(older.patternText)) {
+    next.patternText = older.patternText;
+    next.patternStamp = older.patternStamp;
+  }
+  return next;
+}
+
 function mergeWeekPreps(left: WeekPrep[], right: WeekPrep[]): WeekPrep[] {
   const map = new Map<string, WeekPrep>();
   for (const item of [...left, ...right]) {
     const prev = map.get(item.weekKey);
-    if (!prev || prev.updatedAt < item.updatedAt) {
-      map.set(item.weekKey, item);
-    }
+    map.set(item.weekKey, prev ? mergeWeekPrep(prev, item) : item);
   }
   return [...map.values()];
+}
+
+const TOMBSTONE_CAP = 400;
+
+export function tombstoneIds(ids: string[] | undefined, id: string): string[] {
+  return [...new Set([...(ids ?? []), id].filter((item) => item.length > 0))].slice(-TOMBSTONE_CAP);
+}
+
+function unionIds(...lists: Array<string[] | undefined>): string[] {
+  return [...new Set(lists.flatMap((list) => list ?? []).filter((item) => item.length > 0))].slice(
+    -TOMBSTONE_CAP,
+  );
 }
 
 function mergePlan(a: SessionPlan | null, b: SessionPlan | null): SessionPlan | null {
@@ -187,24 +221,26 @@ export function applyJournalWrite(
   dropEntryIds: string[] = [],
   dropSessionIds: string[] = [],
 ): TherapyStore {
-  const merged = mergeStores(current, incoming);
-  const entries = new Set(dropEntryIds);
-  const sessions = new Set(dropSessionIds);
-  return {
-    ...merged,
-    entries: entries.size ? merged.entries.filter((entry) => !entries.has(entry.id)) : merged.entries,
-    sessions: sessions.size
-      ? merged.sessions.filter((session) => !sessions.has(session.id))
-      : merged.sessions,
-  };
+  return mergeStores(
+    {
+      ...current,
+      droppedEntryIds: unionIds(current.droppedEntryIds, dropEntryIds),
+      droppedSessionIds: unionIds(current.droppedSessionIds, dropSessionIds),
+    },
+    incoming,
+  );
 }
 
-/** Keep every note. Same id keeps the newer copy; different notes on one day stay separate. */
+/** Keep every note. Same id keeps the newer copy; a deleted id stays deleted. */
 export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
-  return {
+  const droppedEntryIds = unionIds(a.droppedEntryIds, b.droppedEntryIds);
+  const droppedSessionIds = unionIds(a.droppedSessionIds, b.droppedSessionIds);
+  const goneEntries = new Set(droppedEntryIds);
+  const goneSessions = new Set(droppedSessionIds);
+  const merged: TherapyStore = {
     version: 2,
-    entries: mergeById(a.entries, b.entries),
-    sessions: mergeById(a.sessions, b.sessions),
+    entries: mergeById(a.entries, b.entries).filter((entry) => !goneEntries.has(entry.id)),
+    sessions: mergeById(a.sessions, b.sessions).filter((session) => !goneSessions.has(session.id)),
     weekPreps: mergeWeekPreps(a.weekPreps, b.weekPreps),
     sessionPlan: mergePlan(a.sessionPlan, b.sessionPlan),
     notify: mergeNotify(a.notify, b.notify),
@@ -212,4 +248,7 @@ export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
     themeLinks: mergeLinks(a.themeLinks, b.themeLinks),
     judgeSettled: [...new Set([...(a.judgeSettled ?? []), ...(b.judgeSettled ?? [])])],
   };
+  if (droppedEntryIds.length) merged.droppedEntryIds = droppedEntryIds;
+  if (droppedSessionIds.length) merged.droppedSessionIds = droppedSessionIds;
+  return merged;
 }

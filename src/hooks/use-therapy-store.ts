@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createId, toDateKey, weekKey } from "@/lib/dates";
 import { isFeeling } from "@/lib/feelings";
-import { fetchJournal, mergeStores, putJournal, requestBrief } from "@/lib/journal-api";
+import { fetchJournal, mergeStores, putJournal, requestBrief, tombstoneIds } from "@/lib/journal-api";
+
+const EMPTY_JUDGE_SKIPS: string[] = [];
 import type { LocaleId } from "@/lib/i18n";
 import { entryInWindow, therapyWindow } from "@/lib/session-summary";
 import {
@@ -198,8 +200,6 @@ export function useTherapyStore(options?: {
   const judgeTries = useRef<Record<string, number>>({});
   const judgeTimer = useRef<number | null>(null);
   const judgeAlive = useRef(true);
-  const judgeSkippedRef = useRef<string[]>([]);
-  const [judgeSkipped, setJudgeSkipped] = useState<string[]>([]);
   const [judgeNudge, setJudgeNudge] = useState(0);
   useEffect(() => {
     judgeAlive.current = true;
@@ -216,12 +216,11 @@ export function useTherapyStore(options?: {
     const now = new Date();
     const today = toDateKey(now);
     const period = therapyWindow(store.sessions, store.entries, today, now, store.sessionPlan);
-    const held = new Set(judgeSkippedRef.current);
     const pending = pendingJudgeEntries(
       store.entries.filter((entry) => entryInWindow(entry, period)),
       store.judgeSettled ?? [],
       period.days,
-    ).filter((entry) => !held.has(judgeStamp(entry)));
+    );
     const entry = pending[0];
     if (!entry) return;
     const stamp = judgeStamp(entry);
@@ -294,7 +293,7 @@ export function useTherapyStore(options?: {
         judgeSettled: [...new Set([...(latest.judgeSettled ?? []), stamp])].slice(-400),
       });
     })();
-  }, [hydrated, cloud, initData, judgeNudge, judgeSkipped, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions]);
+  }, [hydrated, cloud, initData, judgeNudge, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions]);
 
   const resetCorrupted = useCallback(() => {
     const result = clearStore(storageKeyRef.current);
@@ -380,6 +379,7 @@ export function useTherapyStore(options?: {
         {
           ...current,
           entries: current.entries.filter((entry) => entry.id !== id),
+          droppedEntryIds: tombstoneIds(current.droppedEntryIds, id),
         },
         { dropEntryIds: [id] },
       );
@@ -585,6 +585,7 @@ export function useTherapyStore(options?: {
         {
           ...current,
           sessions: current.sessions.filter((session) => session.id !== id),
+          droppedSessionIds: tombstoneIds(current.droppedSessionIds, id),
         },
         { dropSessionIds: [id] },
       );
@@ -611,7 +612,7 @@ export function useTherapyStore(options?: {
     dismissSessionTheme,
     addSessionTheme,
     savePattern,
-    judgeSkipped,
+    judgeSkipped: EMPTY_JUDGE_SKIPS,
     refreshCloud: syncFromCloud,
   };
 }

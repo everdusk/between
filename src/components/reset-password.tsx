@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import { PasswordField } from "@/components/password-field";
@@ -11,8 +13,17 @@ import { markSplashReady } from "@/lib/splash";
 
 function ResetForm() {
   const { t } = useI18n();
-  const [token, setToken] = useState("");
-  const [ready, setReady] = useState(false);
+  const router = useRouter();
+  const token = useSyncExternalStore(
+    () => () => {},
+    () => new URLSearchParams(window.location.search).get("token")?.trim() ?? "",
+    () => "",
+  );
+  const ready = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [password, setPassword] = useState("");
   const [passwordAgain, setPasswordAgain] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +38,6 @@ function ResetForm() {
     const surface = document.getElementById("between-surface");
     if (surface) surface.textContent = LEGAL_SURFACE_CSS;
     markSplashReady();
-    const value = new URLSearchParams(window.location.search).get("token")?.trim() ?? "";
-    setToken(value);
-    setReady(true);
   }, []);
 
   async function save(event: FormEvent) {
@@ -57,7 +65,7 @@ function ResetForm() {
         else setError(t("webResetBad"));
         return;
       }
-      window.location.assign("/journal");
+      router.push("/journal");
     } catch {
       setError(t("webServer"));
     } finally {
@@ -69,9 +77,9 @@ function ResetForm() {
     <article className="fixed inset-0 z-20 overflow-y-auto bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-lg flex-col px-5 pt-8 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <header className="flex items-center justify-between gap-4">
-          <a href="/" className="font-display text-lg text-foreground">
+          <Link href="/" className="font-display text-lg text-foreground">
             Between
-          </a>
+          </Link>
           <LanguageSwitch />
         </header>
         <section className="glass mt-8 rounded-[22px] px-5 py-6 sm:px-6">

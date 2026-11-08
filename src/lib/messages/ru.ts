@@ -53,6 +53,7 @@ export const ru = {
   webRegisterFold: "Создать дневник по почте",
   webSwitchEnter: "Уже есть аккаунт",
   webBadLogin: "Почта или пароль не подошли",
+  webLoginLimited: "Слишком много попыток. Подождите немного и войдите снова.",
   webEmailTaken: "Эта почта уже занята. Войдите или запросите ссылку для пароля.",
   webPasswordShort: "Пароль — от 8 до 200 символов",
   webPasswordShow: "Показать пароль",

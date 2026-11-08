@@ -55,6 +55,7 @@ export const tr: Catalog = {
   webRegisterFold: "Günlüğü e-postayla oluştur",
   webSwitchEnter: "Zaten hesabım var",
   webBadLogin: "E-posta veya parola uyuşmadı",
+  webLoginLimited: "Çok fazla deneme. Biraz bekleyip yeniden girin.",
   webEmailTaken: "Bu e-posta zaten alınmış. Girin veya parola bağlantısı isteyin.",
   webPasswordShort: "8 ile 200 karakter",
   webPasswordShow: "Şifreyi göster",

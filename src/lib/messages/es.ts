@@ -55,6 +55,7 @@ export const es: Catalog = {
   webRegisterFold: "Crear el diario con el correo",
   webSwitchEnter: "Ya tengo cuenta",
   webBadLogin: "El correo o la contraseña no coinciden",
+  webLoginLimited: "Demasiados intentos. Esperen un momento y vuelvan a entrar.",
   webEmailTaken: "Este correo ya está en uso. Entre o pida un enlace para la contraseña.",
   webPasswordShort: "De 8 a 200 caracteres",
   webPasswordShow: "Mostrar la contraseña",

@@ -169,6 +169,10 @@ export interface TherapyStore {
   themeLinks: ThemeLink[];
   /** `${entryId}:${updatedAt}` already given to the judge, including “not a theme”. */
   judgeSettled: string[];
+  /** Ids the person deleted. A later sync must not copy those notes back. */
+  droppedEntryIds?: string[];
+  /** Ids the person deleted. A later sync must not copy those sessions back. */
+  droppedSessionIds?: string[];
 }
 
 export const STORAGE_KEY = "therapy-helper:v1";

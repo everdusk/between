@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import { redisConfigured } from "./redis";
 import { appUrl } from "./telegram-auth";
-import { SESSION_COOKIE, sessionSecret, signSession } from "./web-account";
+import {
+  LOGIN_COOKIE,
+  SESSION_COOKIE,
+  loginChallenge,
+  loginChallengeMatches,
+  cookieValue,
+  sessionSecret,
+  signSession,
+} from "./web-account";
 
 /** The site the person is actually on, so a reset link matches that host. */
 export function requestOrigin(req: Request): string {
@@ -25,15 +33,33 @@ const cookieBase = {
   path: "/",
 };
 
-export function withSession(res: NextResponse, accountId: string): NextResponse {
+export function withSession(res: NextResponse, accountId: string, sessionVersion = 0): NextResponse {
   const secret = sessionSecret();
   if (!secret) return res;
-  res.cookies.set(SESSION_COOKIE, signSession(accountId, secret), {
+  res.cookies.set(SESSION_COOKIE, signSession(accountId, secret, Date.now(), sessionVersion), {
     ...cookieBase,
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30,
   });
   return res;
+}
+
+/** Only the browser that started messenger login may collect the session. */
+export function withLoginChallenge(res: NextResponse, token: string): NextResponse {
+  const secret = sessionSecret();
+  if (!secret) return res;
+  res.cookies.set(LOGIN_COOKIE, loginChallenge(token, secret), {
+    ...cookieBase,
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 10 * 60,
+  });
+  return res;
+}
+
+export function loginChallengeOk(req: Request, token: string): boolean {
+  const secret = sessionSecret();
+  if (!secret) return false;
+  return loginChallengeMatches(cookieValue(req.headers.get("cookie"), LOGIN_COOKIE), token, secret);
 }
 
 export function clearSession(res: NextResponse): NextResponse {

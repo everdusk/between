@@ -101,6 +101,16 @@ export function planDays(plan: PremiumPlan): number {
   return PREMIUM_SPAN_DAYS[plan];
 }
 
+/** A Stars receipt matches the invoice we created for this plan. */
+export function starsChargeAccepted(
+  plan: PremiumPlan,
+  currency: string | undefined,
+  totalAmount: number | undefined,
+  monthly: number,
+): boolean {
+  return currency === "XTR" && totalAmount === planPrice(monthly, plan);
+}
+
 /** Month is full price. Quarter is 20% off three months. Year is 50% off twelve. */
 export function planPrice(monthly: number, plan: PremiumPlan): number {
   const base = Number.isInteger(monthly) && monthly > 0 ? monthly : DEFAULT_STAR_PRICE;

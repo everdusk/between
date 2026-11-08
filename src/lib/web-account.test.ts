@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
+import { createHmac } from "node:crypto";
 import { describe, it } from "node:test";
 import { passwordSettingsKind } from "./password-settings";
 import {
   journalStorageId,
   linkCodeFromStart,
+  loginChallenge,
+  loginChallengeMatches,
   normalizeEmail,
   passwordMatches,
   passwordProblem,
@@ -11,7 +14,9 @@ import {
   hashResetToken,
   newResetToken,
   readSession,
+  readSessionClaims,
   resetUrl,
+  SESSION_MS,
   signSession,
 } from "./web-account";
 
@@ -67,6 +72,26 @@ describe("web account", () => {
     assert.equal(readSession(token, "other", 1_000), null);
     assert.equal(readSession(`${token}x`, "secret", 1_000), null);
     assert.equal(readSession(token, "secret", 1_000 + 31 * 24 * 60 * 60 * 1000), null);
+    assert.equal(readSessionClaims(token, "secret", 1_000)?.version, 0);
+    const rotated = signSession("wabc", "secret", 1_000, 1);
+    assert.equal(readSessionClaims(rotated, "secret", 1_000)?.version, 1);
+    assert.notEqual(token, rotated);
+  });
+
+  it("still accepts a session signed before versions existed", () => {
+    const payload = Buffer.from(`wabc.${1_000 + SESSION_MS}`).toString("base64url");
+    const sig = createHmac("sha256", "secret").update(payload).digest("base64url");
+    const claims = readSessionClaims(`${payload}.${sig}`, "secret", 1_000);
+    assert.equal(claims?.accountId, "wabc");
+    assert.equal(claims?.version, 0);
+  });
+
+  it("binds a messenger login to the browser that started it", () => {
+    const token = "abcdefghjkmnpqrstuvwxyz234567892";
+    const cookie = loginChallenge(token, "secret");
+    assert.equal(loginChallengeMatches(cookie, token, "secret"), true);
+    assert.equal(loginChallengeMatches(cookie, `${token.slice(0, -1)}a`, "secret"), false);
+    assert.equal(loginChallengeMatches(null, token, "secret"), false);
   });
 
   it("keeps an unlinked Telegram journal on its own key", () => {
