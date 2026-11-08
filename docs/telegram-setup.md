@@ -40,13 +40,13 @@
 # Без secret
 curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/setWebhook" \
   -d "url=https://between-rouge.vercel.app/api/telegram/webhook" \
-  -d "allowed_updates=[\"message\",\"callback_query\",\"pre_checkout_query\"]"
+  -d "allowed_updates=[\"message\",\"callback_query\",\"pre_checkout_query\",\"my_chat_member\"]"
 
 # С secret (тот же TELEGRAM_WEBHOOK_SECRET, что в Vercel)
 curl -sS "https://api.telegram.org/bot${BOT_TOKEN}/setWebhook" \
   -d "url=https://between-rouge.vercel.app/api/telegram/webhook" \
   -d "secret_token=${TELEGRAM_WEBHOOK_SECRET}" \
-  -d "allowed_updates=[\"message\",\"callback_query\",\"pre_checkout_query\"]"
+  -d "allowed_updates=[\"message\",\"callback_query\",\"pre_checkout_query\",\"my_chat_member\"]"
 ```
 
 Проверка:
@@ -58,7 +58,7 @@ curl -sS "https://between-rouge.vercel.app/api/telegram/webhook"
 
 Снять webhook: `.../deleteWebhook`.
 
-После выкладки оплаты вкладки «Неделя» webhook нужно выставить заново. В `allowed_updates` обязательны `message`, `callback_query` и `pre_checkout_query`. Без `pre_checkout_query` Telegram оборвёт оплату по таймауту, и Stars не спишутся. Доступ пишется только из `successful_payment`.
+После выкладки оплаты вкладки «Неделя» webhook нужно выставить заново. В `allowed_updates` обязательны `message`, `callback_query`, `pre_checkout_query` и `my_chat_member`. Без `pre_checkout_query` Telegram оборвёт оплату по таймауту, и Stars не спишутся. Без `my_chat_member` блокировка бота в статистику не попадёт. Уже выставленный webhook сам добавляет `my_chat_member` при следующем сообщении, секрет при этом сохраняется. Доступ пишется только из `successful_payment`.
 
 ## Оплата вкладки «Неделя»
 
@@ -76,9 +76,9 @@ curl -sS "https://between-rouge.vercel.app/api/telegram/webhook"
 
 `/paysupport` отвечает, как устроена оплата Stars и куда писать, если доступ не открылся или нужен возврат. Команда нужна модерации Telegram для приёма Stars. Бот сам ставит её в меню вместе с `/start` и `/premium` при первом апдейте после деплоя.
 
-`/stats` отвечает только логинам из `ANALYTICS_OWNERS` (по умолчанию `aliatorovskaia`) и в меню команд не входит. Один и тот же текст приходит и в Telegram, и в MAX. Внутри блоки Telegram, MAX и сайта: визит, заметка, настроение, неделя, пейволл, счёт и оплата за 7 дней по Москве, и возврат на следующий день и на 7-й. Настроение — ответ на вопрос бота кнопкой, не текст заметки. Утро, день и вечер в один московский день дают одну отметку. Старые счётчики до разделения входят в блок Telegram. Id мессенджера в ключи не пишется. Один человек за день даёт один шаг в своём мессенджере, второй мессенджер считается отдельно. Оплата считается на сервере по подтверждённому счёту Stars, повтор того же платежа не прибавляется. Тот же отчёт отдаёт `GET /api/analytics` с `Authorization: Bearer <CRON_SECRET>`.
+`/stats` отвечает только логинам из `ANALYTICS_OWNERS` (по умолчанию `aliatorovskaia`) и в меню команд не входит. Один и тот же текст приходит и в Telegram, и в MAX. Внутри блоки Telegram, MAX и сайта: визит, заметка, настроение, блокировка, график, неделя, пейволл, счёт и оплата за 7 дней по Москве, и возврат в течение недели после первого открытия. Настроение — ответ на вопрос бота кнопкой, не текст заметки. Утро, день и вечер в один московский день дают одну отметку. Блокировка — человек запретил боту писать: в Telegram статус `kicked` в личном чате, в MAX событие `bot_stopped`. График — сохранённый недельный ритм или ближайшая дата сеанса; обычная синхронизация заметки его не прибавляет. Возврат — ещё один визит в любой из семи дней после первого, один раз на человека. Старые счётчики до разделения входят в блок Telegram. Id мессенджера в ключи не пишется. Один человек за день даёт один шаг в своём мессенджере, второй мессенджер считается отдельно. Оплата считается на сервере по подтверждённому счёту Stars, повтор того же платежа не прибавляется. Тот же отчёт отдаёт `GET /api/analytics` с `Authorization: Bearer <CRON_SECRET>`.
 
-Те же шаги уходят в PostHog (регион US, `https://us.i.posthog.com`), если в `POSTHOG_KEY` лежит публичный токен проекта (`phc_…`). Для проекта в EU задайте `POSTHOG_HOST=https://eu.i.posthog.com`. Сервер читает переменную и отдаёт её в браузер. Личный ключ (`phx_…`) не проходит и в клиент не попадает. Пока переменная пустая, SDK не грузится. `identify` не вызывается. Автосъём кликов, просмотры страниц, запись сессии, опросы и флаги выключены. События называются `telegram_visit`, `telegram_note`, `telegram_mood`, `max_visit`, `max_note`, `max_mood`, `web_visit`, `web_note` и так же для недели, пейволла, счёта и оплаты. Сайт пишется только в `web_*` и в блок «Сайт» у `/stats`, отдельно от Telegram и MAX. Свои поля — `messenger` (`telegram`, `max` или `web`) и тариф `month`, `quarter` или `year`. Старые события без приставки остаются в истории PostHog. Случайный ключ устройства лежит в localStorage, чтобы в PostHog считался возврат на 1-й и 7-й день; это не Telegram id и не имя. Хеш запуска Mini App (там initData) с адреса срезается до отправки. IP соединение PostHog всё равно видит, пока в проекте не включено Discard client IP data; запись сессий там тоже лучше выключить. `/stats` от этого не зависит: оплата там — подтверждённый счёт Stars, а в PostHog — закрытый счёт со статусом paid. После добавления ключа в Vercel нужен новый деплой, иначе клиент его не увидит.
+Те же шаги уходят в PostHog (регион US, `https://us.i.posthog.com`), если в `POSTHOG_KEY` лежит публичный токен проекта (`phc_…`). Для проекта в EU задайте `POSTHOG_HOST=https://eu.i.posthog.com`. Сервер читает переменную и отдаёт её в браузер. Личный ключ (`phx_…`) не проходит и в клиент не попадает. Пока переменная пустая, SDK не грузится. `identify` не вызывается. Автосъём кликов, просмотры страниц, запись сессии, опросы и флаги выключены. События называются `telegram_visit`, `telegram_note`, `telegram_mood`, `telegram_block`, `telegram_plan`, `max_visit`, `max_note`, `max_mood`, `max_block`, `web_visit`, `web_note`, `web_plan` и так же для недели, пейволла, счёта и оплаты. Сайт пишется только в `web_*` и в блок «Сайт» у `/stats`, отдельно от Telegram и MAX. Свои поля — `messenger` (`telegram`, `max` или `web`) и тариф `month`, `quarter` или `year`. Старые события без приставки остаются в истории PostHog. Случайный ключ устройства лежит в localStorage, чтобы считать возврат в течение недели; это не Telegram id и не имя. Хеш запуска Mini App (там initData) с адреса срезается до отправки. IP соединение PostHog всё равно видит, пока в проекте не включено Discard client IP data; запись сессий там тоже лучше выключить. `/stats` от этого не зависит: оплата там — подтверждённый счёт Stars, а в PostHog — закрытый счёт со статусом paid. После добавления ключа в Vercel нужен новый деплой, иначе клиент его не увидит.
 
 Вайтлист в `PREMIUM_WHITELIST`: срок `month`, `quarter`, `year` или `forever`. Конечный срок начинается в первый заход, а не от старого открытия «Недели». `@aliatorovskaia` — `forever`. Дополнительные числовые id без срока — `WEEK_EXEMPT_USER_IDS`. Логин сверяется в Mini App и в боте.
 
@@ -125,7 +125,7 @@ curl -sS "https://between-rouge.vercel.app/api/telegram/webhook"
 | `MAX_BOT_USERNAME` | публичный ник без `@`, у самозанятого он вида `se123_bot` |
 | `MAX_WEBHOOK_SECRET` | необязательно. 5–256 символов: латиница, цифры, `_` и `-`. Уходит заголовком `X-Max-Bot-Api-Secret` |
 
-После сохранения переменных — Redeploy. Подписка на события ставится сама, когда кто-то открывает `https://www.between-journal.ru/api/max/webhook` или срабатывает почасовой опрос. Отдельный `curl` не нужен. События: `message_created`, `message_callback`, `bot_started`.
+После сохранения переменных — Redeploy. Подписка на события ставится сама, когда кто-то открывает `https://www.between-journal.ru/api/max/webhook` или срабатывает почасовой опрос. Отдельный `curl` не нужен. События: `message_created`, `message_callback`, `bot_started`, `bot_stopped`. `dialog_removed` не подписан: удаление диалога приходит вместе с остановкой и задвоило бы блокировку.
 
 В MAX нет Stars. Текст в личке становится заметкой, утром, днём и вечером бот спрашивает настроение теми же кнопками, в 21:00 напоминает про заметку. Если час уже прошёл, вопрос приходит сразу после приветствия и ещё раз на следующем часовом запуске, если бот его так и не отправил. Голосовое с ссылкой на файл разбирается так же, только после оплаченной «Недели». Оплата «Недели» остаётся на сайте. `/paysupport` в MAX про сайт, не про Stars. Кнопка «Открыть Between» открывает мини-приложение бота, а не страницу сайта. Адрес мини-приложения в кабинете MAX: `https://www.between-journal.ru/journal`. Дневник внутри MAX и все сообщения бота в MAX идут по-русски, переключателя языка там нет.
 

@@ -75,7 +75,9 @@ function positiveId(value: unknown): number | null {
 /** Person who sent the update. The bot's own messages are not a person. */
 export function maxUserId(update: MaxUpdate): number | null {
   if (update.update_type === "message_callback") return positiveId(update.callback?.user?.user_id);
-  if (update.update_type === "bot_started") return positiveId(update.user?.user_id);
+  if (update.update_type === "bot_started" || update.update_type === "bot_stopped") {
+    return positiveId(update.user?.user_id);
+  }
   if (update.message?.sender?.is_bot) return null;
   return positiveId(update.message?.sender?.user_id);
 }
@@ -93,7 +95,13 @@ export function maxUsername(update: MaxUpdate): string | undefined {
 
 /** Dialogs only. A group has a chat id that is not the sender. */
 export function isMaxPrivate(update: MaxUpdate): boolean {
-  if (update.update_type === "bot_started" || update.update_type === "message_callback") return true;
+  if (
+    update.update_type === "bot_started" ||
+    update.update_type === "bot_stopped" ||
+    update.update_type === "message_callback"
+  ) {
+    return true;
+  }
   if (update.update_type !== "message_created") return false;
   if (update.message?.sender?.is_bot) return false;
   const type = update.message?.recipient?.chat_type;
@@ -209,15 +217,22 @@ let subscribedFor = "";
 export type MaxSubscription = { ok: boolean; reason: string };
 
 /** Tells MAX where to deliver events, including the deep-link open. Safe to call again. */
+export const MAX_UPDATE_TYPES = [
+  "message_created",
+  "message_callback",
+  "bot_started",
+  "bot_stopped",
+] as const;
+
 export async function ensureMaxSubscription(): Promise<MaxSubscription> {
   const secret = maxWebhookSecretValue(process.env.MAX_WEBHOOK_SECRET);
   const url = `${appUrl()}/api/max/webhook`;
-  const stamp = `${url}|${secret}`;
+  const stamp = `${url}|${secret}|${MAX_UPDATE_TYPES.join(",")}`;
   if (!maxToken()) return { ok: false, reason: "no_token" };
   if (subscribedFor === stamp) return { ok: true, reason: "ok" };
   const res = await maxFetch("/subscriptions", {
     url,
-    update_types: ["message_created", "message_callback", "bot_started"],
+    update_types: [...MAX_UPDATE_TYPES],
     ...(secret ? { secret } : {}),
   });
   if (!res) return { ok: false, reason: "unreachable" };

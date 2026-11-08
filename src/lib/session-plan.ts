@@ -23,6 +23,17 @@ function weekdayIndex(date: Date): number {
   return date.getDay() === 0 ? 6 : date.getDay() - 1;
 }
 
+/** Weekly rhythm, or a single next date. An empty form is neither. */
+export function sessionPlanStamp(plan: SessionPlan | null | undefined): string {
+  if (!plan) return "";
+  if (plan.mode === "weekly") {
+    const slots = weeklySlots(plan);
+    return slots.length > 0 ? slots.map((slot) => `${slot.weekday}@${slot.time}`).join(",") : "";
+  }
+  if (!plan.date || !isSessionTime(plan.time)) return "";
+  return `${plan.date}T${plan.time}`;
+}
+
 export function onceSessionDate(plan: SessionPlan): Date | null {
   if (!plan.date || !isSessionTime(plan.time)) return null;
   const [year, month, day] = plan.date.split("-").map(Number);

@@ -21,7 +21,7 @@ import {
 } from "@/lib/redis";
 import { resolveJournalId, resolveMaxJournalId } from "@/lib/web-account-store";
 import { ensureMaxSubscription, maxFeelingKeyboard, maxToken, sendMaxMessage } from "@/lib/max-bot";
-import { feelingKeyboard, telegramRequest } from "@/lib/telegram-bot";
+import { ensureTelegramBlocks, feelingKeyboard, telegramRequest } from "@/lib/telegram-bot";
 import { zonedParts } from "@/lib/zoned";
 
 function authorized(req: Request): boolean {
@@ -40,6 +40,7 @@ async function runDigest() {
       { status: 503 },
     );
   }
+  if (telegramOn) await ensureTelegramBlocks();
   if (maxOn) await ensureMaxSubscription();
 
   const now = new Date();

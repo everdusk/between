@@ -263,6 +263,11 @@ export async function POST(req: Request) {
     if (!userId) return NextResponse.json({ ok: true });
     if (redisConfigured()) await rememberUser(maxStorageId(userId));
 
+    if (update.update_type === "bot_stopped") {
+      await trackServerEvent({ userId, event: "block", messenger: "max" });
+      return NextResponse.json({ ok: true });
+    }
+
     if (update.update_type === "message_callback") {
       await handleCallback(update, userId);
       return NextResponse.json({ ok: true });

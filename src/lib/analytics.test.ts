@@ -90,6 +90,25 @@ describe("analytics", () => {
     assert.equal(redis.keys.has(analyticsCounterKey("2026-11-01", "note", "telegram")), false);
     assert.equal(redis.keys.get(analyticsCohortKey("2026-11-01", 0, "telegram")), 1);
     assert.equal(redis.keys.has(analyticsCohortKey("2026-10-01", 31, "telegram")), false);
+  });
+
+  it("counts one return inside the week, not a visit on every later day", async () => {
+    const redis = memoryRedis();
+    const base = {
+      userId: 7,
+      event: "visit" as const,
+      messenger: "telegram" as const,
+      cohort: "2026-11-01",
+      pepper: "pepper",
+    };
+    await recordAnalytics(redis, { ...base, day: "2026-11-01", offset: 0 });
+    await recordAnalytics(redis, { ...base, day: "2026-11-04", offset: 3 });
+    await recordAnalytics(redis, { ...base, day: "2026-11-06", offset: 5 });
+    await recordAnalytics(redis, { ...base, day: "2026-11-09", offset: 8 });
+    assert.equal(redis.keys.get(analyticsCohortKey("2026-11-01", 0, "telegram")), 1);
+    assert.equal(redis.keys.get(analyticsCohortKey("2026-11-01", 8, "telegram")), 1);
+    assert.equal(redis.keys.has(analyticsCohortKey("2026-11-01", 3, "telegram")), false);
+    assert.equal(redis.keys.has(analyticsCohortKey("2026-11-01", 5, "telegram")), false);
     const stored = [...redis.sets.keys(), ...redis.keys.keys(), ...[...redis.sets.values()].flatMap((set) => [...set])];
     assert.equal(stored.some((value) => value.includes("424242") || value.includes("abc123device")), false);
     assert.equal([...redis.sets.keys()].includes(analyticsDedupKey("2026-11-01")), true);
@@ -139,29 +158,29 @@ describe("analytics", () => {
     assert.deepEqual(next.state.sent["2026-11-02"], ["note"]);
   });
 
-  it("hides day 7 until that day has arrived and keeps the messengers apart", () => {
+  it("hides the week return until the next day and keeps the messengers apart", () => {
     const telegram = snapshotFromReads(
       "2026-11-01",
       [
         {
           day: "2026-11-01",
-          counts: { visit: 4, note: 2, mood: 3, week: 3, paywall: 1, checkout: 1, paid: 0 },
+          counts: { visit: 4, note: 2, mood: 3, block: 1, plan: 2, week: 3, paywall: 1, checkout: 1, paid: 0 },
         },
       ],
       [
-        { day: "2026-10-20", d0: 8, d1: 3, d7: 2 },
-        { day: "2026-11-01", d0: 4, d1: 9, d7: 9 },
-        { day: "2026-10-01", d0: 0, d1: 0, d7: 0 },
+        { day: "2026-10-20", d0: 8, week: 3 },
+        { day: "2026-11-01", d0: 4, week: 9 },
+        { day: "2026-10-01", d0: 0, week: 0 },
       ],
     );
     const max = snapshotFromReads(
       "2026-11-01",
-      [{ day: "2026-11-01", counts: { visit: 1, note: 1, mood: 1, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
+      [{ day: "2026-11-01", counts: { visit: 1, note: 1, mood: 1, block: 0, plan: 0, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
       [],
     );
     const web = snapshotFromReads(
       "2026-11-01",
-      [{ day: "2026-11-01", counts: { visit: 9, note: 0, mood: 0, week: 2, paywall: 0, checkout: 0, paid: 0 } }],
+      [{ day: "2026-11-01", counts: { visit: 9, note: 0, mood: 0, block: 0, plan: 0, week: 2, paywall: 0, checkout: 0, paid: 0 } }],
       [],
     );
     const text = formatAnalyticsReport({
@@ -169,20 +188,22 @@ describe("analytics", () => {
       windowDays: telegram.windowDays,
       messengers: { telegram, max, web },
     });
-    assert.match(text, /Telegram[\s\S]*Визит 4[\s\S]*Заметка 2[\s\S]*Настроение 3/);
+    assert.match(text, /Telegram[\s\S]*Визит 4[\s\S]*Заметка 2[\s\S]*Настроение 3[\s\S]*Блокировка 1[\s\S]*График 2/);
     assert.match(text, /MAX[\s\S]*Настроение 1/);
     assert.match(text, /Сайт[\s\S]*Настроение 0/);
     assert.match(text, /MAX[\s\S]*Визит 1/);
     assert.match(text, /Сайт[\s\S]*Визит 9/);
     assert.doesNotMatch(text.slice(0, text.indexOf("Сайт")), /Визит 9/);
     assert.match(text, /Пейволл 1/);
-    assert.match(text, /1 ноя — 4 новых, следующий день ещё нет/);
-    assert.match(text, /20 окт — 8 новых, следующий день 3 из 8, день 7: 2 из 8/);
+    assert.match(text, /1 ноя — 4 новых, за неделю ещё нет/);
+    assert.match(text, /20 окт — 8 новых, за неделю 3 из 8/);
+    assert.doesNotMatch(text, /следующий день/);
+    assert.doesNotMatch(text, /день 7/);
     assert.doesNotMatch(text, /1 окт/);
     assert.equal(text.includes("424242"), false);
     const merged = sumCountRows(
       [{ day: "2026-11-01", counts: telegram.todayCounts }],
-      [{ day: "2026-11-01", counts: { visit: 3, note: 0, mood: 0, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
+      [{ day: "2026-11-01", counts: { visit: 3, note: 0, mood: 0, block: 0, plan: 0, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
     );
     assert.equal(merged[0].counts.visit, 7);
   });
@@ -237,6 +258,8 @@ describe("analytics", () => {
     assert.equal(parseMessengerEvent("visit"), null);
     assert.deepEqual(parseMessengerEvent("web_week"), { messenger: "web", event: "week" });
     assert.deepEqual(parseMessengerEvent("max_mood"), { messenger: "max", event: "mood" });
+    assert.deepEqual(parseMessengerEvent("telegram_block"), { messenger: "telegram", event: "block" });
+    assert.deepEqual(parseMessengerEvent("web_plan"), { messenger: "web", event: "plan" });
     assert.equal(JSON.stringify(kept).includes("тяжело"), false);
 
     assert.equal(scrubProductEvent({ event: "$pageview", properties: { distinct_id: "anon" } }), null);
