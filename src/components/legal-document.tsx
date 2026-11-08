@@ -20,8 +20,8 @@ function LegalArticle({ kind }: { kind: LegalKind }) {
     root.setAttribute("data-journal", "web");
     root.setAttribute("data-scheme", "night");
     root.removeAttribute("data-splash");
-    const surface = document.getElementById("between-surface");
-    if (surface) surface.textContent = LEGAL_SURFACE_CSS;
+    const style = document.getElementById("between-surface");
+    if (style) style.textContent = LEGAL_SURFACE_CSS;
     markSplashReady();
   }, []);
 
@@ -39,6 +39,11 @@ function LegalArticle({ kind }: { kind: LegalKind }) {
             {otherLabel}
           </a>
         </p>
+        {doc.preface?.map((line) => (
+          <p key={line} className="mt-6 text-sm leading-relaxed text-muted-foreground">
+            {line}
+          </p>
+        ))}
         <h1 className="mt-3 font-display text-3xl leading-tight tracking-tight">{doc.title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{doc.updated}</p>
         <div className="mt-8 space-y-7">
