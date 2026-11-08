@@ -23,7 +23,7 @@ import { useWebAccount } from "@/hooks/use-web-account";
 import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { markSplashReady } from "@/lib/splash";
-import { inMaxClient } from "@/lib/max-webapp";
+import { inMaxClient, waitForMaxInitData } from "@/lib/max-webapp";
 import { clearStore, WEB_STORAGE_KEY } from "@/lib/storage";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
 import { trackAnalytics } from "@/lib/analytics-client";
@@ -88,6 +88,36 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   const pathname = usePathname();
   const webEntry = pathname === "/journal" || pathname.startsWith("/journal/");
   const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
+  const [maxReady, setMaxReady] = useState(false);
+  const signIn = web.setAccount;
+  useEffect(() => {
+    if (!inMax || !webEntry || telegram.inTelegram) {
+      setMaxReady(true);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const initData = await waitForMaxInitData();
+      if (cancelled) return;
+      if (initData) {
+        try {
+          const res = await fetch("/api/account/max", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ initData }),
+          });
+          const data = (await res.json().catch(() => ({}))) as { account?: Parameters<typeof signIn>[0] };
+          if (!cancelled && res.ok && data.account) signIn(data.account);
+        } catch {
+          // The cookie session stays. The launch string was not accepted.
+        }
+      }
+      if (!cancelled) setMaxReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [inMax, webEntry, telegram.inTelegram, signIn]);
   const {
     store,
     status,
@@ -110,7 +140,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     initData: telegram.initData,
     inTelegram: telegram.inTelegram,
     locale,
-    web: Boolean(web.account),
+    web: Boolean(web.account) && (!inMax || maxReady),
   });
 
   const [section, setSection] = useState<SectionId>("journal");
@@ -165,11 +195,12 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     setPremium(view.status === "paid");
   }
 
+  const maxPending = inMax && webEntry && !telegram.inTelegram && !maxReady;
   const authSettled =
     !webEntry || telegram.inTelegram || web.status === "ready" || web.status === "unavailable";
   const showGate =
-    webEntry && telegram.ready && !telegram.inTelegram && authSettled && !web.account;
-  const accountPending = webEntry && !telegram.inTelegram && !authSettled;
+    webEntry && telegram.ready && !telegram.inTelegram && authSettled && maxReady && !web.account;
+  const accountPending = (webEntry && !telegram.inTelegram && !authSettled) || maxPending;
   const shellReady = telegram.ready;
   useEffect(() => {
     if (shellReady) markSplashReady();

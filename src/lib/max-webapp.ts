@@ -1,3 +1,19 @@
+/** MAX fills the launch string a moment after the page opens. */
+export function waitForMaxInitData(timeoutMs = 1200): Promise<string | null> {
+  const first = readMaxInitData();
+  if (first || typeof window === "undefined") return Promise.resolve(first);
+  return new Promise((resolve) => {
+    const started = Date.now();
+    const timer = window.setInterval(() => {
+      const data = readMaxInitData();
+      if (data || Date.now() - started >= timeoutMs) {
+        window.clearInterval(timer);
+        resolve(data);
+      }
+    }, 50);
+  });
+}
+
 /** Signed launch string from a MAX mini app, or null in a normal browser. */
 export function readMaxInitData(): string | null {
   if (typeof window === "undefined") return null;

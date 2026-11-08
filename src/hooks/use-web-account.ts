@@ -21,6 +21,7 @@ export function useWebAccount(active: boolean) {
   const setAccount = useCallback((next: WebAccount | null) => {
     epoch.current += 1;
     setAccountState(next);
+    if (next) setStatus("ready");
   }, []);
 
   const refresh = useCallback(async () => {
