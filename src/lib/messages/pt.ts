@@ -250,6 +250,8 @@ export const pt: Catalog = {
   webWeekMonth: "{price} ₽ por mês",
   webWeekQuarter: "{price} ₽ por 3 meses · −20%",
   webWeekYear: "{price} ₽ por um ano · −50%",
+  sbpBuy: "Pagar via SBP",
+  botPremiumBuy: "Assinar o premium",
   webUsePassword: "Entrar com senha",
   webUseCode: "Entrar com o código",
   legalTerms: "Termos de uso",

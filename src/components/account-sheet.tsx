@@ -24,7 +24,7 @@ import {
   localWeekView,
   readLocalWeekAccess,
 } from "@/lib/week-access-client";
-import { planPrice, type PremiumPlan, type WeekAccessView } from "@/lib/week-access";
+import { type PremiumPlan, type WeekAccessView } from "@/lib/week-access";
 
 const PLANS = ["month", "quarter", "year"] as const satisfies readonly PremiumPlan[];
 
@@ -160,13 +160,6 @@ export function AccountSheet({
     return t("payStars", { price });
   }
 
-  function rubLabel(plan: PremiumPlan, monthly: number) {
-    const price = planPrice(monthly, plan);
-    if (plan === "quarter") return t("webWeekQuarter", { price });
-    if (plan === "year") return t("webWeekYear", { price });
-    return t("webWeekMonth", { price });
-  }
-
   if (!open) return null;
 
   const premiumText = access ? formatPremiumStatus(locale, access) : t("loading");
@@ -287,14 +280,11 @@ export function AccountSheet({
                         {planLabel(plan, access.prices[plan])}
                       </Button>
                     ))
-                  : PLANS.map((plan) => (
-                      <p
-                        key={plan}
-                        className="rounded-full bg-foreground/[0.06] px-4 py-3 text-center text-sm font-medium text-foreground"
-                      >
-                        {rubLabel(plan, access.rubPrice)}
-                      </p>
-                    ))}
+                  : (
+                      <a href="/subscribe" className={buttonVariants({ className: "w-full" })}>
+                        {t("sbpBuy")}
+                      </a>
+                    )}
                 {payError ? (
                   <p className="text-sm text-destructive" role="alert">
                     {payError}

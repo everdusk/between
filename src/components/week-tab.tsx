@@ -8,7 +8,7 @@ import { LegalLinks } from "@/components/legal-links";
 import { useI18n } from "@/components/locale-provider";
 import { trackAnalytics } from "@/lib/analytics-client";
 import { captureProduct } from "@/lib/product-analytics";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   createWeekInvoice,
   fetchWeekAccess,
@@ -18,10 +18,10 @@ import {
   readLocalWeekAccess,
   writeLocalWeekAccess,
 } from "@/lib/week-access-client";
+import { SBP_PLANS } from "@/lib/sbp-plans";
 import {
   markWeekIntroSeen,
   openWeekAccess,
-  planPrice,
   type PremiumPlan,
   type WeekAccessView,
 } from "@/lib/week-access";
@@ -205,13 +205,6 @@ export function WeekTab({
     return t("payStars", { price });
   }
 
-  function rubLabel(plan: PremiumPlan, monthly: number) {
-    const price = planPrice(monthly, plan);
-    if (plan === "quarter") return t("webWeekQuarter", { price });
-    if (plan === "year") return t("webWeekYear", { price });
-    return t("webWeekMonth", { price });
-  }
-
   if (!access) {
     if (failedOpen) return <>{children}</>;
     return <WeekSkeleton />;
@@ -235,7 +228,7 @@ export function WeekTab({
             <p className="font-display text-[1.5rem] leading-snug tracking-tight text-ink-foreground">
               {inTelegram
                 ? t("paywallBody", { price: access.starPrice })
-                : t("webWeekPaywall", { price: access.rubPrice })}
+                : t("webWeekPaywall", { price: SBP_PLANS.month.rub })}
             </p>
             <div className="space-y-3">
               {inTelegram
@@ -252,14 +245,17 @@ export function WeekTab({
                       {planLabel(plan, access.prices[plan])}
                     </Button>
                   ))
-                : PLANS.map((plan) => (
-                    <p
-                      key={plan}
-                      className="rounded-full bg-ink-foreground px-4 py-3 text-center text-sm font-medium text-ink"
+                : (
+                    <a
+                      href="/subscribe"
+                      className={buttonVariants({
+                        size: "lg",
+                        className: "w-full bg-ink-foreground text-ink hover:bg-ink-foreground/90",
+                      })}
                     >
-                      {rubLabel(plan, access.rubPrice)}
-                    </p>
-                  ))}
+                      {t("sbpBuy")}
+                    </a>
+                  )}
               {payError && (
                 <p className="text-sm text-ink-muted" role="alert">
                   {payError}
@@ -285,7 +281,7 @@ export function WeekTab({
           <p className="text-sm leading-relaxed text-foreground/90 sm:text-base">
             {inTelegram
               ? t("intro", { days: count(introDays, "day"), price: access.starPrice })
-              : t("webWeekIntro", { days: count(introDays, "day"), price: access.rubPrice })}
+              : t("webWeekIntro", { days: count(introDays, "day"), price: SBP_PLANS.month.rub })}
           </p>
           <Button type="button" variant="ink" className="shrink-0" onClick={() => void dismissIntro()}>
             {t("introOk")}
@@ -301,7 +297,7 @@ export function WeekTab({
               })
             : t("webWeekTrial", {
                 days: count(access.daysLeft, "day"),
-                price: access.rubPrice,
+                price: SBP_PLANS.month.rub,
               })}
         </p>
       )}

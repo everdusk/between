@@ -188,10 +188,11 @@ export function LandingPage({ qr }: { qr: string }) {
               </span>
               Between
             </a>
-            <nav className="hidden sm:block" aria-label="Разделы">
+            <nav className="hidden items-center gap-4 sm:flex" aria-label="Разделы">
               <a href="#kak" onClick={(event) => jump(event, "kak")}>
                 Как это работает
               </a>
+              <a href="/subscribe">Премиум</a>
             </nav>
             <MessengerButtons compact />
           </div>
@@ -336,6 +337,8 @@ export function LandingPage({ qr }: { qr: string }) {
               <a href="/terms">Условия использования</a>
               {" · "}
               <a href="/privacy">Политика конфиденциальности</a>
+              {" · "}
+              <a href="/subscribe">Премиум</a>
             </p>
             <p className="mt-1 text-sm" style={{ color: "var(--bl-dim)" }}>
               ИНН {LEGAL_INN}

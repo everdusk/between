@@ -255,6 +255,8 @@ export const ru = {
   webWeekMonth: "{price} ₽ в месяц",
   webWeekQuarter: "{price} ₽ за 3 месяца · −20%",
   webWeekYear: "{price} ₽ за год · −50%",
+  sbpBuy: "Оплатить через СБП",
+  botPremiumBuy: "Оформить премиум",
   webUsePassword: "Войти по паролю",
   webUseCode: "Войти кодом",
   legalTerms: "Условия использования",

@@ -166,6 +166,10 @@ describe("MAX bot", () => {
     if (button?.type !== "open_app") return;
     assert.equal(button.web_app, "se14938561_bot");
     assert.equal("url" in button, false);
+    const buy = keyboard?.payload.buttons[1][0];
+    assert.equal(buy?.type, "link");
+    if (buy?.type !== "link") return;
+    assert.equal(buy.url, "https://www.between-journal.ru/subscribe");
   });
 
   it("keeps a callback button for an older sign-in message", () => {

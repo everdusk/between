@@ -250,6 +250,8 @@ export const uk: Catalog = {
   webWeekMonth: "{price} ₽ на місяць",
   webWeekQuarter: "{price} ₽ за 3 місяці · −20%",
   webWeekYear: "{price} ₽ за рік · −50%",
+  sbpBuy: "Оплатити через СБП",
+  botPremiumBuy: "Оформити преміум",
   webUsePassword: "Увійти з паролем",
   webUseCode: "Увійти кодом",
   legalTerms: "Умови використання",

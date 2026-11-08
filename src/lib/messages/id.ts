@@ -250,6 +250,8 @@ export const id: Catalog = {
   webWeekMonth: "{price} ₽ sebulan",
   webWeekQuarter: "{price} ₽ untuk 3 bulan · −20%",
   webWeekYear: "{price} ₽ untuk setahun · −50%",
+  sbpBuy: "Bayar lewat SBP",
+  botPremiumBuy: "Ambil premium",
   webUsePassword: "Masuk dengan kata sandi",
   webUseCode: "Masuk dengan kode",
   legalTerms: "Ketentuan penggunaan",

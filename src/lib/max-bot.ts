@@ -4,6 +4,7 @@ import { Agent, fetch as maxHttps } from "undici";
 import type { LocaleId } from "./i18n";
 import { RUSSIAN_TRUSTED_ROOT_CA, RUSSIAN_TRUSTED_SUB_CA } from "./max-ca";
 import { translate } from "./messages";
+import { LANDING_ORIGIN } from "./landing-seo";
 import { appUrl } from "./telegram-auth";
 import { feelingKeyboard, parseFeelingCallback } from "./telegram-bot";
 import type { CheckinSlot } from "./types";
@@ -168,16 +169,20 @@ export function maxLoginKeyboard(token: string, locale: LocaleId = "ru"): MaxKey
   };
 }
 
-/** Opens the MAX mini app. A link to the site becomes a plain webview, which only Telegram uses. */
-export function maxOpenKeyboard(locale: LocaleId = "ru"): MaxKeyboard | null {
+/** Opens the MAX mini app and the SBP checkout. A link to the site becomes a plain webview, which only Telegram uses. */
+export function maxOpenKeyboard(locale: LocaleId = "ru"): MaxKeyboard {
   const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
-  if (!/^[A-Za-z0-9_]{3,64}$/.test(name)) return null;
-  return {
-    type: "inline_keyboard",
-    payload: {
-      buttons: [[{ type: "open_app", text: translate(locale, "botOpen"), web_app: name }]],
-    },
+  const buy = {
+    type: "link" as const,
+    text: translate(locale, "botPremiumBuy"),
+    url: `${LANDING_ORIGIN}/subscribe`,
   };
+  const rows: MaxKeyboard["payload"]["buttons"] = [];
+  if (/^[A-Za-z0-9_]{3,64}$/.test(name)) {
+    rows.push([{ type: "open_app", text: translate(locale, "botOpen"), web_app: name }]);
+  }
+  rows.push([buy]);
+  return { type: "inline_keyboard", payload: { buttons: rows } };
 }
 
 export function feelingFromMaxPayload(payload: string | null | undefined) {

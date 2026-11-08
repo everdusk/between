@@ -250,6 +250,8 @@ export const tr: Catalog = {
   webWeekMonth: "Ayda {price} ₽",
   webWeekQuarter: "3 ay {price} ₽ · −20%",
   webWeekYear: "Bir yıl {price} ₽ · −50%",
+  sbpBuy: "SBP ile öde",
+  botPremiumBuy: "Premium al",
   webUsePassword: "Parola ile gir",
   webUseCode: "Kod ile gir",
   legalTerms: "Kullanım koşulları",
