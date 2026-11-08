@@ -33,6 +33,16 @@ describe("MAX mini app login", () => {
     assert.equal(loginTokenFromStart(parsed.startParam ?? ""), "abcdefghjkmnpqrstuvwxyz234567892");
   });
 
+  it("accepts a user id that arrived as text", () => {
+    const now = 1_700_000_000;
+    const init = sign({
+      auth_date: String(now),
+      user: JSON.stringify({ id: "67890", first_name: "Max" }),
+    });
+    const parsed = validateMaxInitData(init, TOKEN, now);
+    assert.equal(parsed?.user.id, 67890);
+  });
+
   it("rejects a edited user, a second hash, the wrong token, and an old launch", () => {
     const now = 1_700_000_000;
     const init = sign({

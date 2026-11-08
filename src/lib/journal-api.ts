@@ -60,12 +60,19 @@ export async function putJournal(
   initData: string,
   store: TherapyStore,
   timeZone?: string | null,
+  options?: { dropEntryIds?: string[]; dropSessionIds?: string[]; replace?: boolean },
 ): Promise<boolean> {
   try {
     const res = await fetch("/api/journal", {
       method: "PUT",
       headers: journalHeaders(initData, true),
-      body: JSON.stringify({ store, timeZone: timeZone || undefined }),
+      body: JSON.stringify({
+        store,
+        timeZone: timeZone || undefined,
+        dropEntryIds: options?.dropEntryIds,
+        dropSessionIds: options?.dropSessionIds,
+        replace: options?.replace || undefined,
+      }),
     });
     return res.ok;
   } catch {
@@ -160,6 +167,28 @@ function mergeLinks(left: ThemeLink[] = [], right: ThemeLink[] = []): ThemeLink[
     if (!prev || link.confidence >= prev.confidence) map.set(link.entryId, link);
   }
   return [...map.values()];
+}
+
+/**
+ * A client snapshot must not erase a note it never saw.
+ * `dropEntryIds` / `dropSessionIds` are the only deletions.
+ */
+export function applyJournalWrite(
+  current: TherapyStore,
+  incoming: TherapyStore,
+  dropEntryIds: string[] = [],
+  dropSessionIds: string[] = [],
+): TherapyStore {
+  const merged = mergeStores(current, incoming);
+  const entries = new Set(dropEntryIds);
+  const sessions = new Set(dropSessionIds);
+  return {
+    ...merged,
+    entries: entries.size ? merged.entries.filter((entry) => !entries.has(entry.id)) : merged.entries,
+    sessions: sessions.size
+      ? merged.sessions.filter((session) => !sessions.has(session.id))
+      : merged.sessions,
+  };
 }
 
 /** Keep every note. Same id keeps the newer copy; different notes on one day stay separate. */

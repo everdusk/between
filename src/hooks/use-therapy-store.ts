@@ -171,12 +171,15 @@ export function useTherapyStore(options?: {
   }, [cloud, syncFromCloud]);
 
   const persist = useCallback(
-    (next: TherapyStore) => {
+    (
+      next: TherapyStore,
+      options?: { dropEntryIds?: string[]; dropSessionIds?: string[]; replace?: boolean },
+    ) => {
       const ok = applyLocal(next);
       if (!ok) return false;
       if (cloudRef.current) {
         const tz = deviceTimeZone();
-        void putJournal(initDataRef.current, next, tz).then((cloudOk) => {
+        void putJournal(initDataRef.current, next, tz, options).then((cloudOk) => {
           setSyncLabel(cloudOk ? "cloud" : "offline-cloud");
         });
       }
@@ -294,7 +297,7 @@ export function useTherapyStore(options?: {
       setStatus("ready");
       setError(null);
       if (cloudRef.current) {
-        void putJournal(initDataRef.current, result.data, deviceTimeZone());
+        void putJournal(initDataRef.current, result.data, deviceTimeZone(), { replace: true });
       }
     } else {
       setError(result.error);
@@ -367,10 +370,13 @@ export function useTherapyStore(options?: {
   const deleteEntry = useCallback(
     (id: string) => {
       const current = storeRef.current;
-      return persist({
-        ...current,
-        entries: current.entries.filter((entry) => entry.id !== id),
-      });
+      return persist(
+        {
+          ...current,
+          entries: current.entries.filter((entry) => entry.id !== id),
+        },
+        { dropEntryIds: [id] },
+      );
     },
     [persist],
   );
@@ -569,10 +575,13 @@ export function useTherapyStore(options?: {
   const deleteSession = useCallback(
     (id: string) => {
       const current = storeRef.current;
-      return persist({
-        ...current,
-        sessions: current.sessions.filter((session) => session.id !== id),
-      });
+      return persist(
+        {
+          ...current,
+          sessions: current.sessions.filter((session) => session.id !== id),
+        },
+        { dropSessionIds: [id] },
+      );
     },
     [persist],
   );

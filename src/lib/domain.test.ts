@@ -22,7 +22,7 @@ import { pollText } from "./digest";
 import { feelingKeyboard, isBotCommand, parseFeelingCallback } from "./telegram-bot";
 import { buildWeekSpectrum, spectrumHeadline } from "./spectrum";
 import { digestAction, duePoll } from "./digest";
-import { mergeStores } from "./journal-api";
+import { applyJournalWrite, mergeStores } from "./journal-api";
 import { normalizeStore } from "./migrate";
 import { nextWeeklyOccurrence, previousWeeklyOccurrence } from "./session-plan";
 import {
@@ -177,6 +177,30 @@ describe("merge", () => {
     right.entries = [note({ id: "b", body: "вечер", createdAt: "2026-10-09T18:00:00.000Z" })];
     const merged = mergeStores(left, right);
     assert.equal(merged.entries.length, 2);
+  });
+
+  it("keeps a bot note an empty snapshot never saw", () => {
+    const current = emptyStore();
+    current.entries = [note({ id: "bot", body: "день рождения" })];
+    const incoming = emptyStore();
+    const merged = applyJournalWrite(current, incoming);
+    assert.equal(merged.entries.length, 1);
+    assert.equal(merged.entries[0]?.body, "день рождения");
+  });
+
+  it("drops only the note the person deleted", () => {
+    const current = emptyStore();
+    current.entries = [
+      note({ id: "keep", body: "бот" }),
+      note({ id: "gone", body: "удалить" }),
+    ];
+    const incoming = emptyStore();
+    incoming.entries = [note({ id: "keep", body: "бот" })];
+    const merged = applyJournalWrite(current, incoming, ["gone"]);
+    assert.deepEqual(
+      merged.entries.map((entry) => entry.id),
+      ["keep"],
+    );
   });
 });
 

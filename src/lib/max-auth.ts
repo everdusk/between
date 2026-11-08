@@ -78,7 +78,8 @@ function readUser(raw: string | undefined): MaxWebAppUser | null {
     return null;
   }
   if (!parsed || typeof parsed !== "object") return null;
-  const id = (parsed as { id?: unknown }).id;
+  let id = (parsed as { id?: unknown }).id;
+  if (typeof id === "string" && /^\d+$/.test(id)) id = Number(id);
   if (typeof id !== "number" || !Number.isSafeInteger(id) || id <= 0) return null;
   const usernameRaw = (parsed as { username?: unknown }).username;
   const username =
