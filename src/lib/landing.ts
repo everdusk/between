@@ -81,10 +81,10 @@ export function isLegalPath(pathname: string): boolean {
   return path === "/terms" || path === "/privacy";
 }
 
-/** Public pages that are not the landing and not the journal: legal text and the password link. */
+/** Public pages that are not the landing and not the journal: legal text, the password link, deletion. */
 export function isQuietPath(pathname: string): boolean {
   const path = pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-  return isLegalPath(path) || path === "/reset";
+  return isLegalPath(path) || path === "/reset" || path === "/delete";
 }
 
 export const LEGAL_SURFACE_CSS = `${APP_SURFACE_CSS}.splash-screen{display:none!important}`;

@@ -3,12 +3,13 @@
 import { useEffect, useId, useState } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
 import { CircleUser, Star, X } from "lucide-react";
+import { DeleteJournal } from "@/components/delete-data";
 import { FeedbackForm } from "@/components/feedback-form";
 import { LanguageSwitch } from "@/components/language-switch";
 import { PasswordChange } from "@/components/password-change";
 import { SchemeSwitch } from "@/components/scheme-switch";
 import { WebAccountCard } from "@/components/web-account-card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/components/locale-provider";
 import type { WebAccount } from "@/hooks/use-web-account";
@@ -301,6 +302,18 @@ export function AccountSheet({
                 ) : null}
               </div>
             ) : null}
+          </section>
+
+          <section className="space-y-3">
+            <h3 className="font-display text-lg tracking-tight text-foreground">{t("deleteTitle")}</h3>
+            <p className="text-sm leading-relaxed text-muted-foreground">{t("deleteLead")}</p>
+            {inTelegram || inMax ? (
+              <DeleteJournal initData={initData} maxInitData={maxInitData} onErased={onLogout} />
+            ) : (
+              <a href="/delete" className={buttonVariants({ variant: "destructive", className: "w-full" })}>
+                {t("deleteAsk")}
+              </a>
+            )}
           </section>
         </div>
       </section>

@@ -7,9 +7,10 @@ import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
 import { JournalPanel } from "@/components/journal-panel";
 import { JournalSkeleton } from "@/components/journal-skeleton";
 import { AccountButton, AccountSheet } from "@/components/account-sheet";
+import { LanguageSwitch } from "@/components/language-switch";
 import { LegalLinks } from "@/components/legal-links";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
-import { paintPickedScheme, readScheme, schemeWasPicked } from "@/components/scheme-switch";
+import { SchemeSwitch, paintPickedScheme, readScheme, schemeWasPicked } from "@/components/scheme-switch";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WebAccountGate } from "@/components/web-account-gate";
 import { WeekTab } from "@/components/week-tab";
@@ -178,8 +179,9 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   const [accountOpen, setAccountOpen] = useState(false);
 
   useEffect(() => {
-    if (window.location.hash === "#password") setAccountOpen(true);
-  }, []);
+    if (window.location.hash !== "#password" || !web.account) return;
+    setAccountOpen(true);
+  }, [web.account]);
   const [accessNonce, setAccessNonce] = useState(0);
 
   useEffect(() => {
@@ -254,6 +256,15 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     : translate(greetingLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
 
   const webSurface = webEntry && !telegram.inTelegram;
+  const signedOutWeb = webSurface && !inMax && !web.account && web.status !== "loading" && web.status !== "idle";
+  const corner = signedOutWeb ? (
+    <>
+      <SchemeSwitch />
+      <LanguageSwitch />
+    </>
+  ) : webSurface && !inMax && !web.account ? null : (
+    <AccountButton solid={webSurface} pressed={accountOpen} onClick={() => setAccountOpen(true)} />
+  );
 
   const footer = (
     <footer className="py-8 text-center text-[0.6875rem] leading-relaxed tracking-wide text-muted-foreground/80">
@@ -298,9 +309,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
               <p className="font-display text-[1.65rem] leading-none text-foreground">Between</p>
               {webSurface ? null : <p className="mt-2 truncate text-xs text-subtitle">{greeting}</p>}
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <AccountButton solid pressed={accountOpen} onClick={() => setAccountOpen(true)} />
-            </div>
+            <div className="flex flex-wrap items-center gap-2">{corner}</div>
           </div>
           <div className="journal-side-scroll">
             {!showGate && status === "ready" ? (
@@ -351,7 +360,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                 localhost
               </span>
             )}
-            <AccountButton solid={webSurface} pressed={accountOpen} onClick={() => setAccountOpen(true)} />
+            {corner}
           </div>
         </div>
       </header>
