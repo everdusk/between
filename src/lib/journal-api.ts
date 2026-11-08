@@ -14,20 +14,27 @@ export type JournalFetchResult =
   | { ok: true; store: TherapyStore; timeZone: string | null }
   | { ok: false; status: number; error: string };
 
-function journalHeaders(initData: string, json = false): HeadersInit {
+/** Headers that name whose journal this is. A MAX launch string wins over a website cookie. */
+export function journalAuthHeaders(
+  initData: string,
+  maxInitData = "",
+  json = false,
+): Record<string, string> {
   const headers: Record<string, string> = {};
   if (json) headers["Content-Type"] = "application/json";
   if (initData) headers["X-Telegram-Init-Data"] = initData;
+  if (maxInitData) headers["X-Max-Init-Data"] = maxInitData;
   return headers;
 }
 
 export async function fetchJournal(
   initData: string,
+  maxInitData = "",
 ): Promise<JournalFetchResult> {
   try {
     const res = await fetch("/api/journal", {
       method: "GET",
-      headers: journalHeaders(initData),
+      headers: journalAuthHeaders(initData, maxInitData),
       cache: "no-store",
     });
     if (!res.ok) {
@@ -61,11 +68,12 @@ export async function putJournal(
   store: TherapyStore,
   timeZone?: string | null,
   options?: { dropEntryIds?: string[]; dropSessionIds?: string[]; replace?: boolean },
+  maxInitData = "",
 ): Promise<boolean> {
   try {
     const res = await fetch("/api/journal", {
       method: "PUT",
-      headers: journalHeaders(initData, true),
+      headers: journalAuthHeaders(initData, maxInitData, true),
       body: JSON.stringify({
         store,
         timeZone: timeZone || undefined,
@@ -93,7 +101,7 @@ export async function requestBrief(
   try {
     const res = await fetch("/api/brief", {
       method: "POST",
-      headers: journalHeaders(initData, true),
+      headers: journalAuthHeaders(initData, "", true),
       body: JSON.stringify({ facts, stamp, locale, kind }),
     });
     const data = (await res.json()) as {

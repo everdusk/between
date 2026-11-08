@@ -23,7 +23,7 @@ import { useWebAccount } from "@/hooks/use-web-account";
 import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { markSplashReady } from "@/lib/splash";
-import { earlyMaxLogin, inMaxClient, signalMaxReady, waitForMaxInitData } from "@/lib/max-webapp";
+import { earlyMaxLogin, inMaxClient, readMaxInitData, signalMaxReady, waitForMaxInitData } from "@/lib/max-webapp";
 import { clearStore, WEB_STORAGE_KEY } from "@/lib/storage";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
 import { trackAnalytics } from "@/lib/analytics-client";
@@ -91,6 +91,8 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   const webEntry = pathname === "/journal" || pathname.startsWith("/journal/");
   const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
   const [maxReady, setMaxReady] = useState(false);
+  // null while MAX may still hand over the launch string. "" means it never arrived.
+  const [maxLaunch, setMaxLaunch] = useState<string | null>(null);
   const signIn = web.setAccount;
   useEffect(() => {
     if (!inMax || !webEntry || telegram.inTelegram) {
@@ -100,16 +102,15 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     let cancelled = false;
     void (async () => {
       const early = earlyMaxLogin();
+      // MAX writes the launch string after the page is up. The cookie from the
+      // site is a different journal, so the notes stay hidden until this arrives.
+      const initData = readMaxInitData() ?? (await waitForMaxInitData(8_000));
+      if (cancelled) return;
+      setMaxLaunch(initData ?? "");
       let account = early
         ? ((await early.catch(() => null))?.account as Parameters<typeof signIn>[0] | undefined)
         : undefined;
-      if (cancelled) return;
-      if (!account) {
-        const initData = await waitForMaxInitData();
-        if (cancelled || !initData) {
-          if (!cancelled) setMaxReady(true);
-          return;
-        }
+      if (!account && initData && !early) {
         try {
           const res = await fetch("/api/account/max", {
             method: "POST",
@@ -119,7 +120,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
           const data = (await res.json().catch(() => ({}))) as { account?: Parameters<typeof signIn>[0] };
           if (res.ok) account = data.account;
         } catch {
-          // The cookie session stays. The launch string was not accepted.
+          // The launch string still names the journal on the next read.
         }
       }
       if (cancelled) return;
@@ -152,7 +153,9 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     initData: telegram.initData,
     inTelegram: telegram.inTelegram,
     locale,
-    web: Boolean(web.account) && (!inMax || maxReady),
+    maxInitData: inMax && maxLaunch ? maxLaunch : "",
+    // A site cookie is another person's journal until MAX says who opened the app.
+    web: Boolean(web.account) && (!inMax || maxLaunch === ""),
   });
 
   const [section, setSection] = useState<SectionId>("journal");
@@ -207,12 +210,19 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     setPremium(view.status === "paid");
   }
 
-  const maxPending = inMax && webEntry && !telegram.inTelegram && !maxReady;
+  const maxPending = inMax && webEntry && !telegram.inTelegram && maxLaunch === null;
   const authSettled =
     !webEntry || telegram.inTelegram || web.status === "ready" || web.status === "unavailable";
   const showGate =
-    webEntry && telegram.ready && !telegram.inTelegram && authSettled && maxReady && !web.account;
-  const accountPending = (webEntry && !telegram.inTelegram && !authSettled) || maxPending;
+    webEntry &&
+    telegram.ready &&
+    !telegram.inTelegram &&
+    authSettled &&
+    maxReady &&
+    !maxLaunch &&
+    !web.account;
+  const accountPending =
+    maxPending || (webEntry && !telegram.inTelegram && !maxLaunch && !authSettled);
   const shellReady = telegram.ready;
   useEffect(() => {
     if (shellReady) markSplashReady();

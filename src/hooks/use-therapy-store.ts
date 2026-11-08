@@ -61,13 +61,16 @@ function deviceTimeZone(): string | null {
 
 export function useTherapyStore(options?: {
   initData?: string;
+  /** Signed MAX launch string. Names the chat's journal even when a website cookie is set. */
+  maxInitData?: string;
   inTelegram?: boolean;
   locale?: LocaleId;
   web?: boolean;
 }) {
   const initData = options?.initData ?? "";
+  const maxInitData = options?.maxInitData ?? "";
   const inTelegram = Boolean(options?.inTelegram && initData);
-  const web = Boolean(options?.web);
+  const web = Boolean(options?.web) || Boolean(maxInitData);
   const cloud = inTelegram || web;
   const storageKey = web ? WEB_STORAGE_KEY : undefined;
   const locale = options?.locale ?? "ru";
@@ -86,6 +89,7 @@ export function useTherapyStore(options?: {
   );
   const storeRef = useRef(store);
   const initDataRef = useRef(initData);
+  const maxInitRef = useRef(maxInitData);
   const cloudRef = useRef(cloud);
   const storageKeyRef = useRef(storageKey);
   useEffect(() => {
@@ -93,9 +97,10 @@ export function useTherapyStore(options?: {
   }, [store]);
   useEffect(() => {
     initDataRef.current = initData;
+    maxInitRef.current = maxInitData;
     cloudRef.current = cloud;
     storageKeyRef.current = storageKey;
-  }, [initData, cloud, storageKey]);
+  }, [initData, maxInitData, cloud, storageKey]);
 
   const applyLocal = useCallback((next: TherapyStore) => {
     const result = saveStore(next, storageKeyRef.current);
@@ -113,7 +118,8 @@ export function useTherapyStore(options?: {
   const syncFromCloud = useCallback(async () => {
     if (!cloudRef.current) return;
     const data = initDataRef.current;
-    const remote = await fetchJournal(data);
+    const maxData = maxInitRef.current;
+    const remote = await fetchJournal(data, maxData);
     if (!remote.ok) {
       if (remote.status === 503 || remote.status === 401) {
         setSyncLabel("offline-cloud");
@@ -127,7 +133,7 @@ export function useTherapyStore(options?: {
     applyLocal(merged);
     setSyncLabel("cloud");
     const tz = deviceTimeZone();
-    void putJournal(data, merged, tz);
+    void putJournal(data, merged, tz, undefined, maxData);
   }, [applyLocal]);
 
   useEffect(() => {
@@ -179,7 +185,7 @@ export function useTherapyStore(options?: {
       if (!ok) return false;
       if (cloudRef.current) {
         const tz = deviceTimeZone();
-        void putJournal(initDataRef.current, next, tz, options).then((cloudOk) => {
+        void putJournal(initDataRef.current, next, tz, options, maxInitRef.current).then((cloudOk) => {
           setSyncLabel(cloudOk ? "cloud" : "offline-cloud");
         });
       }
@@ -297,7 +303,7 @@ export function useTherapyStore(options?: {
       setStatus("ready");
       setError(null);
       if (cloudRef.current) {
-        void putJournal(initDataRef.current, result.data, deviceTimeZone(), { replace: true });
+        void putJournal(initDataRef.current, result.data, deviceTimeZone(), { replace: true }, maxInitRef.current);
       }
     } else {
       setError(result.error);

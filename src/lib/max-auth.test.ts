@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { describe, it } from "node:test";
+import { leadingCredential } from "./account-actor";
+import { journalAuthHeaders } from "./journal-api";
 import { validateMaxInitData } from "./max-auth";
 import { loginTokenFromStart } from "./web-account";
 
@@ -15,6 +17,27 @@ function sign(fields: Record<string, string>, token = TOKEN): string {
     .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
     .join("&");
 }
+
+describe("MAX journal identity", () => {
+  it("reads the chat's journal even when a website cookie is already set", () => {
+    assert.equal(
+      leadingCredential({ maxInitData: "signed", telegramInitData: "tg", session: true }),
+      "max",
+    );
+    assert.equal(leadingCredential({ telegramInitData: "tg", session: true }), "telegram");
+    assert.equal(leadingCredential({ session: true }), "session");
+    assert.equal(leadingCredential({ maxInitData: "  " }), null);
+  });
+
+  it("sends the launch string on the journal request", () => {
+    const headers = journalAuthHeaders("", "signed-launch");
+    assert.equal(headers["X-Max-Init-Data"], "signed-launch");
+    assert.equal(headers["X-Telegram-Init-Data"], undefined);
+    const telegram = journalAuthHeaders("tg-data");
+    assert.equal(telegram["X-Telegram-Init-Data"], "tg-data");
+    assert.equal(telegram["X-Max-Init-Data"], undefined);
+  });
+});
 
 describe("MAX mini app login", () => {
   it("accepts a signed launch and ignores a null username", () => {
