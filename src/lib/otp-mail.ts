@@ -264,6 +264,48 @@ export async function sendOtpMail(to: string, code: string): Promise<boolean> {
   return true;
 }
 
+export type FeedbackIdentity = {
+  platform: "Telegram" | "MAX" | "сайт";
+  journalId: string;
+  telegramUserId: number | null;
+  telegramUsername: string | null;
+  maxUserId: number | null;
+  email: string | null;
+};
+
+/** The letter support can forward back: platform and ids stay above the person's text. */
+export function feedbackLetter(
+  identity: FeedbackIdentity,
+  message: string,
+): { subject: string; text: string } {
+  const telegram =
+    identity.telegramUserId != null
+      ? `${identity.telegramUserId}${identity.telegramUsername ? ` @${identity.telegramUsername}` : ""}`
+      : "нет";
+  return {
+    subject: "Between: сообщение из дневника",
+    text: [
+      `Платформа: ${identity.platform}`,
+      `Журнал: ${identity.journalId}`,
+      `Telegram: ${telegram}`,
+      `MAX: ${identity.maxUserId != null ? String(identity.maxUserId) : "нет"}`,
+      `Почта: ${identity.email ?? "нет"}`,
+      "",
+      message,
+    ].join("\n"),
+  };
+}
+
+export async function sendFeedbackMail(
+  to: string,
+  letter: { subject: string; text: string },
+): Promise<boolean> {
+  const config = mailConfigFromEnv();
+  if (!config) return false;
+  await smtpSend(config, { to, subject: letter.subject, text: letter.text });
+  return true;
+}
+
 /** Sends the link for choosing a new password. The password itself is not a parameter. */
 export async function sendResetMail(to: string, url: string): Promise<boolean> {
   const config = mailConfigFromEnv();

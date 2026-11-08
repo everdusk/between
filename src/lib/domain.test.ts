@@ -1205,6 +1205,13 @@ describe("model budget", () => {
 
   it("keeps the last pattern when a fresh call fails", () => {
     assert.equal(textAfterModelFailure("Старый паттерн.", "pattern"), "Старый паттерн.");
+    assert.equal(
+      textAfterModelFailure(
+        "Повторяющийся паттерн: каждый объект содержит одинаковую структуру с полями title и count, quotes — пустой массив.",
+        "pattern",
+      ),
+      null,
+    );
     assert.equal(textAfterModelFailure("  ", "pattern"), null);
     assert.equal(textAfterModelFailure("вердикт", "judge"), null);
     assert.equal(textAfterModelFailure(null, "brief"), null);

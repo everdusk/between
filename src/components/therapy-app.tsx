@@ -470,6 +470,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
         inTelegram={telegram.inTelegram}
         inMax={inMax}
         initData={telegram.initData}
+        maxInitData={inMax && maxLaunch ? maxLaunch : ""}
         notify={store.notify}
         onSaveNotify={saveNotify}
         disabled={disabled}

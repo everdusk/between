@@ -488,7 +488,8 @@ export function addManualTheme(
 ): SessionTheme[] {
   const clean = title.replace(/\s+/g, " ").trim().slice(0, 80);
   if (clean.length < 2) return themes;
-  if (themes.some((theme) => !theme.dismissed && sameProblemTitle(theme.title, clean))) {
+  // A typed line is a duplicate only when the title is the same. "тест" must not swallow "тест1".
+  if (themes.some((theme) => !theme.dismissed && fold(theme.title) === fold(clean))) {
     return themes;
   }
   return [
@@ -875,26 +876,62 @@ export function patternShouldRequest(input: {
   disabled: boolean;
   judging: boolean;
   themeCount: number;
+  hasWords: boolean;
   savedStamp: string | undefined;
   stamp: string;
   savedText: string;
   gaveUp: boolean;
   inFlight: boolean;
 }): boolean {
-  if (!input.hasInitData || input.disabled) return false;
+  if (!input.hasInitData || input.disabled || !input.hasWords) return false;
   if (input.themeCount === 0 || input.gaveUp || input.inFlight) return false;
-  return !patternAlreadyCurrent(input.savedStamp, input.stamp, input.savedText);
+  const saved = patternAlreadyCurrent(input.savedStamp, input.stamp, input.savedText);
+  // A paragraph that describes the payload is not a pattern, so it does not block a new call.
+  return !saved || !patternReplyUsable(input.savedText);
+}
+
+/** A pattern needs the person's words. A title with an empty quote list is not enough. */
+export function patternHasWords(themes: SessionTheme[]): boolean {
+  return themes.some((theme) => {
+    if (theme.dismissed || theme.status === "archived") return false;
+    if (theme.quotes.some((quote) => quote.text.trim().length >= 12)) return true;
+    const summary = theme.summary.replace(/\s+/g, " ").trim();
+    const title = theme.title.replace(/\s+/g, " ").trim();
+    return summary.length >= 20 && summary !== title;
+  });
+}
+
+/** The model described the payload instead of a situation. That paragraph is not shown. */
+export function patternReplyUsable(text: string): boolean {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length < 12) return false;
+  const folded = clean.toLowerCase();
+  const keys = ["title", "count", "peak", "intensity", "reopened", "quotes"];
+  const hits = keys.filter((key) => folded.includes(key)).length;
+  if (hits >= 2) return false;
+  if (/пуст\p{L}*\s+массив|структур\p{L}*\s+с\s+пол|каждый объект|\bnull\b|empty array/iu.test(folded)) {
+    return false;
+  }
+  return true;
 }
 
 export function patternFacts(themes: SessionTheme[]): string {
-  return JSON.stringify(
-    themes.slice(0, 4).map((theme) => ({
-      title: theme.title,
-      count: theme.count,
-      peak: theme.peakFeeling ?? null,
-      intensity: theme.peakIntensity,
-      reopened: theme.reopened,
-      quotes: theme.quotes.slice(0, 2).map((quote) => quote.text),
-    })),
-  );
+  return themes
+    .slice(0, 4)
+    .map((theme) => {
+      const quotes = theme.quotes
+        .slice(0, 2)
+        .map((quote) => quote.text.replace(/\s+/g, " ").trim())
+        .filter((quote) => quote.length > 0);
+      return [
+        `Тема: ${theme.title.replace(/\s+/g, " ").trim()}`,
+        `Сколько раз за период: ${theme.count}`,
+        theme.peakFeeling ? `Самая сильная отметка: ${theme.peakFeeling}` : "",
+        quotes.length > 0 ? `Слова человека: ${quotes.join(" | ")}` : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
+    })
+    .filter(Boolean)
+    .join("\n\n");
 }

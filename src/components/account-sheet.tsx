@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
 import { CircleUser, Star, X } from "lucide-react";
+import { FeedbackForm } from "@/components/feedback-form";
 import { LanguageSwitch } from "@/components/language-switch";
 import { PasswordChange } from "@/components/password-change";
 import { SchemeSwitch } from "@/components/scheme-switch";
@@ -55,6 +56,7 @@ export function AccountSheet({
   inTelegram,
   inMax,
   initData,
+  maxInitData,
   notify,
   onSaveNotify,
   disabled,
@@ -68,6 +70,7 @@ export function AccountSheet({
   inTelegram: boolean;
   inMax: boolean;
   initData: string;
+  maxInitData: string;
   notify: NotifyPrefs;
   onSaveNotify: (prefs: Pick<NotifyPrefs, "moodPolls" | "eveningNudge">) => boolean;
   disabled?: boolean;
@@ -247,6 +250,12 @@ export function AccountSheet({
             inMax={inMax}
             account={account}
           />
+
+          <section className="space-y-3">
+            <h3 className="font-display text-lg tracking-tight text-foreground">{t("feedbackTitle")}</h3>
+            <p className="text-sm leading-relaxed text-muted-foreground">{t("feedbackLead")}</p>
+            <FeedbackForm initData={initData} maxInitData={maxInitData} />
+          </section>
 
           <section className="space-y-3">
             <h3 className="font-display text-lg tracking-tight text-foreground">{t("premiumMark")}</h3>
