@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseModelBacklog } from "@/lib/brief";
 import { parseModelThemes, THERAPY_THEMES } from "@/lib/tags";
-import { parseDedupHit, parseJudgeVerdict } from "@/lib/themes";
+import { parseDedupHit, parseJudgeVerdict, patternReplyUsable } from "@/lib/themes";
 import { isLocale, modelLanguageName, type LocaleId } from "@/lib/i18n";
 import {
   cacheBrief,
@@ -23,7 +23,9 @@ function settlesJson(kind: BriefKind): boolean {
 export function textAfterModelFailure(latest: string | null, kind: BriefKind): string | null {
   if (kind !== "pattern" && kind !== "brief") return null;
   const text = latest?.trim() ?? "";
-  return text ? text : null;
+  if (!text) return null;
+  if (kind === "pattern" && !patternReplyUsable(text)) return null;
+  return text;
 }
 
 /** Daily stop per kind. A cached stamp does not count. */
@@ -73,9 +75,10 @@ export function briefSystemPrompt(locale: LocaleId, kind: BriefKind = "brief"): 
   }
   if (kind === "pattern") {
     return [
-      "По JSON тем напиши 2 или 3 предложения: что здесь выглядит как повторяющийся паттерн.",
-      "Только то, что есть в JSON. Без совета, без диагноза, без утешения, без общих фраз вроде «вы испытывали разные эмоции».",
-      "Если паттерна не видно, верни пустую строку.",
+      "По заметкам напиши 2 или 3 предложения: какая повторяющаяся ситуация видна в словах человека.",
+      "Только то, что сказано в заметках. Без совета, без диагноза, без утешения, без общих фраз вроде «вы испытывали разные эмоции».",
+      "Не описывай формат данных, имена полей, пустые списки и null.",
+      "Если в словах человека повтора не видно, верни пустую строку.",
       lang,
     ].join(" ");
   }
@@ -543,7 +546,9 @@ export async function POST(req: Request) {
   }
   if (redisConfigured()) {
     const cached = await getCachedBrief(userId, stamp);
-    if (cached) return NextResponse.json({ ok: true, text: cached, cached: true });
+    if (cached && (kind !== "pattern" || patternReplyUsable(cached))) {
+      return NextResponse.json({ ok: true, text: cached, cached: true });
+    }
   }
   if (!tunnelConfigured && !geminiKey && !groqKey) {
     const earlier = await remembered();
@@ -592,6 +597,10 @@ export async function POST(req: Request) {
       reason: "model_failed",
       detail: result.detail,
     });
+  }
+
+  if (kind === "pattern" && !patternReplyUsable(text)) {
+    return NextResponse.json({ ok: true, text: null, reason: "thin" });
   }
 
   if (redisConfigured()) {

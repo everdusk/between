@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { connect, createServer, type Server, type Socket } from "node:net";
 import { describe, it } from "node:test";
 import {
+  feedbackLetter,
   hashOtp,
   mailConfigFromEnv,
   otpBody,
@@ -24,6 +25,28 @@ function listen(server: Server): Promise<number> {
 }
 
 describe("otp mail", () => {
+  it("keeps the platform and the journal id above the feedback text", () => {
+    const letter = feedbackLetter(
+      {
+        platform: "сайт",
+        journalId: "web:wabc",
+        telegramUserId: 42,
+        telegramUsername: "ana",
+        maxUserId: null,
+        email: "ana@between.test",
+      },
+      "Кнопка не нажалась",
+    );
+    assert.equal(letter.subject, "Between: сообщение из дневника");
+    assert.match(letter.text, /Платформа: сайт/);
+    assert.match(letter.text, /Журнал: web:wabc/);
+    assert.match(letter.text, /Telegram: 42 @ana/);
+    assert.match(letter.text, /MAX: нет/);
+    assert.match(letter.text, /Почта: ana@between.test/);
+    assert.match(letter.text, /Кнопка не нажалась/);
+    assert.equal(letter.text.includes("SMTP"), false);
+  });
+
   it("puts the code at the start of the subject and on its own line", () => {
     assert.equal(otpSubject("048219"), "048219 — код для Between");
     assert.equal(otpSubject("048219").startsWith("048219"), true);

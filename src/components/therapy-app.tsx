@@ -299,7 +299,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
               {webSurface ? null : <p className="mt-2 truncate text-xs text-subtitle">{greeting}</p>}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <AccountButton pressed={accountOpen} onClick={() => setAccountOpen(true)} />
+              <AccountButton solid pressed={accountOpen} onClick={() => setAccountOpen(true)} />
             </div>
           </div>
           <div className="journal-side-scroll">
@@ -351,7 +351,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                 localhost
               </span>
             )}
-            <AccountButton pressed={accountOpen} onClick={() => setAccountOpen(true)} />
+            <AccountButton solid={webSurface} pressed={accountOpen} onClick={() => setAccountOpen(true)} />
           </div>
         </div>
       </header>
@@ -470,6 +470,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
         inTelegram={telegram.inTelegram}
         inMax={inMax}
         initData={telegram.initData}
+        maxInitData={inMax && maxLaunch ? maxLaunch : ""}
         notify={store.notify}
         onSaveNotify={saveNotify}
         disabled={disabled}

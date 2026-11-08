@@ -22,8 +22,9 @@ import {
   clipPattern,
   judgeStamp,
   patternFacts,
-  patternFromThemes,
+  patternHasWords,
   patternKey,
+  patternReplyUsable,
   patternShouldRequest,
   pendingJudgeEntries,
   rankedThemes,
@@ -127,7 +128,9 @@ export function WeeklyPanel({
     .sort((a, b) => b.lastSeen.localeCompare(a.lastSeen) || a.title.localeCompare(b.title));
   const patternStamp = patternKey(agenda, locale);
   const patternFactText = patternFacts(agenda);
-  const patternBody = prep?.patternText ? clipPattern(0, prep.patternText) : "";
+  const patternRaw = prep?.patternText ? clipPattern(0, prep.patternText) : "";
+  const patternBody = patternReplyUsable(patternRaw) ? patternRaw : "";
+  const patternWords = patternHasWords(agenda);
   const skippedJudges = new Set(judgeSkipped);
   const judging =
     pendingJudgeEntries(weekEntries, judgeSettled, days).filter(
@@ -215,6 +218,7 @@ export function WeeklyPanel({
         disabled: Boolean(disabled),
         judging,
         themeCount: agenda.length,
+        hasWords: patternWords,
         savedStamp: savedPatternStamp,
         stamp: patternStamp,
         savedText: savedPatternText,
@@ -230,12 +234,13 @@ export function WeeklyPanel({
     void (async () => {
       const result = await requestBrief(initData ?? "", facts, patternStamp, locale, "pattern");
       if (cancelled) return;
-      if (!result.ok || !result.text) {
+      const text = result.ok ? clipPattern(0, result.text ?? "") : "";
+      if (!result.ok || !patternReplyUsable(text)) {
         patternGaveUp.add(patternStamp);
         if (!cancelled) setFailedPatternStamp(patternStamp);
         return;
       }
-      onSavePattern(key, clipPattern(0, result.text), patternStamp);
+      onSavePattern(key, text, patternStamp);
     })();
     return () => {
       cancelled = true;
@@ -252,6 +257,7 @@ export function WeeklyPanel({
     onSavePattern,
     patternFactText,
     patternStamp,
+    patternWords,
     savedPatternStamp,
     savedPatternText,
   ]);
@@ -279,12 +285,17 @@ export function WeeklyPanel({
         patternTitle={t("briefPatternTitle")}
         patternText={
           patternBody ||
-          (failedPatternStamp === patternStamp || patternGaveUp.has(patternStamp)
-            ? patternFromThemes(agenda)
+          (!patternWords ||
+          Boolean(patternRaw) ||
+          failedPatternStamp === patternStamp ||
+          patternGaveUp.has(patternStamp)
+            ? t("patternThin")
             : "")
         }
         patternPending={
           patternBody ||
+          !patternWords ||
+          Boolean(patternRaw) ||
           failedPatternStamp === patternStamp ||
           patternGaveUp.has(patternStamp)
             ? ""
@@ -294,6 +305,7 @@ export function WeeklyPanel({
                   disabled: Boolean(disabled),
                   judging,
                   themeCount: agenda.length,
+                  hasWords: patternWords,
                   savedStamp: savedPatternStamp,
                   stamp: patternStamp,
                   savedText: savedPatternText,

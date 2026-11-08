@@ -10,8 +10,11 @@ import {
   fallbackVerdict,
   judgeFacts,
   patternAlreadyCurrent,
+  patternFacts,
   patternFromThemes,
+  patternHasWords,
   patternKey,
+  patternReplyUsable,
   patternShouldRequest,
   discussTheme,
   discussedDateKey,
@@ -513,6 +516,10 @@ describe("session brief", () => {
     const once = addManualTheme([], "про дедлайн", "2026-10-27");
     const twice = addManualTheme(once, "про дедлайн", "2026-10-27");
     assert.equal(twice.length, 1);
+    const next = addManualTheme(once, "тест1", "2026-10-27");
+    assert.equal(next.length, 2);
+    assert.equal(next[1]?.title, "тест1");
+    assert.equal(addManualTheme(addManualTheme([], "тест", "2026-10-27"), "Тест", "2026-10-27").length, 1);
   });
 
   it("skips formulate when the theme stamp and the saved text are unchanged", () => {
@@ -572,16 +579,69 @@ describe("session brief", () => {
       savedStamp: "p:old:ru",
       stamp: "p:new:ru",
       savedText: "Старый абзац.",
+      hasWords: true,
       gaveUp: false,
       inFlight: false,
     };
     assert.equal(patternShouldRequest(ready), true);
     assert.equal(patternShouldRequest({ ...ready, judging: true }), true);
-    assert.equal(patternShouldRequest({ ...ready, savedStamp: ready.stamp, savedText: "Уже есть." }), false);
+    assert.equal(
+      patternShouldRequest({
+        ...ready,
+        savedStamp: ready.stamp,
+        savedText: "Тревога перед звонком повторяется в двух записях.",
+      }),
+      false,
+    );
+    assert.equal(
+      patternShouldRequest({
+        ...ready,
+        savedStamp: ready.stamp,
+        savedText:
+          "Повторяющийся паттерн: каждый объект содержит одинаковую структуру с полями title и count, quotes — пустой массив.",
+      }),
+      true,
+    );
     assert.equal(patternShouldRequest({ ...ready, inFlight: true }), false);
     assert.equal(patternShouldRequest({ ...ready, gaveUp: true }), false);
     assert.equal(patternShouldRequest({ ...ready, hasInitData: false }), false);
     assert.equal(patternShouldRequest({ ...ready, themeCount: 0 }), false);
+    assert.equal(patternShouldRequest({ ...ready, hasWords: false }), false);
+  });
+
+  it("refuses a pattern that describes the data instead of the notes", () => {
+    const schema =
+      "Повторяющийся паттерн: каждый объект содержит одинаковую структуру с полями `title`, `count`, `peak`, `intensity`, `reopened`, `quotes`, при этом `peak` всегда `null`, а `quotes` — пустой массив.";
+    assert.equal(patternReplyUsable(schema), false);
+    assert.equal(patternReplyUsable("Тревога перед звонком повторяется в двух записях."), true);
+    const bare = {
+      id: "t",
+      userId: "local",
+      title: "тест",
+      status: "active",
+      count: 1,
+      firstSeen: "2026-11-08",
+      lastSeen: "2026-11-08",
+      peakIntensity: 5,
+      reopened: false,
+      dismissed: false,
+      confidence: 1,
+      summary: "тест",
+      quotes: [],
+      updatedAt: "2026-11-08T00:00:00.000Z",
+    } as SessionTheme;
+    assert.equal(patternHasWords([bare]), false);
+    assert.equal(
+      patternHasWords([
+        {
+          ...bare,
+          quotes: [{ entryId: "e", text: "Снова не могу начать разговор", date: "2026-11-08", intensity: 6 }],
+        },
+      ]),
+      true,
+    );
+    assert.equal(patternFacts([bare]).includes("\"peak\""), false);
+    assert.match(patternFacts([bare]), /Тема: тест/);
   });
 
   it("keeps a checked theme in the list for a week, then archives it", () => {
