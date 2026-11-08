@@ -7,8 +7,8 @@ import { translate } from "./messages";
 
 const BINDING = "Если формулировки разойдутся, главный текст — на русском языке.";
 
-function textOf(kind: "terms" | "privacy", id: (typeof LOCALES)[number]["id"], surface: "web" | "telegram" = "web"): string {
-  const doc = legalDocument(kind, id, surface);
+function textOf(kind: "terms" | "privacy", id: (typeof LOCALES)[number]["id"]): string {
+  const doc = legalDocument(kind, id);
   return [doc.title, doc.updated, ...(doc.preface ?? []), ...doc.sections.flatMap((section) => [section.heading, ...section.paragraphs])].join("\n");
 }
 
@@ -32,11 +32,6 @@ describe("legal documents", () => {
         } else {
           assert.ok(text.includes(BINDING), `${id} ${kind} binding`);
         }
-        const telegram = legalDocument(kind, id, "telegram");
-        assert.equal(telegram.sections.length, 6, `${id} ${kind} telegram`);
-        const oldText = textOf(kind, id, "telegram");
-        assert.ok(oldText.includes(LEGAL_INN), `${id} ${kind} telegram inn`);
-        assert.equal(oldText.includes("152-ФЗ"), false, `${id} ${kind} telegram law`);
       }
       const support = translate(id, "botPaySupport");
       assert.equal(support.includes("between-journal.ru"), false, id);
@@ -52,7 +47,7 @@ describe("legal documents", () => {
     assert.ok(privacy.includes("Настоящая Политика на Telegram-версию не распространяется."));
     assert.ok(privacy.includes("Роскомнадзор"));
     assert.ok(privacy.includes("ЮKassa"));
-    assert.ok(textOf("terms", "ru", "telegram").includes("Telegram Stars"));
+    assert.equal(terms.includes("Telegram Stars"), false);
   });
 
   it("recognizes the public paths", () => {

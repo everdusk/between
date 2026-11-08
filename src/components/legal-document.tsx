@@ -5,14 +5,13 @@ import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import "@/app/journal/theme.css";
 import { LEGAL_SURFACE_CSS } from "@/lib/landing";
-import { LEGAL_INN, legalDocument, type LegalKind, type LegalSurface } from "@/lib/legal";
+import { LEGAL_INN, legalDocument, type LegalKind } from "@/lib/legal";
 import { markSplashReady } from "@/lib/splash";
 
-function LegalArticle({ kind, surface }: { kind: LegalKind; surface: LegalSurface }) {
+function LegalArticle({ kind }: { kind: LegalKind }) {
   const { locale, t } = useI18n();
-  const doc = legalDocument(kind, locale, surface);
-  const otherPath = kind === "terms" ? "/privacy" : "/terms";
-  const otherHref = surface === "telegram" ? `${otherPath}?from=telegram` : otherPath;
+  const doc = legalDocument(kind, locale);
+  const otherHref = kind === "terms" ? "/privacy" : "/terms";
   const otherLabel = kind === "terms" ? t("legalPrivacy") : t("legalTerms");
 
   useLayoutEffect(() => {
@@ -21,8 +20,8 @@ function LegalArticle({ kind, surface }: { kind: LegalKind; surface: LegalSurfac
     root.setAttribute("data-journal", "web");
     root.setAttribute("data-scheme", "night");
     root.removeAttribute("data-splash");
-    const surface = document.getElementById("between-surface");
-    if (surface) surface.textContent = LEGAL_SURFACE_CSS;
+    const style = document.getElementById("between-surface");
+    if (style) style.textContent = LEGAL_SURFACE_CSS;
     markSplashReady();
   }, []);
 
@@ -65,10 +64,10 @@ function LegalArticle({ kind, surface }: { kind: LegalKind; surface: LegalSurfac
   );
 }
 
-export function LegalDocument({ kind, surface }: { kind: LegalKind; surface: LegalSurface }) {
+export function LegalDocument({ kind }: { kind: LegalKind }) {
   return (
     <LocaleProvider telegramLanguage={null} initData="">
-      <LegalArticle kind={kind} surface={surface} />
+      <LegalArticle kind={kind} />
     </LocaleProvider>
   );
 }
