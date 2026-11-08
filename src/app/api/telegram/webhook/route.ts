@@ -7,8 +7,10 @@ import {
   getUserTimezone,
   loadDeviceLocale,
   loadUserLocale,
+  claimPaymentCharge,
   loadWeekAccess,
   redisConfigured,
+  releasePaymentCharge,
   rememberDeviceLocale,
   saveWeekAccess,
   takeBriefAttempt,
@@ -58,6 +60,7 @@ import {
   planDays,
   planFromPayload,
   starPriceFromEnv,
+  starsChargeAccepted,
 } from "@/lib/week-access";
 
 type TelegramChat = { id: number; type?: string };
@@ -99,6 +102,7 @@ type PreCheckoutQuery = {
   id: string;
   from: TelegramUser;
   currency?: string;
+  total_amount?: number;
   invoice_payload?: string;
 };
 type TelegramUpdate = {
@@ -120,7 +124,7 @@ function botToken(): string | null {
 
 function verifyWebhookSecret(req: Request): boolean {
   const expected = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
-  if (!expected) return true;
+  if (!expected) return process.env.NODE_ENV !== "production";
   const got = req.headers.get("x-telegram-bot-api-secret-token");
   return got === expected;
 }
@@ -201,7 +205,11 @@ async function handleCallback(callback: TelegramCallback) {
 }
 
 async function handlePreCheckout(query: PreCheckoutQuery) {
-  const ours = query.currency === "XTR" && planFromPayload(query.invoice_payload) !== null;
+  const plan = planFromPayload(query.invoice_payload);
+  const ours = Boolean(
+    plan &&
+      starsChargeAccepted(plan, query.currency, query.total_amount, starPriceFromEnv(process.env.WEEK_STAR_PRICE)),
+  );
   const { reply } = await localesFor(query.from);
   await telegramRequest("answerPreCheckoutQuery", {
     pre_checkout_query_id: query.id,
@@ -215,16 +223,22 @@ async function handlePayment(message: TelegramMessage) {
   const userId = message.from?.id;
   if (!payment || !userId) return;
   const plan = planFromPayload(payment.invoice_payload);
-  if (payment.currency !== "XTR" || !plan) return;
+  const monthly = starPriceFromEnv(process.env.WEEK_STAR_PRICE);
+  if (!plan || !starsChargeAccepted(plan, payment.currency, payment.total_amount, monthly)) return;
+  const chargeId = payment.telegram_payment_charge_id?.trim() ?? "";
+  if (!chargeId || !(await claimPaymentCharge(chargeId))) return;
 
   const paidUntil = paidUntilForPlan(plan, new Date(), payment.subscription_expiration_date);
 
-  if (redisConfigured()) {
+  try {
     const owner = await resolveJournalId(userId);
     const current = await loadWeekAccess(owner);
     await saveWeekAccess(owner, grantWeekPaidUntil(current, paidUntil));
+  } catch (error) {
+    await releasePaymentCharge(chargeId);
+    throw error;
   }
-  await recordPaidAnalytics(userId, payment.telegram_payment_charge_id);
+  await recordPaidAnalytics(userId, chargeId);
 
   const { reply } = await localesFor(message.from);
   await telegramRequest("sendMessage", {

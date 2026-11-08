@@ -254,6 +254,23 @@ export async function claimBotIntro(userId: number | string): Promise<boolean> {
   return result === "OK";
 }
 
+/** One Telegram charge extends access once. A replay of the same id does not. */
+export async function claimPaymentCharge(chargeId: string): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis || !chargeId) return false;
+  const result = await redis.set(`between:pay:${chargeId}`, "1", {
+    nx: true,
+    ex: 60 * 60 * 24 * 400,
+  });
+  return result === "OK";
+}
+
+export async function releasePaymentCharge(chargeId: string): Promise<void> {
+  const redis = getRedis();
+  if (!redis || !chargeId) return;
+  await redis.del(`between:pay:${chargeId}`);
+}
+
 export async function releaseBotIntro(userId: number | string): Promise<void> {
   const redis = getRedis();
   if (!redis) return;

@@ -121,8 +121,9 @@ describe("MAX bot", () => {
     assert.equal(maxAudioUrl({ message: { body: { attachments: [{ type: "image", payload: { url: "https://x" } }] } } }), null);
   });
 
-  it("checks the webhook secret only when one is set", () => {
-    assert.equal(maxWebhookSecretMatches(null, undefined), true);
+  it("checks the webhook secret and refuses a missing one in production", () => {
+    assert.equal(maxWebhookSecretMatches(null, undefined, "development"), true);
+    assert.equal(maxWebhookSecretMatches(null, undefined, "production"), false);
     assert.equal(maxWebhookSecretMatches("right", " right "), true);
     assert.equal(maxWebhookSecretMatches("wrong", "right"), false);
     assert.equal(maxWebhookSecretMatches(null, "right"), false);

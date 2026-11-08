@@ -59,10 +59,17 @@ export function maxToken(): string | null {
   return process.env.MAX_BOT_TOKEN?.trim() || null;
 }
 
-/** When a secret is configured, MAX must send it back as `X-Max-Bot-Api-Secret`. */
-export function maxWebhookSecretMatches(header: string | null, expected: string | undefined): boolean {
+/**
+ * When a secret is configured, MAX must send it back as `X-Max-Bot-Api-Secret`.
+ * Production refuses the call when the secret was never set.
+ */
+export function maxWebhookSecretMatches(
+  header: string | null,
+  expected: string | undefined,
+  nodeEnv: string | undefined = process.env.NODE_ENV,
+): boolean {
   const raw = expected?.trim() ?? "";
-  if (!raw) return true;
+  if (!raw) return nodeEnv !== "production";
   const secret = maxWebhookSecretValue(expected);
   return header === raw || header === secret;
 }
