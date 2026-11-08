@@ -22,6 +22,7 @@ import {
   clipPattern,
   judgeStamp,
   patternFacts,
+  patternFromThemes,
   patternKey,
   patternShouldRequest,
   pendingJudgeEntries,
@@ -276,9 +277,16 @@ export function WeeklyPanel({
         entries={weekEntries}
         todayKey={todayKey}
         patternTitle={t("briefPatternTitle")}
-        patternText={patternBody}
+        patternText={
+          patternBody ||
+          (failedPatternStamp === patternStamp || patternGaveUp.has(patternStamp)
+            ? patternFromThemes(agenda)
+            : "")
+        }
         patternPending={
-          patternBody
+          patternBody ||
+          failedPatternStamp === patternStamp ||
+          patternGaveUp.has(patternStamp)
             ? ""
             : themesPending ||
                 patternShouldRequest({

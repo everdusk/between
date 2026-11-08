@@ -10,6 +10,7 @@ import {
   addManualTheme,
   applyVerdict,
   dedupFacts,
+  fallbackVerdict,
   discussTheme,
   dismissTheme,
   judgeFacts,
@@ -224,15 +225,16 @@ export function useTherapyStore(options?: {
         "judge",
       );
       if (!judgeAlive.current || judgeRun.current !== stamp) return;
-      const verdict = result.ok && result.text ? parseJudgeVerdict(result.text) : null;
+      let verdict = result.ok && result.text ? parseJudgeVerdict(result.text) : null;
+      const fromModel = Boolean(verdict);
       if (!verdict) {
         const reason = result.ok ? (result.reason ?? "") : result.error;
         const tries = (judgeTries.current[stamp] ?? 0) + 1;
         judgeTries.current[stamp] = tries;
-        judgeRun.current = null;
         const retry =
           tries < 2 && (reason === "network" || reason.startsWith("model_failed"));
         if (retry && judgeAlive.current) {
+          judgeRun.current = null;
           if (judgeTimer.current !== null) window.clearTimeout(judgeTimer.current);
           judgeTimer.current = window.setTimeout(() => {
             judgeTimer.current = null;
@@ -240,11 +242,7 @@ export function useTherapyStore(options?: {
           }, 8000);
           return;
         }
-        if (!judgeSkippedRef.current.includes(stamp)) {
-          judgeSkippedRef.current = [...judgeSkippedRef.current, stamp];
-          setJudgeSkipped(judgeSkippedRef.current);
-        }
-        return;
+        verdict = fallbackVerdict(entry);
       }
       const applied = applyVerdict(
         { themes: storeRef.current.themes ?? [], links: storeRef.current.themeLinks ?? [] },
@@ -252,7 +250,7 @@ export function useTherapyStore(options?: {
         verdict,
       );
       let state = applied.state;
-      let focus = applied.touchedId;
+      let focus = fromModel ? applied.touchedId : null;
       for (let pass = 0; pass < 2 && focus; pass += 1) {
         const theme = state.themes.find(
           (item) => item.id === focus && item.status === "active" && !item.dismissed,

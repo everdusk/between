@@ -514,6 +514,39 @@ export function addManualTheme(
 }
 
 /** Versioned so a note judged before charged feelings could open a theme is read again. */
+/**
+ * When the model does not answer, a charged note still opens a topic from its own text.
+ * A calm errand stays off the list, the same as a parsed "not this".
+ */
+export function fallbackVerdict(
+  entry: Pick<JournalEntry, "body" | "feelings">,
+): JudgeVerdict {
+  return {
+    relevant: true,
+    matchTheme: null,
+    intensity: feelingIntensity(entry.feelings) || CREATE_INTENSITY,
+    newTheme: null,
+    confidence: CREATE_CONFIDENCE,
+    quote: "",
+    reason: "",
+  };
+}
+
+/** Titles already on the week, when the pattern paragraph itself did not arrive. */
+export function patternFromThemes(themes: SessionTheme[]): string {
+  const seen = new Set<string>();
+  const titles: string[] = [];
+  for (const theme of themes) {
+    const title = theme.title.replace(/\s+/g, " ").trim();
+    const key = title.toLocaleLowerCase();
+    if (title.length < 4 || seen.has(key)) continue;
+    seen.add(key);
+    titles.push(title);
+    if (titles.length === 3) break;
+  }
+  return titles.join(". ");
+}
+
 export function judgeStamp(entry: Pick<JournalEntry, "id" | "updatedAt">): string {
   return `2:${entry.id}:${entry.updatedAt}`;
 }
