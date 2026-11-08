@@ -183,8 +183,15 @@ html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) .brand-wo
     display: none;
   }
 
+  /* The scrollport fills the stage, so the wheel works in the gutters beside the column. */
   html[data-journal="web"]:not([data-telegram-theme]) .journal-column {
+    max-width: none;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-scroll-inner {
+    width: 100%;
     max-width: 72rem;
+    margin-inline: auto;
   }
 
   html[data-journal="web"]:not([data-telegram-theme]) .journal-stage {

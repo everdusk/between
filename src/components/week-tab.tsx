@@ -31,6 +31,7 @@ interface WeekTabProps {
   ready: boolean;
   inTelegram: boolean;
   initData: string;
+  reloadToken?: number;
   onAccess?: (view: WeekAccessView) => void;
   children: ReactNode;
 }
@@ -42,6 +43,7 @@ export function WeekTab({
   ready,
   inTelegram,
   initData,
+  reloadToken = 0,
   onAccess,
   children,
 }: WeekTabProps) {
@@ -86,7 +88,7 @@ export function WeekTab({
     return () => {
       cancelled = true;
     };
-  }, [ready, inTelegram]);
+  }, [ready, inTelegram, reloadToken]);
 
   useEffect(() => {
     if (!ready || !inTelegram) return;
@@ -111,7 +113,7 @@ export function WeekTab({
     return () => {
       cancelled = true;
     };
-  }, [ready, inTelegram, initData]);
+  }, [ready, inTelegram, initData, reloadToken]);
 
   useEffect(() => {
     if (!active || !access) return;
@@ -269,6 +271,7 @@ export function WeekTab({
   }
 
   const showIntro = !access.introSeen && (access.status === "trial" || access.status === "new");
+  const introDays = access.daysLeft > 0 ? access.daysLeft : 7;
 
   return (
     <div className="space-y-4">
@@ -276,8 +279,8 @@ export function WeekTab({
         <section className="glass flex flex-col gap-5 rounded-3xl p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <p className="text-sm leading-relaxed text-foreground/90 sm:text-base">
             {inTelegram
-              ? t("intro", { price: access.starPrice })
-              : t("webWeekIntro", { price: access.rubPrice })}
+              ? t("intro", { days: count(introDays, "day"), price: access.starPrice })
+              : t("webWeekIntro", { days: count(introDays, "day"), price: access.rubPrice })}
           </p>
           <Button type="button" variant="ink" className="shrink-0" onClick={() => void dismissIntro()}>
             {t("introOk")}

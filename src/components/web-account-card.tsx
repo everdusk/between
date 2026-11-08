@@ -9,10 +9,12 @@ export function WebAccountCard({
   account,
   onRefresh,
   onLogout,
+  plain = false,
 }: {
   account: WebAccount;
   onRefresh: () => void;
   onLogout: () => void;
+  plain?: boolean;
 }) {
   const { t } = useI18n();
   const [url, setUrl] = useState<string | null>(null);
@@ -91,8 +93,10 @@ export function WebAccountCard({
   }
 
   return (
-    <section className="glass rounded-3xl p-4">
-      <h2 className="font-display text-base tracking-tight text-foreground">{t("webAccount")}</h2>
+    <section className={plain ? "" : "glass rounded-3xl p-4"}>
+      {plain ? null : (
+        <h2 className="font-display text-base tracking-tight text-foreground">{t("webAccount")}</h2>
+      )}
       {account.email ? <p className="mt-1 truncate text-sm text-muted-foreground">{account.email}</p> : null}
       {account.providers?.length ? (
         <p className="mt-1 text-sm text-muted-foreground">
