@@ -812,6 +812,33 @@ describe("spectrum", () => {
       "Неделя ещё пустая. Отметка самочувствия станет здесь цветной полосой.",
     );
   });
+
+  it("leaves a note without a feeling out of the cells", () => {
+    const spectrum = buildWeekSpectrum(
+      ["2026-11-07", "2026-11-08"],
+      [
+        note({ id: "sat", date: "2026-11-07", body: "текст из бота" }),
+        note({
+          id: "sun",
+          date: "2026-11-08",
+          body: "",
+          feelings: ["спокойно"],
+        }),
+      ],
+    );
+    assert.equal(spectrum.noteCount, 2);
+    assert.equal(spectrum.days[0].noteCount, 1);
+    assert.equal(spectrum.days[0].slices.length, 0);
+    assert.deepEqual(
+      spectrum.days[1].slices.map((slice) => slice.feelings),
+      [["спокойно"]],
+    );
+    assert.deepEqual(spectrum.shares, [{ feeling: "спокойно", count: 1 }]);
+    assert.equal(
+      spectrumHeadline(spectrum, spectrum.noteCount),
+      "Чаще всего — спокойно.",
+    );
+  });
 });
 
 describe("session plan", () => {

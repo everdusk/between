@@ -27,9 +27,6 @@ const FILL: Record<Feeling, string> = {
   тяжело: "oklch(0.46 0.045 255)",
 };
 
-/** A note without a picked feeling still leaves a mark on the day. */
-export const UNMARKED_FILL = "oklch(0.82 0.015 175)";
-
 const ORDER = new Map(SPECTRUM_ORDER.map((feeling, index) => [feeling, index]));
 
 export function feelingFill(feeling: Feeling): string {
@@ -43,7 +40,9 @@ export type DaySlice = {
 
 export type SpectrumDay = {
   key: string;
+  /** Notes that have a feeling. A note without one does not become a cell. */
   slices: DaySlice[];
+  noteCount: number;
 };
 
 export type FeelingShare = {
@@ -56,6 +55,8 @@ export type WeekSpectrum = {
   shares: FeelingShare[];
   top: Feeling[];
   feelingTotal: number;
+  /** Notes in the window, including ones with no feeling. */
+  noteCount: number;
 };
 
 function uniqueFeelings(feelings: Feeling[]): Feeling[] {
@@ -95,18 +96,22 @@ export function buildWeekSpectrum(
   }
 
   const counts = new Map<Feeling, number>();
+  let noteCount = 0;
   const days: SpectrumDay[] = dayKeys.map((key) => {
-    const slices = (byDay.get(key) ?? [])
+    const entriesForDay = (byDay.get(key) ?? [])
       .slice()
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-      .map((entry) => {
-        const feelings = uniqueFeelings(entry.feelings);
-        for (const feeling of feelings) {
-          counts.set(feeling, (counts.get(feeling) ?? 0) + 1);
-        }
-        return { id: entry.id, feelings };
-      });
-    return { key, slices };
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    noteCount += entriesForDay.length;
+    const slices: DaySlice[] = [];
+    for (const entry of entriesForDay) {
+      const feelings = uniqueFeelings(entry.feelings);
+      if (feelings.length === 0) continue;
+      for (const feeling of feelings) {
+        counts.set(feeling, (counts.get(feeling) ?? 0) + 1);
+      }
+      slices.push({ id: entry.id, feelings });
+    }
+    return { key, slices, noteCount: entriesForDay.length };
   });
 
   const shares = SPECTRUM_ORDER.filter((feeling) => counts.has(feeling)).map(
@@ -116,5 +121,5 @@ export function buildWeekSpectrum(
   const max = shares.reduce((best, share) => Math.max(best, share.count), 0);
   const top = shares.filter((share) => share.count === max).map((share) => share.feeling);
 
-  return { days, shares, top, feelingTotal };
+  return { days, shares, top, feelingTotal, noteCount };
 }

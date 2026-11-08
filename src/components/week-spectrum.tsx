@@ -2,11 +2,7 @@
 
 import { useI18n } from "@/components/locale-provider";
 import { formatDayLabel, weekdayShort } from "@/lib/dates";
-import {
-  UNMARKED_FILL,
-  buildWeekSpectrum,
-  feelingFill,
-} from "@/lib/spectrum";
+import { buildWeekSpectrum, feelingFill } from "@/lib/spectrum";
 import type { Feeling, JournalEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import type { MessageKey } from "@/lib/messages";
@@ -58,7 +54,7 @@ export function WeekSpectrum({
 }: WeekSpectrumProps) {
   const { t, locale, feeling } = useI18n();
   const spectrum = buildWeekSpectrum(dayKeys, entries);
-  const noteCount = spectrum.days.reduce((sum, day) => sum + day.slices.length, 0);
+  const noteCount = spectrum.noteCount;
   const headline = spectrumLead(spectrum, noteCount, t, feeling);
   const title = spectrumTitle(spectrum, t, feeling);
   const lead = spectrum.top[0];
@@ -134,17 +130,20 @@ export function WeekSpectrum({
           </div>
         )}
 
+        {/* A day stays one seventh of the row. Two days do not grow to fill the card, and a longer week scrolls. */}
         <div className="-mx-1 flex w-full min-w-0 gap-1 overflow-x-auto px-1 pb-1 sm:gap-1.5">
           {spectrum.days.map((day) => {
             const isToday = day.key === todayKey;
             const isFuture = day.key > todayKey;
             const names = day.slices.map((slice) =>
-              slice.feelings.length > 0
-                ? slice.feelings.map((item) => feeling(item)).join(", ")
-                : t("unmarked"),
+              slice.feelings.map((item) => feeling(item)).join(", "),
             );
             const label = `${formatDayLabel(day.key, locale)}${
-              names.length > 0 ? `: ${names.join("; ")}` : `: ${t("noEntry")}`
+              names.length > 0
+                ? `: ${names.join("; ")}`
+                : day.noteCount > 0
+                  ? `: ${t("unmarked")}`
+                  : `: ${t("noEntry")}`
             }`;
             return (
               <div
@@ -152,7 +151,7 @@ export function WeekSpectrum({
                 role="img"
                 aria-label={label}
                 className={cn(
-                  "flex min-w-11 flex-1 basis-0 flex-col items-center gap-2 rounded-2xl p-1",
+                  "flex w-[calc((100%-1.5rem)/7)] shrink-0 flex-col items-center gap-2 rounded-2xl p-1 sm:w-[calc((100%-2.25rem)/7)]",
                   isFuture && day.slices.length === 0 && "opacity-40",
                 )}
               >
@@ -167,17 +166,13 @@ export function WeekSpectrum({
                 >
                   {day.slices.map((slice) => (
                     <span key={slice.id} className="flex min-h-1.5 flex-1 overflow-hidden rounded-md">
-                      {slice.feelings.length === 0 ? (
-                        <span className="flex-1" style={{ background: UNMARKED_FILL }} />
-                      ) : (
-                        slice.feelings.map((feeling) => (
-                          <span
-                            key={feeling}
-                            className="flex-1"
-                            style={{ background: feelingFill(feeling) }}
-                          />
-                        ))
-                      )}
+                      {slice.feelings.map((item) => (
+                        <span
+                          key={item}
+                          className="flex-1"
+                          style={{ background: feelingFill(item) }}
+                        />
+                      ))}
                     </span>
                   ))}
                 </span>
