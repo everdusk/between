@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { X509Certificate } from "node:crypto";
 import { afterEach, describe, it } from "node:test";
 import { digestChannel, maxUserIdFromDigest } from "./digest";
-import { maxClientFrom } from "./max-webapp";
+import { MAX_LAUNCH_BOOT_SCRIPT, maxClientFrom } from "./max-webapp";
+import { runInNewContext } from "node:vm";
 import { maxBotLinkUrl, maxBotLoginUrl, maxStorageId } from "./web-account";
 import { toPublicAccount } from "./web-account-store";
 import { RUSSIAN_TRUSTED_ROOT_CA, RUSSIAN_TRUSTED_SUB_CA } from "./max-ca";
@@ -178,5 +179,85 @@ describe("MAX client", () => {
     assert.equal(maxClientFrom({ referrer: "https://www.between-journal.ru/journal" }), false);
     assert.equal(maxClientFrom({ requestedWith: "ru.oneme.app" }), true);
     assert.equal(maxClientFrom({ cookie: true }), true);
+  });
+
+  it("tells MAX the page is ready and keeps the launch string", () => {
+    const messages: string[] = [];
+    const session = new Map<string, string>();
+    const context = {
+      location: { hash: "#WebAppData=signed&WebAppPlatform=web" },
+      document: { referrer: "" },
+      window: {},
+      parent: {
+        postMessage(data: string) {
+          messages.push(data);
+        },
+      },
+      sessionStorage: {
+        setItem(key: string, value: string) {
+          session.set(key, value);
+        },
+      },
+      URLSearchParams,
+      JSON,
+    };
+    runInNewContext(MAX_LAUNCH_BOOT_SCRIPT, context);
+    assert.equal(session.get("WebAppData"), "signed");
+    assert.equal(messages[0], JSON.stringify({ type: "WebAppReady" }));
+
+    messages.length = 0;
+    runInNewContext(MAX_LAUNCH_BOOT_SCRIPT, {
+      ...context,
+      location: { hash: "" },
+      document: { referrer: "https://web.max.ru/se14938561_bot" },
+    });
+    assert.equal(messages[0], JSON.stringify({ type: "WebAppReady" }));
+
+    messages.length = 0;
+    runInNewContext(MAX_LAUNCH_BOOT_SCRIPT, {
+      ...context,
+      location: { hash: "" },
+      document: { referrer: "https://www.between-journal.ru/" },
+    });
+    assert.equal(messages.length, 0);
+  });
+
+  it("signs in and starts the splash clock before the journal scripts load", () => {
+    const calls: Array<{ url: string; body: string }> = [];
+    const frame = {} as { __betweenMaxLogin?: Promise<unknown>; __betweenSplashAt?: number };
+    runInNewContext(MAX_LAUNCH_BOOT_SCRIPT, {
+      location: { hash: "#WebAppData=signed&WebAppPlatform=ios" },
+      document: { referrer: "" },
+      window: frame,
+      parent: {
+        postMessage() {},
+      },
+      sessionStorage: { setItem() {} },
+      URLSearchParams,
+      JSON,
+      fetch(url: string, init: { body: string }) {
+        calls.push({ url, body: init.body });
+        return Promise.resolve({ ok: true, json: async () => ({ account: { email: "" } }) });
+      },
+      performance: { now: () => 42 },
+    });
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]?.url, "/api/account/max");
+    assert.equal(calls[0]?.body, JSON.stringify({ initData: "signed" }));
+    assert.equal(frame.__betweenSplashAt, 42);
+    assert.ok(frame.__betweenMaxLogin instanceof Promise);
+
+    const telegram = {} as { __betweenSplashAt?: number };
+    runInNewContext(MAX_LAUNCH_BOOT_SCRIPT, {
+      location: { hash: "#tgWebAppData=user%3D1&tgWebAppVersion=8" },
+      document: { referrer: "" },
+      window: telegram,
+      parent: telegram,
+      sessionStorage: { setItem() {} },
+      URLSearchParams,
+      JSON,
+      performance: { now: () => 42 },
+    });
+    assert.equal(telegram.__betweenSplashAt, undefined);
   });
 });

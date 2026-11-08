@@ -1,5 +1,29 @@
-/** Copies `WebAppData` before the app starts. A later navigation must not lose it. */
-export const MAX_LAUNCH_BOOT_SCRIPT = `try{var h=location.hash.replace(/^#/,"");if(!h){var n=performance.getEntriesByType("navigation")[0];h=n?new URL(n.name).hash.replace(/^#/,""):"";}if(h){var d=new URLSearchParams(h).get("WebAppData");if(d)sessionStorage.setItem("WebAppData",d);}}catch(e){}`;
+import { SPLASH_STAMP } from "./splash";
+
+/**
+ * Copies `WebAppData`, tells MAX the page is up, and starts sign-in
+ * before the journal's scripts have downloaded.
+ */
+export const MAX_LAUNCH_BOOT_SCRIPT = `try{var h=location.hash.replace(/^#/,"");var params=h?new URLSearchParams(h):null;var data=params&&params.get("WebAppData");if(data)sessionStorage.setItem("WebAppData",data);var ref="";try{ref=document.referrer||""}catch(e){}if((data||(params&&params.get("WebAppPlatform"))||/max\\.ru|oneme\\.ru/i.test(ref))&&parent!==window)parent.postMessage(JSON.stringify({type:"WebAppReady"}),"*");if(data&&typeof fetch==="function"){window.__betweenMaxLogin=fetch("/api/account/max",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({initData:data})}).then(function(r){return r&&r.ok?r.json():null}).catch(function(){return null});}if(!/tgWebApp/i.test(location.hash)&&typeof performance!=="undefined")window.${SPLASH_STAMP}=performance.now();}catch(e){}`;
+
+export type EarlyMaxLogin = { account?: unknown } | null;
+
+/** The sign-in the boot script already started, or null when the hash had no launch string. */
+export function earlyMaxLogin(): Promise<EarlyMaxLogin> | null {
+  if (typeof window === "undefined") return null;
+  const pending = (window as unknown as { __betweenMaxLogin?: Promise<EarlyMaxLogin> }).__betweenMaxLogin;
+  return pending ?? null;
+}
+
+/** MAX replaces the mini app with an error screen unless it hears this within 15s. */
+export function signalMaxReady(): void {
+  if (typeof window === "undefined" || window.parent === window) return;
+  try {
+    window.parent.postMessage(JSON.stringify({ type: "WebAppReady" }), "*");
+  } catch {
+    /* the frame cannot reach MAX */
+  }
+}
 
 /** MAX fills the launch string a moment after the page opens. */
 export function waitForMaxInitData(timeoutMs = 1200): Promise<string | null> {

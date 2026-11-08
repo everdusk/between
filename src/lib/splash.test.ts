@@ -4,6 +4,7 @@ import {
   SPLASH_MAX_MS,
   SPLASH_MIN_MS,
   SPLASH_REDUCED_MAX_MS,
+  SPLASH_STAMP,
   markSplashVisible,
   resetSplashClock,
   splashRemainMs,
@@ -31,6 +32,17 @@ describe("splash", () => {
     markSplashVisible(2_000);
     assert.equal(splashVisibleElapsed(1_600), 600);
     resetSplashClock();
+  });
+
+  it("counts from the frame painted at parse time, before hydration", () => {
+    resetSplashClock();
+    const previous = globalThis.window;
+    globalThis.window = { [SPLASH_STAMP]: 100 } as unknown as Window & typeof globalThis;
+    assert.equal(splashVisibleElapsed(1_000), 900);
+    markSplashVisible(2_000);
+    assert.equal(splashVisibleElapsed(1_200), 1_100);
+    resetSplashClock();
+    globalThis.window = previous;
   });
 
   it("waits to reveal until the telegram window has finished expanding", () => {

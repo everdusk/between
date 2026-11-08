@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
+import type { ReactNode } from "react";
 import { Literata, Manrope, Unbounded } from "next/font/google";
 import { ProductAnalyticsConfig } from "@/components/product-analytics-config";
 import { SplashScreen } from "@/components/splash-screen";
-import { LandingPage } from "@/components/landing-page";
 import { LandingSurface } from "@/components/landing-surface";
 import { APP_SURFACE_CSS, LEGAL_SURFACE_CSS, SURFACE_BOOT_SCRIPT, WEB_SURFACE_CSS, YANDEX_METRIKA_NOSCRIPT, YANDEX_METRIKA_SCRIPT } from "@/lib/landing";
 import { landingJsonLd, landingMetadata } from "@/lib/landing-seo";
@@ -39,7 +39,10 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+  landing,
+}: LayoutProps<"/"> & { landing: ReactNode }) {
   const posthog = posthogBrowserConfig({
     key: process.env.POSTHOG_KEY,
     host: process.env.POSTHOG_HOST,
@@ -69,7 +72,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {posthog ? <ProductAnalyticsConfig token={posthog.token} host={posthog.host} /> : null}
         <LandingSurface />
         <SplashScreen />
-        <LandingPage />
+        {landing}
         <div className="app-root">{children}</div>
       </body>
     </html>

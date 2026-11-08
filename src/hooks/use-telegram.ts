@@ -23,6 +23,7 @@ import {
   userAllowsBotWrite,
   displayNameFromUser,
   isLikelyTelegram,
+  isTelegramLaunchHash,
   type TelegramSession,
 } from "@/lib/telegram";
 
@@ -110,6 +111,16 @@ export function useTelegram(): TelegramSession {
     let revealed = false;
     let viewportCap = 0;
     let revealViewport: ((params: { isStateStable: boolean }) => void) | null = null;
+
+    // The SDK chunk is only needed to expand Telegram. MAX and the site can paint first.
+    if (!isTelegramLaunchHash(window.location.hash)) {
+      applyDevicePerformance(navigator.userAgent);
+      publishVisualViewport();
+      markSplashVisible();
+      queueMicrotask(() => {
+        if (!cancelled) setSession({ ...FALLBACK, ready: true });
+      });
+    }
 
     void import("@twa-dev/sdk")
       .then((mod) => {
