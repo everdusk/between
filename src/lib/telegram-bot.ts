@@ -65,6 +65,44 @@ const COMMANDS_RU = [
 ];
 
 let commandsReady = false;
+let blocksReady = false;
+
+/** Person who blocked the bot in a private chat. A group kick is not this. */
+export function blockedTelegramUser(update: {
+  chat?: { id?: number; type?: string };
+  from?: { id?: number };
+  old_chat_member?: { status?: string };
+  new_chat_member?: { status?: string };
+}): number | null {
+  if (update.chat?.type !== "private") return null;
+  if (update.new_chat_member?.status !== "kicked") return null;
+  if (update.old_chat_member?.status === "kicked") return null;
+  const userId = update.from?.id ?? update.chat.id;
+  return typeof userId === "number" && userId > 0 ? userId : null;
+}
+
+/**
+ * The production webhook lists update types and leaves blocks out.
+ * Add `my_chat_member` without dropping the secret already configured.
+ */
+export async function ensureTelegramBlocks(): Promise<void> {
+  if (blocksReady || !process.env.BOT_TOKEN?.trim()) return;
+  const info = await telegramCall<{ url?: string; allowed_updates?: string[] }>("getWebhookInfo", {});
+  if (!info.ok || !info.result) return;
+  const url = info.result.url?.trim() ?? "";
+  const allowed = info.result.allowed_updates ?? [];
+  if (!url || allowed.length === 0 || allowed.includes("my_chat_member")) {
+    blocksReady = true;
+    return;
+  }
+  const secret = process.env.TELEGRAM_WEBHOOK_SECRET?.trim();
+  const set = await telegramCall("setWebhook", {
+    url,
+    allowed_updates: [...new Set([...allowed, "my_chat_member"])],
+    ...(secret ? { secret_token: secret } : {}),
+  });
+  if (set.ok) blocksReady = true;
+}
 
 /** Menu list Telegram checks when a bot takes Stars. Safe to call on every update. */
 export async function publishBotCommands(): Promise<void> {

@@ -37,6 +37,8 @@ import {
   isBotCommand,
   miniAppKeyboard,
   parseFeelingCallback,
+  blockedTelegramUser,
+  ensureTelegramBlocks,
   publishBotCommands,
   telegramRequest,
 } from "@/lib/telegram-bot";
@@ -104,6 +106,12 @@ type TelegramUpdate = {
   message?: TelegramMessage;
   callback_query?: TelegramCallback;
   pre_checkout_query?: PreCheckoutQuery;
+  my_chat_member?: {
+    chat?: { id?: number; type?: string };
+    from?: { id?: number };
+    old_chat_member?: { status?: string };
+    new_chat_member?: { status?: string };
+  };
 };
 
 function botToken(): string | null {
@@ -172,6 +180,7 @@ async function handleCallback(callback: TelegramCallback) {
 
   try {
     await addCheckin(callback.from.id, parsed.slot, parsed.feeling);
+    await trackServerEvent({ userId: callback.from.id, event: "mood", messenger: "telegram" });
     await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
     if (callback.message) {
       await telegramRequest("editMessageText", {
@@ -325,6 +334,13 @@ export async function POST(req: Request) {
   }
 
   await publishBotCommands();
+  await ensureTelegramBlocks();
+
+  if (update.my_chat_member) {
+    const userId = blockedTelegramUser(update.my_chat_member);
+    if (userId) await trackServerEvent({ userId, event: "block", messenger: "telegram" });
+    return NextResponse.json({ ok: true });
+  }
 
   if (update.pre_checkout_query) {
     await handlePreCheckout(update.pre_checkout_query);

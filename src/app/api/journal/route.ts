@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { actorFromRequest } from "@/lib/account-actor";
+import { trackServerEvent } from "@/lib/analytics";
 import { applyJournalWrite } from "@/lib/journal-api";
 import { normalizeStore } from "@/lib/migrate";
+import { sessionPlanStamp } from "@/lib/session-plan";
 import {
   getUserTimezone,
   loadUserStore,
@@ -67,16 +69,25 @@ export async function PUT(req: Request) {
 
   const dropIds = (value: unknown) =>
     Array.isArray(value) ? value.filter((id): id is string => typeof id === "string" && id.length > 0).slice(0, 40) : [];
+  const previous = await loadUserStore(actor.id);
   const next =
     payload.replace === true
       ? store
       : applyJournalWrite(
-          await loadUserStore(actor.id),
+          previous,
           store,
           dropIds(payload.dropEntryIds),
           dropIds(payload.dropSessionIds),
         );
   await saveUserStore(actor.id, next);
+  const savedPlan = sessionPlanStamp(next.sessionPlan);
+  if (savedPlan && savedPlan !== sessionPlanStamp(previous?.sessionPlan)) {
+    await trackServerEvent({
+      userId: actor.analyticsId,
+      event: "plan",
+      messenger: actor.messenger,
+    });
+  }
 
   if (typeof payload.timeZone === "string" && isValidTimeZone(payload.timeZone)) {
     await setUserTimezone(actor.id, payload.timeZone);

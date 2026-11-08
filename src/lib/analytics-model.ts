@@ -1,5 +1,5 @@
 /** Funnel, in order. `paid` is recorded only from a confirmed Stars payment. */
-export const ANALYTICS_EVENTS = ["visit", "note", "week", "paywall", "checkout", "paid"] as const;
+export const ANALYTICS_EVENTS = ["visit", "note", "mood", "block", "plan", "week", "paywall", "checkout", "paid"] as const;
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
 
 export const CLIENT_ANALYTICS_EVENTS = ["visit", "note", "week", "paywall", "checkout"] as const;
@@ -25,6 +25,9 @@ const MONTHS = ["янв", "фев", "мар", "апр", "мая", "июн", "и�
 const LABELS: Record<AnalyticsEvent, string> = {
   visit: "Визит",
   note: "Заметка",
+  mood: "Настроение",
+  block: "Блокировка",
+  plan: "График",
   week: "Неделя",
   paywall: "Пейволл",
   checkout: "Счёт",
@@ -34,7 +37,7 @@ const LABELS: Record<AnalyticsEvent, string> = {
 export type MessengerReport = {
   todayCounts: Record<AnalyticsEvent, number>;
   totals: Record<AnalyticsEvent, number>;
-  cohorts: { day: string; size: number; d1: number | null; d7: number | null }[];
+  cohorts: { day: string; size: number; week: number | null }[];
 };
 
 export type AnalyticsSnapshot = {
@@ -87,6 +90,9 @@ export function analyticsCounterKey(
   return `between:analytics:day:${day}:${event}`;
 }
 
+/** A return on any of the seven days after the first visit. Not the next day, and not day 7 alone. */
+export const WEEK_RETURN_OFFSET = 8;
+
 export function analyticsCohortKey(
   cohort: string,
   offset: number,
@@ -104,7 +110,7 @@ export function messengerEventName(messenger: AnalyticsMessenger, event: Analyti
 export function parseMessengerEvent(
   name: string,
 ): { messenger: AnalyticsMessenger; event: AnalyticsEvent } | null {
-  const match = /^(telegram|max|web)_(visit|note|week|paywall|checkout|paid)$/.exec(name);
+  const match = /^(telegram|max|web)_(visit|note|mood|block|plan|week|paywall|checkout|paid)$/.exec(name);
   if (!match) return null;
   const messenger = match[1] as AnalyticsMessenger;
   const event = match[2] as AnalyticsEvent;
@@ -116,7 +122,7 @@ export function analyticsDedupKey(day: string): string {
 }
 
 export function emptyAnalyticsCounts(): Record<AnalyticsEvent, number> {
-  return { visit: 0, note: 0, week: 0, paywall: 0, checkout: 0, paid: 0 };
+  return { visit: 0, note: 0, mood: 0, block: 0, plan: 0, week: 0, paywall: 0, checkout: 0, paid: 0 };
 }
 
 export function analyticsCount(value: unknown): number {
@@ -201,7 +207,7 @@ export function sumCountRows(
 export function snapshotFromReads(
   today: string,
   dayCounts: { day: string; counts: Record<AnalyticsEvent, number> }[],
-  cohorts: { day: string; d0: number; d1: number; d7: number }[],
+  cohorts: { day: string; d0: number; week: number }[],
 ): MessengerReport & { today: string; windowDays: number } {
   const totals = emptyAnalyticsCounts();
   const todayCounts = emptyAnalyticsCounts();
@@ -223,8 +229,7 @@ export function snapshotFromReads(
         return {
           day: row.day,
           size: row.d0,
-          d1: age >= 1 ? row.d1 : null,
-          d7: age >= 7 ? row.d7 : null,
+          week: age >= 1 ? row.week : null,
         };
       }),
   };
@@ -329,11 +334,9 @@ function formatMessengerBlock(title: string, part: MessengerReport): string[] {
   if (part.cohorts.length) {
     lines.push("Возвраты");
     for (const row of [...part.cohorts].reverse()) {
-      const next =
-        row.d1 == null ? "следующий день ещё нет" : `следующий день ${row.d1} из ${row.size}`;
-      let line = `${ruDay(row.day)} — ${row.size} новых, ${next}`;
-      if (row.d7 != null) line += `, день 7: ${row.d7} из ${row.size}`;
-      lines.push(line);
+      const back =
+        row.week == null ? "за неделю ещё нет" : `за неделю ${row.week} из ${row.size}`;
+      lines.push(`${ruDay(row.day)} — ${row.size} новых, ${back}`);
     }
   }
   return lines;

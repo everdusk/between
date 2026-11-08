@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 import {
   ANALYTICS_EVENTS,
   ANALYTICS_MESSENGERS,
+  WEEK_RETURN_OFFSET,
   analyticsCohortKey,
   analyticsCount,
   analyticsCounterKey,
@@ -68,8 +69,28 @@ export async function recordAnalytics(
   if (added === 0) return "duplicate";
 
   const keys = [analyticsCounterKey(input.day, input.event, input.messenger)];
-  if (input.event === "visit" && input.cohort && input.offset != null) {
-    keys.push(analyticsCohortKey(input.cohort, input.offset, input.messenger));
+  if (input.event === "visit" && input.cohort && input.offset === 0) {
+    keys.push(analyticsCohortKey(input.cohort, 0, input.messenger));
+  }
+  if (
+    input.event === "visit" &&
+    input.cohort &&
+    input.offset != null &&
+    input.offset >= 1 &&
+    input.offset <= 7
+  ) {
+    const mark = analyticsDedupToken(
+      input.pepper,
+      `${input.messenger}:${input.userId}:week:${input.cohort}`,
+    );
+    const seen = await redis.sadd(`between:analytics:return:${input.messenger}:${input.cohort}`, mark);
+    await redis.expire(
+      `between:analytics:return:${input.messenger}:${input.cohort}`,
+      COUNTER_TTL_SEC,
+    );
+    if (seen === 1) {
+      keys.push(analyticsCohortKey(input.cohort, WEEK_RETURN_OFFSET, input.messenger));
+    }
   }
   for (const key of keys) {
     await redis.incr(key);
@@ -108,13 +129,12 @@ export async function loadAnalyticsReport(
     for (const day of cohortDays) {
       keys.push(
         analyticsCohortKey(day, 0, messenger),
-        analyticsCohortKey(day, 1, messenger),
-        analyticsCohortKey(day, 7, messenger),
+        analyticsCohortKey(day, WEEK_RETURN_OFFSET, messenger),
       );
     }
   }
   for (const day of cohortDays) {
-    keys.push(analyticsCohortKey(day, 0), analyticsCohortKey(day, 1), analyticsCohortKey(day, 7));
+    keys.push(analyticsCohortKey(day, 0), analyticsCohortKey(day, WEEK_RETURN_OFFSET));
   }
   const raw = keys.length ? await redis.mget(...keys) : [];
 
@@ -133,10 +153,9 @@ export async function loadAnalyticsReport(
       const row = {
         day,
         d0: analyticsCount(raw[cursor]),
-        d1: analyticsCount(raw[cursor + 1]),
-        d7: analyticsCount(raw[cursor + 2]),
+        week: analyticsCount(raw[cursor + 1]),
       };
-      cursor += 3;
+      cursor += 2;
       return row;
     });
 
@@ -156,8 +175,7 @@ export async function loadAnalyticsReport(
   cohorts.telegram = cohorts.telegram.map((row, index) => ({
     day: row.day,
     d0: row.d0 + legacyCohorts[index].d0,
-    d1: row.d1 + legacyCohorts[index].d1,
-    d7: row.d7 + legacyCohorts[index].d7,
+    week: row.week + legacyCohorts[index].week,
   }));
 
   const messengers = {} as AnalyticsSnapshot["messengers"];
@@ -205,7 +223,7 @@ export async function recordPaidAnalytics(
 
 /** A bot step. The Mini App still reports through `/api/analytics`. One person, one step, one messenger, one day. */
 export async function trackServerEvent(input: {
-  userId: number;
+  userId: number | string;
   event: AnalyticsEvent;
   messenger: AnalyticsMessenger;
 }): Promise<void> {

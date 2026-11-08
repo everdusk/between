@@ -7,6 +7,8 @@ export type Actor = {
   id: string;
   telegramUserId: number | null;
   telegramUsername: string | null;
+  messenger: "telegram" | "max" | "web";
+  analyticsId: number | string;
 };
 
 /**
@@ -45,12 +47,16 @@ export async function actorFromRequest(req: Request): Promise<Actor | null> {
           id: webStorageId(account.id),
           telegramUserId: account.telegramUserId,
           telegramUsername: account.telegramUsername,
+          messenger: "max",
+          analyticsId: validated.user.id,
         };
       }
       return {
         id: maxStorageId(validated.user.id),
         telegramUserId: null,
         telegramUsername: null,
+        messenger: "max",
+        analyticsId: validated.user.id,
       };
     }
   }
@@ -62,6 +68,8 @@ export async function actorFromRequest(req: Request): Promise<Actor | null> {
         id: await resolveJournalId(validated.user.id),
         telegramUserId: validated.user.id,
         telegramUsername: validated.user.username?.replace(/^@/, "") || null,
+        messenger: "telegram",
+        analyticsId: validated.user.id,
       };
     }
   }
@@ -75,5 +83,7 @@ export async function actorFromRequest(req: Request): Promise<Actor | null> {
     id: webStorageId(account.id),
     telegramUserId: account.telegramUserId,
     telegramUsername: account.telegramUsername,
+    messenger: "web",
+    analyticsId: webStorageId(account.id),
   };
 }

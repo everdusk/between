@@ -6,7 +6,7 @@ import { posthogBrowserConfig } from "./posthog-env";
 export async function captureServerProduct(input: {
   messenger: AnalyticsMessenger;
   event: AnalyticsEvent;
-  userId: number;
+  userId: number | string;
 }): Promise<void> {
   const cfg = posthogBrowserConfig({
     key: process.env.POSTHOG_KEY,

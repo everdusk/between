@@ -19,12 +19,12 @@ import {
 import { reviewLoginFromEnv } from "./web-account";
 import { catalogsShareKeys, countPhrase, feelingLabel, formatPremiumStatus, translate } from "./messages";
 import { pollText } from "./digest";
-import { feelingKeyboard, isBotCommand, parseFeelingCallback } from "./telegram-bot";
+import { blockedTelegramUser, feelingKeyboard, isBotCommand, parseFeelingCallback } from "./telegram-bot";
 import { buildWeekSpectrum, spectrumHeadline } from "./spectrum";
 import { digestAction, duePoll } from "./digest";
 import { applyJournalWrite, mergeStores } from "./journal-api";
 import { normalizeStore } from "./migrate";
-import { nextWeeklyOccurrence, previousWeeklyOccurrence } from "./session-plan";
+import { nextWeeklyOccurrence, previousWeeklyOccurrence, sessionPlanStamp } from "./session-plan";
 import {
   applyThemePass,
   parseModelThemes,
@@ -841,6 +841,28 @@ describe("session plan", () => {
     assert.equal(after?.getDate(), 12);
     assert.equal(after?.getHours(), 10);
   });
+
+  it("treats a weekly rhythm and a next date as a filled plan", () => {
+    const empty = { mode: "once" as const, date: "", time: "", weekday: 0, updatedAt: "" };
+    assert.equal(sessionPlanStamp(empty), "");
+    assert.equal(
+      sessionPlanStamp({ ...empty, date: "2026-11-12", time: "17:00" }),
+      "2026-11-12T17:00",
+    );
+    const weekly = sessionPlanStamp({
+      mode: "weekly",
+      date: "",
+      time: "",
+      weekday: 0,
+      slots: [
+        { weekday: 3, time: "17:00" },
+        { weekday: 0, time: "10:00" },
+      ],
+      updatedAt: "",
+    });
+    assert.equal(weekly, "0@10:00,3@17:00");
+    assert.equal(sessionPlanStamp({ ...empty, mode: "weekly" }), "");
+  });
 });
 
 describe("voice notes", () => {
@@ -1476,6 +1498,30 @@ describe("languages", () => {
     assert.equal(board.inline_keyboard[0][0].text, "anxious");
     assert.equal(board.inline_keyboard[0][0].callback_data, "c:m:0");
     assert.equal(parseFeelingCallback("c:m:0")?.feeling, "тревожно");
+    assert.equal(
+      blockedTelegramUser({
+        chat: { id: 7, type: "private" },
+        from: { id: 7 },
+        old_chat_member: { status: "member" },
+        new_chat_member: { status: "kicked" },
+      }),
+      7,
+    );
+    assert.equal(
+      blockedTelegramUser({
+        chat: { id: 7, type: "private" },
+        old_chat_member: { status: "kicked" },
+        new_chat_member: { status: "kicked" },
+      }),
+      null,
+    );
+    assert.equal(
+      blockedTelegramUser({
+        chat: { id: 9, type: "group" },
+        new_chat_member: { status: "kicked" },
+      }),
+      null,
+    );
   });
 
   it("lets an explicit language choice win the header greeting", () => {

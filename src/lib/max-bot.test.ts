@@ -16,6 +16,7 @@ import {
   maxFeelingKeyboard,
   maxLoginKeyboard,
   maxOpenKeyboard,
+  MAX_UPDATE_TYPES,
   maxText,
   maxUserId,
   type MaxUpdate,
@@ -137,6 +138,9 @@ describe("MAX bot", () => {
     const started: MaxUpdate = { update_type: "bot_started", user: { user_id: Number("15") } };
     assert.equal(maxUserId({ ...started, user: { user_id: 15 } }), 15);
     assert.equal(maxUserId({ update_type: "bot_started", user: { user_id: "15" as unknown as number } }), 15);
+    assert.equal(maxUserId({ update_type: "bot_stopped", user: { user_id: 15 } }), 15);
+    assert.equal(isMaxPrivate({ update_type: "bot_stopped", user: { user_id: 15 } }), true);
+    assert.equal(MAX_UPDATE_TYPES.includes("bot_stopped"), true);
   });
 
   it("puts the same callback payload on every mood button", () => {
