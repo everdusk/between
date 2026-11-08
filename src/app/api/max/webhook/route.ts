@@ -120,6 +120,7 @@ async function handleCallback(update: MaxUpdate, userId: number) {
   }
   try {
     await addCheckinForOwner(owner, parsed.slot, parsed.feeling);
+    await trackServerEvent({ userId, event: "mood", messenger: "max" });
     await answerMaxCallback(
       callbackId,
       translate(reply, "botCheckinSaved", { feeling: feelingLabel(reply, parsed.feeling) }),

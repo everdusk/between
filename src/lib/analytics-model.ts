@@ -1,5 +1,5 @@
 /** Funnel, in order. `paid` is recorded only from a confirmed Stars payment. */
-export const ANALYTICS_EVENTS = ["visit", "note", "week", "paywall", "checkout", "paid"] as const;
+export const ANALYTICS_EVENTS = ["visit", "note", "mood", "week", "paywall", "checkout", "paid"] as const;
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
 
 export const CLIENT_ANALYTICS_EVENTS = ["visit", "note", "week", "paywall", "checkout"] as const;
@@ -25,6 +25,7 @@ const MONTHS = ["янв", "фев", "мар", "апр", "мая", "июн", "и�
 const LABELS: Record<AnalyticsEvent, string> = {
   visit: "Визит",
   note: "Заметка",
+  mood: "Настроение",
   week: "Неделя",
   paywall: "Пейволл",
   checkout: "Счёт",
@@ -104,7 +105,7 @@ export function messengerEventName(messenger: AnalyticsMessenger, event: Analyti
 export function parseMessengerEvent(
   name: string,
 ): { messenger: AnalyticsMessenger; event: AnalyticsEvent } | null {
-  const match = /^(telegram|max|web)_(visit|note|week|paywall|checkout|paid)$/.exec(name);
+  const match = /^(telegram|max|web)_(visit|note|mood|week|paywall|checkout|paid)$/.exec(name);
   if (!match) return null;
   const messenger = match[1] as AnalyticsMessenger;
   const event = match[2] as AnalyticsEvent;
@@ -116,7 +117,7 @@ export function analyticsDedupKey(day: string): string {
 }
 
 export function emptyAnalyticsCounts(): Record<AnalyticsEvent, number> {
-  return { visit: 0, note: 0, week: 0, paywall: 0, checkout: 0, paid: 0 };
+  return { visit: 0, note: 0, mood: 0, week: 0, paywall: 0, checkout: 0, paid: 0 };
 }
 
 export function analyticsCount(value: unknown): number {

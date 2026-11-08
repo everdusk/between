@@ -172,6 +172,7 @@ async function handleCallback(callback: TelegramCallback) {
 
   try {
     await addCheckin(callback.from.id, parsed.slot, parsed.feeling);
+    await trackServerEvent({ userId: callback.from.id, event: "mood", messenger: "telegram" });
     await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
     if (callback.message) {
       await telegramRequest("editMessageText", {

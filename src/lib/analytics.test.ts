@@ -145,7 +145,7 @@ describe("analytics", () => {
       [
         {
           day: "2026-11-01",
-          counts: { visit: 4, note: 2, week: 3, paywall: 1, checkout: 1, paid: 0 },
+          counts: { visit: 4, note: 2, mood: 3, week: 3, paywall: 1, checkout: 1, paid: 0 },
         },
       ],
       [
@@ -156,12 +156,12 @@ describe("analytics", () => {
     );
     const max = snapshotFromReads(
       "2026-11-01",
-      [{ day: "2026-11-01", counts: { visit: 1, note: 1, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
+      [{ day: "2026-11-01", counts: { visit: 1, note: 1, mood: 1, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
       [],
     );
     const web = snapshotFromReads(
       "2026-11-01",
-      [{ day: "2026-11-01", counts: { visit: 9, note: 0, week: 2, paywall: 0, checkout: 0, paid: 0 } }],
+      [{ day: "2026-11-01", counts: { visit: 9, note: 0, mood: 0, week: 2, paywall: 0, checkout: 0, paid: 0 } }],
       [],
     );
     const text = formatAnalyticsReport({
@@ -169,7 +169,9 @@ describe("analytics", () => {
       windowDays: telegram.windowDays,
       messengers: { telegram, max, web },
     });
-    assert.match(text, /Telegram[\s\S]*Визит 4/);
+    assert.match(text, /Telegram[\s\S]*Визит 4[\s\S]*Заметка 2[\s\S]*Настроение 3/);
+    assert.match(text, /MAX[\s\S]*Настроение 1/);
+    assert.match(text, /Сайт[\s\S]*Настроение 0/);
     assert.match(text, /MAX[\s\S]*Визит 1/);
     assert.match(text, /Сайт[\s\S]*Визит 9/);
     assert.doesNotMatch(text.slice(0, text.indexOf("Сайт")), /Визит 9/);
@@ -180,7 +182,7 @@ describe("analytics", () => {
     assert.equal(text.includes("424242"), false);
     const merged = sumCountRows(
       [{ day: "2026-11-01", counts: telegram.todayCounts }],
-      [{ day: "2026-11-01", counts: { visit: 3, note: 0, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
+      [{ day: "2026-11-01", counts: { visit: 3, note: 0, mood: 0, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
     );
     assert.equal(merged[0].counts.visit, 7);
   });
@@ -234,6 +236,7 @@ describe("analytics", () => {
     assert.deepEqual(parseMessengerEvent("telegram_paid"), { messenger: "telegram", event: "paid" });
     assert.equal(parseMessengerEvent("visit"), null);
     assert.deepEqual(parseMessengerEvent("web_week"), { messenger: "web", event: "week" });
+    assert.deepEqual(parseMessengerEvent("max_mood"), { messenger: "max", event: "mood" });
     assert.equal(JSON.stringify(kept).includes("тяжело"), false);
 
     assert.equal(scrubProductEvent({ event: "$pageview", properties: { distinct_id: "anon" } }), null);
