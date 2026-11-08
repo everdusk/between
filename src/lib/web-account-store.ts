@@ -752,6 +752,35 @@ export async function takeMaxLogin(token: string): Promise<AccountRecord | null>
   return loadAccount(state);
 }
 
+function hasNewItems<T>(web: T[], from: T[], key: (item: T) => string): boolean {
+  if (from.length === 0) return false;
+  const known = new Set(web.map(key));
+  return from.some((item) => !known.has(key(item)));
+}
+
+/** Notes written in the bot before the account existed live under `max:<id>`. */
+async function foldMaxJournal(accountId: string, maxUserId: number): Promise<void> {
+  const webId = webStorageId(accountId);
+  const fromId = maxStorageId(maxUserId);
+  const [web, from] = await Promise.all([loadUserStore(webId), loadUserStore(fromId)]);
+  const adds =
+    hasNewItems(web.entries, from.entries, (item) => item.id) ||
+    hasNewItems(web.sessions, from.sessions, (item) => item.id) ||
+    hasNewItems(web.weekPreps, from.weekPreps, (item) => item.weekKey) ||
+    hasNewItems(web.themes ?? [], from.themes ?? [], (item) => item.id) ||
+    hasNewItems(web.themeLinks ?? [], from.themeLinks ?? [], (item) => item.entryId);
+  if (adds) await saveUserStore(webId, mergeStores(web, from));
+  if (!(await getUserTimezone(webId))) {
+    const tz = await getUserTimezone(fromId);
+    if (tz) await setUserTimezone(webId, tz);
+  }
+  if (!(await loadUserLocale(webId))) {
+    const locale = await loadUserLocale(fromId);
+    if (locale) await saveUserLocale(webId, locale as LocaleId);
+  }
+  await rememberUser(fromId);
+}
+
 /** The journal for this MAX user, creating it on the first signed launch. */
 export async function ensureMaxAccount(
   maxUserId: number,
@@ -768,6 +797,7 @@ export async function ensureMaxAccount(
       account.maxUsername = handle;
       await redis.set(accountKey(account.id), account);
     }
+    await foldMaxJournal(account.id, maxUserId);
     return account;
   }
 
@@ -787,8 +817,10 @@ export async function ensureMaxAccount(
   };
   const claimed = await redis.set(maxKey(maxUserId), id, { nx: true });
   if (claimed !== "OK") {
-    const winner = await accountIdForMax(maxUserId);
-    return winner ? loadAccount(winner) : null;
+    const winnerId = await accountIdForMax(maxUserId);
+    const winner = winnerId ? await loadAccount(winnerId) : null;
+    if (winner) await foldMaxJournal(winner.id, maxUserId);
+    return winner;
   }
   await redis.set(accountKey(id), account);
 
@@ -797,13 +829,7 @@ export async function ensureMaxAccount(
   const maxAccess = await loadWeekAccess(fromId);
   const absorbed = absorbWeekPremium(await loadWeekAccess(webId), maxAccess, new Date());
   await saveWeekAccess(webId, absorbed.web);
-  const merged = mergeStores(await loadUserStore(webId), await loadUserStore(fromId));
-  await saveUserStore(webId, merged);
-  const tz = await getUserTimezone(fromId);
-  if (tz) await setUserTimezone(webId, tz);
-  const locale = await loadUserLocale(fromId);
-  if (locale) await saveUserLocale(webId, locale as LocaleId);
-  await rememberUser(fromId);
+  await foldMaxJournal(id, maxUserId);
   return account;
 }
 

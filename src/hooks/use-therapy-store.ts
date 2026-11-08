@@ -118,6 +118,7 @@ export function useTherapyStore(options?: {
       if (remote.status === 503 || remote.status === 401) {
         setSyncLabel("offline-cloud");
       }
+      setStatus("ready");
       return;
     }
     const local = loadStore(storageKeyRef.current);
@@ -136,8 +137,11 @@ export function useTherapyStore(options?: {
       // Local journal is only available after mount.
       // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate localStorage once on the client
       setStore(result.data);
-      setStatus("ready");
       setError(null);
+      if (!cloud) {
+        setStatus("ready");
+        setSyncLabel("local");
+      }
     } else {
       setStatus("error");
       setError(result.error);
@@ -145,9 +149,8 @@ export function useTherapyStore(options?: {
     }
 
     if (cloud) {
+      setStatus("loading");
       void syncFromCloud();
-    } else {
-      setSyncLabel("local");
     }
   }, [hydrated, cloud, storageKey, syncFromCloud]);
 
