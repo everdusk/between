@@ -97,6 +97,13 @@ export function isQuietPath(pathname: string): boolean {
 
 export const LEGAL_SURFACE_CSS = `${APP_SURFACE_CSS}.splash-screen{display:none!important}`;
 
+/**
+ * Runs before Metrika. Quiet pages and the journal hide the landing.
+ * `/open` stays `web`: the counter starts only when `data-between` is not `app`,
+ * and Metrika's button markup lists pages the counter has seen.
+ */
+export const JOURNAL_SURFACE_SCRIPT = `try{var p=location.pathname||"";if(p.length>1&&p.charAt(p.length-1)==="/")p=p.slice(0,-1);var quiet=p==="/terms"||p==="/privacy"||p==="/reset"||p==="/delete"||p==="/open";var journal=p==="/journal"||p.indexOf("/journal/")===0;if(quiet||journal){if(p!=="/open")document.documentElement.setAttribute("data-between","app");document.documentElement.setAttribute("data-journal","web");var scheme="night";if(journal){try{var saved=localStorage.getItem("between:scheme");if(saved==="day"||saved==="night")scheme=saved;}catch(e){}}document.documentElement.setAttribute("data-scheme",scheme);if(quiet)document.documentElement.removeAttribute("data-splash");var s=document.getElementById("between-surface");if(s)s.textContent=quiet?${JSON.stringify(LEGAL_SURFACE_CSS)}:${JSON.stringify(APP_SURFACE_CSS)};}}catch(e){}`;
+
 export const WEB_SURFACE_CSS = [
   "html[data-splash] .splash-screen{display:none!important}",
   "html[data-splash] .app-root,.app-root{display:none!important}",

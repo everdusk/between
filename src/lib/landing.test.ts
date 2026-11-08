@@ -14,6 +14,7 @@ import {
   SURFACE_BOOT_SCRIPT,
   surfaceFromLocation,
   WEB_SURFACE_CSS,
+  JOURNAL_SURFACE_SCRIPT,
   YANDEX_METRIKA_ID,
   YANDEX_METRIKA_NOSCRIPT,
   YANDEX_METRIKA_SCRIPT,
@@ -79,6 +80,15 @@ describe("landing surface", () => {
     );
     assert.match(YANDEX_METRIKA_SCRIPT, /ssr:true,webvisor:true,clickmap:true/);
     assert.match(YANDEX_METRIKA_NOSCRIPT, /https:\/\/mc\.yandex\.ru\/watch\/114026277/);
+  });
+
+  it("counts the messenger fork and still hides the journal", () => {
+    assert.match(
+      JOURNAL_SURFACE_SCRIPT,
+      /if\(p!=="\/open"\)document\.documentElement\.setAttribute\("data-between","app"\)/,
+    );
+    assert.match(JOURNAL_SURFACE_SCRIPT, /p==="\/open"/);
+    assert.match(JOURNAL_SURFACE_SCRIPT, /p==="\/journal"/);
   });
 
   it("ships the public page visible, then lets Telegram replace that style", () => {

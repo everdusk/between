@@ -4,7 +4,7 @@ import { Literata, Manrope, Unbounded } from "next/font/google";
 import { ProductAnalyticsConfig } from "@/components/product-analytics-config";
 import { SplashScreen } from "@/components/splash-screen";
 import { LandingSurface } from "@/components/landing-surface";
-import { APP_SURFACE_CSS, LEGAL_SURFACE_CSS, SURFACE_BOOT_SCRIPT, WEB_SURFACE_CSS, YANDEX_METRIKA_NOSCRIPT, YANDEX_METRIKA_SCRIPT } from "@/lib/landing";
+import { JOURNAL_SURFACE_SCRIPT, SURFACE_BOOT_SCRIPT, WEB_SURFACE_CSS, YANDEX_METRIKA_NOSCRIPT, YANDEX_METRIKA_SCRIPT } from "@/lib/landing";
 import { landingJsonLd, landingMetadata } from "@/lib/landing-seo";
 import { LAUNCH_THEME_SCRIPT, SPLASH_COVER_CSS } from "@/lib/launch-theme";
 import { MAX_LAUNCH_BOOT_SCRIPT } from "@/lib/max-webapp";
@@ -27,9 +27,6 @@ const unbounded = Unbounded({
   subsets: ["latin", "latin-ext", "cyrillic"],
   weight: ["500", "600", "700"],
 });
-
-/** `/journal` is the browser app. The boot script only looks at the Telegram hash, so this runs before Metrika. */
-const JOURNAL_SURFACE_SCRIPT = `try{var p=location.pathname||"";if(p.length>1&&p.charAt(p.length-1)==="/")p=p.slice(0,-1);var quiet=p==="/terms"||p==="/privacy"||p==="/reset"||p==="/delete"||p==="/open";var journal=p==="/journal"||p.indexOf("/journal/")===0;if(quiet||journal){document.documentElement.setAttribute("data-between","app");document.documentElement.setAttribute("data-journal","web");var scheme="night";if(journal){try{var saved=localStorage.getItem("between:scheme");if(saved==="day"||saved==="night")scheme=saved;}catch(e){}}document.documentElement.setAttribute("data-scheme",scheme);if(quiet)document.documentElement.removeAttribute("data-splash");var s=document.getElementById("between-surface");if(s)s.textContent=quiet?${JSON.stringify(LEGAL_SURFACE_CSS)}:${JSON.stringify(APP_SURFACE_CSS)};}}catch(e){}`;
 
 export const metadata: Metadata = landingMetadata;
 
