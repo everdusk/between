@@ -7,6 +7,7 @@ import { LandingSurface } from "@/components/landing-surface";
 import { APP_SURFACE_CSS, LEGAL_SURFACE_CSS, SURFACE_BOOT_SCRIPT, WEB_SURFACE_CSS, YANDEX_METRIKA_NOSCRIPT, YANDEX_METRIKA_SCRIPT } from "@/lib/landing";
 import { landingJsonLd, landingMetadata } from "@/lib/landing-seo";
 import { LAUNCH_THEME_SCRIPT, SPLASH_COVER_CSS } from "@/lib/launch-theme";
+import { MAX_LAUNCH_BOOT_SCRIPT } from "@/lib/max-webapp";
 import { posthogBrowserConfig } from "@/lib/posthog-env";
 import { SPLASH_CHROME } from "@/lib/telegram";
 import "./globals.css";
@@ -56,6 +57,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <style id="between-surface" dangerouslySetInnerHTML={{ __html: WEB_SURFACE_CSS }} />
         <style dangerouslySetInnerHTML={{ __html: SPLASH_COVER_CSS }} />
         <script dangerouslySetInnerHTML={{ __html: LAUNCH_THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: MAX_LAUNCH_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: SURFACE_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: JOURNAL_SURFACE_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: YANDEX_METRIKA_SCRIPT }} />

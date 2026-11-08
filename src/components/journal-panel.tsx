@@ -32,22 +32,35 @@ interface JournalPanelProps {
   initData?: string;
 }
 
+/** The stored day, plus the local day the note was actually written. */
+function daysOf(entry: JournalEntry): string[] {
+  const days = [entry.date];
+  const time = Date.parse(entry.createdAt);
+  if (Number.isFinite(time)) {
+    const local = toDateKey(new Date(time));
+    if (local !== entry.date) days.push(local);
+  }
+  return days;
+}
+
 /** First feeling of the day, or null when the notes carry no feeling. */
 function dayMarks(entries: JournalEntry[]): Map<string, Feeling | null> {
   const marks = new Map<string, Feeling | null>();
   const sorted = [...entries].sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   for (const entry of sorted) {
     const feeling = entry.feelings[0] ?? null;
-    const current = marks.get(entry.date);
-    if (current === undefined) marks.set(entry.date, feeling);
-    else if (current === null && feeling) marks.set(entry.date, feeling);
+    for (const day of daysOf(entry)) {
+      const current = marks.get(day);
+      if (current === undefined) marks.set(day, feeling);
+      else if (current === null && feeling) marks.set(day, feeling);
+    }
   }
   return marks;
 }
 
 /** Days in a row with at least one note, ending today or yesterday. */
 function noteStreak(entries: JournalEntry[], todayKey: string): number {
-  const days = new Set(entries.map((entry) => entry.date));
+  const days = new Set(entries.flatMap((entry) => daysOf(entry)));
   let cursor = days.has(todayKey) ? todayKey : addDays(todayKey, -1);
   let streak = 0;
   while (days.has(cursor) && streak < 400) {
@@ -80,7 +93,7 @@ export function JournalPanel({
   const dayEntries = useMemo(
     () =>
       entries
-        .filter((entry) => entry.date === date)
+        .filter((entry) => daysOf(entry).includes(date))
         .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
     [entries, date],
   );

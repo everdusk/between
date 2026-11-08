@@ -1,3 +1,6 @@
+/** Copies `WebAppData` before the app starts. A later navigation must not lose it. */
+export const MAX_LAUNCH_BOOT_SCRIPT = `try{var h=location.hash.replace(/^#/,"");if(!h){var n=performance.getEntriesByType("navigation")[0];h=n?new URL(n.name).hash.replace(/^#/,""):"";}if(h){var d=new URLSearchParams(h).get("WebAppData");if(d)sessionStorage.setItem("WebAppData",d);}}catch(e){}`;
+
 /** MAX fills the launch string a moment after the page opens. */
 export function waitForMaxInitData(timeoutMs = 1200): Promise<string | null> {
   const first = readMaxInitData();
@@ -14,13 +17,32 @@ export function waitForMaxInitData(timeoutMs = 1200): Promise<string | null> {
   });
 }
 
+function webAppDataFromHash(hash: string): string | null {
+  if (!hash) return null;
+  try {
+    return new URLSearchParams(hash.replace(/^#/, "")).get("WebAppData");
+  } catch {
+    return null;
+  }
+}
+
 /** Signed launch string from a MAX mini app, or null in a normal browser. */
 export function readMaxInitData(): string | null {
   if (typeof window === "undefined") return null;
-  const hash = window.location.hash.replace(/^#/, "");
-  if (hash) {
-    const data = new URLSearchParams(hash).get("WebAppData");
-    if (data) return data;
+  const fromHash = webAppDataFromHash(window.location.hash);
+  if (fromHash) return fromHash;
+  try {
+    const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    const fromNav = nav ? webAppDataFromHash(new URL(nav.name).hash) : null;
+    if (fromNav) return fromNav;
+  } catch {
+    /* navigation entry is not a URL */
+  }
+  try {
+    const stored = sessionStorage.getItem("WebAppData");
+    if (stored) return stored;
+  } catch {
+    /* private mode */
   }
   const app = (window as unknown as { WebApp?: { initData?: string } }).WebApp;
   const init = app?.initData?.trim();

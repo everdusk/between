@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { actorFromRequest } from "@/lib/account-actor";
+import { applyJournalWrite } from "@/lib/journal-api";
 import { normalizeStore } from "@/lib/migrate";
 import {
   getUserTimezone,
@@ -52,13 +53,30 @@ export async function PUT(req: Request) {
     return NextResponse.json({ ok: false, error: "bad_json" }, { status: 400 });
   }
 
-  const payload = body as { store?: unknown; timeZone?: unknown };
+  const payload = body as {
+    store?: unknown;
+    timeZone?: unknown;
+    replace?: unknown;
+    dropEntryIds?: unknown;
+    dropSessionIds?: unknown;
+  };
   const store = normalizeStore(payload.store);
   if (!store) {
     return NextResponse.json({ ok: false, error: "invalid_store" }, { status: 400 });
   }
 
-  await saveUserStore(actor.id, store);
+  const dropIds = (value: unknown) =>
+    Array.isArray(value) ? value.filter((id): id is string => typeof id === "string" && id.length > 0).slice(0, 40) : [];
+  const next =
+    payload.replace === true
+      ? store
+      : applyJournalWrite(
+          await loadUserStore(actor.id),
+          store,
+          dropIds(payload.dropEntryIds),
+          dropIds(payload.dropSessionIds),
+        );
+  await saveUserStore(actor.id, next);
 
   if (typeof payload.timeZone === "string" && isValidTimeZone(payload.timeZone)) {
     await setUserTimezone(actor.id, payload.timeZone);
