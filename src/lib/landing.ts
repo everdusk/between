@@ -1,9 +1,17 @@
+import { LANDING_ORIGIN } from "./landing-seo";
+
 /**
  * The bot only receives the `start` payload. `app_landing` is the open-the-app
  * handoff plus the mark that this person came from the landing page.
  */
 export const LANDING_START_PARAM = "app_landing";
 export const LANDING_BOT_URL = "https://t.me/BetweenJournalBot?start=app_landing";
+/** Public MAX bot. `max.ru` opens the app from a phone; the web client works in a desktop browser. */
+export const LANDING_MAX_BOT = "se14938561_bot";
+export const LANDING_MAX_URL = `https://max.ru/${LANDING_MAX_BOT}?start=${LANDING_START_PARAM}`;
+export const LANDING_MAX_WEB_URL = `https://web.max.ru/${LANDING_MAX_BOT}?start=${LANDING_START_PARAM}`;
+/** Phone cameras land here and choose Telegram or MAX. */
+export const LANDING_OPEN_URL = `${LANDING_ORIGIN}/open`;
 export const LANDING_SOURCE = "landing";
 export const LANDING_COUNT_KEY = "between:source:landing";
 
@@ -84,7 +92,7 @@ export function isLegalPath(pathname: string): boolean {
 /** Public pages that are not the landing and not the journal: legal text, the password link, deletion. */
 export function isQuietPath(pathname: string): boolean {
   const path = pathname.length > 1 && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-  return isLegalPath(path) || path === "/reset" || path === "/delete";
+  return isLegalPath(path) || path === "/reset" || path === "/delete" || path === "/open";
 }
 
 export const LEGAL_SURFACE_CSS = `${APP_SURFACE_CSS}.splash-screen{display:none!important}`;

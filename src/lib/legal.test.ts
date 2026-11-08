@@ -56,6 +56,7 @@ describe("legal documents", () => {
     assert.equal(isLegalPath("/journal"), false);
     assert.equal(isQuietPath("/reset"), true);
     assert.equal(isQuietPath("/delete"), true);
+    assert.equal(isQuietPath("/open"), true);
     assert.equal(isLegalPath("/delete"), false);
     assert.equal(isQuietPath("/journal"), false);
   });

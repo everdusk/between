@@ -3,6 +3,9 @@ import { describe, it } from "node:test";
 import {
   isLandingStart,
   LANDING_BOT_URL,
+  LANDING_MAX_URL,
+  LANDING_MAX_WEB_URL,
+  LANDING_OPEN_URL,
   LANDING_START_PARAM,
   landingCount,
   landingStatsLine,
@@ -20,6 +23,9 @@ describe("landing start mark", () => {
   it("keeps the app handoff and names the landing", () => {
     assert.equal(LANDING_START_PARAM, "app_landing");
     assert.equal(LANDING_BOT_URL, "https://t.me/BetweenJournalBot?start=app_landing");
+    assert.equal(LANDING_MAX_URL, "https://max.ru/se14938561_bot?start=app_landing");
+    assert.equal(LANDING_MAX_WEB_URL, "https://web.max.ru/se14938561_bot?start=app_landing");
+    assert.equal(LANDING_OPEN_URL, "https://www.between-journal.ru/open");
     assert.equal(isLandingStart("/start app_landing"), true);
     assert.equal(isLandingStart("/start@BetweenJournalBot app_landing"), true);
     assert.equal(isLandingStart("/start app"), false);

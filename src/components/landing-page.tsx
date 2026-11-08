@@ -1,10 +1,11 @@
 "use client";
 
-import { LANDING_BOT_URL, LANDING_START_PARAM } from "@/lib/landing";
+import { MESSENGER_CSS, MessengerButtons, QrCard } from "@/components/landing-messengers";
+import { LANDING_BOT_URL, LANDING_MAX_WEB_URL, LANDING_START_PARAM } from "@/lib/landing";
 import { LEGAL_INN } from "@/lib/legal";
 import { feelingFill } from "@/lib/spectrum";
 import type { Feeling } from "@/lib/types";
-import type { MouseEvent, ReactNode } from "react";
+import type { MouseEvent } from "react";
 
 const NOTES: { text: string; feeling: Feeling }[] = [
   { text: "спокойно, выспалась", feeling: "спокойно" },
@@ -77,17 +78,15 @@ const CSS = `
 .bl-kicker{display:flex;align-items:center;gap:.65rem;font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--bl-teal)}
 .bl-kicker i{width:1.15rem;height:1px;background:currentColor;display:block}
 .bl-shift{background:linear-gradient(102deg,#5df0c6 0%,#7ee0d2 32%,#8eb6ff 70%,#c9b4ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.bl-cta{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;height:2.85rem;padding:0 1.15rem;border-radius:999px;background:linear-gradient(100deg,#c8f8c4 0%,#5ee7c5 42%,#7eb6f0 100%);color:#062018;font-weight:600;font-size:.95rem;white-space:nowrap;box-shadow:0 10px 28px -12px rgba(90,200,190,.8),inset 0 1px 0 rgba(255,255,255,.7)}
-.bl-cta:hover{filter:saturate(1.08) brightness(1.04)}
-.bl-cta:active,.bl-ghost:active{transform:scale(.98)}
-.bl-cta-sm{height:2.3rem;padding:0 .95rem;font-size:.84rem}
-.bl-qrcard{display:inline-flex;align-items:center;gap:.7rem;padding:.4rem .85rem .4rem .4rem;border-radius:1.1rem;border:1px solid rgba(94,231,197,.22);background:rgba(94,231,197,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:#c9d4ce;font-size:.78rem;line-height:1.35;text-align:left;white-space:nowrap}
+${MESSENGER_CSS}
+.bl-qrcard{display:inline-flex;align-items:center;gap:.7rem;padding:.4rem .85rem .4rem .4rem;border-radius:1.1rem;border:1px solid rgba(94,231,197,.22);background:rgba(94,231,197,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:#c9d4ce;font-size:.78rem;line-height:1.35;text-align:left;white-space:nowrap;text-decoration:none}
 .bl-qrcard b{display:block;color:#5ee7c5;font-weight:600}
 .bl-qr{display:block;width:5.15rem;height:5.15rem;flex:none;border-radius:.75rem;background:#c8f8c4;padding:.28rem}
 .bl-qr svg{display:block;width:100%;height:100%}
 .bl-ghost{display:inline-flex;align-items:center;justify-content:center;height:2.85rem;padding:0 1.15rem;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#e7eeea;font-weight:500;font-size:.95rem;white-space:nowrap}
 .bl-ghost:hover{background:rgba(255,255,255,.08)}
-.bl-cta:focus-visible,.bl-ghost:focus-visible,.bl-bar a:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(94,231,197,.28)}
+.bl-ghost:active{transform:scale(.98)}
+.bl-ghost:focus-visible,.bl-bar a:focus-visible,.bl-qrcard:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(94,231,197,.28)}
 .bl-meta{display:inline-flex;align-items:center;gap:.4rem;height:2.15rem;padding:0 .85rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#c9d4ce;font-size:.82rem}
 .bl-meta b{color:var(--bl-teal);font-weight:600}
 .bl-phone{position:relative;width:100%;aspect-ratio:642/1266;border-radius:2.15rem;padding:.42rem;background:linear-gradient(165deg,#3a4246,#14191c 40%,#0c1012);box-shadow:0 30px 60px -28px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.14)}
@@ -102,8 +101,7 @@ const CSS = `
 .bl-shot{display:block;width:min(100%,18.5rem);height:auto;margin-inline:auto;border-radius:1.35rem}
 @media (max-width:639px){
   .bl-bar{gap:.55rem;padding-left:.7rem}
-  .bl-cta,.bl-ghost{width:100%}
-  .bl-cta-sm{width:auto;height:2.15rem;padding:0 .75rem;font-size:.78rem}
+  .bl-ghost{width:100%}
   .bl-qrcard{display:none}
   .bl-kicker{letter-spacing:.12em}
   .bl-close{padding-left:1.15rem;padding-right:1.15rem}
@@ -124,36 +122,6 @@ const CSS = `
 }
 `;
 
-const BOT_QR_PATH = "M4 4.5h7m1 0h1m5 0h5m1 0h2m1 0h1m2 0h2m1 0h1m1 0h1m2 0h7M4 5.5h1m5 0h1m1 0h1m1 0h1m1 0h1m5 0h4m5 0h1m2 0h1m1 0h1m1 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m2 0h2m1 0h1m1 0h1m1 0h2m1 0h1m1 0h2m3 0h1m1 0h1m1 0h1m3 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m1 0h1m2 0h1m3 0h1m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h4m1 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m1 0h2m1 0h2m1 0h1m1 0h1m1 0h1m2 0h1m1 0h3m1 0h2m1 0h1m3 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h1m1 0h1m3 0h1m1 0h3m1 0h1m2 0h3m1 0h1m2 0h2m2 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M13 11.5h1m3 0h1m1 0h1m1 0h4m2 0h3m2 0h2m2 0h1M7 12.5h1m2 0h1m3 0h1m2 0h1m1 0h4m1 0h3m3 0h1m1 0h1m1 0h1m1 0h1m2 0h3m1 0h2M4 13.5h4m1 0h1m7 0h2m1 0h2m1 0h1m7 0h3m2 0h1m1 0h1m2 0h4M5 14.5h1m4 0h5m1 0h1m1 0h1m2 0h4m4 0h2m1 0h4m1 0h7M5 15.5h1m2 0h2m3 0h1m3 0h1m2 0h5m3 0h1m3 0h1m4 0h2m3 0h2M6 16.5h1m1 0h1m1 0h3m1 0h1m1 0h3m1 0h3m2 0h4m2 0h3m1 0h1m1 0h1m3 0h1m1 0h2M4 17.5h1m2 0h1m1 0h1m2 0h1m1 0h1m1 0h2m1 0h2m3 0h1m2 0h5m1 0h1m3 0h2m2 0h1M6 18.5h1m3 0h1m1 0h1m5 0h1m4 0h3m1 0h8m1 0h1m1 0h1m1 0h1m3 0h1M4 19.5h3m2 0h1m1 0h1m1 0h2m1 0h1m1 0h1m2 0h3m3 0h4m1 0h2m1 0h1m2 0h1m4 0h1M4 20.5h2m4 0h4m3 0h4m4 0h1m2 0h1m1 0h2m1 0h1m1 0h2m2 0h1m3 0h1M7 21.5h1m4 0h2m5 0h2m4 0h1m1 0h2m3 0h1m1 0h1m3 0h2m4 0h1M4 22.5h1m4 0h2m1 0h1m2 0h2m3 0h2m1 0h1m8 0h1m1 0h1m2 0h1m2 0h2m1 0h2M5 23.5h1m1 0h2m4 0h4m2 0h1m1 0h1m2 0h3m1 0h4m1 0h2m1 0h2m1 0h1m1 0h1m2 0h1M4 24.5h1m1 0h3m1 0h1m2 0h1m7 0h1m1 0h1m1 0h2m4 0h14M5 25.5h4m5 0h1m6 0h1m1 0h5m3 0h2m1 0h1m1 0h2m1 0h1m1 0h4M5 26.5h2m3 0h2m1 0h1m4 0h1m2 0h1m5 0h2m1 0h1m2 0h1m1 0h1m3 0h1m2 0h2M4 27.5h1m2 0h3m1 0h1m1 0h1m2 0h2m3 0h1m7 0h4m4 0h3m2 0h2M5 28.5h3m2 0h3m1 0h2m3 0h1m1 0h1m1 0h3m1 0h1m1 0h1m1 0h3m1 0h4m5 0h1M5 29.5h1m1 0h1m1 0h1m2 0h1m1 0h2m4 0h1m3 0h1m1 0h2m2 0h1m1 0h1m2 0h1m5 0h1m1 0h1M4 30.5h1m1 0h1m1 0h1m1 0h1m2 0h2m2 0h2m3 0h5m1 0h1m7 0h1m1 0h3m2 0h2M6 31.5h1m4 0h1m1 0h3m2 0h1m2 0h1m3 0h1m3 0h5m2 0h1m6 0h2M5 32.5h1m4 0h2m5 0h6m1 0h1m2 0h1m1 0h2m1 0h2m2 0h1m6 0h2M5 33.5h1m1 0h1m1 0h1m2 0h1m1 0h2m1 0h3m1 0h1m2 0h2m1 0h3m1 0h1m3 0h1m3 0h1m2 0h1m1 0h1M4 34.5h1m1 0h6m3 0h2m2 0h1m2 0h2m4 0h2m4 0h3m2 0h3m1 0h2M7 35.5h1m3 0h2m2 0h1m1 0h3m2 0h1m2 0h1m1 0h1m1 0h5m1 0h3m3 0h1M4 36.5h1m2 0h2m1 0h1m2 0h2m2 0h1m1 0h1m1 0h5m1 0h2m3 0h2m1 0h6m1 0h2M12 37.5h1m3 0h1m1 0h8m2 0h2m2 0h1m1 0h1m1 0h1m3 0h2m1 0h2M4 38.5h7m4 0h1m4 0h3m1 0h1m3 0h1m1 0h1m1 0h2m2 0h1m1 0h1m1 0h1m2 0h1M4 39.5h1m5 0h1m2 0h1m3 0h1m2 0h1m5 0h3m3 0h2m1 0h2m3 0h1m1 0h3M4 40.5h1m1 0h3m1 0h1m2 0h2m2 0h1m1 0h1m1 0h2m3 0h1m1 0h1m2 0h2m3 0h6m2 0h1M4 41.5h1m1 0h3m1 0h1m1 0h6m1 0h1m1 0h3m1 0h2m1 0h2m7 0h2m1 0h3M4 42.5h1m1 0h3m1 0h1m2 0h1m1 0h1m1 0h4m4 0h3m2 0h1m2 0h1m1 0h1m4 0h1m1 0h1m1 0h1M4 43.5h1m5 0h1m6 0h2m1 0h1m1 0h2m3 0h5m1 0h7m3 0h1M4 44.5h7m3 0h3m3 0h2m2 0h1m2 0h2m1 0h1m2 0h1m2 0h1m1 0h4m1 0h1";
-
-/** The same link as the buttons, for a phone camera pointed at a desktop screen. */
-function QrCard() {
-  return (
-    <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM} className="bl-qrcard">
-      <span className="bl-qr" aria-hidden>
-        <svg viewBox="0 0 49 49" shapeRendering="crispEdges">
-          <path fill="#c8f8c4" d="M0 0h49v49H0z" />
-          <path stroke="#062018" strokeWidth="1" d={BOT_QR_PATH} />
-        </svg>
-      </span>
-      <span>
-        <b>Наведите камеру</b>
-        откроется в Telegram
-        <br />
-        на телефоне
-      </span>
-    </a>
-  );
-}
-
-function OpenLink({ children, className }: { children: ReactNode; className: string }) {
-  return (
-    <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM} className={className}>
-      {children}
-      <span aria-hidden>→</span>
-    </a>
-  );
-}
 
 function jump(event: MouseEvent<HTMLAnchorElement>, id: string) {
   const root = event.currentTarget.closest(".between-landing");
@@ -203,7 +171,7 @@ function StepShot({ step }: { step: (typeof STEPS)[number] }) {
   );
 }
 
-export function LandingPage() {
+export function LandingPage({ qr }: { qr: string }) {
   return (
     <div className="between-landing fixed inset-0 z-40 hidden overflow-x-hidden overflow-y-auto">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
@@ -225,10 +193,7 @@ export function LandingPage() {
                 Как это работает
               </a>
             </nav>
-            <OpenLink className="bl-cta bl-cta-sm">
-              <span className="min-[380px]:hidden">Открыть</span>
-              <span className="hidden min-[380px]:inline">Открыть в Telegram</span>
-            </OpenLink>
+            <MessengerButtons compact />
           </div>
         </header>
 
@@ -246,18 +211,18 @@ export function LandingPage() {
                 </span>
               </h1>
               <p className="mt-6 max-w-md text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
-                Between — дневник в Telegram, который ведёт себя сам: сам спрашивает, как прошёл день, сам складывает
-                записи в понятную картину. Вам — только отвечать. К следующей сессии всё, что стоит рассказать, уже
-                собрано.
+                Between — дневник в Telegram или MAX, который ведёт себя сам: сам спрашивает, как прошёл день, сам
+                складывает записи в понятную картину. Вам — только отвечать. К следующей сессии всё, что стоит
+                рассказать, уже собрано.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                <OpenLink className="bl-cta">Открыть Between</OpenLink>
+                <MessengerButtons />
                 <a href="#kak" onClick={(event) => jump(event, "kak")} className="bl-ghost">
                   Как это работает
                 </a>
               </div>
               <div className="mt-5 hidden sm:block">
-                <QrCard />
+                <QrCard svg={qr} />
               </div>
               <ul className="mt-6 flex flex-wrap gap-2">
                 {["Без установки приложений", "Старт за минуту", "Записи — только ваши"].map((item) => (
@@ -353,11 +318,11 @@ export function LandingPage() {
               Именно там Between и живёт. Откройте бота и напишите первую запись — она займёт минуту. Дальше он сам.
             </p>
             <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-5">
-              <OpenLink className="bl-cta">Открыть в Telegram</OpenLink>
-              <QrCard />
+              <MessengerButtons />
+              <QrCard svg={qr} />
             </div>
             <p className="mt-4 text-sm" style={{ color: "var(--bl-dim)" }}>
-              Работает везде, где есть Telegram: телефон, планшет, компьютер.
+              Telegram и MAX: телефон, планшет, компьютер. MAX открывается без VPN.
             </p>
           </section>
         </main>
@@ -376,9 +341,15 @@ export function LandingPage() {
               ИНН {LEGAL_INN}
             </p>
           </div>
-          <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM} className="text-sm" style={{ color: "var(--bl-muted)" }}>
-            @BetweenJournalBot
-          </a>
+          <p className="text-sm" style={{ color: "var(--bl-muted)" }}>
+            <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM}>
+              @BetweenJournalBot
+            </a>
+            {" · "}
+            <a href={LANDING_MAX_WEB_URL} data-start={LANDING_START_PARAM}>
+              MAX
+            </a>
+          </p>
         </footer>
       </div>
     </div>
