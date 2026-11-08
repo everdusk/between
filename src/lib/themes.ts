@@ -238,43 +238,45 @@ export function applyVerdict(
     ? state.themes.find((theme) => theme.id === verdict.matchTheme)
     : undefined;
 
-  if (matched && !matched.dismissed) {
+  function attach(theme: SessionTheme): { state: ThemeState; touchedId: string } {
     const links = state.links.some(
-      (link) => link.entryId === entry.id && link.themeId === matched.id,
+      (link) => link.entryId === entry.id && link.themeId === theme.id,
     )
       ? state.links.map((link) =>
-          link.entryId === entry.id ? { ...link, themeId: matched.id, confidence } : link,
+          link.entryId === entry.id ? { ...link, themeId: theme.id, confidence } : link,
         )
       : [
           ...state.links.filter((link) => link.entryId !== entry.id),
-          { entryId: entry.id, themeId: matched.id, confidence },
+          { entryId: entry.id, themeId: theme.id, confidence },
         ];
-    const reopened = matched.status === "discussed";
+    const reopened = theme.status === "discussed";
     const themes = recountAll(
-      state.themes.map((theme) => {
-        if (theme.id !== matched.id) return theme;
+      state.themes.map((item) => {
+        if (item.id !== theme.id) return item;
         const next: SessionTheme = {
-          ...withoutCheck(theme),
+          ...withoutCheck(item),
           status: "active",
-          reopened: theme.reopened || reopened,
-          lastSeen: entry.date > theme.lastSeen ? entry.date : theme.lastSeen,
-          firstSeen: entry.date < theme.firstSeen ? entry.date : theme.firstSeen,
-          peakIntensity: Math.max(theme.peakIntensity, intensity),
-          confidence: Math.max(theme.confidence, confidence),
-          quotes: upsertQuote(theme, quote),
+          reopened: item.reopened || reopened,
+          lastSeen: entry.date > item.lastSeen ? entry.date : item.lastSeen,
+          firstSeen: entry.date < item.firstSeen ? entry.date : item.firstSeen,
+          peakIntensity: Math.max(item.peakIntensity, intensity),
+          confidence: Math.max(item.confidence, confidence),
+          quotes: upsertQuote(item, quote),
           updatedAt: now,
         };
-        if (feeling && intensity >= theme.peakIntensity) next.peakFeeling = feeling;
+        if (feeling && intensity >= item.peakIntensity) next.peakFeeling = feeling;
         return next;
       }),
       links,
     );
-    return { state: { themes, links }, touchedId: matched.id };
+    return { state: { themes, links }, touchedId: theme.id };
   }
 
   if (matched?.dismissed) {
     return { state, touchedId: null };
   }
+
+  if (matched) return attach(matched);
 
   const named = verdict.newTheme?.replace(/\s+/g, " ").trim() ?? "";
   const title = named || (relevant && charged ? fallbackTitle(entry.body) : "");
@@ -287,6 +289,11 @@ export function applyVerdict(
     !state.themes.some((theme) => theme.dismissed && sameProblemTitle(theme.title, title));
 
   if (!canCreate) return { state, touchedId: null };
+
+  const sameTitle = state.themes.find(
+    (theme) => !theme.dismissed && fold(theme.title) === fold(title),
+  );
+  if (sameTitle) return attach(sameTitle);
 
   const id = createId();
   const links = [
@@ -382,7 +389,7 @@ export function dedupTouched(
   let focus = touchedId;
   for (let pass = 0; pass < 2 && focus; pass += 1) {
     const theme = current.themes.find((item) => item.id === focus && item.status === "active" && !item.dismissed);
-    if (!theme) break;
+    if (!theme || theme.manual) break;
     const others = current.themes.filter(
       (item) => item.id !== theme.id && item.status === "active" && !item.dismissed,
     );
@@ -487,11 +494,7 @@ export function addManualTheme(
   now = new Date().toISOString(),
 ): SessionTheme[] {
   const clean = title.replace(/\s+/g, " ").trim().slice(0, 80);
-  if (clean.length < 2) return themes;
-  // A typed line is a duplicate only when the title is the same. "тест" must not swallow "тест1".
-  if (themes.some((theme) => !theme.dismissed && fold(theme.title) === fold(clean))) {
-    return themes;
-  }
+  if (!clean) return themes;
   return [
     ...themes,
     {
