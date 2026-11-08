@@ -43,8 +43,8 @@ export function Switch({ label, description, className, disabled, ...props }: Sw
         <span
           aria-hidden
           className={cn(
-            "pointer-events-none absolute start-1 size-5 rounded-full bg-card shadow-[0_2px_6px_-1px_oklch(0_0_0_/_0.25)] transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
-            "peer-checked:translate-x-5 rtl:peer-checked:-translate-x-5",
+            "pointer-events-none absolute start-1 size-5 rounded-full bg-foreground shadow-[0_2px_6px_-1px_oklch(0_0_0_/_0.25)] transition-[transform,background-color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+            "peer-checked:translate-x-5 peer-checked:bg-primary-foreground rtl:peer-checked:-translate-x-5",
           )}
         />
       </span>
