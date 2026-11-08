@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect } from "react";
+import Link from "next/link";
 import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import "@/app/journal/theme.css";
@@ -29,15 +30,15 @@ function LegalArticle({ kind }: { kind: LegalKind }) {
     <article className="fixed inset-0 z-20 overflow-y-auto bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-2xl flex-col px-5 pt-8 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <header className="flex items-center justify-between gap-4">
-          <a href="/" className="font-display text-lg text-foreground">
+          <Link href="/" className="font-display text-lg text-foreground">
             Between
-          </a>
+          </Link>
           <LanguageSwitch />
         </header>
         <p className="mt-8 text-sm">
-          <a href={otherHref} className="underline underline-offset-4">
+          <Link href={otherHref} className="underline underline-offset-4">
             {otherLabel}
-          </a>
+          </Link>
         </p>
         {doc.preface?.map((line) => (
           <p key={line} className="mt-6 text-sm leading-relaxed text-muted-foreground">

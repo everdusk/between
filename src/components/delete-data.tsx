@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -108,9 +109,9 @@ function DeletePage() {
     <article className="fixed inset-0 z-20 overflow-y-auto bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-lg flex-col px-5 pt-8 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <header className="flex items-center justify-between gap-4">
-          <a href="/" className="font-display text-lg text-foreground">
+          <Link href="/" className="font-display text-lg text-foreground">
             Between
-          </a>
+          </Link>
           <LanguageSwitch />
         </header>
         <section className="glass mt-8 rounded-[22px] px-5 py-6 sm:px-6">
@@ -125,18 +126,18 @@ function DeletePage() {
             <>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{t("deleteSignedOut")}</p>
               <p className="mt-5 text-center text-sm">
-                <a href="/journal" className="text-muted-foreground underline-offset-4 hover:underline">
+                <Link href="/journal" className="text-muted-foreground underline-offset-4 hover:underline">
                   {t("webBackToEnter")}
-                </a>
+                </Link>
               </p>
             </>
           ) : phase === "gone" ? (
             <>
               <p className="mt-2 text-sm leading-relaxed text-foreground">{t("deleteDone")}</p>
               <p className="mt-5 text-center text-sm">
-                <a href="/" className={buttonVariants({ variant: "link" })}>
+                <Link href="/" className={buttonVariants({ variant: "link" })}>
                   {t("deleteHome")}
-                </a>
+                </Link>
               </p>
             </>
           ) : (

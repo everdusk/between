@@ -63,6 +63,7 @@ export function LocaleProvider({
 
   useLayoutEffect(() => {
     if (lockLocale) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the locked language is applied before paint
       setLocaleState(lockLocale);
       setChosen(lockLocale);
       setDeviceLocale(lockLocale);
@@ -81,7 +82,6 @@ export function LocaleProvider({
       next = localeFromTelegram(telegramLanguage) ?? "ru";
     }
     // Stored choice and the device language are known only on the client.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- apply before paint so the first frame matches the saved language
     setLocaleState(next);
     setChosen(explicit);
     setDeviceLocale(device);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { CalendarDays, PenLine, Waves } from "lucide-react";
 import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
@@ -61,12 +61,14 @@ export function TherapyApp() {
 }
 
 function useInMax(): boolean {
-  const [inside, setInside] = useState(false);
-  useLayoutEffect(() => {
-    const insideMax = inMaxClient();
-    setInside(insideMax);
-    if (insideMax) signalMaxReady();
-  }, []);
+  const inside = useSyncExternalStore(
+    () => () => {},
+    () => inMaxClient(),
+    () => false,
+  );
+  useEffect(() => {
+    if (inside) signalMaxReady();
+  }, [inside]);
   return inside;
 }
 
@@ -90,15 +92,13 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   const pathname = usePathname();
   const webEntry = pathname === "/journal" || pathname.startsWith("/journal/");
   const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
-  const [maxReady, setMaxReady] = useState(false);
   // null while MAX may still hand over the launch string. "" means it never arrived.
   const [maxLaunch, setMaxLaunch] = useState<string | null>(null);
+  const waitingForMax = inMax && webEntry && !telegram.inTelegram;
+  const maxReady = !waitingForMax || maxLaunch !== null;
   const signIn = web.setAccount;
   useEffect(() => {
-    if (!inMax || !webEntry || telegram.inTelegram) {
-      setMaxReady(true);
-      return;
-    }
+    if (!waitingForMax) return;
     let cancelled = false;
     void (async () => {
       const early = earlyMaxLogin();
@@ -125,12 +125,11 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
       }
       if (cancelled) return;
       if (account) signIn(account);
-      setMaxReady(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, [inMax, webEntry, telegram.inTelegram, signIn]);
+  }, [waitingForMax, signIn]);
   const {
     store,
     status,
@@ -177,11 +176,20 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   }, [section]);
   const [premium, setPremium] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-
-  useEffect(() => {
-    if (window.location.hash !== "#password" || !web.account) return;
-    setAccountOpen(true);
-  }, [web.account]);
+  const [passwordSeen, setPasswordSeen] = useState(false);
+  const passwordHash = useSyncExternalStore(
+    (onStoreChange) => {
+      window.addEventListener("hashchange", onStoreChange);
+      return () => window.removeEventListener("hashchange", onStoreChange);
+    },
+    () => window.location.hash === "#password",
+    () => false,
+  );
+  const showAccount = accountOpen || (passwordHash && Boolean(web.account) && !passwordSeen);
+  function closeAccount() {
+    setAccountOpen(false);
+    setPasswordSeen(true);
+  }
   const [accessNonce, setAccessNonce] = useState(0);
 
   useEffect(() => {
@@ -263,7 +271,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
       <LanguageSwitch />
     </>
   ) : webSurface && !inMax && !web.account ? null : (
-    <AccountButton solid={webSurface} pressed={accountOpen} onClick={() => setAccountOpen(true)} />
+    <AccountButton solid={webSurface} pressed={showAccount} onClick={() => setAccountOpen(true)} />
   );
 
   const footer = (
@@ -474,8 +482,8 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
       </div>
       </div>
       <AccountSheet
-        open={accountOpen}
-        onClose={() => setAccountOpen(false)}
+        open={showAccount}
+        onClose={closeAccount}
         inTelegram={telegram.inTelegram}
         inMax={inMax}
         initData={telegram.initData}
@@ -488,7 +496,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
         onLogout={() => {
           clearStore(WEB_STORAGE_KEY);
           web.setAccount(null);
-          setAccountOpen(false);
+          closeAccount();
         }}
         onPremium={() => setAccessNonce((value) => value + 1)}
       />
