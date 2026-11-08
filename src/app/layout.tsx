@@ -29,7 +29,7 @@ const unbounded = Unbounded({
 });
 
 /** `/journal` is the browser app. The boot script only looks at the Telegram hash, so this runs before Metrika. */
-const JOURNAL_SURFACE_SCRIPT = `try{var p=location.pathname||"";if(p.length>1&&p.charAt(p.length-1)==="/")p=p.slice(0,-1);var quiet=p==="/terms"||p==="/privacy"||p==="/reset"||p==="/delete";var journal=p==="/journal"||p.indexOf("/journal/")===0;if(quiet||journal){document.documentElement.setAttribute("data-between","app");document.documentElement.setAttribute("data-journal","web");var scheme="night";if(journal){try{var saved=localStorage.getItem("between:scheme");if(saved==="day"||saved==="night")scheme=saved;}catch(e){}}document.documentElement.setAttribute("data-scheme",scheme);if(quiet)document.documentElement.removeAttribute("data-splash");var s=document.getElementById("between-surface");if(s)s.textContent=quiet?${JSON.stringify(LEGAL_SURFACE_CSS)}:${JSON.stringify(APP_SURFACE_CSS)};}}catch(e){}`;
+const JOURNAL_SURFACE_SCRIPT = `try{var p=location.pathname||"";if(p.length>1&&p.charAt(p.length-1)==="/")p=p.slice(0,-1);var quiet=p==="/terms"||p==="/privacy"||p==="/reset"||p==="/delete"||p==="/open";var journal=p==="/journal"||p.indexOf("/journal/")===0;if(quiet||journal){document.documentElement.setAttribute("data-between","app");document.documentElement.setAttribute("data-journal","web");var scheme="night";if(journal){try{var saved=localStorage.getItem("between:scheme");if(saved==="day"||saved==="night")scheme=saved;}catch(e){}}document.documentElement.setAttribute("data-scheme",scheme);if(quiet)document.documentElement.removeAttribute("data-splash");var s=document.getElementById("between-surface");if(s)s.textContent=quiet?${JSON.stringify(LEGAL_SURFACE_CSS)}:${JSON.stringify(APP_SURFACE_CSS)};}}catch(e){}`;
 
 export const metadata: Metadata = landingMetadata;
 
@@ -57,7 +57,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <style id="between-surface" dangerouslySetInnerHTML={{ __html: WEB_SURFACE_CSS }} />
+        <style id="between-surface" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: WEB_SURFACE_CSS }} />
         <style dangerouslySetInnerHTML={{ __html: SPLASH_COVER_CSS }} />
         <script dangerouslySetInnerHTML={{ __html: LAUNCH_THEME_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: MAX_LAUNCH_BOOT_SCRIPT }} />
