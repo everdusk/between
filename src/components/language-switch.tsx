@@ -6,7 +6,7 @@ import { useI18n } from "@/components/locale-provider";
 import { LOCALES, type LocaleId } from "@/lib/i18n";
 import { telegramSelection } from "@/lib/telegram";
 
-export function LanguageSwitch() {
+export function LanguageSwitch({ inline = false }: { inline?: boolean }) {
   const { t, locale, setLocale } = useI18n();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -65,7 +65,11 @@ export function LanguageSwitch() {
           id={listId}
           role="listbox"
           aria-label={t("language")}
-          className="glass-strong absolute end-0 top-full z-20 mt-1.5 max-h-[min(18rem,calc(var(--vv-height,100dvh)-7.5rem))] w-max min-w-full overflow-y-auto overscroll-contain rounded-2xl p-1"
+          className={
+            inline
+              ? "glass-strong mt-2 max-h-60 w-full overflow-y-auto overscroll-contain rounded-2xl p-1"
+              : "glass-strong absolute end-0 top-full z-20 mt-1.5 max-h-[min(18rem,calc(var(--vv-height,100dvh)-7.5rem))] w-max min-w-full overflow-y-auto overscroll-contain rounded-2xl p-1"
+          }
         >
           {LOCALES.map((item) => {
             const selected = item.id === locale;

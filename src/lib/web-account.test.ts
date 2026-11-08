@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { passwordSettingsKind } from "./password-settings";
 import {
   journalStorageId,
   linkCodeFromStart,
@@ -24,6 +25,33 @@ describe("web account", () => {
   it("asks for a password of at least 8 characters", () => {
     assert.equal(passwordProblem("short"), "short");
     assert.equal(passwordProblem("long-enough"), null);
+  });
+
+  it("offers a password change only for an email journal opened on the site", () => {
+    const mail = {
+      inTelegram: false,
+      inMax: false,
+      signedIn: true,
+      hasPassword: true,
+      telegramLinked: true,
+      maxLinked: false,
+    };
+    assert.equal(passwordSettingsKind(mail), "form");
+    assert.equal(passwordSettingsKind({ ...mail, inTelegram: true }), "telegram");
+    assert.equal(passwordSettingsKind({ ...mail, inMax: true, hasPassword: true }), "max");
+    assert.equal(
+      passwordSettingsKind({ ...mail, hasPassword: false, telegramLinked: false, maxLinked: true }),
+      "max",
+    );
+    assert.equal(
+      passwordSettingsKind({ ...mail, hasPassword: false, telegramLinked: true, maxLinked: true }),
+      "messenger",
+    );
+    assert.equal(
+      passwordSettingsKind({ ...mail, hasPassword: false, telegramLinked: false, maxLinked: false }),
+      "none",
+    );
+    assert.equal(passwordSettingsKind({ ...mail, signedIn: false, hasPassword: false }), "hidden");
   });
 
   it("checks the password without keeping it", async () => {

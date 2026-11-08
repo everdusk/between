@@ -6,12 +6,11 @@ import { CalendarDays, PenLine, Waves } from "lucide-react";
 import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
 import { JournalPanel } from "@/components/journal-panel";
 import { JournalSkeleton } from "@/components/journal-skeleton";
-import { LanguageSwitch } from "@/components/language-switch";
+import { AccountButton, AccountSheet } from "@/components/account-sheet";
 import { LegalLinks } from "@/components/legal-links";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
-import { SchemeSwitch } from "@/components/scheme-switch";
+import { paintPickedScheme, readScheme, schemeWasPicked } from "@/components/scheme-switch";
 import { SessionsPanel } from "@/components/sessions-panel";
-import { WebAccountCard } from "@/components/web-account-card";
 import { WebAccountGate } from "@/components/web-account-gate";
 import { WeekTab } from "@/components/week-tab";
 import { WeeklyPanel } from "@/components/weekly-panel";
@@ -22,7 +21,7 @@ import { useTherapyStore } from "@/hooks/use-therapy-store";
 import { useWebAccount } from "@/hooks/use-web-account";
 import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
-import { markSplashReady } from "@/lib/splash";
+import { markSplashReady, SPLASH_READY_EVENT } from "@/lib/splash";
 import { earlyMaxLogin, inMaxClient, readMaxInitData, signalMaxReady, waitForMaxInitData } from "@/lib/max-webapp";
 import { clearStore, WEB_STORAGE_KEY } from "@/lib/storage";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
@@ -53,7 +52,7 @@ export function TherapyApp() {
     <LocaleProvider
       telegramLanguage={telegram.user?.language_code}
       initData={telegram.inTelegram ? telegram.initData : ""}
-      lockLocale={inMax ? "ru" : null}
+      lockLocale={null}
     >
       <TherapyShell telegram={telegram} inMax={inMax} />
     </LocaleProvider>
@@ -176,6 +175,27 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     el.scrollTop = scrollTops.current[section] ?? 0;
   }, [section]);
   const [premium, setPremium] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+
+  useEffect(() => {
+    if (window.location.hash === "#password") setAccountOpen(true);
+  }, []);
+  const [accessNonce, setAccessNonce] = useState(0);
+
+  useEffect(() => {
+    if (!telegram.inTelegram) return;
+    const apply = () => {
+      if (!schemeWasPicked()) return;
+      paintPickedScheme(readScheme());
+    };
+    apply();
+    window.addEventListener("between-scheme", apply);
+    window.addEventListener(SPLASH_READY_EVENT, apply);
+    return () => {
+      window.removeEventListener("between-scheme", apply);
+      window.removeEventListener(SPLASH_READY_EVENT, apply);
+    };
+  }, [telegram.inTelegram, telegram.ready, telegram.colorScheme]);
 
   useEffect(() => {
     if (!telegram.ready || !telegram.inTelegram || !telegram.initData) return;
@@ -234,18 +254,6 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     : translate(greetingLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
 
   const webSurface = webEntry && !telegram.inTelegram;
-  const accountCard = () =>
-    web.account ? (
-      <WebAccountCard
-        account={web.account}
-        onRefresh={() => void web.refresh()}
-        onLogout={() => {
-          clearStore(WEB_STORAGE_KEY);
-          web.setAccount(null);
-        }}
-      />
-    ) : null;
-  const botLinked = Boolean(web.account?.telegramLinked || web.account?.maxLinked);
 
   const footer = (
     <footer className="py-8 text-center text-[0.6875rem] leading-relaxed tracking-wide text-muted-foreground/80">
@@ -291,8 +299,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
               {webSurface ? null : <p className="mt-2 truncate text-xs text-subtitle">{greeting}</p>}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {inMax ? null : <LanguageSwitch />}
-              <SchemeSwitch />
+              <AccountButton pressed={accountOpen} onClick={() => setAccountOpen(true)} />
             </div>
           </div>
           <div className="journal-side-scroll">
@@ -316,7 +323,6 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                 })}
               </nav>
             ) : null}
-            {accountCard() && !botLinked ? <div className="journal-side-account">{accountCard()}</div> : null}
           </div>
         </aside>
       ) : null}
@@ -345,8 +351,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                 localhost
               </span>
             )}
-            {inMax ? null : <LanguageSwitch />}
-            {webSurface ? <SchemeSwitch /> : null}
+            <AccountButton pressed={accountOpen} onClick={() => setAccountOpen(true)} />
           </div>
         </div>
       </header>
@@ -364,9 +369,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
               ref={scrollerRef}
               className="journal-scroll pt-3 pr-[max(1rem,var(--safe-right))] pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]"
             >
-            {accountCard() && !botLinked ? (
-              <div className="journal-account-inline mb-4">{accountCard()}</div>
-            ) : null}
+            <div className="journal-scroll-inner">
             {accountPending || status === "loading" ? (
               <JournalSkeleton />
             ) : status === "error" ? (
@@ -399,6 +402,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                   ready={telegram.ready}
                   inTelegram={telegram.inTelegram}
                   initData={telegram.initData}
+                  reloadToken={accessNonce}
                   onAccess={onWeekAccess}
                 >
                   <WeeklyPanel
@@ -436,9 +440,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
             </div>
             )}
             {status === "ready" && !accountPending ? footer : null}
-            {section === "sessions" && botLinked ? (
-              <div className="pb-6">{accountCard()}</div>
-            ) : null}
+            </div>
             </div>
 
             <div className="journal-dock z-30 flex shrink-0 justify-center pt-2 pr-[max(1rem,var(--safe-right))] pb-[max(1.25rem,var(--safe-bottom))] pl-[max(1rem,var(--safe-left))]">
@@ -462,6 +464,24 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
         )}
       </div>
       </div>
+      <AccountSheet
+        open={accountOpen}
+        onClose={() => setAccountOpen(false)}
+        inTelegram={telegram.inTelegram}
+        inMax={inMax}
+        initData={telegram.initData}
+        notify={store.notify}
+        onSaveNotify={saveNotify}
+        disabled={disabled}
+        account={web.account}
+        onRefreshAccount={() => void web.refresh()}
+        onLogout={() => {
+          clearStore(WEB_STORAGE_KEY);
+          web.setAccount(null);
+          setAccountOpen(false);
+        }}
+        onPremium={() => setAccessNonce((value) => value + 1)}
+      />
       <BotChatSheet />
     </div>
     </BotChatPermission>

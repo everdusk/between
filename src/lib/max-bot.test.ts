@@ -46,6 +46,8 @@ describe("MAX bot", () => {
     assert.equal(toPublicAccount({ ...base, maxUserId: null }).maxLinked, false);
     assert.equal(toPublicAccount({ ...base, maxUserId: 7 }).maxLinked, true);
     assert.equal(toPublicAccount({ ...base, maxUserId: null }).telegramLinked, false);
+    assert.equal(toPublicAccount({ ...base, maxUserId: null }).hasPassword, true);
+    assert.equal(toPublicAccount({ ...base, salt: "", hash: "", maxUserId: 7 }).hasPassword, false);
   });
 
   it("keeps a MAX user off the numeric Telegram journal key", () => {

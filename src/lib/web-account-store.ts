@@ -51,6 +51,7 @@ export type PublicAccount = {
   email: string;
   telegramLinked: boolean;
   maxLinked: boolean;
+  hasPassword: boolean;
   providers: OauthProvider[];
 };
 
@@ -131,6 +132,7 @@ export function toPublicAccount(account: AccountRecord): PublicAccount {
     email: account.email,
     telegramLinked: account.telegramUserId != null,
     maxLinked: account.maxUserId != null,
+    hasPassword: account.salt.length > 0 && account.hash.length > 0,
     providers: (["vk", "yandex", "sber"] as const).filter((key) => Boolean(account.providers[key])),
   };
 }
@@ -446,6 +448,25 @@ export async function completeReset(token: string, password: string): Promise<Ac
   await redis.set(accountKey(account.id), account);
   await redis.del(resetTokenKey(tokenHash));
   if (account.email) await redis.del(resetActiveKey(account.email));
+  return account;
+}
+
+/** Replaces the password after the current one matches. A messenger journal has no password to change. */
+export async function changeAccountPassword(
+  accountId: string,
+  current: string,
+  next: string,
+): Promise<AccountRecord | "bad" | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  const account = await loadAccount(accountId);
+  if (!account || account.salt.length === 0 || account.hash.length === 0) return "bad";
+  const ok = await passwordMatches(current, account.salt, account.hash);
+  if (!ok) return "bad";
+  const passwordRecord = await hashPassword(next);
+  account.salt = passwordRecord.salt;
+  account.hash = passwordRecord.hash;
+  await redis.set(accountKey(account.id), account);
   return account;
 }
 

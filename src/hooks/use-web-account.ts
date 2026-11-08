@@ -7,6 +7,7 @@ export type WebAccount = {
   email: string;
   telegramLinked: boolean;
   maxLinked?: boolean;
+  hasPassword?: boolean;
   providers?: ("vk" | "yandex" | "sber")[];
 };
 

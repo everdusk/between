@@ -561,6 +561,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
                 onChange={setPassword}
                 autoComplete="new-password"
                 showRules
+                reveal
               />
               <PasswordField
                 id="web-register-password-again"
@@ -568,6 +569,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
                 value={passwordAgain}
                 onChange={setPasswordAgain}
                 autoComplete="new-password"
+                reveal
               />
               {passwordAgain.length > 0 && passwordAgain !== password ? (
                 <p className="text-sm text-destructive" role="status">
