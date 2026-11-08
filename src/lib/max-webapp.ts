@@ -1,5 +1,15 @@
-/** Copies `WebAppData` before the app starts. A later navigation must not lose it. */
-export const MAX_LAUNCH_BOOT_SCRIPT = `try{var h=location.hash.replace(/^#/,"");if(!h){var n=performance.getEntriesByType("navigation")[0];h=n?new URL(n.name).hash.replace(/^#/,""):"";}if(h){var d=new URLSearchParams(h).get("WebAppData");if(d)sessionStorage.setItem("WebAppData",d);}}catch(e){}`;
+/** Copies `WebAppData` and tells MAX the page is up before the 15s error screen. */
+export const MAX_LAUNCH_BOOT_SCRIPT = `try{var h=location.hash.replace(/^#/,"");var params=h?new URLSearchParams(h):null;var data=params&&params.get("WebAppData");if(data)sessionStorage.setItem("WebAppData",data);var ref="";try{ref=document.referrer||""}catch(e){}if((data||(params&&params.get("WebAppPlatform"))||/max\\.ru|oneme\\.ru/i.test(ref))&&parent!==window)parent.postMessage(JSON.stringify({type:"WebAppReady"}),"*");}catch(e){}`;
+
+/** MAX replaces the mini app with an error screen unless it hears this within 15s. */
+export function signalMaxReady(): void {
+  if (typeof window === "undefined" || window.parent === window) return;
+  try {
+    window.parent.postMessage(JSON.stringify({ type: "WebAppReady" }), "*");
+  } catch {
+    /* the frame cannot reach MAX */
+  }
+}
 
 /** MAX fills the launch string a moment after the page opens. */
 export function waitForMaxInitData(timeoutMs = 1200): Promise<string | null> {

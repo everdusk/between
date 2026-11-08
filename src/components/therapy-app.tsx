@@ -23,7 +23,7 @@ import { useWebAccount } from "@/hooks/use-web-account";
 import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { markSplashReady } from "@/lib/splash";
-import { inMaxClient, waitForMaxInitData } from "@/lib/max-webapp";
+import { inMaxClient, signalMaxReady, waitForMaxInitData } from "@/lib/max-webapp";
 import { clearStore, WEB_STORAGE_KEY } from "@/lib/storage";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
 import { trackAnalytics } from "@/lib/analytics-client";
@@ -63,7 +63,9 @@ export function TherapyApp() {
 function useInMax(): boolean {
   const [inside, setInside] = useState(false);
   useLayoutEffect(() => {
-    setInside(inMaxClient());
+    const insideMax = inMaxClient();
+    setInside(insideMax);
+    if (insideMax) signalMaxReady();
   }, []);
   return inside;
 }
