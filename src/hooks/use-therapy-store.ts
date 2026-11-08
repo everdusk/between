@@ -270,7 +270,7 @@ export function useTherapyStore(options?: {
         const others = state.themes.filter(
           (item) => item.id !== focus && item.status === "active" && !item.dismissed,
         );
-        if (!theme || others.length === 0) break;
+        if (!theme || theme.manual || others.length === 0) break;
         const dedup = await requestBrief(
           initData,
           dedupFacts(theme, others),

@@ -512,14 +512,54 @@ describe("session brief", () => {
     assert.equal(brief.themes[0]?.mark, "returned");
   });
 
-  it("does not add a second copy of a theme typed by hand", () => {
+  it("keeps every line typed by hand, including a repeat", () => {
     const once = addManualTheme([], "про дедлайн", "2026-10-27");
     const twice = addManualTheme(once, "про дедлайн", "2026-10-27");
-    assert.equal(twice.length, 1);
+    assert.equal(twice.length, 2);
+    assert.equal(twice[0]?.title, "про дедлайн");
+    assert.equal(twice[1]?.title, "про дедлайн");
+    assert.equal(twice[1]?.manual, true);
     const next = addManualTheme(once, "тест1", "2026-10-27");
     assert.equal(next.length, 2);
     assert.equal(next[1]?.title, "тест1");
-    assert.equal(addManualTheme(addManualTheme([], "тест", "2026-10-27"), "Тест", "2026-10-27").length, 1);
+    assert.equal(addManualTheme(addManualTheme([], "тест", "2026-10-27"), "Тест", "2026-10-27").length, 2);
+    assert.equal(addManualTheme(once, "   ", "2026-10-27").length, 1);
+  });
+
+  it("folds an automatic repeat into the open theme and still opens a different title", () => {
+    const open = addManualTheme([], "тест", "2026-10-20");
+    const again = applyVerdict(
+      { themes: open, links: [] },
+      entry("e10", "Опять тест, и это уже не первая такая запись за неделю.", ["тревожно"]),
+      verdict({ newTheme: "тест", quote: "Опять тест" }),
+    );
+    assert.equal(again.state.themes.length, 1);
+    assert.equal(again.state.themes[0]?.title, "тест");
+    const other = applyVerdict(
+      { themes: open, links: [] },
+      entry("e11", "Это уже тест1, другая строка, которую нельзя склеить.", ["тревожно"]),
+      verdict({ newTheme: "тест1", quote: "Это уже тест1" }),
+    );
+    assert.equal(other.state.themes.length, 2);
+    assert.equal(other.state.themes.map((theme) => theme.title).sort().join("|"), "тест|тест1");
+  });
+
+  it("does not fold a handwritten line into another theme", () => {
+    const handwritten = addManualTheme([], "тест", "2026-10-20")[0];
+    const auto: SessionTheme = {
+      ...handwritten,
+      id: "auto",
+      title: "тест",
+      manual: false,
+    };
+    const next = settleEntry(
+      { themes: [auto, handwritten], links: [] },
+      entry("e12", "Снова тест в заметке, и строка достаточно длинная.", ["злость"]),
+      verdict({ matchTheme: handwritten.id, quote: "Снова тест" }),
+      () => ({ themeId: "auto", confidence: 0.95, title: "тест" }),
+    );
+    assert.equal(next.themes.length, 2);
+    assert.ok(next.themes.some((theme) => theme.id === handwritten.id && theme.manual));
   });
 
   it("skips formulate when the theme stamp and the saved text are unchanged", () => {
