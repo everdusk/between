@@ -176,6 +176,10 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   }, [section]);
   const [premium, setPremium] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+
+  useEffect(() => {
+    if (window.location.hash === "#password") setAccountOpen(true);
+  }, []);
   const [accessNonce, setAccessNonce] = useState(0);
 
   useEffect(() => {

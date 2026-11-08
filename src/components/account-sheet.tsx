@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
 import { CircleUser, Star, X } from "lucide-react";
 import { LanguageSwitch } from "@/components/language-switch";
+import { PasswordChange } from "@/components/password-change";
 import { SchemeSwitch } from "@/components/scheme-switch";
 import { WebAccountCard } from "@/components/web-account-card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import type { WebAccount } from "@/hooks/use-web-account";
 import { trackAnalytics } from "@/lib/analytics-client";
 import { captureProduct } from "@/lib/product-analytics";
 import { formatPremiumStatus } from "@/lib/messages";
+import { passwordSettingsKind } from "@/lib/password-settings";
 import type { NotifyPrefs } from "@/lib/types";
 import {
   createWeekInvoice,
@@ -240,6 +242,12 @@ export function AccountSheet({
             )}
           </section>
 
+          <PasswordSettings
+            inTelegram={inTelegram}
+            inMax={inMax}
+            account={account}
+          />
+
           <section className="space-y-3">
             <h3 className="font-display text-lg tracking-tight text-foreground">{t("premiumMark")}</h3>
             <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{premiumText}</p>
@@ -277,6 +285,48 @@ export function AccountSheet({
         </div>
       </section>
     </div>
+  );
+}
+
+function PasswordSettings({
+  inTelegram,
+  inMax,
+  account,
+}: {
+  inTelegram: boolean;
+  inMax: boolean;
+  account: WebAccount | null;
+}) {
+  const { t } = useI18n();
+  const kind = passwordSettingsKind({
+    inTelegram,
+    inMax,
+    signedIn: account != null,
+    hasPassword: account?.hasPassword === true,
+    telegramLinked: account?.telegramLinked === true,
+    maxLinked: account?.maxLinked === true,
+  });
+  useEffect(() => {
+    if (window.location.hash !== "#password") return;
+    document.getElementById("password")?.scrollIntoView({ block: "center" });
+  }, []);
+
+  if (kind === "hidden") return null;
+  const note =
+    kind === "telegram"
+      ? t("webSignedInTelegram")
+      : kind === "max"
+        ? t("webSignedInMax")
+        : kind === "messenger"
+          ? t("webSignedInMessenger")
+          : kind === "none"
+            ? t("webNoPassword")
+            : null;
+  return (
+    <section id="password" className="space-y-3">
+      <h3 className="font-display text-lg tracking-tight text-foreground">{t("webPasswordSection")}</h3>
+      {kind === "form" ? <PasswordChange /> : <p className="text-sm leading-relaxed text-foreground">{note}</p>}
+    </section>
   );
 }
 
