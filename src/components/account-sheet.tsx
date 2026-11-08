@@ -30,9 +30,12 @@ const PLANS = ["month", "quarter", "year"] as const satisfies readonly PremiumPl
 export function AccountButton({
   pressed,
   onClick,
+  solid = false,
 }: {
   pressed: boolean;
   onClick: () => void;
+  /** Site and MAX sit on a dark glass page. A ghost circle disappears there. */
+  solid?: boolean;
 }) {
   const { t } = useI18n();
   return (
@@ -43,6 +46,7 @@ export function AccountButton({
       aria-label={t("accountOpen")}
       aria-expanded={pressed}
       aria-haspopup="dialog"
+      className={solid ? "!border-[color:var(--glass-border)] !bg-popover text-foreground" : undefined}
       onClick={onClick}
     >
       <CircleUser aria-hidden />
@@ -165,6 +169,9 @@ export function AccountSheet({
   if (!open) return null;
 
   const premiumText = access ? formatPremiumStatus(locale, access) : t("loading");
+  // The site and MAX paint glass at 14% white, and the MAX webview drops the blur,
+  // so the journal reads through the settings. The sheet itself stays a solid panel.
+  const solidSheet = inMax || !inTelegram;
 
   return (
     <div
@@ -175,7 +182,11 @@ export function AccountSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="glass-strong max-h-[min(40rem,calc(var(--vv-height,100dvh)-2.5rem))] w-full max-w-lg overflow-y-auto overscroll-contain rounded-3xl p-5 sm:p-6"
+        className={`max-h-[min(40rem,calc(var(--vv-height,100dvh)-2.5rem))] w-full max-w-lg overflow-y-auto overscroll-contain rounded-3xl p-5 sm:p-6 ${
+          solidSheet
+            ? "border border-[color:var(--glass-border)] bg-popover text-foreground shadow-[0_30px_60px_-36px_rgba(0,0,0,0.55)]"
+            : "glass-strong"
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3">
