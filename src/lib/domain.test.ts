@@ -44,6 +44,7 @@ import {
   performanceClassFromUserAgent,
   readVisualViewport,
   resetDeviceSafeBottom,
+  isTelegramLaunchHash,
   schemeFromColor,
   telegramChromeColor,
 } from "./telegram";
@@ -995,6 +996,14 @@ describe("telegram theme", () => {
     assert.equal(telegramChromeColor(undefined, "bg_color"), "bg_color");
     assert.equal(telegramChromeColor("red", "secondary_bg_color"), "secondary_bg_color");
     assert.equal(telegramChromeColor("#abc", "bottom_bar_bg_color"), "bottom_bar_bg_color");
+  });
+
+  it("treats a Telegram launch hash as Telegram and a MAX hash as something else", () => {
+    assert.equal(isTelegramLaunchHash("#tgWebAppData=user%3D1"), true);
+    assert.equal(isTelegramLaunchHash("#tgWebAppVersion=8.0"), true);
+    assert.equal(isTelegramLaunchHash("#tgWebAppPlatform=ios"), true);
+    assert.equal(isTelegramLaunchHash("#WebAppData=signed&WebAppPlatform=android"), false);
+    assert.equal(isTelegramLaunchHash(""), false);
   });
 
   it("reads the Android performance class and ignores other clients", () => {

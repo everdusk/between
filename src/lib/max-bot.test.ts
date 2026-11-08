@@ -221,4 +221,43 @@ describe("MAX client", () => {
     });
     assert.equal(messages.length, 0);
   });
+
+  it("signs in and starts the splash clock before the journal scripts load", () => {
+    const calls: Array<{ url: string; body: string }> = [];
+    const frame = {} as { __betweenMaxLogin?: Promise<unknown>; __betweenSplashAt?: number };
+    runInNewContext(MAX_LAUNCH_BOOT_SCRIPT, {
+      location: { hash: "#WebAppData=signed&WebAppPlatform=ios" },
+      document: { referrer: "" },
+      window: frame,
+      parent: {
+        postMessage() {},
+      },
+      sessionStorage: { setItem() {} },
+      URLSearchParams,
+      JSON,
+      fetch(url: string, init: { body: string }) {
+        calls.push({ url, body: init.body });
+        return Promise.resolve({ ok: true, json: async () => ({ account: { email: "" } }) });
+      },
+      performance: { now: () => 42 },
+    });
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0]?.url, "/api/account/max");
+    assert.equal(calls[0]?.body, JSON.stringify({ initData: "signed" }));
+    assert.equal(frame.__betweenSplashAt, 42);
+    assert.ok(frame.__betweenMaxLogin instanceof Promise);
+
+    const telegram = {} as { __betweenSplashAt?: number };
+    runInNewContext(MAX_LAUNCH_BOOT_SCRIPT, {
+      location: { hash: "#tgWebAppData=user%3D1&tgWebAppVersion=8" },
+      document: { referrer: "" },
+      window: telegram,
+      parent: telegram,
+      sessionStorage: { setItem() {} },
+      URLSearchParams,
+      JSON,
+      performance: { now: () => 42 },
+    });
+    assert.equal(telegram.__betweenSplashAt, undefined);
+  });
 });

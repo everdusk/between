@@ -23,7 +23,7 @@ import { useWebAccount } from "@/hooks/use-web-account";
 import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { markSplashReady } from "@/lib/splash";
-import { inMaxClient, signalMaxReady, waitForMaxInitData } from "@/lib/max-webapp";
+import { earlyMaxLogin, inMaxClient, signalMaxReady, waitForMaxInitData } from "@/lib/max-webapp";
 import { clearStore, WEB_STORAGE_KEY } from "@/lib/storage";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
 import { trackAnalytics } from "@/lib/analytics-client";
@@ -99,9 +99,17 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     }
     let cancelled = false;
     void (async () => {
-      const initData = await waitForMaxInitData();
+      const early = earlyMaxLogin();
+      let account = early
+        ? ((await early.catch(() => null))?.account as Parameters<typeof signIn>[0] | undefined)
+        : undefined;
       if (cancelled) return;
-      if (initData) {
+      if (!account) {
+        const initData = await waitForMaxInitData();
+        if (cancelled || !initData) {
+          if (!cancelled) setMaxReady(true);
+          return;
+        }
         try {
           const res = await fetch("/api/account/max", {
             method: "POST",
@@ -109,12 +117,14 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
             body: JSON.stringify({ initData }),
           });
           const data = (await res.json().catch(() => ({}))) as { account?: Parameters<typeof signIn>[0] };
-          if (!cancelled && res.ok && data.account) signIn(data.account);
+          if (res.ok) account = data.account;
         } catch {
           // The cookie session stays. The launch string was not accepted.
         }
       }
-      if (!cancelled) setMaxReady(true);
+      if (cancelled) return;
+      if (account) signIn(account);
+      setMaxReady(true);
     })();
     return () => {
       cancelled = true;

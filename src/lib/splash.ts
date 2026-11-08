@@ -13,6 +13,11 @@ export const SPLASH_VIEWPORT_WAIT_MS = 700;
 export const SPLASH_READY_EVENT = "between-splash-ready";
 /** Fired once the frame is actually on screen. In Telegram that is WebApp.ready(). */
 export const SPLASH_VISIBLE_EVENT = "between-splash-visible";
+/**
+ * Set from the boot script when the frame is already on screen.
+ * Outside Telegram the count starts at parse time, so the 1.1s overlaps the download.
+ */
+export const SPLASH_STAMP = "__betweenSplashAt";
 
 let appReady = false;
 let visibleAt: number | null = null;
@@ -29,17 +34,28 @@ export function splashAppIsReady(): boolean {
   return appReady;
 }
 
+function splashStamp(): number | null {
+  if (typeof window === "undefined") return null;
+  const value = (window as unknown as Record<string, unknown>)[SPLASH_STAMP];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
 /** The frame has been shown. Later calls do not move the clock. */
 export function markSplashVisible(now = performance.now()): void {
   if (visibleAt != null) return;
-  visibleAt = now;
+  const stamped = splashStamp();
+  visibleAt = stamped == null ? now : Math.min(stamped, now);
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(SPLASH_VISIBLE_EVENT));
 }
 
 /** Milliseconds since the frame became visible, or null while it is still covered. */
 export function splashVisibleElapsed(now: number): number | null {
-  if (visibleAt == null) return null;
+  if (visibleAt == null) {
+    const stamped = splashStamp();
+    if (stamped == null) return null;
+    visibleAt = stamped;
+  }
   return now - visibleAt;
 }
 

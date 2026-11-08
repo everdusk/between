@@ -23,6 +23,11 @@ export function isLikelyTelegram(webApp: WebApp): boolean {
   return Boolean(webApp.initData) || Boolean(webApp.initDataUnsafe?.user);
 }
 
+/** The mobile and desktop clients put this in the launch hash. The web client may not. */
+export function isTelegramLaunchHash(hash: string): boolean {
+  return /(?:^|[?#&])tgWebApp(?:Data|Version|Platform|ThemeParams)=/.test(hash);
+}
+
 export function displayNameFromUser(user: WebAppUser | null | undefined): string {
   if (!user) return DEV_DISPLAY_NAME;
   const parts = [user.first_name, user.last_name].filter(Boolean);
