@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { keptAccount } from "@/lib/account-refresh";
 
 export type WebAccount = {
   email: string;
@@ -13,20 +14,35 @@ type Status = "idle" | "loading" | "ready" | "unavailable";
 
 export function useWebAccount(active: boolean) {
   const [status, setStatus] = useState<Status>(active ? "loading" : "idle");
-  const [account, setAccount] = useState<WebAccount | null>(null);
+  const [account, setAccountState] = useState<WebAccount | null>(null);
+  const epoch = useRef(0);
+  const refreshId = useRef(0);
+
+  const setAccount = useCallback((next: WebAccount | null) => {
+    epoch.current += 1;
+    setAccountState(next);
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!active) return;
+    const seenEpoch = epoch.current;
+    const id = ++refreshId.current;
     try {
       const res = await fetch("/api/account", { cache: "no-store" });
+      if (seenEpoch !== epoch.current) return;
       if (!res.ok) {
+        if (id !== refreshId.current) return;
         setStatus((current) => (current === "ready" ? current : "unavailable"));
         return;
       }
       const data = (await res.json()) as { account?: WebAccount | null };
-      setAccount(data.account ?? null);
+      const incoming = data.account ?? null;
+      const fresh = id === refreshId.current;
+      if (!incoming && !fresh) return;
+      setAccountState((current) => keptAccount(current, incoming, fresh));
       setStatus("ready");
     } catch {
+      if (seenEpoch !== epoch.current || id !== refreshId.current) return;
       setStatus((current) => (current === "ready" ? current : "unavailable"));
     }
   }, [active]);

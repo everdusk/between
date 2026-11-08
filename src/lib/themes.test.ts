@@ -7,8 +7,10 @@ import {
   briefWordLimit,
   buildSessionBrief,
   clipPattern,
+  fallbackVerdict,
   judgeFacts,
   patternAlreadyCurrent,
+  patternFromThemes,
   patternKey,
   patternShouldRequest,
   discussTheme,
@@ -66,6 +68,26 @@ const COPY: BriefCopy = {
 };
 
 describe("theme judge", () => {
+  it("opens a topic from the note when the model does not answer", () => {
+    const worried = applyVerdict(
+      { themes: [], links: [] },
+      entry("e1", "Перед созвоном накрыла тревога, не хочу туда идти.", ["тревожно"]),
+      fallbackVerdict(entry("e1", "Перед созвоном накрыла тревога, не хочу туда идти.", ["тревожно"])),
+    );
+    assert.equal(worried.state.themes.length, 1);
+    assert.match(worried.state.themes[0].title, /тревога/);
+    const errand = applyVerdict(
+      { themes: [], links: [] },
+      entry("e2", "Купил хлеб"),
+      fallbackVerdict(entry("e2", "Купил хлеб")),
+    );
+    assert.equal(errand.state.themes.length, 0);
+    assert.equal(
+      patternFromThemes(worried.state.themes),
+      worried.state.themes[0].title,
+    );
+  });
+
   it("leaves a plain errand with no feeling off the list", () => {
     const result = applyVerdict(
       { themes: [], links: [] },

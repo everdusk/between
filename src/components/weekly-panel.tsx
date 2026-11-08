@@ -22,6 +22,7 @@ import {
   clipPattern,
   judgeStamp,
   patternFacts,
+  patternFromThemes,
   patternKey,
   patternShouldRequest,
   pendingJudgeEntries,
@@ -137,6 +138,8 @@ export function WeeklyPanel({
     "",
   )}`;
   const themesSettled = prep?.themeStamp === themeStamp && prep.themeSource === "model";
+  const [failedThemeStamp, setFailedThemeStamp] = useState<string | null>(null);
+  const [failedPatternStamp, setFailedPatternStamp] = useState<string | null>(null);
   const themeChunks = themeContextChunks(weekEntries, {
     todayKey,
     today: t("briefToday"),
@@ -144,6 +147,13 @@ export function WeeklyPanel({
     day: (day) => formatDayLabel(day, locale),
   });
   const themeChunkKey = themeChunks.join("\u0000");
+  const themesPending =
+    remote &&
+    !disabled &&
+    !themesSettled &&
+    Boolean(themeChunkKey) &&
+    failedThemeStamp !== themeStamp &&
+    !themeGaveUp.has(themeStamp);
   const themeChunksRef = useRef(themeChunks);
   const sentRef = useRef<{ id: string; updatedAt: string }[]>([]);
   useLayoutEffect(() => {
@@ -175,6 +185,7 @@ export function WeeklyPanel({
         const parsed = result.ok && result.text != null ? parseModelThemes(result.text) : null;
         if (!parsed) {
           themeGaveUp.add(themeStamp);
+          if (!cancelled) setFailedThemeStamp(themeStamp);
           return;
         }
         for (const row of parsed) found.set(row.id, row.themes);
@@ -221,6 +232,7 @@ export function WeeklyPanel({
       if (cancelled) return;
       if (!result.ok || !result.text) {
         patternGaveUp.add(patternStamp);
+        if (!cancelled) setFailedPatternStamp(patternStamp);
         return;
       }
       onSavePattern(key, clipPattern(0, result.text), patternStamp);
@@ -265,11 +277,19 @@ export function WeeklyPanel({
         entries={weekEntries}
         todayKey={todayKey}
         patternTitle={t("briefPatternTitle")}
-        patternText={patternBody}
+        patternText={
+          patternBody ||
+          (failedPatternStamp === patternStamp || patternGaveUp.has(patternStamp)
+            ? patternFromThemes(agenda)
+            : "")
+        }
         patternPending={
-          patternBody
+          patternBody ||
+          failedPatternStamp === patternStamp ||
+          patternGaveUp.has(patternStamp)
             ? ""
-            : patternShouldRequest({
+            : themesPending ||
+                patternShouldRequest({
                   hasInitData: remote,
                   disabled: Boolean(disabled),
                   judging,
@@ -277,7 +297,7 @@ export function WeeklyPanel({
                   savedStamp: savedPatternStamp,
                   stamp: patternStamp,
                   savedText: savedPatternText,
-                  gaveUp: patternGaveUp.has(patternStamp),
+                  gaveUp: patternGaveUp.has(patternStamp) || failedPatternStamp === patternStamp,
                   inFlight: false,
                 })
               ? t("formulating")
@@ -307,7 +327,7 @@ export function WeeklyPanel({
         themes={[...agenda, ...said]}
         entries={entries}
         links={themeLinks}
-        refreshing={remote && judging}
+        refreshing={themesPending || (remote && judging)}
         disabled={disabled}
         onDiscuss={onDiscussTheme}
         onDismiss={onDismissTheme}

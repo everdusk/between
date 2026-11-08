@@ -202,9 +202,14 @@ export function WeekSpectrum({
         {(patternText || patternPending) && (
           <div className="rounded-2xl bg-foreground/[0.04] px-4 py-4">
             <p className="eyebrow text-section-header">{patternTitle}</p>
-            <p className="mt-2 break-words text-sm leading-relaxed text-foreground/90">
-              {patternText || patternPending}
-            </p>
+            {patternText ? (
+              <p className="mt-2 break-words text-sm leading-relaxed text-foreground/90">{patternText}</p>
+            ) : (
+              <div className="mt-3 space-y-2" role="status" aria-label={patternPending}>
+                <div className="skeleton h-3.5 w-full rounded-full" />
+                <div className="skeleton h-3.5 w-4/5 rounded-full" />
+              </div>
+            )}
           </div>
         )}
       </div>

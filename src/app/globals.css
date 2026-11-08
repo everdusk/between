@@ -349,6 +349,59 @@ html[data-splash] .app-root {
   animation: loading-slide 1.1s ease-in-out infinite;
 }
 
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in oklch, var(--foreground) 8%, transparent);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklch, var(--foreground) 16%, transparent),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.journal-scroll {
+  flex: 1 1 auto;
+  height: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-slot="tabs-content"][data-ending-style] {
+  display: none;
+}
+
+[data-slot="tabs-content"]:not([hidden]):not([data-ending-style]) {
+  animation: journal-fade 220ms ease;
+}
+
+@keyframes journal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Hide native date/time chrome inside the overlay pattern. */
 .native-overlay::-webkit-calendar-picker-indicator {
   opacity: 0;
@@ -376,8 +429,10 @@ html[data-performance="low"] .glass,
 html[data-performance="low"] .glass-strong,
 html[data-performance="low"] .glass-chrome,
 html[data-performance="low"] .loading-bar,
+html[data-performance="low"] .skeleton::after,
 html[data-performance="low"] .animate-ping,
-html[data-performance="low"] .animate-in {
+html[data-performance="low"] .animate-in,
+html[data-performance="low"] [data-slot="tabs-content"]:not([hidden]):not([data-ending-style]) {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   animation: none;
@@ -394,8 +449,10 @@ html[data-performance="low"] .blur-3xl {
 @media (prefers-reduced-motion: reduce) {
   .atmosphere-blob,
   .loading-bar,
+  .skeleton::after,
   .animate-ping,
-  .animate-in {
+  .animate-in,
+  [data-slot="tabs-content"]:not([hidden]):not([data-ending-style]) {
     animation: none;
   }
 }
