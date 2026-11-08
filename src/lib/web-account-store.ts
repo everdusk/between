@@ -23,6 +23,7 @@ import {
   newResetToken,
   normalizeEmail,
   passwordMatches,
+  readSessionClaims,
   RESET_TTL_SECONDS,
   reviewLoginFromEnv,
   maxStorageId,
@@ -44,6 +45,8 @@ export type AccountRecord = {
   maxUserId: number | null;
   maxUsername: string | null;
   createdAt: string;
+  /** Bumped when the password changes so older cookies stop working. */
+  sessionVersion?: number;
   providers: AccountProviders;
 };
 
@@ -77,6 +80,34 @@ function linkKey(code: string): string {
 
 function otpKey(email: string): string {
   return `between:otp:${email}`;
+}
+
+function loginFailKey(email: string): string {
+  return `between:login:fail:${email}`;
+}
+
+const LOGIN_FAIL_LIMIT = 8;
+const LOGIN_FAIL_WINDOW_SEC = 15 * 60;
+
+async function loginBlocked(email: string): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return false;
+  const count = await redis.get<number>(loginFailKey(email));
+  return typeof count === "number" && count >= LOGIN_FAIL_LIMIT;
+}
+
+async function noteLoginFailure(email: string): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  const key = loginFailKey(email);
+  const count = await redis.incr(key);
+  if (count === 1) await redis.expire(key, LOGIN_FAIL_WINDOW_SEC);
+}
+
+async function clearLoginFailures(email: string): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.del(loginFailKey(email));
 }
 
 function oauthKey(provider: OauthProvider, subject: string): string {
@@ -115,6 +146,12 @@ function asAccount(raw: unknown): AccountRecord | null {
         ? row.maxUsername.trim().replace(/^@/, "")
         : null,
     createdAt: typeof row.createdAt === "string" ? row.createdAt : "",
+    sessionVersion:
+      typeof row.sessionVersion === "number" &&
+      Number.isInteger(row.sessionVersion) &&
+      row.sessionVersion >= 0
+        ? row.sessionVersion
+        : 0,
     providers: readProviders((row as { providers?: unknown }).providers),
   };
 }
@@ -141,6 +178,15 @@ export async function loadAccount(id: string): Promise<AccountRecord | null> {
   const redis = getRedis();
   if (!redis) return null;
   return asAccount(await redis.get<unknown>(accountKey(id)));
+}
+
+/** The cookie names an account and the password generation it was signed with. */
+export async function accountFromSession(token: string, secret: string): Promise<AccountRecord | null> {
+  const claims = readSessionClaims(token, secret);
+  if (!claims) return null;
+  const account = await loadAccount(claims.accountId);
+  if (!account || (account.sessionVersion ?? 0) !== claims.version) return null;
+  return account;
 }
 
 export async function accountIdForTelegram(userId: number): Promise<string | null> {
@@ -445,6 +491,7 @@ export async function completeReset(token: string, password: string): Promise<Ac
   const passwordRecord = await hashPassword(password);
   account.salt = passwordRecord.salt;
   account.hash = passwordRecord.hash;
+  account.sessionVersion = (account.sessionVersion ?? 0) + 1;
   await redis.set(accountKey(account.id), account);
   await redis.del(resetTokenKey(tokenHash));
   if (account.email) await redis.del(resetActiveKey(account.email));
@@ -466,6 +513,7 @@ export async function changeAccountPassword(
   const passwordRecord = await hashPassword(next);
   account.salt = passwordRecord.salt;
   account.hash = passwordRecord.hash;
+  account.sessionVersion = (account.sessionVersion ?? 0) + 1;
   await redis.set(accountKey(account.id), account);
   return account;
 }
@@ -484,13 +532,26 @@ export async function loginAccount(
   return ok ? account : null;
 }
 
-/** Review credentials open or reset that one account. Everyone else uses their own password. */
-export async function loginForSite(email: string, password: string): Promise<AccountRecord | null> {
+/** Review credentials open that one account. They never replace a password that is already set. */
+export async function loginForSite(
+  email: string,
+  password: string,
+): Promise<AccountRecord | "limited" | null> {
+  if (await loginBlocked(email)) return "limited";
   const review = reviewLoginFromEnv();
   if (review && email === review.email && password === review.password) {
-    return ensureReviewAccount(email, password);
+    const account = await ensureReviewAccount(email, password);
+    if (account) await clearLoginFailures(email);
+    else await noteLoginFailure(email);
+    return account;
   }
-  return loginAccount(email, password);
+  const account = await loginAccount(email, password);
+  if (!account) {
+    await noteLoginFailure(email);
+    return null;
+  }
+  await clearLoginFailures(email);
+  return account;
 }
 
 async function ensureReviewAccount(email: string, password: string): Promise<AccountRecord | null> {
@@ -501,11 +562,7 @@ async function ensureReviewAccount(email: string, password: string): Promise<Acc
     const account = await loadAccount(existingId);
     if (!account) return null;
     if (await passwordMatches(password, account.salt, account.hash)) return account;
-    const passwordRecord = await hashPassword(password);
-    account.salt = passwordRecord.salt;
-    account.hash = passwordRecord.hash;
-    await redis.set(accountKey(account.id), account);
-    return account;
+    return null;
   }
   const created = await createAccount(email, password);
   return created && created !== "taken" ? created : null;

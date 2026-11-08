@@ -23,5 +23,9 @@ export async function POST(req: Request) {
   if (result !== "ok") return NextResponse.json({ ok: false, error: "bad" }, { status: 401 });
   const account = await openAccountByEmail(email);
   if (!account) return accountUnavailable();
-  return withSession(NextResponse.json({ ok: true, account: toPublicAccount(account) }), account.id);
+  return withSession(
+    NextResponse.json({ ok: true, account: toPublicAccount(account) }),
+    account.id,
+    account.sessionVersion ?? 0,
+  );
 }

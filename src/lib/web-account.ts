@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 const scryptAsync = promisify(scrypt);
 
 export const SESSION_COOKIE = "between_session";
+export const LOGIN_COOKIE = "between_login";
 export const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 export const LINK_TTL_SECONDS = 15 * 60;
 
@@ -82,13 +83,24 @@ export function webStorageId(accountId: string): string {
   return `web:${accountId}`;
 }
 
-export function signSession(accountId: string, secret: string, now = Date.now()): string {
-  const payload = Buffer.from(`${accountId}.${now + SESSION_MS}`).toString("base64url");
+export type SessionClaims = { accountId: string; version: number };
+
+export function signSession(
+  accountId: string,
+  secret: string,
+  now = Date.now(),
+  version = 0,
+): string {
+  const payload = Buffer.from(`${accountId}.${version}.${now + SESSION_MS}`).toString("base64url");
   const sig = createHmac("sha256", secret).update(payload).digest("base64url");
   return `${payload}.${sig}`;
 }
 
-export function readSession(token: string, secret: string, now = Date.now()): string | null {
+export function readSessionClaims(
+  token: string,
+  secret: string,
+  now = Date.now(),
+): SessionClaims | null {
   const split = token.split(".");
   if (split.length !== 2) return null;
   const [payload, sig] = split;
@@ -103,19 +115,52 @@ export function readSession(token: string, secret: string, now = Date.now()): st
   } catch {
     return null;
   }
-  const dot = decoded.lastIndexOf(".");
-  if (dot <= 0) return null;
-  const accountId = decoded.slice(0, dot);
-  const exp = Number(decoded.slice(dot + 1));
-  if (!accountId.startsWith("w") || !Number.isFinite(exp) || exp < now) return null;
-  return accountId;
+  const parts = decoded.split(".");
+  let accountId: string;
+  let version = 0;
+  let exp = Number.NaN;
+  if (parts.length === 2) {
+    accountId = parts[0] ?? "";
+    exp = Number(parts[1]);
+  } else if (parts.length === 3) {
+    accountId = parts[0] ?? "";
+    version = Number(parts[1]);
+    exp = Number(parts[2]);
+  } else {
+    return null;
+  }
+  if (!accountId.startsWith("w") || !Number.isInteger(version) || version < 0) return null;
+  if (!Number.isFinite(exp) || exp < now) return null;
+  return { accountId, version };
 }
 
-export function sessionTokenFromRequest(req: Request): string | null {
-  const raw = req.headers.get("cookie") ?? "";
-  for (const part of raw.split(/;\s*/)) {
-    if (!part.startsWith(`${SESSION_COOKIE}=`)) continue;
-    const value = part.slice(SESSION_COOKIE.length + 1);
+export function readSession(token: string, secret: string, now = Date.now()): string | null {
+  return readSessionClaims(token, secret, now)?.accountId ?? null;
+}
+
+/** Ties a messenger login poll to the browser that asked for it. */
+export function loginChallenge(token: string, secret: string): string {
+  return createHmac("sha256", secret).update(`login.${token}`).digest("base64url");
+}
+
+export function loginChallengeMatches(
+  cookie: string | null,
+  token: string,
+  secret: string,
+): boolean {
+  if (!cookie) return false;
+  const expected = loginChallenge(token, secret);
+  const left = Buffer.from(cookie);
+  const right = Buffer.from(expected);
+  if (left.length !== right.length) return false;
+  return timingSafeEqual(left, right);
+}
+
+export function cookieValue(header: string | null, name: string): string | null {
+  if (!header) return null;
+  for (const part of header.split(/;\s*/)) {
+    if (!part.startsWith(`${name}=`)) continue;
+    const value = part.slice(name.length + 1);
     try {
       return decodeURIComponent(value);
     } catch {
@@ -123,6 +168,10 @@ export function sessionTokenFromRequest(req: Request): string | null {
     }
   }
   return null;
+}
+
+export function sessionTokenFromRequest(req: Request): string | null {
+  return cookieValue(req.headers.get("cookie"), SESSION_COOKIE);
 }
 
 /** `link_abc12345` from a `/start` payload, or null. */

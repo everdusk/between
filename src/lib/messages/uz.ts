@@ -55,6 +55,7 @@ export const uz: Catalog = {
   webRegisterFold: "Kundalikni pochta bilan yaratish",
   webSwitchEnter: "Hisob bor",
   webBadLogin: "Pochta yoki parol mos kelmadi",
+  webLoginLimited: "Juda ko‘p urinish. Biroz kuting va qayta kiring.",
   webEmailTaken: "Bu pochta band. Kiring yoki parol uchun havola so‘rang.",
   webPasswordShort: "8 tadan 200 tagacha belgi",
   webPasswordShow: "Parolni ko‘rsatish",

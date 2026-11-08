@@ -17,9 +17,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "bad_login" }, { status: 401 });
   }
   const account = await loginForSite(email, payload.password);
+  if (account === "limited") {
+    return NextResponse.json({ ok: false, error: "limited" }, { status: 429 });
+  }
   if (!account) return NextResponse.json({ ok: false, error: "bad_login" }, { status: 401 });
   return withSession(
     NextResponse.json({ ok: true, account: toPublicAccount(account) }),
     account.id,
+    account.sessionVersion ?? 0,
   );
 }

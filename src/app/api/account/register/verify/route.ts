@@ -26,5 +26,9 @@ export async function POST(req: Request) {
   const created = await createVerifiedAccount(email, result.salt, result.hash);
   if (created === "taken") return NextResponse.json({ ok: false, error: "taken" }, { status: 409 });
   if (!created) return accountUnavailable();
-  return withSession(NextResponse.json({ ok: true, account: toPublicAccount(created) }), created.id);
+  return withSession(
+    NextResponse.json({ ok: true, account: toPublicAccount(created) }),
+    created.id,
+    created.sessionVersion ?? 0,
+  );
 }

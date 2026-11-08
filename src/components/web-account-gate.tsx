@@ -191,6 +191,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
     if (value === "taken") return t("webEmailTaken");
     if (value === "short_password") return t("webPasswordShort");
     if (value === "bad_login") return t("webBadLogin");
+    if (value === "limited") return t("webLoginLimited");
     return t("webCodeBad");
   }
 
@@ -235,6 +236,12 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
         });
         const body = (await wait.json().catch(() => ({}))) as { pending?: boolean; account?: WebAccount };
         if (mine !== maxPoll.current) return;
+        if (wait.status === 403) {
+          forgetLogin();
+          setNote(null);
+          setError(t(kind === "max" ? "webMaxLoginFail" : "webTgLoginFail"));
+          return;
+        }
         if (wait.ok && body.account && !body.pending) {
           forgetLogin();
           onSignedIn(body.account);
@@ -303,11 +310,15 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
     if (!pending || (pending.kind !== "max" && pending.kind !== "telegram") || typeof pending.token !== "string") return;
     const kind = pending.kind;
     const mine = ++maxPoll.current;
+    // A reload continues the login this tab already started.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNote(t(kind === "max" ? "webMaxLoginWait" : "webTgLoginWait"));
     void pollMessenger(kind, pending.token, mine);
     return () => {
       maxPoll.current += 1;
     };
+    // pollMessenger closes over the latest poll and already ignores a stale run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onSignedIn, t]);
 
   function openMode(next: GateMode) {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { accountReady, accountUnavailable } from "@/lib/account-http";
+import { accountReady, accountUnavailable, withLoginChallenge } from "@/lib/account-http";
 import { countryFromHeaders, telegramNeedsVpn } from "@/lib/request-country";
 import { beginMaxLogin } from "@/lib/web-account-store";
 import { newMaxLoginToken, telegramBotLoginUrl } from "@/lib/web-account";
@@ -13,10 +13,13 @@ export async function POST(req: Request) {
   const token = newMaxLoginToken();
   if (!(await beginMaxLogin(token))) return accountUnavailable();
   const country = countryFromHeaders((name) => req.headers.get(name));
-  return NextResponse.json({
-    ok: true,
+  return withLoginChallenge(
+    NextResponse.json({
+      ok: true,
+      token,
+      url: telegramBotLoginUrl(token),
+      vpn: telegramNeedsVpn(country),
+    }),
     token,
-    url: telegramBotLoginUrl(token),
-    vpn: telegramNeedsVpn(country),
-  });
+  );
 }

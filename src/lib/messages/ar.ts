@@ -55,6 +55,7 @@ export const ar: Catalog = {
   webRegisterFold: "أنشئوا اليوميات بالبريد",
   webSwitchEnter: "لدي حساب",
   webBadLogin: "البريد أو كلمة السر غير مناسبين",
+  webLoginLimited: "محاولات كثيرة. انتظروا قليلاً ثم أعيدوا الدخول.",
   webEmailTaken: "هذا البريد مستخدم. ادخلوا أو اطلبوا رابط كلمة السر.",
   webPasswordShort: "من 8 إلى 200 حرف",
   webPasswordShow: "أظهروا كلمة السر",

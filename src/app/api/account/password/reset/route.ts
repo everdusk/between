@@ -22,5 +22,9 @@ export async function POST(req: Request) {
   const account = await completeReset(token, payload.password as string);
   if (account === null) return accountUnavailable();
   if (account === "bad") return NextResponse.json({ ok: false, error: "bad" }, { status: 400 });
-  return withSession(NextResponse.json({ ok: true, account: toPublicAccount(account) }), account.id);
+  return withSession(
+    NextResponse.json({ ok: true, account: toPublicAccount(account) }),
+    account.id,
+    account.sessionVersion ?? 0,
+  );
 }
