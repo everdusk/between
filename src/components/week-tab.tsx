@@ -262,7 +262,7 @@ export function WeekTab({
                   {payError}
                 </p>
               )}
-              <LegalLinks className="text-center text-xs leading-relaxed text-ink-foreground/80" />
+              <LegalLinks className="text-center text-xs leading-relaxed text-ink-foreground/80" surface={inTelegram ? "telegram" : "web"} />
             </div>
           </div>
         </section>

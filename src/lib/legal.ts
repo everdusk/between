@@ -1,4 +1,5 @@
 import { type LocaleId } from "./i18n";
+import { WEB_PRIVACY, WEB_TERMS } from "./legal-web";
 
 export const LEGAL_INN = "770507475005";
 export const LEGAL_NAME = "Ляторовская Анастасия Борисовна";
@@ -9,7 +10,8 @@ export const LEGAL_DELETE_URL = "https://www.between-journal.ru/delete";
 
 export type LegalKind = "terms" | "privacy";
 export type LegalSection = { heading: string; paragraphs: string[] };
-export type LegalDoc = { title: string; updated: string; sections: LegalSection[] };
+export type LegalSurface = "web" | "telegram";
+export type LegalDoc = { title: string; updated: string; preface?: string[]; sections: LegalSection[] };
 
 const BINDING =
   "Если формулировки разойдутся, главный текст — на русском языке.";
@@ -26,7 +28,7 @@ function doc(title: string, updated: string, sections: Pair[], binding = false):
   };
 }
 
-const TERMS: Record<LocaleId, LegalDoc> = {
+const TELEGRAM_TERMS: Record<LocaleId, LegalDoc> = {
   ru: doc("Условия использования", "8 ноября 2026", [
     ["Кто ведёт сервис", ["Between — дневник между сеансами терапии. Его ведёт самозанятая Ляторовская Анастасия Борисовна, ИНН 770507475005. Написать можно на help@between-journal.ru."]],
     ["Что делает сервис", ["Вы отмечаете чувство и пишете короткую заметку. К сеансу из этого собирается неделя: спектр, повторы и темы, о которых стоит сказать. Если подключить бота в Telegram, вечером он может спросить, как прошёл день, и сохранить ответ в этот же дневник."]],
@@ -125,7 +127,7 @@ const TERMS: Record<LocaleId, LegalDoc> = {
   ], true),
 };
 
-const PRIVACY: Record<LocaleId, LegalDoc> = {
+const TELEGRAM_PRIVACY: Record<LocaleId, LegalDoc> = {
   ru: doc("Политика конфиденциальности", "8 ноября 2026", [
     ["Кто отвечает за данные", ["За данные отвечает самозанятая Ляторовская Анастасия Борисовна, ИНН 770507475005. Написать можно на help@between-journal.ru."]],
     ["Какие данные", ["Почта, если входите в браузере. Идентификатор и имя пользователя Telegram, если открываете мини-приложение или подключаете бота. Идентификатор MAX, если открываете дневник в MAX. Текст заметок, чувства, темы к сеансу, сеансы и напоминания. Язык и часовой пояс. Факт оплаты «Недели» и дата, до которой она открыта. Голосовое сообщение нужно только чтобы превратить его в текст заметки: сам файл не хранится. Письмо в поддержку хранит текст сообщения, платформу и идентификатор дневника."]],
@@ -225,11 +227,19 @@ const PRIVACY: Record<LocaleId, LegalDoc> = {
 };
 
 
-export function legalDocument(kind: LegalKind, locale: LocaleId): LegalDoc {
-  const book = kind === "terms" ? TERMS : PRIVACY;
+/** Web and MAX share one edition. Telegram keeps the documents that already live in that client. */
+export function legalDocument(kind: LegalKind, locale: LocaleId, surface: LegalSurface = "web"): LegalDoc {
+  const book =
+    surface === "telegram"
+      ? kind === "terms"
+        ? TELEGRAM_TERMS
+        : TELEGRAM_PRIVACY
+      : kind === "terms"
+        ? WEB_TERMS
+        : WEB_PRIVACY;
   return book[locale] ?? book.ru;
 }
 
 export function legalLocales(): LocaleId[] {
-  return Object.keys(TERMS) as LocaleId[];
+  return Object.keys(TELEGRAM_TERMS) as LocaleId[];
 }

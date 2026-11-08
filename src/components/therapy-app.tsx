@@ -275,7 +275,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
           ? ` · ${t("syncOffline")}`
           : ` · ${t("syncDevice")}`}
       {!telegram.inTelegram && telegram.ready ? ` · ${t("outsideTelegram")}` : null}
-      <LegalLinks className="mt-2" />
+      <LegalLinks className="mt-2" surface={telegram.inTelegram ? "telegram" : "web"} />
     </footer>
   );
 
