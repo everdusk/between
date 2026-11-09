@@ -5,6 +5,7 @@ import { feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
 import {
   claimDigestSlot,
   getUserTimezone,
+  loadDigestRun,
   loadUserStore,
   loadWeekAccess,
   redisConfigured,
@@ -20,7 +21,7 @@ import {
   loadAnalyticsReport,
   trackServerEvent,
 } from "@/lib/analytics";
-import { duePoll, pollText } from "@/lib/digest";
+import { duePoll, formatDigestRun, pollText } from "@/lib/digest";
 import { linkCodeFromStart, loginTokenFromStart, maxStorageId } from "@/lib/web-account";
 import { zonedParts } from "@/lib/zoned";
 import { claimMaxLink, finishMaxLogin, resolveMaxJournalId } from "@/lib/web-account-store";
@@ -322,7 +323,13 @@ export async function POST(req: Request) {
       const stats = redis
         ? formatAnalyticsReport(await loadAnalyticsReport(redis))
         : "Счётчики ещё не пишутся.";
-      await say(userId, stats, keyboard);
+      let digest = "";
+      try {
+        digest = `\n\n${formatDigestRun(await loadDigestRun())}`;
+      } catch {
+        digest = "";
+      }
+      await say(userId, `${stats}${digest}`, keyboard);
       return NextResponse.json({ ok: true });
     }
 

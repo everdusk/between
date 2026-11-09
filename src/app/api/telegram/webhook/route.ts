@@ -6,6 +6,7 @@ import {
   getRedis,
   getUserTimezone,
   loadDeviceLocale,
+  loadDigestRun,
   loadUserLocale,
   claimPaymentCharge,
   loadWeekAccess,
@@ -33,6 +34,7 @@ import {
   rememberLandingSource,
   startPayload,
 } from "@/lib/landing";
+import { formatDigestRun } from "@/lib/digest";
 import { appUrl } from "@/lib/telegram-auth";
 import {
   downloadTelegramFile,
@@ -491,9 +493,15 @@ export async function POST(req: Request) {
         landing = "";
       }
     }
+    let digest = "";
+    try {
+      digest = `\n\n${formatDigestRun(await loadDigestRun())}`;
+    } catch {
+      digest = "";
+    }
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: `${stats}${landing}`,
+      text: `${stats}${landing}${digest}`,
       reply_markup: keyboard,
     });
     return NextResponse.json({ ok: true });
