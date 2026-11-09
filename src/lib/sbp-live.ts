@@ -1,6 +1,7 @@
 import { accountByEmail } from "./web-account-store";
 import { webStorageId } from "./web-account";
 import { claimPaymentCharge, getRedis, loadWeekAccess, releasePaymentCharge, saveWeekAccess } from "./redis";
+import { rubPriceFromEnv } from "./week-access";
 import {
   applyPendingSbp,
   fulfillSbp,
@@ -74,7 +75,7 @@ export async function createSbpPayment(input: {
         "Content-Type": "application/json",
         "Idempotence-Key": crypto.randomUUID(),
       },
-      body: JSON.stringify(yookassaPaymentBody(input)),
+      body: JSON.stringify(yookassaPaymentBody({ ...input, monthly: rubPriceFromEnv(process.env.WEEK_RUB_PRICE) })),
     });
   } catch {
     return { ok: false, error: "rejected", detail: "ЮKassa не ответила" };
@@ -108,7 +109,7 @@ export async function fetchSbpPayment(id: string): Promise<unknown | null> {
 }
 
 export async function settleSbpPayment(payment: unknown): Promise<"granted" | "pending" | "again" | "open"> {
-  const paid = sbpPaid(payment);
+  const paid = sbpPaid(payment, rubPriceFromEnv(process.env.WEEK_RUB_PRICE));
   if (!paid) return "open";
   return fulfillSbp(paid, new Date(), sbpLedger());
 }

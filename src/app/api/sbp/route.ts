@@ -4,7 +4,8 @@ import { actorFromRequest } from "@/lib/account-actor";
 import { redisConfigured } from "@/lib/redis";
 import { createSbpPayment, fetchSbpPayment, settleSbpPayment } from "@/lib/sbp-live";
 import { sbpQrPayload } from "@/lib/sbp";
-import { isSbpPlan, SBP_PLANS } from "@/lib/sbp-plans";
+import { isSbpPlan, sbpCatalog } from "@/lib/sbp-plans";
+import { rubPriceFromEnv } from "@/lib/week-access";
 import { normalizeEmail } from "@/lib/web-account";
 
 function misconfigured() {
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
   return NextResponse.json({
     ok: true,
     paymentId: created.id,
-    amount: SBP_PLANS[plan].rub,
+    amount: sbpCatalog(rubPriceFromEnv(process.env.WEEK_RUB_PRICE))[plan].rub,
     plan,
     url: created.qr,
     svg,

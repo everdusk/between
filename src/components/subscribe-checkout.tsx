@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { readMaxInitData } from "@/lib/max-webapp";
-import { SBP_PLANS, type SbpPlanId } from "@/lib/sbp-plans";
+import { sbpCatalog, type SbpPlanId } from "@/lib/sbp-plans";
+import { DEFAULT_RUB_PRICE } from "@/lib/week-access";
 
 const PLANS: SbpPlanId[] = ["month", "quarter", "year"];
 
@@ -22,7 +23,7 @@ function SbpMark() {
   );
 }
 
-export function SubscribeCheckout() {
+export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: number }) {
   const [plan, setPlan] = useState<SbpPlanId>("quarter");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +96,8 @@ export function SubscribeCheckout() {
     setOrder({ paymentId: body.paymentId, amount: body.amount, plan, email: trimmed, url: body.url, svg: body.svg });
   }
 
-  const chosen = SBP_PLANS[plan];
+  const plans = sbpCatalog(monthly);
+  const chosen = plans[plan];
 
   return (
     <article className="subscribe-page fixed inset-0 z-30 overflow-y-auto">
@@ -162,7 +164,7 @@ export function SubscribeCheckout() {
             <fieldset className="mt-5 space-y-3">
               <legend className="sr-only">Срок подписки</legend>
               {PLANS.map((id) => {
-                const item = SBP_PLANS[id];
+                const item = plans[id];
                 const selected = plan === id;
                 return (
                   <label key={id} className={selected ? "sub-plan sub-plan-on" : "sub-plan"}>
@@ -184,7 +186,7 @@ export function SubscribeCheckout() {
                           `${rub(item.perMonth)}/мес`
                         ) : (
                           <>
-                            <s className="me-2">{rub(SBP_PLANS.month.perMonth)}</s>
+                            <s className="me-2">{rub(plans.month.perMonth)}</s>
                             <span className="text-[#8FF0BC]">{rub(item.perMonth)}/мес</span>
                           </>
                         )}
@@ -280,7 +282,7 @@ export function SubscribeCheckout() {
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-[#8aa097]">Тариф</dt>
-                <dd>Подписка {SBP_PLANS[order.plan].span}</dd>
+                <dd>Подписка {plans[order.plan].span}</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-[#8aa097]">Чек придёт на</dt>

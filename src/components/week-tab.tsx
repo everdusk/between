@@ -18,7 +18,6 @@ import {
   readLocalWeekAccess,
   writeLocalWeekAccess,
 } from "@/lib/week-access-client";
-import { SBP_PLANS } from "@/lib/sbp-plans";
 import {
   markWeekIntroSeen,
   openWeekAccess,
@@ -228,7 +227,7 @@ export function WeekTab({
             <p className="font-display text-[1.5rem] leading-snug tracking-tight text-ink-foreground">
               {inTelegram
                 ? t("paywallBody", { price: access.starPrice })
-                : t("webWeekPaywall", { price: SBP_PLANS.month.rub })}
+                : t("webWeekPaywall", { price: access.rubPrice })}
             </p>
             <div className="space-y-3">
               {inTelegram
@@ -281,7 +280,7 @@ export function WeekTab({
           <p className="text-sm leading-relaxed text-foreground/90 sm:text-base">
             {inTelegram
               ? t("intro", { days: count(introDays, "day"), price: access.starPrice })
-              : t("webWeekIntro", { days: count(introDays, "day"), price: SBP_PLANS.month.rub })}
+              : t("webWeekIntro", { days: count(introDays, "day"), price: access.rubPrice })}
           </p>
           <Button type="button" variant="ink" className="shrink-0" onClick={() => void dismissIntro()}>
             {t("introOk")}
@@ -297,7 +296,7 @@ export function WeekTab({
               })
             : t("webWeekTrial", {
                 days: count(access.daysLeft, "day"),
-                price: SBP_PLANS.month.rub,
+                price: access.rubPrice,
               })}
         </p>
       )}

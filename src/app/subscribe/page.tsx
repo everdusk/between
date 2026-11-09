@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SubscribeCheckout } from "@/components/subscribe-checkout";
+import { rubPriceFromEnv } from "@/lib/week-access";
 
 export const metadata: Metadata = {
   title: { absolute: "Подписка Between" },
@@ -8,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function SubscribePage() {
-  return <SubscribeCheckout />;
+  return <SubscribeCheckout monthly={rubPriceFromEnv(process.env.WEEK_RUB_PRICE)} />;
 }

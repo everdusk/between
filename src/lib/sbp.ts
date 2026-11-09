@@ -1,5 +1,5 @@
 import { normalizeEmail } from "./web-account";
-import { isSbpPlan, SBP_PLANS, sbpMoney, type SbpPlanId } from "./sbp-plans";
+import { isSbpPlan, sbpCatalog, sbpMoney, type SbpPlanId } from "./sbp-plans";
 import {
   grantWeekPaidUntil,
   paidUntilForPlan,
@@ -12,7 +12,7 @@ export const SBP_LEGAL_ID = "LA0005911711";
 export const SBP_MERCHANT_ID = "MA0007323535";
 export const SBP_MCC = "9999";
 
-export { isSbpPlan, SBP_PLANS, sbpMoney, type SbpPlanId };
+export { isSbpPlan, sbpCatalog, sbpMoney, type SbpPlanId };
 
 export function yookassaReady(env: Record<string, string | undefined>): boolean {
   const shop = env.YOOKASSA_SHOP_ID?.trim() ?? "";
@@ -24,8 +24,9 @@ export function yookassaPaymentBody(input: {
   plan: SbpPlanId;
   email: string;
   actorId: string | null;
+  monthly?: number;
 }) {
-  const plan = SBP_PLANS[input.plan];
+  const plan = sbpCatalog(input.monthly)[input.plan];
   const value = sbpMoney(plan.rub);
   return {
     amount: { value, currency: "RUB" },
@@ -76,7 +77,7 @@ export function sbpQrPayload(payment: unknown): string | null {
 }
 
 /** A succeeded payment we created: our merchant, the catalog price, a real email. */
-export function sbpPaid(payment: unknown): {
+export function sbpPaid(payment: unknown, monthly?: number): {
   id: string;
   plan: PremiumPlan;
   email: string;
@@ -94,7 +95,7 @@ export function sbpPaid(payment: unknown): {
   if (!isSbpPlan(meta.plan)) return null;
   const email = normalizeEmail(meta.email);
   if (!email) return null;
-  if (row.amount.value !== sbpMoney(SBP_PLANS[meta.plan].rub)) return null;
+  if (row.amount.value !== sbpMoney(sbpCatalog(monthly)[meta.plan].rub)) return null;
   const actor = typeof meta.actorId === "string" ? safeOwner(meta.actorId) : null;
   return { id: row.id.trim(), plan: meta.plan, email, actorId: actor };
 }

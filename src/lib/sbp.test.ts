@@ -7,7 +7,7 @@ import {
   SBP_LEGAL_ID,
   SBP_MCC,
   SBP_MERCHANT_ID,
-  SBP_PLANS,
+  sbpCatalog,
   sbpPaid,
   sbpQrPayload,
   yookassaPaymentBody,
@@ -20,7 +20,7 @@ function payment(overrides: Record<string, unknown> = {}) {
     id: "2c8f5b2e-1d3a-4e7b-9c10-aaaaaaaaaaaa",
     status: "succeeded",
     paid: true,
-    amount: { value: "750.00", currency: "RUB" },
+    amount: { value: "360.00", currency: "RUB" },
     metadata: {
       plan: "quarter",
       email: "masha@example.ru",
@@ -34,13 +34,13 @@ function payment(overrides: Record<string, unknown> = {}) {
 }
 
 describe("sbp checkout", () => {
-  it("asks YooKassa for an SBP QR at the mockup prices", () => {
+  it("asks YooKassa for an SBP QR at the existing ruble tariffs", () => {
     const body = yookassaPaymentBody({
       plan: "quarter",
       email: "masha@example.ru",
       actorId: null,
     });
-    assert.equal(body.amount.value, "750.00");
+    assert.equal(body.amount.value, "360.00");
     assert.equal(body.amount.currency, "RUB");
     assert.equal(body.confirmation.type, "qr");
     assert.equal(body.payment_method_data.type, "sbp");
@@ -48,8 +48,13 @@ describe("sbp checkout", () => {
     assert.equal(body.metadata.merchantId, "MA0007323535");
     assert.equal(body.metadata.mcc, "9999");
     assert.equal(body.receipt.customer.email, "masha@example.ru");
-    assert.equal(SBP_PLANS.month.rub, 299);
-    assert.equal(SBP_PLANS.year.rub, 2388);
+    const plans = sbpCatalog();
+    assert.equal(plans.month.rub, 150);
+    assert.equal(plans.quarter.rub, 360);
+    assert.equal(plans.quarter.perMonth, 120);
+    assert.equal(plans.year.rub, 900);
+    assert.equal(plans.year.perMonth, 75);
+    assert.equal(plans.year.off, 50);
     assert.equal(yookassaReady({ YOOKASSA_SHOP_ID: "123456", YOOKASSA_SECRET_KEY: "x".repeat(16) }), true);
     assert.equal(yookassaReady({ YOOKASSA_SHOP_ID: "", YOOKASSA_SECRET_KEY: "secret" }), false);
   });
