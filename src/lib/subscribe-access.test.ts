@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { SUBSCRIBE_LEAVE_SCRIPT, shouldLeaveSubscribe } from "./subscribe-access";
+import { shouldLeaveSubscribe } from "./subscribe-access";
 
 describe("subscribe access", () => {
   it("keeps a signed-in journal and a messenger launch", () => {
@@ -19,8 +19,5 @@ describe("subscribe access", () => {
   it("sends a logged-out browser to the journal", () => {
     assert.equal(shouldLeaveSubscribe({ signedIn: false, hash: "", storedMax: null }), true);
     assert.equal(shouldLeaveSubscribe({ signedIn: false, hash: "#top", storedMax: "  " }), true);
-    assert.match(SUBSCRIBE_LEAVE_SCRIPT, /location\.replace\("\/journal"\)/);
-    assert.match(SUBSCRIBE_LEAVE_SCRIPT, /WebAppData/);
-    assert.match(SUBSCRIBE_LEAVE_SCRIPT, /tgWebAppData/);
   });
 });

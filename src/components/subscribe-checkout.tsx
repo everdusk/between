@@ -21,15 +21,36 @@ function readTelegramInitData(): string {
   return init?.trim() ?? "";
 }
 
-/** No site session. Messenger launch strings may still open the checkout; everyone else goes to sign in. */
-export function SubscribeWithoutSession({ monthly }: { monthly?: number }) {
+/**
+ * The page itself is static, so it cannot decide from a cookie at the edge.
+ * Messenger launch strings open the form immediately. Everyone else asks
+ * `/api/account` and leaves for the journal when there is no session.
+ */
+export function SubscribeGate({ monthly }: { monthly?: number }) {
   const [open, setOpen] = useState(false);
   useLayoutEffect(() => {
     if (readMaxInitData() || readTelegramInitData()) {
       setOpen(true);
       return;
     }
-    window.location.replace("/journal");
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch("/api/account", { credentials: "same-origin", cache: "no-store" });
+        const body = (await response.json().catch(() => null)) as { account?: unknown } | null;
+        if (cancelled) return;
+        if (response.ok && body?.account) {
+          setOpen(true);
+          return;
+        }
+      } catch {
+        /* no session */
+      }
+      if (!cancelled) window.location.replace("/journal");
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
   if (!open) return null;
   return <SubscribeCheckout monthly={monthly} />;
