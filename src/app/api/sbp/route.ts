@@ -13,7 +13,6 @@ function misconfigured() {
 }
 
 export async function POST(req: Request) {
-  if (!redisConfigured()) return misconfigured();
   let body: unknown;
   try {
     body = await req.json();
@@ -26,7 +25,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "bad_payment" }, { status: 400 });
   }
   const actor = await actorFromRequest(req);
-  const created = await createSbpPayment({ plan, email, actorId: actor?.id ?? null });
+  if (!actor) return NextResponse.json({ ok: false, error: "auth" }, { status: 401 });
+  if (!redisConfigured()) return misconfigured();
+  const created = await createSbpPayment({ plan, email, actorId: actor.id });
   if (!created.ok) {
     const status = created.error === "not_configured" ? 503 : 502;
     return NextResponse.json({ ok: false, error: created.error, detail: created.detail }, { status });

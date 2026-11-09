@@ -419,6 +419,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                   ready={telegram.ready}
                   inTelegram={telegram.inTelegram}
                   initData={telegram.initData}
+                  canSubscribe={Boolean(web.account) || inMax}
                   reloadToken={accessNonce}
                   onAccess={onWeekAccess}
                 >

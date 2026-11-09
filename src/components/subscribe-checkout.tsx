@@ -1,11 +1,39 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { readMaxInitData } from "@/lib/max-webapp";
 import { SbpLockup, SbpSign } from "@/components/sbp-logo";
 import { sbpCatalog, type SbpPlanId } from "@/lib/sbp-plans";
 import { DEFAULT_RUB_PRICE } from "@/lib/week-access";
+
+function readTelegramInitData(): string {
+  if (typeof window === "undefined") return "";
+  const match = /(?:^|#|&)tgWebAppData=([^&]*)/.exec(window.location.hash);
+  if (match?.[1]) {
+    try {
+      return decodeURIComponent(match[1]);
+    } catch {
+      return match[1];
+    }
+  }
+  const init = (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp
+    ?.initData;
+  return init?.trim() ?? "";
+}
+
+/** No site session. Messenger launch strings may still open the checkout; everyone else goes to sign in. */
+export function SubscribeWithoutSession({ monthly }: { monthly?: number }) {
+  const [open, setOpen] = useState(false);
+  useLayoutEffect(() => {
+    if (readMaxInitData() || readTelegramInitData()) {
+      setOpen(true);
+      return;
+    }
+    window.location.replace("/journal");
+  }, []);
+  if (!open) return null;
+  return <SubscribeCheckout monthly={monthly} />;
+}
 
 const PLANS: SbpPlanId[] = ["month", "quarter", "year"];
 
@@ -63,12 +91,14 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
     setBusy(true);
     setError(null);
     const maxInit = readMaxInitData();
+    const telegramInit = readTelegramInitData();
     const response = await fetch("/api/sbp", {
       method: "POST",
       credentials: "same-origin",
       headers: {
         "Content-Type": "application/json",
         ...(maxInit ? { "x-max-init-data": maxInit } : {}),
+        ...(telegramInit ? { "x-telegram-init-data": telegramInit } : {}),
       },
       body: JSON.stringify({ plan, email: trimmed }),
     });
@@ -82,6 +112,10 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
       svg?: string;
     } | null;
     setBusy(false);
+    if (body?.error === "auth") {
+      window.location.replace("/journal");
+      return;
+    }
     if (!body?.ok || !body.paymentId || !body.url || !body.svg || typeof body.amount !== "number") {
       setError(
         body?.error === "not_configured"
@@ -102,9 +136,9 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 sm:py-10">
         <header>
-          <Link href="/" className="sub-display text-lg">
+          <a href="/journal" className="sub-display text-lg">
             Between
-          </Link>
+          </a>
         </header>
 
         <div className="mt-8 grid items-start gap-10 lg:mt-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16">
