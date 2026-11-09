@@ -3,8 +3,7 @@ import { resolveGreetingLocale } from "@/lib/i18n";
 import { translate } from "@/lib/messages";
 import { claimBotIntro, loadDeviceLocale, redisConfigured, releaseBotIntro } from "@/lib/redis";
 import { appUrl, validateInitData } from "@/lib/telegram-auth";
-import { miniAppKeyboard, telegramRequest } from "@/lib/telegram-bot";
-import { starPriceFromEnv } from "@/lib/week-access";
+import { sessionPlanKeyboard, telegramRequest } from "@/lib/telegram-bot";
 
 /** One hello in the bot chat, so a direct Mini App open still creates the dialog. */
 export async function POST(req: Request) {
@@ -27,10 +26,8 @@ export async function POST(req: Request) {
   const greeting = resolveGreetingLocale(null, device, validated.user.language_code);
   const sent = await telegramRequest("sendMessage", {
     chat_id: validated.user.id,
-    text: translate(greeting, "botHelp", {
-      price: starPriceFromEnv(process.env.WEEK_STAR_PRICE),
-    }),
-    reply_markup: miniAppKeyboard(appUrl(), greeting),
+    text: translate(greeting, "botHelp"),
+    reply_markup: sessionPlanKeyboard(appUrl(), greeting),
   });
   if (!sent) {
     await releaseBotIntro(validated.user.id);

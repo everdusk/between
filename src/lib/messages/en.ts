@@ -345,10 +345,11 @@ export const en: Catalog = {
     "Morning, afternoon, and evening, the bot asks how you are. If you would rather not, turn it off on the Sessions tab.",
   botChatAllow: "Allow messages",
   botOpen: "Open Between",
+  botSessionOpen: "Set the date",
   botHelp:
-    "Between is a journal for the session.\n\nThe journal is free. Any text here becomes a note for today. I can ask how you are in the morning, afternoon, and evening.\n\nWeek gathers the spectrum, the pattern, and topics for the session. The first 7 days after you open the tab are free. Then {price} Stars for 30 days.\n\nA voice note is saved as text only after Week is paid, up to 10 a day. The 7 free days do not include it.",
+    "I'm Between — a journal so you don't come to a session with an empty head.\n\nAnswer me for a couple of minutes a day — mood in one tap, thoughts in a few lines. The week turns into a picture: you can see what repeats.\n\nBy the session I'll gather it into a brief — no need to remember what happened. Set the session date, and I'll start.",
   botHelpMax:
-    "Between is a journal for the session.\n\nThe journal is free. Any text here becomes a note for today. I can ask how you are in the morning, afternoon, and evening.\n\nWeek gathers the spectrum, the pattern, and topics for the session. The first 7 days after you open the tab are free. Then {price} ₽ for 30 days, paid on the site.\n\nA voice note is saved as text only after Week is paid, up to 10 a day. The 7 free days do not include it.",
+    "I'm Between — a journal so you don't come to a session with an empty head.\n\nAnswer me for a couple of minutes a day — mood in one tap, thoughts in a few lines. The week turns into a picture: you can see what repeats.\n\nBy the session I'll gather it into a brief — no need to remember what happened. Set the session date, and I'll start.",
   botUnknown:
     "Send text and I will save a note.",
   botNotReady:

@@ -49,7 +49,7 @@ export type MaxUpdate = {
 type MaxButton =
   | { type: "callback"; text: string; payload: string }
   | { type: "link"; text: string; url: string }
-  | { type: "open_app"; text: string; web_app: string };
+  | { type: "open_app"; text: string; web_app: string; payload?: string };
 
 export type MaxKeyboard = {
   type: "inline_keyboard";
@@ -183,6 +183,25 @@ export function maxOpenKeyboard(locale: LocaleId = "ru"): MaxKeyboard {
   }
   rows.push([buy]);
   return { type: "inline_keyboard", payload: { buttons: rows } };
+}
+
+/** Opens the MAX mini app on the session date. Payload may only be A–Z, 0–9, _ and -. */
+export function sessionPlanKeyboard(locale: LocaleId = "ru"): MaxKeyboard | null {
+  const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
+  if (!/^[A-Za-z0-9_]{3,64}$/.test(name)) return null;
+  return {
+    type: "inline_keyboard",
+    payload: {
+      buttons: [[
+        {
+          type: "open_app",
+          text: translate(locale, "botSessionOpen"),
+          web_app: name,
+          payload: "sessions",
+        },
+      ]],
+    },
+  };
 }
 
 export function feelingFromMaxPayload(payload: string | null | undefined) {

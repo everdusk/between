@@ -338,10 +338,11 @@ export const es: Catalog = {
     "Por la mañana, por la tarde y por la noche el bot pregunta cómo está. Si no quiere, desactívelo en la pestaña Sesiones.",
   botChatAllow: "Permitir mensajes",
   botOpen: "Abrir Between",
+  botSessionOpen: "Poner la fecha",
   botHelp:
-    "Between es un diario para la sesión.\n\nEl diario es gratis. Cualquier texto aquí se vuelve una nota de hoy. Puedo preguntar cómo estás por la mañana, por la tarde y por la noche.\n\nSemana reúne el espectro, el patrón y los temas para la sesión. Los primeros 7 días tras abrir la pestaña son gratis. Luego, {price} Stars por 30 días.\n\nLa nota de voz se guarda como texto solo con la Semana pagada, hasta 10 al día. Los 7 días gratis no la incluyen.",
+    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nRespóndeme un par de minutos al día — el ánimo en un toque, los pensamientos en un par de líneas. La semana se arma en una imagen: se ve qué se repite.\n\nPara la sesión lo reúno en un resumen — no hará falta recordar qué pasó. Pon la fecha de la sesión, y empiezo.",
   botHelpMax:
-    "Between es un diario para la sesión.\n\nEl diario es gratis. Cualquier texto aquí se vuelve una nota de hoy. Puedo preguntar cómo estás por la mañana, por la tarde y por la noche.\n\nSemana reúne el espectro, el patrón y los temas para la sesión. Los primeros 7 días tras abrir la pestaña son gratis. Luego, {price} ₽ por 30 días, en el sitio.\n\nLa nota de voz se guarda como texto solo con la Semana pagada, hasta 10 al día. Los 7 días gratis no la incluyen.",
+    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nRespóndeme un par de minutos al día — el ánimo en un toque, los pensamientos en un par de líneas. La semana se arma en una imagen: se ve qué se repite.\n\nPara la sesión lo reúno en un resumen — no hará falta recordar qué pasó. Pon la fecha de la sesión, y empiezo.",
   botUnknown:
     "Escribe un texto y lo guardo como nota.",
   botNotReady:

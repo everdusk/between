@@ -1550,15 +1550,16 @@ describe("languages", () => {
     assert.equal(resolveGreetingLocale("en-US", "ru", "hi"), "en");
     assert.equal(resolveGreetingLocale(null, "id", "ru"), "id");
     assert.equal(resolveGreetingLocale(undefined, null, "de"), "ru");
+    const help = translate("ru", "botHelp");
     assert.equal(
-      translate("ru", "botHelp").split("\n")[0],
-      "Between — дневник к сеансу.",
+      help.split("\n")[0],
+      "Я Between — дневник, с которым на сессию не приходишь с пустой головой.",
     );
-    const help = translate("ru", "botHelp", { price: 150 });
-    assert.match(help, /Первые 7 дней/);
-    assert.match(help, /150 Stars на 30 дней/);
-    assert.match(help, /до 10 в день/);
-    assert.match(help, /Пробные 7 дней/);
+    assert.match(help, /Поставьте дату сеанса, и я начну\.$/);
+    assert.equal(help, translate("ru", "botHelpMax"));
+    assert.doesNotMatch(help, /Stars/);
+    assert.doesNotMatch(help, /\{price\}/);
+    assert.equal(translate("en", "botSessionOpen"), "Set the date");
     assert.equal(isBotCommand("/paysupport", "paysupport"), true);
     assert.equal(isBotCommand("/paysupport@BetweenJournalBot", "paysupport"), true);
     assert.equal(isBotCommand("/PaySupport refund", "paysupport"), true);

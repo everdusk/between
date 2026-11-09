@@ -338,10 +338,11 @@ export const vi: Catalog = {
     "Sáng, trưa và tối bot sẽ hỏi bạn thế nào. Không muốn thì tắt ở tab Buổi trị liệu.",
   botChatAllow: "Cho phép tin nhắn",
   botOpen: "Mở Between",
+  botSessionOpen: "Đặt ngày",
   botHelp:
-    "Between là nhật ký cho buổi trị liệu.\n\nNhật ký miễn phí. Chữ nào ở đây cũng thành ghi chép hôm nay. Sáng, trưa và tối tôi có thể hỏi bạn thế nào.\n\nTuần gom phổ cảm xúc, mẫu lặp và chủ đề cho buổi trị liệu. 7 ngày đầu sau khi mở tab là miễn phí. Sau đó {price} Stars cho 30 ngày.\n\nTin nhắn thoại thành chữ chỉ sau khi trả Tuần, tối đa 10 một ngày. 7 ngày miễn phí không gồm.",
+    "Tôi là Between — nhật ký để bạn không đến buổi trị liệu với đầu trống rỗng.\n\nTrả lời tôi vài phút mỗi ngày — tâm trạng một lần chạm, suy nghĩ vài dòng. Tuần xếp thành một bức tranh: thấy điều gì lặp lại.\n\nĐến buổi trị liệu tôi gom lại thành bản tóm tắt — không phải nhớ chuyện gì đã xảy ra. Đặt ngày buổi trị liệu, và tôi bắt đầu.",
   botHelpMax:
-    "Between là nhật ký cho buổi trị liệu.\n\nNhật ký miễn phí. Chữ nào ở đây cũng thành ghi chép hôm nay. Sáng, trưa và tối tôi có thể hỏi bạn thế nào.\n\nTuần gom phổ cảm xúc, mẫu lặp và chủ đề cho buổi trị liệu. 7 ngày đầu sau khi mở tab là miễn phí. Sau đó {price} ₽ cho 30 ngày, trả trên trang.\n\nTin nhắn thoại thành chữ chỉ sau khi trả Tuần, tối đa 10 một ngày. 7 ngày miễn phí không gồm.",
+    "Tôi là Between — nhật ký để bạn không đến buổi trị liệu với đầu trống rỗng.\n\nTrả lời tôi vài phút mỗi ngày — tâm trạng một lần chạm, suy nghĩ vài dòng. Tuần xếp thành một bức tranh: thấy điều gì lặp lại.\n\nĐến buổi trị liệu tôi gom lại thành bản tóm tắt — không phải nhớ chuyện gì đã xảy ra. Đặt ngày buổi trị liệu, và tôi bắt đầu.",
   botUnknown: "Gửi chữ, tôi lưu thành ghi chép.",
   botNotReady:
     "Lúc này không lưu được.",

@@ -1,4 +1,5 @@
 import type { LocaleId } from "./i18n";
+import { sessionTabUrl } from "./launch-section";
 import { feelingLabel, translate } from "./messages";
 import { PICKER_FEELINGS, type CheckinSlot } from "./types";
 
@@ -42,6 +43,15 @@ export function parseFeelingCallback(
 export function miniAppKeyboard(url: string, locale: LocaleId = "ru") {
   return {
     inline_keyboard: [[{ text: translate(locale, "botOpen"), web_app: { url } }]],
+  };
+}
+
+/** Opens the journal on the session date. */
+export function sessionPlanKeyboard(url: string, locale: LocaleId = "ru") {
+  return {
+    inline_keyboard: [[
+      { text: translate(locale, "botSessionOpen"), web_app: { url: sessionTabUrl(url) } },
+    ]],
   };
 }
 

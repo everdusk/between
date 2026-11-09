@@ -37,6 +37,7 @@ import {
   maxFeelingKeyboard,
   maxLoginKeyboard,
   maxOpenKeyboard,
+  sessionPlanKeyboard,
   maxText,
   maxToken,
   maxUserId,
@@ -54,7 +55,7 @@ import {
   voiceNoteBody,
   voiceReplyPreview,
 } from "@/lib/voice";
-import { accessForUser, rubPriceFromEnv } from "@/lib/week-access";
+import { accessForUser } from "@/lib/week-access";
 
 function verifyWebhookSecret(req: Request): boolean {
   return maxWebhookSecretMatches(
@@ -211,8 +212,8 @@ async function greet(
 ) {
   await say(
     userId,
-    translate(greeting, "botHelpMax", { price: rubPriceFromEnv(process.env.WEEK_RUB_PRICE) }),
-    keyboard,
+    translate(greeting, "botHelpMax"),
+    sessionPlanKeyboard(greeting) ?? keyboard,
     chatId,
   );
   await sendDueMood(userId, await resolveMaxJournalId(userId), reply, chatId);

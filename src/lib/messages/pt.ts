@@ -338,10 +338,11 @@ export const pt: Catalog = {
     "De manhã, à tarde e à noite o bot pergunta como você está. Se não quiser, desligue na aba Sessões.",
   botChatAllow: "Permitir mensagens",
   botOpen: "Abrir Between",
+  botSessionOpen: "Marcar a data",
   botHelp:
-    "Between é um diário para a sessão.\n\nO diário é grátis. Qualquer texto aqui vira uma nota de hoje. Posso perguntar como você está de manhã, à tarde e à noite.\n\nSemana junta o espectro, o padrão e os temas para a sessão. Os primeiros 7 dias depois de abrir a aba são grátis. Depois, {price} Stars por 30 dias.\n\nO áudio vira texto só com a Semana paga, até 10 por dia. Os 7 dias grátis não incluem.",
+    "Sou o Between — um diário com o qual você não chega à sessão de cabeça vazia.\n\nResponda por uns minutos por dia — o humor num toque, os pensamentos em algumas linhas. A semana vira um quadro: dá para ver o que se repete.\n\nAté a sessão eu junto isso num resumo — sem precisar lembrar o que houve. Marque a data da sessão, e eu começo.",
   botHelpMax:
-    "Between é um diário para a sessão.\n\nO diário é grátis. Qualquer texto aqui vira uma nota de hoje. Posso perguntar como você está de manhã, à tarde e à noite.\n\nSemana junta o espectro, o padrão e os temas para a sessão. Os primeiros 7 dias depois de abrir a aba são grátis. Depois, {price} ₽ por 30 dias, no site.\n\nO áudio vira texto só com a Semana paga, até 10 por dia. Os 7 dias grátis não incluem.",
+    "Sou o Between — um diário com o qual você não chega à sessão de cabeça vazia.\n\nResponda por uns minutos por dia — o humor num toque, os pensamentos em algumas linhas. A semana vira um quadro: dá para ver o que se repete.\n\nAté a sessão eu junto isso num resumo — sem precisar lembrar o que houve. Marque a data da sessão, e eu começo.",
   botUnknown:
     "Escreva um texto e eu salvo como nota.",
   botNotReady:

@@ -38,6 +38,7 @@ import {
   downloadTelegramFile,
   isBotCommand,
   miniAppKeyboard,
+  sessionPlanKeyboard,
   parseFeelingCallback,
   blockedTelegramUser,
   ensureTelegramBlocks,
@@ -432,10 +433,8 @@ export async function POST(req: Request) {
     }
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: translate(greeting, "botHelp", {
-        price: starPriceFromEnv(process.env.WEEK_STAR_PRICE),
-      }),
-      reply_markup: miniAppKeyboard(appUrl(), greeting),
+      text: translate(greeting, "botHelp"),
+      reply_markup: sessionPlanKeyboard(appUrl(), greeting),
     });
     if (userId) await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
     return NextResponse.json({ ok: true });

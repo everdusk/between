@@ -338,10 +338,11 @@ export const uz: Catalog = {
     "Ertalab, kunduzi va kechqurun bot holingizni so‘raydi. Istamasangiz, «Seanslar» bo‘limida o‘chiring.",
   botChatAllow: "Xabarlarga ruxsat",
   botOpen: "Between’ni ochish",
+  botSessionOpen: "Sanani qo'yish",
   botHelp:
-    "Between — seans uchun kundalik.\n\nKundalik bepul. Bu yerdagi har qanday matn bugungi yozuv bo‘ladi. Ertalab, kunduzi va kechqurun holingizni so‘rashim mumkin.\n\n«Hafta» spektr, naqsh va seans mavzularini yig‘adi. Varaq ochilgandan keyingi dastlabki 7 kun bepul. So‘ng 30 kunga {price} Stars.\n\nOvozli xabar matnga faqat «Hafta» to‘langach aylanadi, kuniga 10 tagacha. Bepul 7 kun bunga kirmaydi.",
+    "Men Between — seansga bo'sh bosh bilan kelmaydigan kundalik.\n\nKuniga bir-ikki daqiqa savollarimga javob bering — kayfiyat bir bosishda, fikrlar bir necha qatorda. Hafta rasmga aylanadi: nima takrorlanayotgani ko'rinadi.\n\nSeansgacha buni jamlab beraman — nima bo'lganini eslash shart emas. Seans sanasini qo'ying, men boshlayman.",
   botHelpMax:
-    "Between — seans uchun kundalik.\n\nKundalik bepul. Bu yerdagi har qanday matn bugungi yozuv bo‘ladi. Ertalab, kunduzi va kechqurun holingizni so‘rashim mumkin.\n\n«Hafta» spektr, naqsh va seans mavzularini yig‘adi. Varaq ochilgandan keyingi dastlabki 7 kun bepul. So‘ng saytda 30 kunga {price} ₽.\n\nOvozli xabar matnga faqat «Hafta» to‘langach aylanadi, kuniga 10 tagacha. Bepul 7 kun bunga kirmaydi.",
+    "Men Between — seansga bo'sh bosh bilan kelmaydigan kundalik.\n\nKuniga bir-ikki daqiqa savollarimga javob bering — kayfiyat bir bosishda, fikrlar bir necha qatorda. Hafta rasmga aylanadi: nima takrorlanayotgani ko'rinadi.\n\nSeansgacha buni jamlab beraman — nima bo'lganini eslash shart emas. Seans sanasini qo'ying, men boshlayman.",
   botUnknown: "Matn yozing, yozuv qilib saqlayman.",
   botNotReady:
     "Hozir saqlay olmayman.",
