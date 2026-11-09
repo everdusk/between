@@ -27,7 +27,12 @@ export async function POST(req: Request) {
   const actor = await actorFromRequest(req);
   if (!actor) return NextResponse.json({ ok: false, error: "auth" }, { status: 401 });
   if (!redisConfigured()) return misconfigured();
-  const created = await createSbpPayment({ plan, email, actorId: actor.id });
+  const created = await createSbpPayment({
+    plan,
+    email,
+    actorId: actor.id,
+    messenger: actor.messenger,
+  });
   if (!created.ok) {
     const status = created.error === "not_configured" ? 503 : 502;
     return NextResponse.json({ ok: false, error: created.error, detail: created.detail }, { status });

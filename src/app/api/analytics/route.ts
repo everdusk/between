@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { acceptClientEvent, analyticsRedis, loadAnalyticsReport, recordAnalytics } from "@/lib/analytics";
+import { validateMaxInitData } from "@/lib/max-auth";
 import { redisConfigured } from "@/lib/redis";
 import { validateInitData } from "@/lib/telegram-auth";
 import { DEFAULT_TIME_ZONE } from "@/lib/types";
@@ -24,7 +25,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  if (!redisConfigured() || !process.env.BOT_TOKEN?.trim()) {
+  const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim() || process.env.APP_SECRET?.trim();
+  if (!redisConfigured() || !pepper) {
     return NextResponse.json({ ok: false, error: "server_not_configured" }, { status: 503 });
   }
   let body: unknown;
@@ -40,9 +42,26 @@ export async function POST(req: Request) {
   }
 
   const redis = analyticsRedis();
-  const pepper = process.env.BOT_TOKEN?.trim() || process.env.APP_SECRET?.trim();
-  if (!redis || !pepper) {
+  if (!redis) {
     return NextResponse.json({ ok: false, error: "server_not_configured" }, { status: 503 });
+  }
+
+  if (payload.messenger === "max") {
+    const initData = req.headers.get("x-max-init-data");
+    const validated = initData ? validateMaxInitData(initData, process.env.MAX_BOT_TOKEN) : null;
+    if (!validated) {
+      return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    }
+    await recordAnalytics(redis, {
+      userId: validated.user.id,
+      event: accepted.event,
+      messenger: "max",
+      day: accepted.day,
+      cohort: accepted.cohort,
+      offset: accepted.offset,
+      pepper,
+    });
+    return NextResponse.json({ ok: true });
   }
 
   if (payload.messenger === "web") {

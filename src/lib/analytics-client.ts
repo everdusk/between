@@ -1,12 +1,18 @@
 import { toDateKey } from "./dates";
-import { planAnalyticsSend, type AnalyticsMessenger, type ClientAnalyticsEvent, type ProductPlan } from "./analytics-model";
+import { clientMessenger, planAnalyticsSend, type AnalyticsMessenger, type ClientAnalyticsEvent, type ProductPlan } from "./analytics-model";
+import { readMaxInitData } from "./max-webapp";
 import { captureProduct } from "./product-analytics";
+
+export { clientMessenger };
 
 const DEVICE_KEY = "between:device";
 
 function storageKeys(messenger: AnalyticsMessenger): { cohort: string; sent: string } {
   if (messenger === "web") {
     return { cohort: "between:analytics-cohort-web", sent: "between:analytics-sent-web" };
+  }
+  if (messenger === "max") {
+    return { cohort: "between:analytics-cohort-max", sent: "between:analytics-sent-max" };
   }
   return { cohort: "between:analytics-cohort", sent: "between:analytics-sent" };
 }
@@ -48,7 +54,8 @@ export function trackAnalytics(
   detail?: { plan?: ProductPlan },
 ): void {
   if (typeof window === "undefined") return;
-  const messenger: AnalyticsMessenger = initData ? "telegram" : "web";
+  const maxInit = readMaxInitData();
+  const messenger = clientMessenger(initData, maxInit);
   const keys = storageKeys(messenger);
   let plan: ReturnType<typeof planAnalyticsSend>;
   try {
@@ -67,7 +74,19 @@ export function trackAnalytics(
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": initData,
       },
-      body: JSON.stringify({ event, cohort: plan.cohort, day: plan.day }),
+      body: JSON.stringify({ event, cohort: plan.cohort, day: plan.day, messenger: "telegram" }),
+      keepalive: true,
+    }).catch(() => undefined);
+    return;
+  }
+  if (messenger === "max" && maxInit) {
+    void fetch("/api/analytics", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Max-Init-Data": maxInit,
+      },
+      body: JSON.stringify({ event, cohort: plan.cohort, day: plan.day, messenger: "max" }),
       keepalive: true,
     }).catch(() => undefined);
     return;

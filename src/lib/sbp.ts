@@ -24,6 +24,7 @@ export function yookassaPaymentBody(input: {
   plan: SbpPlanId;
   email: string;
   actorId: string | null;
+  messenger?: SbpMessenger;
   monthly?: number;
 }) {
   const plan = sbpCatalog(input.monthly)[input.plan];
@@ -38,6 +39,7 @@ export function yookassaPaymentBody(input: {
       plan: input.plan,
       email: input.email,
       actorId: input.actorId ?? "",
+      ...(input.messenger ? { messenger: input.messenger } : {}),
       legalId: SBP_LEGAL_ID,
       merchantId: SBP_MERCHANT_ID,
       mcc: SBP_MCC,
@@ -76,16 +78,40 @@ export function sbpQrPayload(payment: unknown): string | null {
   return data;
 }
 
+export type SbpMessenger = "telegram" | "max" | "web";
+
+/** When the bank captured the charge. The stat day follows this, not the later notice. */
+export function sbpCapturedAt(payment: unknown, fallback = new Date()): Date {
+  const raw = payment && typeof payment === "object" ? (payment as { captured_at?: unknown }).captured_at : null;
+  if (typeof raw !== "string") return fallback;
+  const at = new Date(raw);
+  return Number.isNaN(at.getTime()) ? fallback : at;
+}
+
+function sameMoney(actual: unknown, expected: string): boolean {
+  const parsed = typeof actual === "number" ? actual : typeof actual === "string" ? Number(actual) : NaN;
+  return Number.isFinite(parsed) && parsed.toFixed(2) === expected;
+}
+
+function readMessenger(value: unknown, actorId: string | null): SbpMessenger {
+  if (value === "telegram" || value === "max" || value === "web") return value;
+  if (actorId?.startsWith("max:")) return "max";
+  if (actorId && /^\d+$/.test(actorId)) return "telegram";
+  return "web";
+}
+
 /** A succeeded payment we created: our merchant, the catalog price, a real email. */
 export function sbpPaid(payment: unknown, monthly?: number): {
   id: string;
   plan: PremiumPlan;
   email: string;
   actorId: string | null;
+  messenger: SbpMessenger;
 } | null {
   if (!payment || typeof payment !== "object") return null;
   const row = payment as YooPayment;
-  if (row.status !== "succeeded" || row.paid !== true) return null;
+  if (row.status !== "succeeded") return null;
+  if (row.paid === false || row.paid === "false") return null;
   if (row.amount?.currency !== "RUB") return null;
   if (typeof row.id !== "string" || !row.id.trim()) return null;
   const meta = row.metadata ?? {};
@@ -95,9 +121,15 @@ export function sbpPaid(payment: unknown, monthly?: number): {
   if (!isSbpPlan(meta.plan)) return null;
   const email = normalizeEmail(meta.email);
   if (!email) return null;
-  if (row.amount.value !== sbpMoney(sbpCatalog(monthly)[meta.plan].rub)) return null;
+  if (!sameMoney(row.amount.value, sbpMoney(sbpCatalog(monthly)[meta.plan].rub))) return null;
   const actor = typeof meta.actorId === "string" ? safeOwner(meta.actorId) : null;
-  return { id: row.id.trim(), plan: meta.plan, email, actorId: actor };
+  return {
+    id: row.id.trim(),
+    plan: meta.plan,
+    email,
+    actorId: actor,
+    messenger: readMessenger(meta.messenger, actor),
+  };
 }
 
 /** Journal ids we are willing to extend. Anything else stays on the email. */

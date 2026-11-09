@@ -1,4 +1,4 @@
-/** Funnel, in order. `paid` is recorded only from a confirmed Stars payment. */
+/** Funnel, in order. `paid` is a confirmed Stars or SBP charge, never a page view. */
 export const ANALYTICS_EVENTS = ["visit", "note", "mood", "block", "plan", "week", "paywall", "checkout", "paid"] as const;
 export type AnalyticsEvent = (typeof ANALYTICS_EVENTS)[number];
 
@@ -140,6 +140,16 @@ export function subscribeEventName(messenger: AnalyticsMessenger): string {
 export function parseSubscribeEvent(name: string): AnalyticsMessenger | null {
   const match = /^(telegram|max|web)_subscribe$/.exec(name);
   return match ? (match[1] as AnalyticsMessenger) : null;
+}
+
+/** Telegram launch data wins. A MAX launch is not the website. */
+export function clientMessenger(
+  telegramInitData: string,
+  maxInitData: string | null | undefined,
+): AnalyticsMessenger {
+  if (telegramInitData.trim()) return "telegram";
+  if (maxInitData?.trim()) return "max";
+  return "web";
 }
 
 export function parseMessengerEvent(

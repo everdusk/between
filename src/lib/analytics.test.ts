@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { analyticsDedupToken, recordAnalytics, type AnalyticsRedis } from "./analytics";
 import {
   acceptClientEvent,
+  clientMessenger,
   analyticsCohortKey,
   analyticsCounterKey,
   analyticsDedupKey,
@@ -112,6 +113,30 @@ describe("analytics", () => {
     const stored = [...redis.sets.keys(), ...redis.keys.keys(), ...[...redis.sets.values()].flatMap((set) => [...set])];
     assert.equal(stored.some((value) => value.includes("424242") || value.includes("abc123device")), false);
     assert.equal([...redis.sets.keys()].includes(analyticsDedupKey("2026-11-01")), true);
+  });
+
+  it("counts the step when the dedup key cannot store a ttl", async () => {
+    const redis = memoryRedis();
+    redis.expire = async () => {
+      throw new Error("ttl");
+    };
+    const result = await recordAnalytics(redis, {
+      userId: 7,
+      event: "paid",
+      messenger: "web",
+      day: "2026-11-09",
+      salt: "yk-1",
+      pepper: "pepper",
+    });
+    assert.equal(result, "counted");
+    assert.equal(redis.keys.get(analyticsCounterKey("2026-11-09", "paid", "web")), 1);
+  });
+
+  it("keeps a MAX launch out of the website column", () => {
+    assert.equal(clientMessenger("", "user=1&hash=ab"), "max");
+    assert.equal(clientMessenger("user=1", "user=1&hash=ab"), "telegram");
+    assert.equal(clientMessenger("", ""), "web");
+    assert.equal(clientMessenger("  ", null), "web");
   });
 
   it("counts the same Stars charge once", async () => {

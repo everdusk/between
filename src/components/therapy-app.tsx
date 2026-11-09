@@ -233,8 +233,9 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   }, [telegram.ready, telegram.inTelegram, telegram.initData]);
   useEffect(() => {
     if (!telegram.ready || telegram.inTelegram || !webEntry) return;
+    if (inMax && maxLaunch === null) return;
     trackAnalytics("visit", "");
-  }, [telegram.ready, telegram.inTelegram, webEntry]);
+  }, [telegram.ready, telegram.inTelegram, webEntry, inMax, maxLaunch]);
   const tabOwnsAccess = useRef(false);
   const disabled = status !== "ready";
   useEffect(() => {

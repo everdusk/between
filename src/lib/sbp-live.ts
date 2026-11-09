@@ -1,16 +1,17 @@
 import { accountByEmail } from "./web-account-store";
 import { webStorageId } from "./web-account";
 import { claimPaymentCharge, getRedis, loadWeekAccess, releasePaymentCharge, saveWeekAccess } from "./redis";
-import { recordSbpPaid } from "./analytics";
-import type { AnalyticsMessenger } from "./analytics-model";
+import { recordSbpPaid, rememberSbpPayment, sbpPaymentBooked } from "./analytics";
 import { rubPriceFromEnv } from "./week-access";
 import {
   applyPendingSbp,
   fulfillSbp,
+  sbpCapturedAt,
   sbpPaid,
   yookassaPaymentBody,
   yookassaReady,
   type SbpLedger,
+  type SbpMessenger,
   type SbpPending,
   type SbpPlanId,
 } from "./sbp";
@@ -65,6 +66,7 @@ export async function createSbpPayment(input: {
   plan: SbpPlanId;
   email: string;
   actorId: string | null;
+  messenger: SbpMessenger;
 }): Promise<{ ok: true; id: string; qr: string } | { ok: false; error: "not_configured" | "rejected"; detail?: string }> {
   const header = authHeader();
   if (!header) return { ok: false, error: "not_configured" };
@@ -110,26 +112,48 @@ export async function fetchSbpPayment(id: string): Promise<unknown | null> {
   }
 }
 
-function paidMessenger(actorId: string | null): AnalyticsMessenger {
-  if (actorId?.startsWith("max:")) return "max";
-  if (actorId && /^\d+$/.test(actorId)) return "telegram";
-  return "web";
-}
-
 export async function settleSbpPayment(payment: unknown): Promise<"granted" | "pending" | "again" | "open"> {
   const paid = sbpPaid(payment, rubPriceFromEnv(process.env.WEEK_RUB_PRICE));
   if (!paid) return "open";
-  const result = await fulfillSbp(paid, new Date(), sbpLedger());
-  if (result === "granted" || result === "pending") {
-    await recordSbpPaid({
-      userId: paid.actorId ?? paid.id,
-      messenger: paidMessenger(paid.actorId),
-      plan: paid.plan,
-      paymentId: paid.id,
-      step: result === "pending" ? "pending" : "paid",
-    });
-  }
+  const at = sbpCapturedAt(payment);
+  const result = await fulfillSbp(paid, at, sbpLedger());
+  // A second notice still counts. The charge id keeps it from being counted twice.
+  await recordSbpPaid({
+    userId: paid.actorId ?? paid.id,
+    messenger: paid.messenger,
+    plan: paid.plan,
+    paymentId: paid.id,
+    step: result === "pending" ? "pending" : "paid",
+    at,
+  });
   return result;
+}
+
+const CLAIM_PREFIX = "between:pay:yk:";
+
+/** Payments already claimed, whose counter write was skipped. `/stats` calls this. */
+export async function reconcileSbpPayments(limit = 8): Promise<void> {
+  const redis = getRedis();
+  if (!redis || !yookassaReady(process.env)) return;
+  const ids: string[] = [];
+  let cursor = 0;
+  for (let page = 0; page < 5 && ids.length < limit; page += 1) {
+    const [next, keys] = await redis.scan(cursor, { match: `${CLAIM_PREFIX}*`, count: 50 });
+    cursor = Number(next);
+    for (const key of keys) {
+      const id = key.startsWith(CLAIM_PREFIX) ? key.slice(CLAIM_PREFIX.length) : "";
+      if (!/^[A-Za-z0-9-]{8,64}$/.test(id) || (await sbpPaymentBooked(id))) continue;
+      ids.push(id);
+      if (ids.length >= limit) break;
+    }
+    if (!Number.isFinite(cursor) || cursor === 0) break;
+  }
+  for (const id of ids) {
+    const payment = await fetchSbpPayment(id);
+    if (!payment) continue;
+    const result = await settleSbpPayment(payment);
+    if (result === "open") await rememberSbpPayment(id);
+  }
 }
 
 export async function claimPendingSbp(email: string, ownerId: string): Promise<void> {
