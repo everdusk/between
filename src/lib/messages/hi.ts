@@ -250,6 +250,8 @@ export const hi: Catalog = {
   webWeekMonth: "{price} ₽ प्रति माह",
   webWeekQuarter: "{price} ₽ · 3 महीने · −20%",
   webWeekYear: "{price} ₽ · 1 साल · −50%",
+  sbpBuy: "SBP से भुगतान",
+  botPremiumBuy: "प्रीमियम लें",
   webUsePassword: "पासवर्ड से प्रवेश",
   webUseCode: "कोड से प्रवेश",
   legalTerms: "उपयोग की शर्तें",

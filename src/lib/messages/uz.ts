@@ -250,6 +250,8 @@ export const uz: Catalog = {
   webWeekMonth: "Oyiga {price} ₽",
   webWeekQuarter: "{price} ₽ · 3 oy · −20%",
   webWeekYear: "{price} ₽ · 1 yil · −50%",
+  sbpBuy: "SBP orqali to‘lash",
+  botPremiumBuy: "Premium olish",
   webUsePassword: "Parol bilan kirish",
   webUseCode: "Kod bilan kirish",
   legalTerms: "Foydalanish shartlari",

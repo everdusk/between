@@ -85,9 +85,10 @@ describe("landing surface", () => {
   it("counts the messenger fork and still hides the journal", () => {
     assert.match(
       JOURNAL_SURFACE_SCRIPT,
-      /if\(p!=="\/open"\)document\.documentElement\.setAttribute\("data-between","app"\)/,
+      /if\(p!=="\/open"&&p!=="\/subscribe"\)document\.documentElement\.setAttribute\("data-between","app"\)/,
     );
     assert.match(JOURNAL_SURFACE_SCRIPT, /p==="\/open"/);
+    assert.match(JOURNAL_SURFACE_SCRIPT, /p==="\/subscribe"/);
     assert.match(JOURNAL_SURFACE_SCRIPT, /p==="\/journal"/);
   });
 

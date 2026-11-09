@@ -250,6 +250,8 @@ export const fa: Catalog = {
   webWeekMonth: "{price} ₽ در ماه",
   webWeekQuarter: "{price} ₽ برای ۳ ماه · −20%",
   webWeekYear: "{price} ₽ برای یک سال · −50%",
+  sbpBuy: "پرداخت با SBP",
+  botPremiumBuy: "تهیهٔ پریمیوم",
   webUsePassword: "ورود با گذرواژه",
   webUseCode: "ورود با کد",
   legalTerms: "شرایط استفاده",

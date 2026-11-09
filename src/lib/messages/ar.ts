@@ -250,6 +250,8 @@ export const ar: Catalog = {
   webWeekMonth: "{price} ₽ في الشهر",
   webWeekQuarter: "{price} ₽ لثلاثة أشهر · −20%",
   webWeekYear: "{price} ₽ لسنة · −50%",
+  sbpBuy: "الدفع عبر SBP",
+  botPremiumBuy: "اشترِ بريميوم",
   webUsePassword: "الدخول بكلمة المرور",
   webUseCode: "الدخول بالرمز",
   legalTerms: "شروط الاستخدام",

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { actorFromRequest, type Actor } from "@/lib/account-actor";
 import { loadWeekAccess, redisConfigured, saveWeekAccess } from "@/lib/redis";
+import { claimPendingSbp } from "@/lib/sbp-live";
+import { loadAccount } from "@/lib/web-account-store";
 import {
   accessForUser,
   adoptClientTrial,
@@ -45,6 +47,10 @@ export async function GET(req: Request) {
   if (!redisConfigured()) return misconfigured();
   const actor = await actorFromRequest(req);
   if (!actor) return unauthorized();
+  if (actor.id.startsWith("web:")) {
+    const account = await loadAccount(actor.id.slice(4));
+    if (account) await claimPendingSbp(account.email, actor.id);
+  }
   const record = await loadWeekAccess(actor.id);
   const resolved = await granted(record, actor);
   return NextResponse.json({ ok: true, access: resolved.view });

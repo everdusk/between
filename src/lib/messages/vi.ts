@@ -250,6 +250,8 @@ export const vi: Catalog = {
   webWeekMonth: "{price} ₽ mỗi tháng",
   webWeekQuarter: "{price} ₽ cho 3 tháng · −20%",
   webWeekYear: "{price} ₽ cho một năm · −50%",
+  sbpBuy: "Thanh toán SBP",
+  botPremiumBuy: "Mua premium",
   webUsePassword: "Đăng nhập bằng mật khẩu",
   webUseCode: "Đăng nhập bằng mã",
   legalTerms: "Điều khoản sử dụng",
