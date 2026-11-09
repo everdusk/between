@@ -338,10 +338,13 @@ export const es: Catalog = {
     "Por la mañana, por la tarde y por la noche el bot pregunta cómo está. Si no quiere, desactívelo en la pestaña Sesiones.",
   botChatAllow: "Permitir mensajes",
   botOpen: "Abrir Between",
+  botSessionAsk:
+    "Pon la fecha de la sesión. La semana se cuenta desde ella, y para la sesión se reúne lo que vale la pena decir.",
+  botSessionOpen: "Poner la fecha",
   botHelp:
-    "Between es un diario para la sesión.\n\nEl diario es gratis. Cualquier texto aquí se vuelve una nota de hoy. Puedo preguntar cómo estás por la mañana, por la tarde y por la noche.\n\nSemana reúne el espectro, el patrón y los temas para la sesión. Los primeros 7 días tras abrir la pestaña son gratis. Luego, {price} Stars por 30 días.\n\nLa nota de voz se guarda como texto solo con la Semana pagada, hasta 10 al día. Los 7 días gratis no la incluyen.",
+    "Between es un diario para la sesión.\n\nEscribe aquí cómo fue el día: eso ya es una nota. Por la mañana, al mediodía y por la noche pregunto cómo estás, con un toque.\n\nPara la sesión reúno lo que se repite y lo que vale la pena decir.",
   botHelpMax:
-    "Between es un diario para la sesión.\n\nEl diario es gratis. Cualquier texto aquí se vuelve una nota de hoy. Puedo preguntar cómo estás por la mañana, por la tarde y por la noche.\n\nSemana reúne el espectro, el patrón y los temas para la sesión. Los primeros 7 días tras abrir la pestaña son gratis. Luego, {price} ₽ por 30 días, en el sitio.\n\nLa nota de voz se guarda como texto solo con la Semana pagada, hasta 10 al día. Los 7 días gratis no la incluyen.",
+    "Between es un diario para la sesión.\n\nEscribe aquí cómo fue el día: eso ya es una nota. Por la mañana, al mediodía y por la noche pregunto cómo estás, con un toque.\n\nPara la sesión reúno lo que se repite y lo que vale la pena decir.",
   botUnknown:
     "Escribe un texto y lo guardo como nota.",
   botNotReady:

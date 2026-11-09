@@ -23,6 +23,7 @@ import { useWebAccount } from "@/hooks/use-web-account";
 import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { markSplashReady, SPLASH_READY_EVENT } from "@/lib/splash";
+import { launchSection, type LaunchSection } from "@/lib/launch-section";
 import { earlyMaxLogin, inMaxClient, readMaxInitData, signalMaxReady, waitForMaxInitData } from "@/lib/max-webapp";
 import { clearStore, WEB_STORAGE_KEY } from "@/lib/storage";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
@@ -33,6 +34,22 @@ import type { WeekAccessView } from "@/lib/week-access";
 const SECTIONS = ["journal", "week", "sessions"] as const;
 
 type SectionId = (typeof SECTIONS)[number];
+
+function readLaunch(): LaunchSection | null {
+  return launchSection({
+    search: window.location.search,
+    hash: window.location.hash,
+  });
+}
+
+function subscribeLaunch(onChange: () => void) {
+  window.addEventListener("hashchange", onChange);
+  window.addEventListener("popstate", onChange);
+  return () => {
+    window.removeEventListener("hashchange", onChange);
+    window.removeEventListener("popstate", onChange);
+  };
+}
 
 const SECTION_KEY = {
   journal: "tabJournal",
@@ -157,7 +174,10 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     web: Boolean(web.account) && (!inMax || maxLaunch === ""),
   });
 
-  const [section, setSection] = useState<SectionId>("journal");
+  const requested = useSyncExternalStore(subscribeLaunch, readLaunch, () => null);
+  const fromMax = launchSection({ initData: maxLaunch });
+  const [picked, setPicked] = useState<SectionId | null>(null);
+  const section: SectionId = picked ?? requested ?? fromMax ?? "journal";
   const scrollerRef = useRef<HTMLDivElement>(null);
   const scrollTops = useRef<Partial<Record<SectionId, number>>>({});
 
@@ -166,7 +186,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     if (id === section) return;
     const el = scrollerRef.current;
     if (el) scrollTops.current[section] = el.scrollTop;
-    setSection(id);
+    setPicked(id);
   }
 
   useLayoutEffect(() => {

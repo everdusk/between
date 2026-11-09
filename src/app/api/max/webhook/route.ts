@@ -21,6 +21,7 @@ import {
   trackServerEvent,
 } from "@/lib/analytics";
 import { duePoll, pollText } from "@/lib/digest";
+import { sessionDateMissing } from "@/lib/session-prompt";
 import { linkCodeFromStart, loginTokenFromStart, maxStorageId } from "@/lib/web-account";
 import { zonedParts } from "@/lib/zoned";
 import { claimMaxLink, finishMaxLogin, resolveMaxJournalId } from "@/lib/web-account-store";
@@ -37,6 +38,7 @@ import {
   maxFeelingKeyboard,
   maxLoginKeyboard,
   maxOpenKeyboard,
+  sessionPlanKeyboard,
   maxText,
   maxToken,
   maxUserId,
@@ -54,7 +56,7 @@ import {
   voiceNoteBody,
   voiceReplyPreview,
 } from "@/lib/voice";
-import { accessForUser, rubPriceFromEnv } from "@/lib/week-access";
+import { accessForUser } from "@/lib/week-access";
 
 function verifyWebhookSecret(req: Request): boolean {
   return maxWebhookSecretMatches(
@@ -209,13 +211,17 @@ async function greet(
   keyboard?: MaxKeyboard,
   chatId?: number,
 ) {
-  await say(
-    userId,
-    translate(greeting, "botHelpMax", { price: rubPriceFromEnv(process.env.WEEK_RUB_PRICE) }),
-    keyboard,
-    chatId,
-  );
-  await sendDueMood(userId, await resolveMaxJournalId(userId), reply, chatId);
+  await say(userId, translate(greeting, "botHelpMax"), keyboard, chatId);
+  const owner = await resolveMaxJournalId(userId);
+  if (await sessionDateMissing(owner)) {
+    await say(
+      userId,
+      translate(greeting, "botSessionAsk"),
+      sessionPlanKeyboard(greeting) ?? keyboard,
+      chatId,
+    );
+  }
+  await sendDueMood(userId, owner, reply, chatId);
 }
 
 async function handleStart(

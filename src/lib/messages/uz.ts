@@ -338,10 +338,13 @@ export const uz: Catalog = {
     "Ertalab, kunduzi va kechqurun bot holingizni so‘raydi. Istamasangiz, «Seanslar» bo‘limida o‘chiring.",
   botChatAllow: "Xabarlarga ruxsat",
   botOpen: "Between’ni ochish",
+  botSessionAsk:
+    "Seans sanasini qo'ying. Hafta shundan hisoblanadi va seansgacha aytishga arziydigani yig'iladi.",
+  botSessionOpen: "Sanani qo'yish",
   botHelp:
-    "Between — seans uchun kundalik.\n\nKundalik bepul. Bu yerdagi har qanday matn bugungi yozuv bo‘ladi. Ertalab, kunduzi va kechqurun holingizni so‘rashim mumkin.\n\n«Hafta» spektr, naqsh va seans mavzularini yig‘adi. Varaq ochilgandan keyingi dastlabki 7 kun bepul. So‘ng 30 kunga {price} Stars.\n\nOvozli xabar matnga faqat «Hafta» to‘langach aylanadi, kuniga 10 tagacha. Bepul 7 kun bunga kirmaydi.",
+    "Between — seans uchun kundalik.\n\nKuningiz qanday o'tganini shu yerga yozing: bu allaqachon yozuv. Ertalab, kunduzi va kechqurun bir bosishda holingizni so'rayman.\n\nSeansgacha nima takrorlanayotganini va nima aytishga arzigini yig'aman.",
   botHelpMax:
-    "Between — seans uchun kundalik.\n\nKundalik bepul. Bu yerdagi har qanday matn bugungi yozuv bo‘ladi. Ertalab, kunduzi va kechqurun holingizni so‘rashim mumkin.\n\n«Hafta» spektr, naqsh va seans mavzularini yig‘adi. Varaq ochilgandan keyingi dastlabki 7 kun bepul. So‘ng saytda 30 kunga {price} ₽.\n\nOvozli xabar matnga faqat «Hafta» to‘langach aylanadi, kuniga 10 tagacha. Bepul 7 kun bunga kirmaydi.",
+    "Between — seans uchun kundalik.\n\nKuningiz qanday o'tganini shu yerga yozing: bu allaqachon yozuv. Ertalab, kunduzi va kechqurun bir bosishda holingizni so'rayman.\n\nSeansgacha nima takrorlanayotganini va nima aytishga arzigini yig'aman.",
   botUnknown: "Matn yozing, yozuv qilib saqlayman.",
   botNotReady:
     "Hozir saqlay olmayman.",

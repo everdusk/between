@@ -338,10 +338,13 @@ export const tr: Catalog = {
     "Sabah, öğlen ve akşam bot halinizi sorar. İstemezseniz Seanslar sekmesinden kapatın.",
   botChatAllow: "Mesajlara izin ver",
   botOpen: "Between’i aç",
+  botSessionAsk:
+    "Seans tarihini koyun. Hafta ondan sayılır ve seansa kadar söylenmeye değer olan toplanır.",
+  botSessionOpen: "Tarihi koy",
   botHelp:
-    "Between, seans için bir günlük.\n\nGünlük ücretsiz. Buradaki her metin bugünün notu olur. Sabah, öğlen ve akşam nasıl olduğunu sorabilirim.\n\nHafta, spektrumu, örüntüyü ve seans konularını toplar. Sekmeyi açtıktan sonraki ilk 7 gün ücretsiz. Sonra 30 gün için {price} Stars.\n\nSesli not, Hafta ödendikten sonra metin olur, günde 10’a kadar. 7 ücretsiz gün bunu kapsamaz.",
+    "Between seans için bir günlük.\n\nGünün nasıl geçtiğini buraya yazın: bu zaten bir not. Sabah, öğlen ve akşam bir dokunuşla nasıl olduğunuzu sorarım.\n\nSeansa kadar neyin tekrar ettiğini ve neyin söylenmeye değer olduğunu toplarım.",
   botHelpMax:
-    "Between, seans için bir günlük.\n\nGünlük ücretsiz. Buradaki her metin bugünün notu olur. Sabah, öğlen ve akşam nasıl olduğunu sorabilirim.\n\nHafta, spektrumu, örüntüyü ve seans konularını toplar. Sekmeyi açtıktan sonraki ilk 7 gün ücretsiz. Sonra sitede 30 gün için {price} ₽.\n\nSesli not, Hafta ödendikten sonra metin olur, günde 10’a kadar. 7 ücretsiz gün bunu kapsamaz.",
+    "Between seans için bir günlük.\n\nGünün nasıl geçtiğini buraya yazın: bu zaten bir not. Sabah, öğlen ve akşam bir dokunuşla nasıl olduğunuzu sorarım.\n\nSeansa kadar neyin tekrar ettiğini ve neyin söylenmeye değer olduğunu toplarım.",
   botUnknown:
     "Metin yazın, not olarak kaydederim.",
   botNotReady:

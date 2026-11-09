@@ -345,10 +345,13 @@ export const en: Catalog = {
     "Morning, afternoon, and evening, the bot asks how you are. If you would rather not, turn it off on the Sessions tab.",
   botChatAllow: "Allow messages",
   botOpen: "Open Between",
+  botSessionAsk:
+    "Set the session date. The week is counted from it, and by the session you get what is worth saying.",
+  botSessionOpen: "Set the date",
   botHelp:
-    "Between is a journal for the session.\n\nThe journal is free. Any text here becomes a note for today. I can ask how you are in the morning, afternoon, and evening.\n\nWeek gathers the spectrum, the pattern, and topics for the session. The first 7 days after you open the tab are free. Then {price} Stars for 30 days.\n\nA voice note is saved as text only after Week is paid, up to 10 a day. The 7 free days do not include it.",
+    "Between is a journal for the session.\n\nWrite here how the day went: that is already a note. Morning, afternoon, and evening I ask how you are, in one tap.\n\nBy the session I gather what repeats and what is worth saying.",
   botHelpMax:
-    "Between is a journal for the session.\n\nThe journal is free. Any text here becomes a note for today. I can ask how you are in the morning, afternoon, and evening.\n\nWeek gathers the spectrum, the pattern, and topics for the session. The first 7 days after you open the tab are free. Then {price} ₽ for 30 days, paid on the site.\n\nA voice note is saved as text only after Week is paid, up to 10 a day. The 7 free days do not include it.",
+    "Between is a journal for the session.\n\nWrite here how the day went: that is already a note. Morning, afternoon, and evening I ask how you are, in one tap.\n\nBy the session I gather what repeats and what is worth saying.",
   botUnknown:
     "Send text and I will save a note.",
   botNotReady:

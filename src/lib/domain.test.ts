@@ -1554,11 +1554,12 @@ describe("languages", () => {
       translate("ru", "botHelp").split("\n")[0],
       "Between — дневник к сеансу.",
     );
-    const help = translate("ru", "botHelp", { price: 150 });
-    assert.match(help, /Первые 7 дней/);
-    assert.match(help, /150 Stars на 30 дней/);
-    assert.match(help, /до 10 в день/);
-    assert.match(help, /Пробные 7 дней/);
+    const help = translate("ru", "botHelp");
+    assert.match(help, /это уже заметка/);
+    assert.doesNotMatch(help, /Stars/);
+    assert.doesNotMatch(help, /\{price\}/);
+    assert.match(translate("ru", "botSessionAsk"), /дату сеанса/);
+    assert.equal(translate("en", "botSessionOpen"), "Set the date");
     assert.equal(isBotCommand("/paysupport", "paysupport"), true);
     assert.equal(isBotCommand("/paysupport@BetweenJournalBot", "paysupport"), true);
     assert.equal(isBotCommand("/PaySupport refund", "paysupport"), true);
