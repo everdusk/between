@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { readMaxInitData } from "@/lib/max-webapp";
+import { SbpLockup, SbpSign } from "@/components/sbp-logo";
 import { sbpCatalog, type SbpPlanId } from "@/lib/sbp-plans";
 import { DEFAULT_RUB_PRICE } from "@/lib/week-access";
 
@@ -10,17 +11,6 @@ const PLANS: SbpPlanId[] = ["month", "quarter", "year"];
 
 function rub(value: number): string {
   return `${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
-}
-
-function SbpMark() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden>
-      <path d="M6 16 16 4l4 6-6 6 6 6-4 6Z" fill="#5B57A2" />
-      <path d="M14 16 24 6l4 4-10 6 10 6-4 4Z" fill="#D90751" />
-      <path d="M12 16 22 8l2 2-8 6 8 6-2 2Z" fill="#FAB718" />
-      <path d="M16 16 26 10v12Z" fill="#1D1346" />
-    </svg>
-  );
 }
 
 export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: number }) {
@@ -237,7 +227,7 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
               <p className="text-sm">{rub(chosen.rub)}</p>
             </div>
             <button type="button" className="sub-pay" disabled={busy} onClick={() => void pay()}>
-              <SbpMark />
+              <SbpSign />
               {busy ? "Создаём платёж…" : "Оплатить через СБП"}
             </button>
           </section>
@@ -267,9 +257,9 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
                   Отсканируйте QR-код камерой или в приложении банка и подтвердите платёж.
                 </p>
                 <div className="sub-qr" dangerouslySetInnerHTML={{ __html: order.svg }} />
-                <p className="sub-sbp-pill">
-                  <SbpMark /> система быстрых платежей
-                </p>
+                <div className="sub-sbp-pill">
+                  <SbpLockup />
+                </div>
                 <a href={order.url} className="mt-3 block text-center text-sm text-[#8FF0BC] underline underline-offset-4">
                   Открыть в приложении банка
                 </a>
@@ -321,7 +311,7 @@ const CSS = `
 .sub-badge{border-radius:999px;background:#14352c;color:#8FF0BC;font-size:.68rem;padding:.15rem .45rem}
 .sub-off{border-radius:999px;background:#12382a;color:#8FF0BC;font-size:.68rem;padding:.15rem .4rem}
 .sub-email{margin-top:.4rem;width:100%;height:3rem;border-radius:1rem;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#f3f6f4;padding:0 1rem}
-.sub-pay{margin-top:.75rem;display:flex;width:100%;align-items:center;justify-content:center;gap:.55rem;height:3.2rem;border:0;border-radius:999px;background:#fff;color:#111;font-weight:650;font-size:1rem;text-decoration:none;cursor:pointer}
+.sub-pay{margin-top:.75rem;display:flex;width:100%;align-items:center;justify-content:center;gap:.7rem;height:3.4rem;border:0;border-radius:999px;background:#fff;color:#111;font-weight:650;font-size:1rem;text-decoration:none;cursor:pointer}
 .sub-pay:disabled{opacity:.6}
 .sub-note{border:1px solid rgba(94,231,197,.28);border-radius:1.2rem;padding:1rem 1.1rem;background:rgba(94,231,197,.04)}
 .sub-sample{border-radius:999px;background:#14352c;color:#8FF0BC;font-size:.72rem;padding:.15rem .5rem}
@@ -331,6 +321,6 @@ const CSS = `
 .sub-x{border:0;background:transparent;color:#d5ddd8;font-size:1.6rem;line-height:1;cursor:pointer}
 .sub-qr{margin:1rem auto 0;width:14rem;border-radius:1rem;background:#fff;padding:.6rem}
 .sub-qr svg{display:block;width:100%;height:auto}
-.sub-sbp-pill{margin:.9rem auto 0;display:flex;width:fit-content;align-items:center;gap:.4rem;border-radius:999px;background:#fff;color:#111;padding:.35rem .7rem;font-size:.78rem}
+.sub-sbp-pill{margin:.9rem auto 0;display:flex;width:fit-content;align-items:center;justify-content:center;border-radius:999px;background:#fff;padding:10px 14px}
 .sub-cancel{margin-top:1rem;width:100%;height:3rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#f3f6f4;cursor:pointer}
 `;
