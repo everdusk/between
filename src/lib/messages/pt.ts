@@ -338,13 +338,11 @@ export const pt: Catalog = {
     "De manhã, à tarde e à noite o bot pergunta como você está. Se não quiser, desligue na aba Sessões.",
   botChatAllow: "Permitir mensagens",
   botOpen: "Abrir Between",
-  botSessionAsk:
-    "Marque a data da sessão. A semana é contada a partir dela, e até a sessão se junta o que vale a pena dizer.",
   botSessionOpen: "Marcar a data",
   botHelp:
-    "Between é um diário para a sessão.\n\nEscreva aqui como foi o dia: isso já é uma nota. De manhã, à tarde e à noite pergunto como você está, num toque.\n\nAté a sessão eu junto o que se repete e o que vale a pena dizer.",
+    "Sou o Between — um diário com o qual você não chega à sessão de cabeça vazia.\n\nResponda por uns minutos por dia — o humor num toque, os pensamentos em algumas linhas. A semana vira um quadro: dá para ver o que se repete.\n\nAté a sessão eu junto isso num resumo — sem precisar lembrar o que houve. Marque a data da sessão, e eu começo.",
   botHelpMax:
-    "Between é um diário para a sessão.\n\nEscreva aqui como foi o dia: isso já é uma nota. De manhã, à tarde e à noite pergunto como você está, num toque.\n\nAté a sessão eu junto o que se repete e o que vale a pena dizer.",
+    "Sou o Between — um diário com o qual você não chega à sessão de cabeça vazia.\n\nResponda por uns minutos por dia — o humor num toque, os pensamentos em algumas linhas. A semana vira um quadro: dá para ver o que se repete.\n\nAté a sessão eu junto isso num resumo — sem precisar lembrar o que houve. Marque a data da sessão, e eu começo.",
   botUnknown:
     "Escreva um texto e eu salvo como nota.",
   botNotReady:

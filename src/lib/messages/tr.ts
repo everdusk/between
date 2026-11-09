@@ -338,13 +338,11 @@ export const tr: Catalog = {
     "Sabah, öğlen ve akşam bot halinizi sorar. İstemezseniz Seanslar sekmesinden kapatın.",
   botChatAllow: "Mesajlara izin ver",
   botOpen: "Between’i aç",
-  botSessionAsk:
-    "Seans tarihini koyun. Hafta ondan sayılır ve seansa kadar söylenmeye değer olan toplanır.",
   botSessionOpen: "Tarihi koy",
   botHelp:
-    "Between seans için bir günlük.\n\nGünün nasıl geçtiğini buraya yazın: bu zaten bir not. Sabah, öğlen ve akşam bir dokunuşla nasıl olduğunuzu sorarım.\n\nSeansa kadar neyin tekrar ettiğini ve neyin söylenmeye değer olduğunu toplarım.",
+    "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nGünde bir iki dakika sorularıma cevap ver — ruh hali bir dokunuş, düşünceler birkaç satır. Hafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Seans tarihini koy, başlayayım.",
   botHelpMax:
-    "Between seans için bir günlük.\n\nGünün nasıl geçtiğini buraya yazın: bu zaten bir not. Sabah, öğlen ve akşam bir dokunuşla nasıl olduğunuzu sorarım.\n\nSeansa kadar neyin tekrar ettiğini ve neyin söylenmeye değer olduğunu toplarım.",
+    "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nGünde bir iki dakika sorularıma cevap ver — ruh hali bir dokunuş, düşünceler birkaç satır. Hafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Seans tarihini koy, başlayayım.",
   botUnknown:
     "Metin yazın, not olarak kaydederim.",
   botNotReady:

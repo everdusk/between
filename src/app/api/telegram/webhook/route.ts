@@ -33,7 +33,6 @@ import {
   rememberLandingSource,
   startPayload,
 } from "@/lib/landing";
-import { sessionDateMissing } from "@/lib/session-prompt";
 import { appUrl } from "@/lib/telegram-auth";
 import {
   downloadTelegramFile,
@@ -435,12 +434,9 @@ export async function POST(req: Request) {
     await telegramRequest("sendMessage", {
       chat_id: chatId,
       text: translate(greeting, "botHelp"),
-      reply_markup: miniAppKeyboard(appUrl(), greeting),
+      reply_markup: sessionPlanKeyboard(appUrl(), greeting),
     });
-    if (userId) {
-      await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
-      await sendSessionAsk(chatId, userId, greeting);
-    }
+    if (userId) await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
     return NextResponse.json({ ok: true });
   }
 
@@ -550,14 +546,4 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true });
-}
-
-async function sendSessionAsk(chatId: number, userId: number, locale: LocaleId) {
-  const owner = await resolveJournalId(userId);
-  if (!(await sessionDateMissing(owner))) return;
-  await telegramRequest("sendMessage", {
-    chat_id: chatId,
-    text: translate(locale, "botSessionAsk"),
-    reply_markup: sessionPlanKeyboard(appUrl(), locale),
-  });
 }

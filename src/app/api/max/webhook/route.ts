@@ -21,7 +21,6 @@ import {
   trackServerEvent,
 } from "@/lib/analytics";
 import { duePoll, pollText } from "@/lib/digest";
-import { sessionDateMissing } from "@/lib/session-prompt";
 import { linkCodeFromStart, loginTokenFromStart, maxStorageId } from "@/lib/web-account";
 import { zonedParts } from "@/lib/zoned";
 import { claimMaxLink, finishMaxLogin, resolveMaxJournalId } from "@/lib/web-account-store";
@@ -211,17 +210,13 @@ async function greet(
   keyboard?: MaxKeyboard,
   chatId?: number,
 ) {
-  await say(userId, translate(greeting, "botHelpMax"), keyboard, chatId);
-  const owner = await resolveMaxJournalId(userId);
-  if (await sessionDateMissing(owner)) {
-    await say(
-      userId,
-      translate(greeting, "botSessionAsk"),
-      sessionPlanKeyboard(greeting) ?? keyboard,
-      chatId,
-    );
-  }
-  await sendDueMood(userId, owner, reply, chatId);
+  await say(
+    userId,
+    translate(greeting, "botHelpMax"),
+    sessionPlanKeyboard(greeting) ?? keyboard,
+    chatId,
+  );
+  await sendDueMood(userId, await resolveMaxJournalId(userId), reply, chatId);
 }
 
 async function handleStart(

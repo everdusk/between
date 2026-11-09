@@ -338,13 +338,11 @@ export const id: Catalog = {
     "Pagi, siang, dan sore bot menanyakan kabar Anda. Jika tidak ingin, matikan di tab Sesi.",
   botChatAllow: "Izinkan pesan",
   botOpen: "Buka Between",
-  botSessionAsk:
-    "Pasang tanggal sesi. Minggu dihitung dari situ, dan menjelang sesi terkumpul apa yang layak dibicarakan.",
   botSessionOpen: "Pasang tanggal",
   botHelp:
-    "Between adalah jurnal untuk sesi.\n\nTulis di sini bagaimana hari berjalan: itu sudah catatan. Pagi, siang, dan malam saya tanya kabar Anda dengan satu ketukan.\n\nMenjelang sesi saya kumpulkan apa yang berulang dan apa yang layak dibicarakan.",
+    "Saya Between — jurnal yang membuat Anda tidak datang ke sesi dengan kepala kosong.\n\nJawab saya beberapa menit sehari — suasana hati satu ketukan, pikiran beberapa baris. Minggu tersusun jadi gambaran: terlihat apa yang berulang.\n\nMenjelang sesi saya kumpulkan ini jadi ringkasan — tidak perlu mengingat apa yang terjadi. Pasang tanggal sesi, dan saya mulai.",
   botHelpMax:
-    "Between adalah jurnal untuk sesi.\n\nTulis di sini bagaimana hari berjalan: itu sudah catatan. Pagi, siang, dan malam saya tanya kabar Anda dengan satu ketukan.\n\nMenjelang sesi saya kumpulkan apa yang berulang dan apa yang layak dibicarakan.",
+    "Saya Between — jurnal yang membuat Anda tidak datang ke sesi dengan kepala kosong.\n\nJawab saya beberapa menit sehari — suasana hati satu ketukan, pikiran beberapa baris. Minggu tersusun jadi gambaran: terlihat apa yang berulang.\n\nMenjelang sesi saya kumpulkan ini jadi ringkasan — tidak perlu mengingat apa yang terjadi. Pasang tanggal sesi, dan saya mulai.",
   botUnknown:
     "Kirim teks, saya simpan sebagai catatan.",
   botNotReady:

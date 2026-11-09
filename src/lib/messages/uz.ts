@@ -338,13 +338,11 @@ export const uz: Catalog = {
     "Ertalab, kunduzi va kechqurun bot holingizni so‘raydi. Istamasangiz, «Seanslar» bo‘limida o‘chiring.",
   botChatAllow: "Xabarlarga ruxsat",
   botOpen: "Between’ni ochish",
-  botSessionAsk:
-    "Seans sanasini qo'ying. Hafta shundan hisoblanadi va seansgacha aytishga arziydigani yig'iladi.",
   botSessionOpen: "Sanani qo'yish",
   botHelp:
-    "Between — seans uchun kundalik.\n\nKuningiz qanday o'tganini shu yerga yozing: bu allaqachon yozuv. Ertalab, kunduzi va kechqurun bir bosishda holingizni so'rayman.\n\nSeansgacha nima takrorlanayotganini va nima aytishga arzigini yig'aman.",
+    "Men Between — seansga bo'sh bosh bilan kelmaydigan kundalik.\n\nKuniga bir-ikki daqiqa savollarimga javob bering — kayfiyat bir bosishda, fikrlar bir necha qatorda. Hafta rasmga aylanadi: nima takrorlanayotgani ko'rinadi.\n\nSeansgacha buni jamlab beraman — nima bo'lganini eslash shart emas. Seans sanasini qo'ying, men boshlayman.",
   botHelpMax:
-    "Between — seans uchun kundalik.\n\nKuningiz qanday o'tganini shu yerga yozing: bu allaqachon yozuv. Ertalab, kunduzi va kechqurun bir bosishda holingizni so'rayman.\n\nSeansgacha nima takrorlanayotganini va nima aytishga arzigini yig'aman.",
+    "Men Between — seansga bo'sh bosh bilan kelmaydigan kundalik.\n\nKuniga bir-ikki daqiqa savollarimga javob bering — kayfiyat bir bosishda, fikrlar bir necha qatorda. Hafta rasmga aylanadi: nima takrorlanayotgani ko'rinadi.\n\nSeansgacha buni jamlab beraman — nima bo'lganini eslash shart emas. Seans sanasini qo'ying, men boshlayman.",
   botUnknown: "Matn yozing, yozuv qilib saqlayman.",
   botNotReady:
     "Hozir saqlay olmayman.",

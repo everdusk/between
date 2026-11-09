@@ -338,13 +338,11 @@ export const vi: Catalog = {
     "Sáng, trưa và tối bot sẽ hỏi bạn thế nào. Không muốn thì tắt ở tab Buổi trị liệu.",
   botChatAllow: "Cho phép tin nhắn",
   botOpen: "Mở Between",
-  botSessionAsk:
-    "Đặt ngày buổi trị liệu. Tuần được tính từ đó, và đến buổi trị liệu những điều đáng nói được gom lại.",
   botSessionOpen: "Đặt ngày",
   botHelp:
-    "Between là nhật ký cho buổi trị liệu.\n\nViết vào đây ngày đã trôi qua thế nào: đó đã là một ghi chú. Sáng, trưa và tối tôi hỏi bạn thế nào, một lần chạm.\n\nĐến buổi trị liệu tôi gom điều gì lặp lại và điều gì đáng nói.",
+    "Tôi là Between — nhật ký để bạn không đến buổi trị liệu với đầu trống rỗng.\n\nTrả lời tôi vài phút mỗi ngày — tâm trạng một lần chạm, suy nghĩ vài dòng. Tuần xếp thành một bức tranh: thấy điều gì lặp lại.\n\nĐến buổi trị liệu tôi gom lại thành bản tóm tắt — không phải nhớ chuyện gì đã xảy ra. Đặt ngày buổi trị liệu, và tôi bắt đầu.",
   botHelpMax:
-    "Between là nhật ký cho buổi trị liệu.\n\nViết vào đây ngày đã trôi qua thế nào: đó đã là một ghi chú. Sáng, trưa và tối tôi hỏi bạn thế nào, một lần chạm.\n\nĐến buổi trị liệu tôi gom điều gì lặp lại và điều gì đáng nói.",
+    "Tôi là Between — nhật ký để bạn không đến buổi trị liệu với đầu trống rỗng.\n\nTrả lời tôi vài phút mỗi ngày — tâm trạng một lần chạm, suy nghĩ vài dòng. Tuần xếp thành một bức tranh: thấy điều gì lặp lại.\n\nĐến buổi trị liệu tôi gom lại thành bản tóm tắt — không phải nhớ chuyện gì đã xảy ra. Đặt ngày buổi trị liệu, và tôi bắt đầu.",
   botUnknown: "Gửi chữ, tôi lưu thành ghi chép.",
   botNotReady:
     "Lúc này không lưu được.",

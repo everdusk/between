@@ -50,7 +50,7 @@ function readParams(raw: string | undefined): URLSearchParams {
   }
 }
 
-function startParamFromLaunch(launch: string | null): string | null {
+function startParamFromLaunch(launch: string | null | undefined): string | null {
   if (!launch) return null;
   try {
     return new URLSearchParams(launch).get("start_param");

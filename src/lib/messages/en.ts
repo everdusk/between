@@ -345,13 +345,11 @@ export const en: Catalog = {
     "Morning, afternoon, and evening, the bot asks how you are. If you would rather not, turn it off on the Sessions tab.",
   botChatAllow: "Allow messages",
   botOpen: "Open Between",
-  botSessionAsk:
-    "Set the session date. The week is counted from it, and by the session you get what is worth saying.",
   botSessionOpen: "Set the date",
   botHelp:
-    "Between is a journal for the session.\n\nWrite here how the day went: that is already a note. Morning, afternoon, and evening I ask how you are, in one tap.\n\nBy the session I gather what repeats and what is worth saying.",
+    "I'm Between — a journal so you don't come to a session with an empty head.\n\nAnswer me for a couple of minutes a day — mood in one tap, thoughts in a few lines. The week turns into a picture: you can see what repeats.\n\nBy the session I'll gather it into a brief — no need to remember what happened. Set the session date, and I'll start.",
   botHelpMax:
-    "Between is a journal for the session.\n\nWrite here how the day went: that is already a note. Morning, afternoon, and evening I ask how you are, in one tap.\n\nBy the session I gather what repeats and what is worth saying.",
+    "I'm Between — a journal so you don't come to a session with an empty head.\n\nAnswer me for a couple of minutes a day — mood in one tap, thoughts in a few lines. The week turns into a picture: you can see what repeats.\n\nBy the session I'll gather it into a brief — no need to remember what happened. Set the session date, and I'll start.",
   botUnknown:
     "Send text and I will save a note.",
   botNotReady:
