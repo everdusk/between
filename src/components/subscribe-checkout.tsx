@@ -9,6 +9,14 @@ import { DEFAULT_RUB_PRICE } from "@/lib/week-access";
 
 const PLANS: SbpPlanId[] = ["month", "quarter", "year"];
 
+function Check() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+      <path d="M3.2 8.3 6.4 11.4 12.8 4.6" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function rub(value: number): string {
   return `${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
 }
@@ -110,11 +118,11 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
             <p className="mt-5 max-w-md text-base leading-relaxed text-[#a9b4ae]">
               Between живёт в мессенджере: вечером бот сам спросит, как прошёл день, и к сессии соберёт из ответов готовую выкладку.
             </p>
-            <ul className="mt-6 space-y-3 text-sm leading-relaxed text-[#d5ddd8]">
-              <li>Запись за минуту: настроение в один тап, мысли парой строк</li>
-              <li>Неделя складывается в картину: видны повторяющиеся темы</li>
-              <li>Выкладка к сессии — о чём стоит рассказать терапевту</li>
-              <li>Ничего устанавливать не нужно — дневник уже в Telegram или MAX</li>
+            <ul className="sub-points">
+              <li><Check />Запись за минуту: настроение в один тап, мысли парой строк</li>
+              <li><Check />Неделя складывается в картину: видны повторяющиеся темы</li>
+              <li><Check />Выкладка к сессии — о чём стоит рассказать терапевту</li>
+              <li><Check />Ничего устанавливать не нужно — дневник уже в Telegram</li>
             </ul>
             <div className="sub-note mt-8">
               <div className="flex items-center justify-between gap-3">
@@ -301,6 +309,9 @@ const CSS = `
 .sub-display{font-weight:650;letter-spacing:-.03em}
 .subscribe-page a{color:inherit}
 .sub-kicker{font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#5ee7c5}
+.sub-points{margin-top:1.5rem;display:grid;gap:.85rem;list-style:none;padding:0}
+.sub-points li{display:flex;align-items:flex-start;gap:.65rem;color:#e4ece8;font-size:.95rem;line-height:1.45}
+.sub-points svg{flex:none;margin-top:.15rem;color:#5ee7c5}
 .sub-shift{background:linear-gradient(102deg,#5df0c6 0%,#7ee0d2 38%,#8eb6ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .sub-card{border:1px solid rgba(255,255,255,.1);border-radius:1.6rem;background:rgba(16,22,20,.92);padding:1.25rem;box-shadow:0 30px 80px -40px rgba(0,0,0,.8)}
 .sub-plan{display:flex;align-items:center;gap:.8rem;border:1px solid rgba(255,255,255,.12);border-radius:1rem;padding:.85rem 1rem;cursor:pointer}
