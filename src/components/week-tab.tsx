@@ -30,6 +30,8 @@ interface WeekTabProps {
   ready: boolean;
   inTelegram: boolean;
   initData: string;
+  /** Site session or MAX. A logged-out browser has no SBP checkout. */
+  canSubscribe: boolean;
   reloadToken?: number;
   onAccess?: (view: WeekAccessView) => void;
   children: ReactNode;
@@ -42,6 +44,7 @@ export function WeekTab({
   ready,
   inTelegram,
   initData,
+  canSubscribe,
   reloadToken = 0,
   onAccess,
   children,
@@ -244,7 +247,7 @@ export function WeekTab({
                       {planLabel(plan, access.prices[plan])}
                     </Button>
                   ))
-                : (
+                : canSubscribe ? (
                     <a
                       href="/subscribe"
                       className={buttonVariants({
@@ -254,7 +257,7 @@ export function WeekTab({
                     >
                       {t("sbpBuy")}
                     </a>
-                  )}
+                  ) : null}
               {payError && (
                 <p className="text-sm text-ink-muted" role="alert">
                   {payError}

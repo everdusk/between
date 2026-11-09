@@ -280,11 +280,11 @@ export function AccountSheet({
                         {planLabel(plan, access.prices[plan])}
                       </Button>
                     ))
-                  : (
+                  : account || inMax ? (
                       <a href="/subscribe" className={buttonVariants({ className: "w-full" })}>
                         {t("sbpBuy")}
                       </a>
-                    )}
+                    ) : null}
                 {payError ? (
                   <p className="text-sm text-destructive" role="alert">
                     {payError}
