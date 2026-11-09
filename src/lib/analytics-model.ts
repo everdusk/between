@@ -107,6 +107,41 @@ export function messengerEventName(messenger: AnalyticsMessenger, event: Analyti
   return `${messenger}_${event}`;
 }
 
+/** One action on the checkout. The receipt address and the bank link never travel with it. */
+export const SUBSCRIBE_STEPS = [
+  "signed_out",
+  "open",
+  "plan",
+  "email",
+  "email_bad",
+  "pay",
+  "pay_fail",
+  "qr",
+  "bank",
+  "paid",
+  "pending",
+  "close",
+  "cancel",
+  "journal",
+  "terms",
+  "privacy",
+] as const;
+
+export const SUBSCRIBE_FAILS = ["auth", "not_configured", "bad_payment", "network", "rejected"] as const;
+
+export type SubscribeStep = (typeof SUBSCRIBE_STEPS)[number];
+export type SubscribeFail = (typeof SUBSCRIBE_FAILS)[number];
+
+/** `web_subscribe` and the same for Telegram and MAX. Not a daily funnel counter. */
+export function subscribeEventName(messenger: AnalyticsMessenger): string {
+  return `${messenger}_subscribe`;
+}
+
+export function parseSubscribeEvent(name: string): AnalyticsMessenger | null {
+  const match = /^(telegram|max|web)_subscribe$/.exec(name);
+  return match ? (match[1] as AnalyticsMessenger) : null;
+}
+
 export function parseMessengerEvent(
   name: string,
 ): { messenger: AnalyticsMessenger; event: AnalyticsEvent } | null {
@@ -279,7 +314,8 @@ function quietProductValue(value: unknown): unknown {
  */
 export function scrubProductEvent(event: ProductEvent): (ProductEvent & { properties: Record<string, unknown> }) | null {
   const named = parseMessengerEvent(event.event);
-  if (!named && !(ANALYTICS_EVENTS as readonly string[]).includes(event.event)) return null;
+  const subscribe = parseSubscribeEvent(event.event);
+  if (!named && !subscribe && !(ANALYTICS_EVENTS as readonly string[]).includes(event.event)) return null;
   const source =
     event.properties && typeof event.properties === "object" && !Array.isArray(event.properties)
       ? event.properties
@@ -290,6 +326,16 @@ export function scrubProductEvent(event: ProductEvent): (ProductEvent & { proper
   }
   const properties: Record<string, unknown> = { $geoip_disable: true };
   for (const [key, value] of Object.entries(source)) {
+    if (key === "step") {
+      if ((SUBSCRIBE_STEPS as readonly string[]).includes(String(value))) properties.step = String(value);
+      continue;
+    }
+    if (key === "fail") {
+      if (source.step === "pay_fail" && (SUBSCRIBE_FAILS as readonly string[]).includes(String(value))) {
+        properties.fail = String(value);
+      }
+      continue;
+    }
     if (!keepProductKey(key)) continue;
     if (key === "plan") {
       if ((PRODUCT_PLANS as readonly string[]).includes(String(value))) properties.plan = String(value);
@@ -305,6 +351,7 @@ export function scrubProductEvent(event: ProductEvent): (ProductEvent & { proper
     if (quiet !== undefined) properties[key] = quiet;
   }
   if (named) properties.messenger = named.messenger;
+  if (subscribe) properties.messenger = subscribe;
   const next = { ...event, properties };
   delete next.$set;
   delete next.$set_once;

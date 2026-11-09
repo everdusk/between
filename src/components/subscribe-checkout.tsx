@@ -1,10 +1,19 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { readMaxInitData } from "@/lib/max-webapp";
 import { SbpLockup, SbpSign } from "@/components/sbp-logo";
+import { trackAnalytics } from "@/lib/analytics-client";
 import { sbpCatalog, type SbpPlanId } from "@/lib/sbp-plans";
+import { captureSubscribe, subscribeFail } from "@/lib/subscribe-analytics";
+import type { AnalyticsMessenger } from "@/lib/analytics-model";
 import { DEFAULT_RUB_PRICE } from "@/lib/week-access";
+
+function pageMessenger(): AnalyticsMessenger {
+  if (readMaxInitData()) return "max";
+  if (readTelegramInitData()) return "telegram";
+  return "web";
+}
 
 function readTelegramInitData(): string {
   if (typeof window === "undefined") return "";
@@ -46,7 +55,10 @@ export function SubscribeGate({ monthly }: { monthly?: number }) {
       } catch {
         /* no session */
       }
-      if (!cancelled) window.location.replace("/journal");
+      if (!cancelled) {
+        captureSubscribe({ messenger: "web", step: "signed_out" });
+        window.location.replace("/journal");
+      }
     })();
     return () => {
       cancelled = true;
@@ -84,6 +96,26 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
     svg: string;
   } | null>(null);
   const [paid, setPaid] = useState<"granted" | "pending" | null>(null);
+  const emailSeen = useRef(false);
+
+  useEffect(() => {
+    captureSubscribe({ messenger: pageMessenger(), step: "open", plan: "quarter" });
+    trackAnalytics("paywall", readTelegramInitData());
+  }, []);
+
+  useEffect(() => {
+    if (!order) return;
+    captureSubscribe({ messenger: pageMessenger(), step: "qr", plan: order.plan });
+  }, [order]);
+
+  useEffect(() => {
+    if (!paid || !order) return;
+    captureSubscribe({
+      messenger: pageMessenger(),
+      step: paid === "pending" ? "pending" : "paid",
+      plan: order.plan,
+    });
+  }, [paid, order]);
 
   useEffect(() => {
     if (!order || paid) return;
@@ -107,22 +139,33 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
     const trimmed = email.trim();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setError("Нужна почта, чтобы прислать чек.");
+      captureSubscribe({ messenger: pageMessenger(), step: "email_bad", plan });
       return;
     }
     setBusy(true);
     setError(null);
+    captureSubscribe({ messenger: pageMessenger(), step: "pay", plan });
+    trackAnalytics("checkout", readTelegramInitData(), { plan });
     const maxInit = readMaxInitData();
     const telegramInit = readTelegramInitData();
-    const response = await fetch("/api/sbp", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: {
-        "Content-Type": "application/json",
-        ...(maxInit ? { "x-max-init-data": maxInit } : {}),
-        ...(telegramInit ? { "x-telegram-init-data": telegramInit } : {}),
-      },
-      body: JSON.stringify({ plan, email: trimmed }),
-    });
+    let response: Response;
+    try {
+      response = await fetch("/api/sbp", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          ...(maxInit ? { "x-max-init-data": maxInit } : {}),
+          ...(telegramInit ? { "x-telegram-init-data": telegramInit } : {}),
+        },
+        body: JSON.stringify({ plan, email: trimmed }),
+      });
+    } catch {
+      setBusy(false);
+      setError("Платёж не создался. Попробуйте ещё раз.");
+      captureSubscribe({ messenger: pageMessenger(), step: "pay_fail", plan, fail: "network" });
+      return;
+    }
     const body = (await response.json().catch(() => null)) as {
       ok?: boolean;
       error?: string;
@@ -134,10 +177,12 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
     } | null;
     setBusy(false);
     if (body?.error === "auth") {
+      captureSubscribe({ messenger: pageMessenger(), step: "pay_fail", plan, fail: "auth" });
       window.location.replace("/journal");
       return;
     }
     if (!body?.ok || !body.paymentId || !body.url || !body.svg || typeof body.amount !== "number") {
+      captureSubscribe({ messenger: pageMessenger(), step: "pay_fail", plan, fail: subscribeFail(body?.error) });
       setError(
         body?.error === "not_configured"
           ? "Оплата ещё не включена: в кабинете ЮKassa не заданы магазин и ключ."
@@ -157,7 +202,7 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 sm:py-10">
         <header>
-          <a href="/journal" className="sub-display text-lg">
+          <a href="/journal" className="sub-display text-lg" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "journal" })}>
             Between
           </a>
         </header>
@@ -223,7 +268,10 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
                       name="plan"
                       value={id}
                       checked={selected}
-                      onChange={() => setPlan(id)}
+                      onChange={() => {
+                        setPlan(id);
+                        captureSubscribe({ messenger: pageMessenger(), step: "plan", plan: id });
+                      }}
                     />
                     <span>
                       <span className="flex flex-wrap items-center gap-2">
@@ -266,13 +314,20 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
               autoComplete="email"
               placeholder="masha@example.ru"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                const next = event.target.value;
+                setEmail(next);
+                if (!emailSeen.current && next.trim()) {
+                  emailSeen.current = true;
+                  captureSubscribe({ messenger: pageMessenger(), step: "email", plan });
+                }
+              }}
               className="sub-email"
             />
             <p className="mt-3 text-xs leading-relaxed text-[#74827b]">
               Нажимая «Оплатить через СБП», вы соглашаетесь с{" "}
-              <a href="/terms">публичной офертой</a> и даёте{" "}
-              <a href="/privacy">согласие на обработку персональных данных</a>
+              <a href="/terms" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "terms", plan })}>публичной офертой</a> и даёте{" "}
+              <a href="/privacy" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "privacy", plan })}>согласие на обработку персональных данных</a>
             </p>
             <p className="mt-2 text-xs text-[#74827b]">Платёж через ЮKassa · чек по 54-ФЗ на почту</p>
             {error ? (
@@ -301,7 +356,15 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
               <h2 id="sbp-title" className="sub-display text-2xl">
                 {paid ? "Оплата прошла" : "Оплата через СБП"}
               </h2>
-              <button type="button" className="sub-x" aria-label="Закрыть" onClick={() => setOrder(null)}>
+              <button
+                type="button"
+                className="sub-x"
+                aria-label="Закрыть"
+                onClick={() => {
+                  captureSubscribe({ messenger: pageMessenger(), step: "close", plan: order.plan });
+                  setOrder(null);
+                }}
+              >
                 ×
               </button>
             </div>
@@ -320,7 +383,11 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
                 <div className="sub-sbp-pill">
                   <SbpLockup />
                 </div>
-                <a href={order.url} className="mt-3 block text-center text-sm text-[#8FF0BC] underline underline-offset-4">
+                <a
+                  href={order.url}
+                  className="mt-3 block text-center text-sm text-[#8FF0BC] underline underline-offset-4"
+                  onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "bank", plan: order.plan })}
+                >
                   Открыть в приложении банка
                 </a>
               </>
@@ -343,11 +410,22 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
               Подписка активируется сразу после оплаты и не продлевается автоматически.
             </p>
             {paid ? (
-              <a href="/journal" className="sub-pay mt-4">
+              <a
+                href="/journal"
+                className="sub-pay mt-4"
+                onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "journal", plan: order.plan })}
+              >
                 Открыть дневник
               </a>
             ) : (
-              <button type="button" className="sub-cancel" onClick={() => setOrder(null)}>
+              <button
+                type="button"
+                className="sub-cancel"
+                onClick={() => {
+                  captureSubscribe({ messenger: pageMessenger(), step: "cancel", plan: order.plan });
+                  setOrder(null);
+                }}
+              >
                 Отменить и вернуться
               </button>
             )}
