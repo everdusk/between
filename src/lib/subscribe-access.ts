@@ -1,7 +1,8 @@
 /**
  * The checkout is for someone who already has a journal.
- * A normal browser with no session leaves before the form is painted.
+ * A normal browser with no session leaves for the sign-in.
  * A messenger launch (MAX or Telegram) is already signed in, even without the site cookie.
+ * This decision stays in the browser: a static page cannot read the session cookie.
  */
 export function shouldLeaveSubscribe(input: {
   signedIn: boolean;
@@ -14,6 +15,3 @@ export function shouldLeaveSubscribe(input: {
   if (hash.includes("WebAppData=") || hash.includes("tgWebAppData=")) return false;
   return true;
 }
-
-/** Runs before React on a page the server already knows has no site session. */
-export const SUBSCRIBE_LEAVE_SCRIPT = `try{var h=location.hash||"";var max="";try{max=sessionStorage.getItem("WebAppData")||""}catch(e){}if(!max&&h.indexOf("WebAppData=")<0&&h.indexOf("tgWebAppData=")<0)location.replace("/journal")}catch(e){}`;
