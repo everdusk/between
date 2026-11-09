@@ -9,7 +9,6 @@ import {
   type SubscribeFail,
   type SubscribeStep,
 } from "./analytics-model";
-import { YANDEX_METRIKA_ID } from "./landing";
 import { readPosthogBrowserConfig } from "./posthog-env";
 
 export { parseSubscribeEvent, subscribeEventName };
@@ -58,7 +57,7 @@ function deviceId(): string | null {
   }
 }
 
-/** PostHog event plus a Metrika goal. No-op until the public token is on the page, except the goal. */
+/** One PostHog event. It does not touch the `/stats` counters. No-op until the public token is on the page. */
 export function captureSubscribe(input: {
   messenger: AnalyticsMessenger;
   step: SubscribeStep;
@@ -83,12 +82,5 @@ export function captureSubscribe(input: {
       body,
       keepalive: true,
     }).catch(() => undefined);
-  }
-  const ym = (window as unknown as { ym?: (...args: unknown[]) => void }).ym;
-  if (typeof ym === "function") {
-    const params: Record<string, string> = {};
-    if (properties.plan) params.plan = properties.plan;
-    if (properties.fail) params.fail = properties.fail;
-    ym(YANDEX_METRIKA_ID, "reachGoal", `subscribe_${properties.step}`, params);
   }
 }

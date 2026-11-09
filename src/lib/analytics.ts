@@ -226,8 +226,6 @@ export async function trackServerEvent(input: {
   userId: number | string;
   event: AnalyticsEvent;
   messenger: AnalyticsMessenger;
-  /** Same charge is counted once. Without it, one person counts once per day. */
-  salt?: string;
 }): Promise<void> {
   const redis = analyticsRedis();
   const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
@@ -239,7 +237,6 @@ export async function trackServerEvent(input: {
         event: input.event,
         messenger: input.messenger,
         day: todayInTimeZone(DEFAULT_TIME_ZONE),
-        salt: input.salt,
         pepper,
       });
       counted = result === "counted";

@@ -1,8 +1,8 @@
 import { accountByEmail } from "./web-account-store";
 import { webStorageId } from "./web-account";
 import { claimPaymentCharge, getRedis, loadWeekAccess, releasePaymentCharge, saveWeekAccess } from "./redis";
-import { trackServerEvent } from "./analytics";
 import type { AnalyticsMessenger } from "./analytics-model";
+import { captureServerSubscribe } from "./product-analytics-server";
 import { rubPriceFromEnv } from "./week-access";
 import {
   applyPendingSbp,
@@ -120,12 +120,12 @@ export async function settleSbpPayment(payment: unknown): Promise<"granted" | "p
   const paid = sbpPaid(payment, rubPriceFromEnv(process.env.WEEK_RUB_PRICE));
   if (!paid) return "open";
   const result = await fulfillSbp(paid, new Date(), sbpLedger());
-  if (result === "granted") {
-    await trackServerEvent({
-      userId: paid.actorId ?? paid.id,
-      event: "paid",
+  if (result === "granted" || result === "pending") {
+    await captureServerSubscribe({
       messenger: paidMessenger(paid.actorId),
-      salt: paid.id,
+      step: result === "pending" ? "pending" : "paid",
+      plan: paid.plan,
+      actorId: paid.actorId ?? paid.id,
     });
   }
   return result;

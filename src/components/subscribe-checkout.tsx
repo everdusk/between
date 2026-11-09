@@ -3,7 +3,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { readMaxInitData } from "@/lib/max-webapp";
 import { SbpLockup, SbpSign } from "@/components/sbp-logo";
-import { trackAnalytics } from "@/lib/analytics-client";
 import { sbpCatalog, type SbpPlanId } from "@/lib/sbp-plans";
 import { captureSubscribe, subscribeFail } from "@/lib/subscribe-analytics";
 import type { AnalyticsMessenger } from "@/lib/analytics-model";
@@ -100,22 +99,12 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
 
   useEffect(() => {
     captureSubscribe({ messenger: pageMessenger(), step: "open", plan: "quarter" });
-    trackAnalytics("paywall", readTelegramInitData());
   }, []);
 
   useEffect(() => {
     if (!order) return;
     captureSubscribe({ messenger: pageMessenger(), step: "qr", plan: order.plan });
   }, [order]);
-
-  useEffect(() => {
-    if (!paid || !order) return;
-    captureSubscribe({
-      messenger: pageMessenger(),
-      step: paid === "pending" ? "pending" : "paid",
-      plan: order.plan,
-    });
-  }, [paid, order]);
 
   useEffect(() => {
     if (!order || paid) return;
@@ -145,7 +134,6 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
     setBusy(true);
     setError(null);
     captureSubscribe({ messenger: pageMessenger(), step: "pay", plan });
-    trackAnalytics("checkout", readTelegramInitData(), { plan });
     const maxInit = readMaxInitData();
     const telegramInit = readTelegramInitData();
     let response: Response;
