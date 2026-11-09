@@ -16,8 +16,9 @@ import {
   type AnalyticsMessenger,
   type AnalyticsSnapshot,
   type MessengerReport,
+  type ProductPlan,
 } from "./analytics-model";
-import { captureServerProduct } from "./product-analytics-server";
+import { captureServerProduct, captureServerSubscribe } from "./product-analytics-server";
 import { getRedis } from "./redis";
 import { DEFAULT_TIME_ZONE } from "./types";
 import { todayInTimeZone } from "./zoned";
@@ -218,6 +219,41 @@ export async function recordPaidAnalytics(
     day,
     salt: chargeId || undefined,
     pepper,
+  });
+}
+
+/** One confirmed SBP charge in the paid counter. The same charge is counted once. Detail stays in PostHog. */
+export async function recordSbpPaid(input: {
+  userId: string;
+  messenger: AnalyticsMessenger;
+  plan: ProductPlan;
+  paymentId: string;
+  step: "paid" | "pending";
+}): Promise<void> {
+  const redis = analyticsRedis();
+  const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
+  let counted = !redis || !pepper;
+  try {
+    if (redis && pepper) {
+      const result = await recordAnalytics(redis, {
+        userId: input.userId,
+        event: "paid",
+        messenger: input.messenger,
+        day: todayInTimeZone(DEFAULT_TIME_ZONE),
+        salt: input.paymentId,
+        pepper,
+      });
+      counted = result === "counted";
+    }
+  } catch {
+    counted = false;
+  }
+  if (!counted) return;
+  await captureServerSubscribe({
+    messenger: input.messenger,
+    step: input.step,
+    plan: input.plan,
+    actorId: input.userId,
   });
 }
 
