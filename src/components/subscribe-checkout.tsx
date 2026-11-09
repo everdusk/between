@@ -93,19 +93,16 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
     <article className="subscribe-page fixed inset-0 z-30 overflow-y-auto">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 sm:py-10">
-        <header className="flex items-center justify-between gap-4">
-          <Link href="/" className="font-display text-lg tracking-tight">
+        <header>
+          <Link href="/" className="sub-display text-lg">
             Between
           </Link>
-          <a href="/journal" className="sub-login">
-            Уже есть дневник? Войти
-          </a>
         </header>
 
         <div className="mt-8 grid items-start gap-10 lg:mt-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16">
           <div className="hidden lg:block">
             <p className="sub-kicker">Дневник для тех, кто в терапии</p>
-            <h1 className="mt-4 font-display text-5xl leading-[1.05] tracking-tight">
+            <h1 className="sub-display mt-4 text-5xl leading-[1.05]">
               Оформление подписки.
               <br />
               <span className="sub-shift">Вы честно экономите.</span>
@@ -124,7 +121,7 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
                 <p className="text-xs tracking-[0.14em] text-[#8aa097] uppercase">Запись из дневника</p>
                 <span className="sub-sample">Пример</span>
               </div>
-              <p className="mt-3 font-display text-2xl">вс, 8 ноября</p>
+              <p className="sub-display mt-3 text-2xl">вс, 8 ноября</p>
               <p className="mt-3 text-sm text-[#c5d0ca]">
                 <span className="text-[#8FF0BC]">21:15</span>
                 <span className="ms-2 inline-flex items-center gap-1 rounded-full bg-[#14352c] px-2 py-0.5 text-[#8FF0BC]">
@@ -144,13 +141,13 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
           <section className="sub-card">
             <div className="lg:hidden">
               <p className="sub-kicker">Подписка Between</p>
-              <h1 className="mt-3 font-display text-[2.05rem] leading-[1.05] tracking-tight">
+              <h1 className="sub-display mt-3 text-[2.05rem] leading-[1.05]">
                 Оформление подписки.
                 <br />
                 <span className="sub-shift">Вы честно экономите.</span>
               </h1>
             </div>
-            <h2 className="hidden font-display text-2xl tracking-tight lg:block">Выберите план</h2>
+            <h2 className="sub-display hidden text-2xl lg:block">Выберите план</h2>
             <fieldset className="mt-5 space-y-3">
               <legend className="sr-only">Срок подписки</legend>
               {PLANS.map((id) => {
@@ -193,7 +190,7 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
                 <p className="text-sm text-[#a9b4ae]">Итого к оплате</p>
                 <p className="text-xs text-[#74827b]">Разовый платёж · доступ {chosen.span}</p>
               </div>
-              <p className="font-display text-3xl">{rub(chosen.rub)}</p>
+              <p className="sub-display text-3xl">{rub(chosen.rub)}</p>
             </div>
 
             <label className="mt-5 block text-sm text-[#a9b4ae]" htmlFor="sbp-email">
@@ -238,7 +235,7 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
         <div className="sub-modal" role="dialog" aria-modal="true" aria-labelledby="sbp-title">
           <div className="sub-sheet">
             <div className="flex items-start justify-between gap-4">
-              <h2 id="sbp-title" className="font-display text-2xl">
+              <h2 id="sbp-title" className="sub-display text-2xl">
                 {paid ? "Оплата прошла" : "Оплата через СБП"}
               </h2>
               <button type="button" className="sub-x" aria-label="Закрыть" onClick={() => setOrder(null)}>
@@ -299,10 +296,11 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
 }
 
 const CSS = `
-.subscribe-page{background:#07090d;color:#f3f6f4;color-scheme:only dark}
+.subscribe-page{background:#07090d;color:#f3f6f4;color-scheme:only dark;font-family:var(--font-sans),ui-sans-serif,system-ui,sans-serif;font-weight:500;-webkit-font-smoothing:antialiased}
+.subscribe-page button,.subscribe-page input{font-family:inherit}
+.sub-display{font-weight:650;letter-spacing:-.03em}
 .subscribe-page a{color:inherit}
-.sub-login{border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:.55rem .9rem;font-size:.84rem;color:#d5ddd8;text-decoration:none}
-.sub-kicker{font-size:.72rem;font-weight:650;letter-spacing:.16em;text-transform:uppercase;color:#5ee7c5}
+.sub-kicker{font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#5ee7c5}
 .sub-shift{background:linear-gradient(102deg,#5df0c6 0%,#7ee0d2 38%,#8eb6ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .sub-card{border:1px solid rgba(255,255,255,.1);border-radius:1.6rem;background:rgba(16,22,20,.92);padding:1.25rem;box-shadow:0 30px 80px -40px rgba(0,0,0,.8)}
 .sub-plan{display:flex;align-items:center;gap:.8rem;border:1px solid rgba(255,255,255,.12);border-radius:1rem;padding:.85rem 1rem;cursor:pointer}
@@ -311,7 +309,7 @@ const CSS = `
 .sub-badge{border-radius:999px;background:#14352c;color:#8FF0BC;font-size:.68rem;padding:.15rem .45rem}
 .sub-off{border-radius:999px;background:#12382a;color:#8FF0BC;font-size:.68rem;padding:.15rem .4rem}
 .sub-email{margin-top:.4rem;width:100%;height:3rem;border-radius:1rem;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#f3f6f4;padding:0 1rem}
-.sub-pay{margin-top:.75rem;display:flex;width:100%;align-items:center;justify-content:center;gap:.7rem;height:3.4rem;border:0;border-radius:999px;background:#fff;color:#111;font-weight:650;font-size:1rem;text-decoration:none;cursor:pointer}
+.sub-pay{margin-top:.75rem;display:flex;width:100%;align-items:center;justify-content:center;gap:.7rem;height:3.4rem;border:0;border-radius:999px;background:#fff;color:#111;font-weight:650;font-size:1rem;letter-spacing:-.02em;text-decoration:none;cursor:pointer}
 .sub-pay:disabled{opacity:.6}
 .sub-note{border:1px solid rgba(94,231,197,.28);border-radius:1.2rem;padding:1rem 1.1rem;background:rgba(94,231,197,.04)}
 .sub-sample{border-radius:999px;background:#14352c;color:#8FF0BC;font-size:.72rem;padding:.15rem .5rem}
