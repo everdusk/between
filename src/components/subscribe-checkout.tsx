@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { readMaxInitData } from "@/lib/max-webapp";
 import { SbpLockup, SbpSign } from "@/components/sbp-logo";
+import { trackAnalytics } from "@/lib/analytics-client";
 import { sbpCatalog, type SbpPlanId } from "@/lib/sbp-plans";
 import { captureSubscribe, subscribeFail } from "@/lib/subscribe-analytics";
 import type { AnalyticsMessenger } from "@/lib/analytics-model";
@@ -99,6 +100,7 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
 
   useEffect(() => {
     captureSubscribe({ messenger: pageMessenger(), step: "open", plan: "quarter" });
+    trackAnalytics("paywall", readTelegramInitData());
   }, []);
 
   useEffect(() => {

@@ -1,8 +1,8 @@
 import { accountByEmail } from "./web-account-store";
 import { webStorageId } from "./web-account";
 import { claimPaymentCharge, getRedis, loadWeekAccess, releasePaymentCharge, saveWeekAccess } from "./redis";
+import { recordSbpPaid } from "./analytics";
 import type { AnalyticsMessenger } from "./analytics-model";
-import { captureServerSubscribe } from "./product-analytics-server";
 import { rubPriceFromEnv } from "./week-access";
 import {
   applyPendingSbp,
@@ -121,11 +121,12 @@ export async function settleSbpPayment(payment: unknown): Promise<"granted" | "p
   if (!paid) return "open";
   const result = await fulfillSbp(paid, new Date(), sbpLedger());
   if (result === "granted" || result === "pending") {
-    await captureServerSubscribe({
+    await recordSbpPaid({
+      userId: paid.actorId ?? paid.id,
       messenger: paidMessenger(paid.actorId),
-      step: result === "pending" ? "pending" : "paid",
       plan: paid.plan,
-      actorId: paid.actorId ?? paid.id,
+      paymentId: paid.id,
+      step: result === "pending" ? "pending" : "paid",
     });
   }
   return result;
