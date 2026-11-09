@@ -375,7 +375,7 @@ const CSS = `
 .sub-badge{border-radius:999px;background:#14352c;color:#8FF0BC;font-size:.68rem;padding:.15rem .45rem}
 .sub-off{border-radius:999px;background:#12382a;color:#8FF0BC;font-size:.68rem;padding:.15rem .4rem}
 .sub-email{margin-top:.4rem;width:100%;height:3rem;border-radius:1rem;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#f3f6f4;padding:0 1rem}
-.sub-pay{margin-top:.75rem;display:flex;width:100%;align-items:center;justify-content:center;gap:.7rem;height:3.4rem;border:0;border-radius:999px;background:#fff;color:#111;font-weight:650;font-size:1rem;letter-spacing:-.02em;text-decoration:none;cursor:pointer}
+.sub-pay,.subscribe-page a.sub-pay{margin-top:.75rem;display:flex;width:100%;align-items:center;justify-content:center;gap:.7rem;height:3.4rem;border:0;border-radius:999px;background:#fff;color:#111;font-weight:650;font-size:1rem;letter-spacing:-.02em;text-decoration:none;cursor:pointer}
 .sub-pay:disabled{opacity:.6}
 .sub-note{border:1px solid rgba(94,231,197,.28);border-radius:1.2rem;padding:1rem 1.1rem;background:rgba(94,231,197,.04)}
 .sub-sample{border-radius:999px;background:#14352c;color:#8FF0BC;font-size:.72rem;padding:.15rem .5rem}
