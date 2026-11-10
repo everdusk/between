@@ -33,6 +33,7 @@ import {
   rememberLandingSource,
   startPayload,
 } from "@/lib/landing";
+import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { appUrl } from "@/lib/telegram-auth";
 import {
   downloadTelegramFile,
@@ -227,19 +228,21 @@ async function handlePayment(message: TelegramMessage) {
   const monthly = starPriceFromEnv(process.env.WEEK_STAR_PRICE);
   if (!plan || !starsChargeAccepted(plan, payment.currency, payment.total_amount, monthly)) return;
   const chargeId = payment.telegram_payment_charge_id?.trim() ?? "";
-  if (!chargeId || !(await claimPaymentCharge(chargeId))) return;
-
-  const paidUntil = paidUntilForPlan(plan, new Date(), payment.subscription_expiration_date);
-
-  try {
-    const owner = await resolveJournalId(userId);
-    const current = await loadWeekAccess(owner);
-    await saveWeekAccess(owner, grantWeekPaidUntil(current, paidUntil));
-  } catch (error) {
-    await releasePaymentCharge(chargeId);
-    throw error;
+  if (!chargeId) return;
+  const claimed = await claimPaymentCharge(chargeId);
+  if (claimed) {
+    const paidUntil = paidUntilForPlan(plan, new Date(), payment.subscription_expiration_date);
+    try {
+      const owner = await resolveJournalId(userId);
+      const current = await loadWeekAccess(owner);
+      await saveWeekAccess(owner, grantWeekPaidUntil(current, paidUntil));
+    } catch (error) {
+      await releasePaymentCharge(chargeId);
+      throw error;
+    }
   }
   await recordPaidAnalytics(userId, chargeId);
+  if (!claimed) return;
 
   const { reply } = await localesFor(message.from);
   await telegramRequest("sendMessage", {
@@ -476,6 +479,11 @@ export async function POST(req: Request) {
         reply_markup: keyboard,
       });
       return NextResponse.json({ ok: true });
+    }
+    try {
+      await reconcileSbpPayments();
+    } catch {
+      // The report still renders when a replay cannot reach YooKassa.
     }
     const redis = analyticsRedis();
     const stats = redis

@@ -66,8 +66,7 @@ export async function recordAnalytics(
   const token = analyticsDedupToken(input.pepper, material);
   const dedupKey = input.salt ? "between:analytics:dedup:paid" : analyticsDedupKey(input.day);
   const added = await redis.sadd(dedupKey, token);
-  await redis.expire(dedupKey, input.salt ? PAID_DEDUP_TTL_SEC : DEDUP_TTL_SEC);
-  if (added === 0) return "duplicate";
+  if (String(added) === "0") return "duplicate";
 
   const keys = [analyticsCounterKey(input.day, input.event, input.messenger)];
   if (input.event === "visit" && input.cohort && input.offset === 0) {
@@ -85,18 +84,18 @@ export async function recordAnalytics(
       `${input.messenger}:${input.userId}:week:${input.cohort}`,
     );
     const seen = await redis.sadd(`between:analytics:return:${input.messenger}:${input.cohort}`, mark);
-    await redis.expire(
-      `between:analytics:return:${input.messenger}:${input.cohort}`,
-      COUNTER_TTL_SEC,
-    );
+    await redis
+      .expire(`between:analytics:return:${input.messenger}:${input.cohort}`, COUNTER_TTL_SEC)
+      .catch(() => undefined);
     if (seen === 1) {
       keys.push(analyticsCohortKey(input.cohort, WEEK_RETURN_OFFSET, input.messenger));
     }
   }
   for (const key of keys) {
     await redis.incr(key);
-    await redis.expire(key, COUNTER_TTL_SEC);
+    await redis.expire(key, COUNTER_TTL_SEC).catch(() => undefined);
   }
+  await redis.expire(dedupKey, input.salt ? PAID_DEDUP_TTL_SEC : DEDUP_TTL_SEC).catch(() => undefined);
   return "counted";
 }
 
@@ -222,6 +221,23 @@ export async function recordPaidAnalytics(
   });
 }
 
+const SBP_BOOKED_KEY = "between:analytics:sbp-booked";
+
+/** The charge was written to the paid counter, or it was not one of ours. */
+export async function rememberSbpPayment(paymentId: string): Promise<void> {
+  const redis = getRedis();
+  if (!redis || !paymentId) return;
+  await redis.sadd(SBP_BOOKED_KEY, paymentId);
+  await redis.expire(SBP_BOOKED_KEY, COUNTER_TTL_SEC);
+}
+
+export async function sbpPaymentBooked(paymentId: string): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis || !paymentId) return false;
+  const seen = await redis.sismember(SBP_BOOKED_KEY, paymentId);
+  return Number(seen) === 1;
+}
+
 /** One confirmed SBP charge in the paid counter. The same charge is counted once. Detail stays in PostHog. */
 export async function recordSbpPaid(input: {
   userId: string;
@@ -229,32 +245,33 @@ export async function recordSbpPaid(input: {
   plan: ProductPlan;
   paymentId: string;
   step: "paid" | "pending";
-}): Promise<void> {
+  at?: Date;
+}): Promise<"counted" | "duplicate" | "skipped"> {
   const redis = analyticsRedis();
   const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
-  let counted = !redis || !pepper;
+  if (!redis || !pepper) return "skipped";
   try {
-    if (redis && pepper) {
-      const result = await recordAnalytics(redis, {
-        userId: input.userId,
-        event: "paid",
+    const result = await recordAnalytics(redis, {
+      userId: input.userId,
+      event: "paid",
+      messenger: input.messenger,
+      day: todayInTimeZone(DEFAULT_TIME_ZONE, input.at),
+      salt: input.paymentId,
+      pepper,
+    });
+    if (result === "counted") {
+      await captureServerSubscribe({
         messenger: input.messenger,
-        day: todayInTimeZone(DEFAULT_TIME_ZONE),
-        salt: input.paymentId,
-        pepper,
+        step: input.step,
+        plan: input.plan,
+        actorId: input.userId,
       });
-      counted = result === "counted";
     }
+    await rememberSbpPayment(input.paymentId);
+    return result;
   } catch {
-    counted = false;
+    return "skipped";
   }
-  if (!counted) return;
-  await captureServerSubscribe({
-    messenger: input.messenger,
-    step: input.step,
-    plan: input.plan,
-    actorId: input.userId,
-  });
 }
 
 /** A bot step. The Mini App still reports through `/api/analytics`. One person, one step, one messenger, one day. */

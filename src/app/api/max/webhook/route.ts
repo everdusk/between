@@ -25,6 +25,7 @@ import { linkCodeFromStart, loginTokenFromStart, maxStorageId } from "@/lib/web-
 import { zonedParts } from "@/lib/zoned";
 import { claimMaxLink, finishMaxLogin, resolveMaxJournalId } from "@/lib/web-account-store";
 import { startPayload } from "@/lib/landing";
+import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { isBotCommand } from "@/lib/telegram-bot";
 import {
   answerMaxCallback,
@@ -318,6 +319,11 @@ export async function POST(req: Request) {
       if (!isAnalyticsOwner(username, owners)) {
         await say(userId, translate(reply, "botUnknown"), keyboard);
         return NextResponse.json({ ok: true });
+      }
+      try {
+        await reconcileSbpPayments();
+      } catch {
+        // The report still renders when a replay cannot reach YooKassa.
       }
       const redis = analyticsRedis();
       const stats = redis
