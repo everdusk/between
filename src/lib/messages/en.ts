@@ -346,6 +346,20 @@ export const en: Catalog = {
   botChatAllow: "Allow messages",
   botOpen: "Open Between",
   botSessionOpen: "Set the date",
+  botAskTherapist: "Do you work with a therapist?",
+  botTherapistYes: "Yes",
+  botTherapistNo: "No",
+  botAskDays: "Which days are the sessions?",
+  botDaysReady: "Next",
+  botNeedDay: "Choose at least one day.",
+  botAskTime: "What time?",
+  botPlanSaved: "Saved on the Sessions tab: {when}.\n\nHow are you right now?",
+  botNoTherapist:
+    "A journal without a therapist does less: there is no one to go through what you notice. You can still leave notes, to watch your state and see what repeats.\n\nHow are you right now?",
+  botAskNote: "{feeling}. Write the first note right here — a couple of lines about right now.",
+  botFirstNote: "Saved.\n\nThe Week tab already shows how a note sits in the week.",
+  botWeekOpen: "Open the week",
+  botPickButton: "Tap a button below.",
   botHelp:
     "I'm Between — a journal so you don't come to a session with an empty head.\n\nAnswer me for a couple of minutes a day — mood in one tap, thoughts in a few lines. The week turns into a picture: you can see what repeats.\n\nBy the session I'll gather it into a brief — no need to remember what happened. Set the session date, and I'll start.",
   botHelpMax:

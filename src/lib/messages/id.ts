@@ -339,6 +339,20 @@ export const id: Catalog = {
   botChatAllow: "Izinkan pesan",
   botOpen: "Buka Between",
   botSessionOpen: "Pasang tanggal",
+  botAskTherapist: "Apakah Anda bekerja dengan terapis?",
+  botTherapistYes: "Ya",
+  botTherapistNo: "Tidak",
+  botAskDays: "Sesi di hari apa?",
+  botDaysReady: "Lanjut",
+  botNeedDay: "Pilih setidaknya satu hari.",
+  botAskTime: "Jam berapa?",
+  botPlanSaved: "Tersimpan di tab Sesi: {when}.\n\nBagaimana perasaan Anda sekarang?",
+  botNoTherapist:
+    "Jurnal tanpa terapis kurang efektif: tidak ada yang mengurai yang Anda perhatikan. Catatan tetap bisa ditinggal — untuk memantau keadaan dan melihat pola.\n\nBagaimana perasaan Anda sekarang?",
+  botAskNote: "{feeling}. Tulis catatan pertama di sini — beberapa baris tentang saat ini.",
+  botFirstNote: "Tersimpan.\n\nDi tab Minggu sudah terlihat bagaimana catatan masuk ke minggu.",
+  botWeekOpen: "Buka minggu",
+  botPickButton: "Tekan tombol di bawah.",
   botHelp:
     "Saya Between — jurnal yang membuat Anda tidak datang ke sesi dengan kepala kosong.\n\nJawab saya beberapa menit sehari — suasana hati satu ketukan, pikiran beberapa baris. Minggu tersusun jadi gambaran: terlihat apa yang berulang.\n\nMenjelang sesi saya kumpulkan ini jadi ringkasan — tidak perlu mengingat apa yang terjadi. Pasang tanggal sesi, dan saya mulai.",
   botHelpMax:

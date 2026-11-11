@@ -339,6 +339,20 @@ export const tr: Catalog = {
   botChatAllow: "Mesajlara izin ver",
   botOpen: "Between’i aç",
   botSessionOpen: "Tarihi koy",
+  botAskTherapist: "Bir terapistle çalışıyor musunuz?",
+  botTherapistYes: "Evet",
+  botTherapistNo: "Hayır",
+  botAskDays: "Seanslar hangi günler?",
+  botDaysReady: "İleri",
+  botNeedDay: "En az bir gün seçin.",
+  botAskTime: "Saat kaçta?",
+  botPlanSaved: "Seanslar sekmesine yazıldı: {when}.\n\nŞu an nasılsınız?",
+  botNoTherapist:
+    "Terapistsiz günlük daha az işe yarar: fark ettiklerinizi açacak kimse yoktur. Yine de not bırakabilirsiniz — durumunuzu izlemek ve örüntüleri görmek için.\n\nŞu an nasılsınız?",
+  botAskNote: "{feeling}. İlk notu buraya yazın — şu an hakkında birkaç satır.",
+  botFirstNote: "Yazıldı.\n\nHafta sekmesinde notun haftaya nasıl oturduğu görünüyor.",
+  botWeekOpen: "Haftayı aç",
+  botPickButton: "Aşağıdaki düğmeye basın.",
   botHelp:
     "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nGünde bir iki dakika sorularıma cevap ver — ruh hali bir dokunuş, düşünceler birkaç satır. Hafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Seans tarihini koy, başlayayım.",
   botHelpMax:

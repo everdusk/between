@@ -41,6 +41,33 @@ export function onceSessionDate(plan: SessionPlan): Date | null {
   return new Date(year, month - 1, day, hour, minute, 0, 0);
 }
 
+/** One clock time on each chosen weekday. The sessions tab reads this plan. */
+export function weeklySessionPlan(
+  days: number[],
+  time: string,
+  updatedAt: string,
+): SessionPlan | null {
+  if (!isSessionTime(time)) return null;
+  const seen = new Set<number>();
+  const slots: SessionSlot[] = [];
+  for (const day of days) {
+    if (!Number.isInteger(day) || day < 0 || day > 6 || seen.has(day)) continue;
+    seen.add(day);
+    slots.push({ weekday: day, time });
+  }
+  slots.sort((a, b) => a.weekday - b.weekday);
+  const first = slots[0];
+  if (!first) return null;
+  return {
+    mode: "weekly",
+    date: "",
+    time: first.time,
+    weekday: first.weekday,
+    slots,
+    updatedAt,
+  };
+}
+
 export function weeklySlots(plan: SessionPlan | null | undefined): SessionSlot[] {
   if (!plan || plan.mode !== "weekly") return [];
   const raw =

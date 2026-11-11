@@ -1,5 +1,5 @@
 import type { LocaleId } from "./i18n";
-import { sessionTabUrl } from "./launch-section";
+import { sessionTabUrl, weekTabUrl } from "./launch-section";
 import { feelingLabel, translate } from "./messages";
 import { PICKER_FEELINGS, type CheckinSlot } from "./types";
 
@@ -52,6 +52,23 @@ export function sessionPlanKeyboard(url: string, locale: LocaleId = "ru") {
     inline_keyboard: [[
       { text: translate(locale, "botSessionOpen"), web_app: { url: sessionTabUrl(url) } },
     ]],
+  };
+}
+
+/** Opens the journal on the week, after the first note. */
+export function weekOpenKeyboard(url: string, locale: LocaleId = "ru") {
+  return {
+    inline_keyboard: [[
+      { text: translate(locale, "botWeekOpen"), web_app: { url: weekTabUrl(url) } },
+    ]],
+  };
+}
+
+export function onboardReplyMarkup(rows: { text: string; data: string }[][]) {
+  return {
+    inline_keyboard: rows.map((row) =>
+      row.map((button) => ({ text: button.text, callback_data: button.data })),
+    ),
   };
 }
 

@@ -7,8 +7,17 @@ const LAUNCH_SECTION_SET = new Set<string>(LAUNCH_SECTIONS);
 
 /** Mini App URL that lands on the session date. */
 export function sessionTabUrl(base: string): string {
+  return tabUrl(base, "sessions");
+}
+
+/** Mini App URL that lands on the week. */
+export function weekTabUrl(base: string): string {
+  return tabUrl(base, "week");
+}
+
+function tabUrl(base: string, tab: LaunchSection): string {
   const url = new URL(base);
-  url.searchParams.set("tab", "sessions");
+  url.searchParams.set("tab", tab);
   return url.toString();
 }
 
