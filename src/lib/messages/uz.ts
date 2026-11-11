@@ -339,6 +339,20 @@ export const uz: Catalog = {
   botChatAllow: "Xabarlarga ruxsat",
   botOpen: "Between’ni ochish",
   botSessionOpen: "Sanani qo'yish",
+  botAskTherapist: "Terapevt bilan ishlaysizmi?",
+  botTherapistYes: "Ha",
+  botTherapistNo: "Yo'q",
+  botAskDays: "Seanslar qaysi kunlari?",
+  botDaysReady: "Keyingi",
+  botNeedDay: "Kamida bitta kunni tanlang.",
+  botAskTime: "Soat nechada?",
+  botPlanSaved: "Seanslar varag'iga yozildi: {when}.\n\nHozir qandaysiz?",
+  botNoTherapist:
+    "Terapevtsiz kundalik kamroq foyda beradi: sezganingizni birga ko'radigan odam yo'q. Qaydlarni baribir qoldirish mumkin — holatni kuzatish va takrorlanishni ko'rish uchun.\n\nHozir qandaysiz?",
+  botAskNote: "{feeling}. Birinchi qaydni shu yerga yozing — hozirgi hol haqida bir necha qator.",
+  botFirstNote: "Yozildi.\n\nHafta varag'ida qayd haftaga qanday tushishi ko'rinadi.",
+  botWeekOpen: "Haftani ochish",
+  botPickButton: "Pastdagi tugmani bosing.",
   botHelp:
     "Men Between — seansga bo'sh bosh bilan kelmaydigan kundalik.\n\nKuniga bir-ikki daqiqa savollarimga javob bering — kayfiyat bir bosishda, fikrlar bir necha qatorda. Hafta rasmga aylanadi: nima takrorlanayotgani ko'rinadi.\n\nSeansgacha buni jamlab beraman — nima bo'lganini eslash shart emas. Seans sanasini qo'ying, men boshlayman.",
   botHelpMax:

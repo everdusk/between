@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { launchSection, sessionTabUrl } from "./launch-section";
+import { launchSection, sessionTabUrl, weekTabUrl } from "./launch-section";
 import { sessionPlanKeyboard as maxSessionKeyboard } from "./max-bot";
 import { sessionPlanKeyboard } from "./telegram-bot";
 
@@ -14,6 +14,7 @@ describe("session tab launch", () => {
       sessionTabUrl("https://www.between-journal.ru/journal?lang=ru"),
       "https://www.between-journal.ru/journal?lang=ru&tab=sessions",
     );
+    assert.equal(weekTabUrl("https://www.between-journal.ru"), "https://www.between-journal.ru/?tab=week");
   });
 
   it("reads the tab from the query, the start parameter, and the launch string", () => {

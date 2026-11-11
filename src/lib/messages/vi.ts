@@ -339,6 +339,20 @@ export const vi: Catalog = {
   botChatAllow: "Cho phép tin nhắn",
   botOpen: "Mở Between",
   botSessionOpen: "Đặt ngày",
+  botAskTherapist: "Bạn có làm việc với nhà trị liệu không?",
+  botTherapistYes: "Có",
+  botTherapistNo: "Không",
+  botAskDays: "Buổi trị liệu vào những ngày nào?",
+  botDaysReady: "Tiếp",
+  botNeedDay: "Chọn ít nhất một ngày.",
+  botAskTime: "Mấy giờ?",
+  botPlanSaved: "Đã ghi vào tab Buổi trị liệu: {when}.\n\nBây giờ bạn thấy thế nào?",
+  botNoTherapist:
+    "Nhật ký không có nhà trị liệu kém hiệu quả hơn: không có ai cùng xem điều bạn nhận ra. Vẫn nên ghi chú — để theo dõi trạng thái và thấy những gì lặp lại.\n\nBây giờ bạn thấy thế nào?",
+  botAskNote: "{feeling}. Viết ghi chú đầu tiên ngay tại đây — vài dòng về lúc này.",
+  botFirstNote: "Đã ghi.\n\nTab Tuần đã cho thấy ghi chú nằm trong tuần thế nào.",
+  botWeekOpen: "Mở tuần",
+  botPickButton: "Bấm nút bên dưới.",
   botHelp:
     "Tôi là Between — nhật ký để bạn không đến buổi trị liệu với đầu trống rỗng.\n\nTrả lời tôi vài phút mỗi ngày — tâm trạng một lần chạm, suy nghĩ vài dòng. Tuần xếp thành một bức tranh: thấy điều gì lặp lại.\n\nĐến buổi trị liệu tôi gom lại thành bản tóm tắt — không phải nhớ chuyện gì đã xảy ra. Đặt ngày buổi trị liệu, và tôi bắt đầu.",
   botHelpMax:

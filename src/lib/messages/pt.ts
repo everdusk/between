@@ -339,6 +339,20 @@ export const pt: Catalog = {
   botChatAllow: "Permitir mensagens",
   botOpen: "Abrir Between",
   botSessionOpen: "Marcar a data",
+  botAskTherapist: "Você trabalha com um terapeuta?",
+  botTherapistYes: "Sim",
+  botTherapistNo: "Não",
+  botAskDays: "Em quais dias são as sessões?",
+  botDaysReady: "Continuar",
+  botNeedDay: "Escolha pelo menos um dia.",
+  botAskTime: "Que horas?",
+  botPlanSaved: "Salvo na aba Sessões: {when}.\n\nComo você está agora?",
+  botNoTherapist:
+    "Um diário sem terapeuta rende menos: não há quem olhe o que você nota. Ainda dá para deixar notas, para acompanhar o estado e ver padrões.\n\nComo você está agora?",
+  botAskNote: "{feeling}. Escreva a primeira nota aqui — umas linhas sobre agora.",
+  botFirstNote: "Salvo.\n\nNa aba Semana já dá para ver como uma nota entra na semana.",
+  botWeekOpen: "Abrir a semana",
+  botPickButton: "Toque num botão abaixo.",
   botHelp:
     "Sou o Between — um diário com o qual você não chega à sessão de cabeça vazia.\n\nResponda por uns minutos por dia — o humor num toque, os pensamentos em algumas linhas. A semana vira um quadro: dá para ver o que se repete.\n\nAté a sessão eu junto isso num resumo — sem precisar lembrar o que houve. Marque a data da sessão, e eu começo.",
   botHelpMax:

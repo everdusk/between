@@ -185,6 +185,37 @@ export function maxOpenKeyboard(locale: LocaleId = "ru"): MaxKeyboard {
   return { type: "inline_keyboard", payload: { buttons: rows } };
 }
 
+/** Opens the MAX mini app on the week. Payload may only be A–Z, 0–9, _ and -. */
+export function weekOpenKeyboard(locale: LocaleId = "ru"): MaxKeyboard | null {
+  const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
+  if (!/^[A-Za-z0-9_]{3,64}$/.test(name)) return null;
+  return {
+    type: "inline_keyboard",
+    payload: {
+      buttons: [[
+        {
+          type: "open_app",
+          text: translate(locale, "botWeekOpen"),
+          web_app: name,
+          payload: "week",
+        },
+      ]],
+    },
+  };
+}
+
+export function maxOnboardKeyboard(rows: { text: string; data: string }[][]): MaxKeyboard | undefined {
+  if (rows.length === 0) return undefined;
+  return {
+    type: "inline_keyboard",
+    payload: {
+      buttons: rows.map((row) =>
+        row.map((button) => ({ type: "callback" as const, text: button.text, payload: button.data })),
+      ),
+    },
+  };
+}
+
 /** Opens the MAX mini app on the session date. Payload may only be A–Z, 0–9, _ and -. */
 export function sessionPlanKeyboard(locale: LocaleId = "ru"): MaxKeyboard | null {
   const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
@@ -292,11 +323,20 @@ export async function sendMaxMessage(
 }
 
 /** Replaces the message that held the mood buttons. */
-export async function answerMaxCallback(callbackId: string, text: string | null): Promise<boolean> {
+export async function answerMaxCallback(
+  callbackId: string,
+  text: string | null,
+  keyboard?: MaxKeyboard,
+): Promise<boolean> {
   const body =
-    text === null
+    text === null && !keyboard
       ? {}
-      : { message: { text: text.slice(0, 4000), attachments: [] as MaxKeyboard[] } };
+      : {
+          message: {
+            text: (text ?? "").slice(0, 4000),
+            attachments: keyboard ? [keyboard] : [],
+          },
+        };
   return accepted(
     await maxFetch(`/answers?callback_id=${encodeURIComponent(callbackId)}`, body),
   );

@@ -24,6 +24,13 @@ import { duePoll, pollText } from "@/lib/digest";
 import { linkCodeFromStart, loginTokenFromStart, maxStorageId } from "@/lib/web-account";
 import { zonedParts } from "@/lib/zoned";
 import { claimMaxLink, finishMaxLogin, resolveMaxJournalId } from "@/lib/web-account-store";
+import {
+  answerOnboarding,
+  finishOnboarding,
+  onboardingNoteIntent,
+  openOnboarding,
+  remindOnboarding,
+} from "@/lib/onboarding-flow";
 import { startPayload } from "@/lib/landing";
 import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { isBotCommand } from "@/lib/telegram-bot";
@@ -38,7 +45,9 @@ import {
   maxFeelingKeyboard,
   maxLoginKeyboard,
   maxOpenKeyboard,
+  maxOnboardKeyboard,
   sessionPlanKeyboard,
+  weekOpenKeyboard,
   maxText,
   maxToken,
   maxUserId,
@@ -109,8 +118,18 @@ export async function GET() {
 async function handleCallback(update: MaxUpdate, userId: number) {
   const callbackId = update.callback?.callback_id;
   if (!callbackId) return;
-  const login = /^lin:([a-z0-9]{32})$/i.exec(update.callback?.payload ?? "");
+  const payload = update.callback?.payload ?? "";
   const { reply, owner } = await localesFor(userId);
+  if (payload.startsWith("ob:")) {
+    const result = await answerOnboarding(owner, reply, payload, { userId, messenger: "max" });
+    if (result.type !== "update") {
+      await answerMaxCallback(callbackId, null);
+      return;
+    }
+    await answerMaxCallback(callbackId, result.text, maxOnboardKeyboard(result.rows));
+    return;
+  }
+  const login = /^lin:([a-z0-9]{32})$/i.exec(payload);
   if (login) {
     const account = await finishMaxLogin(login[1].toLowerCase(), userId, maxUsername(update));
     await answerMaxCallback(callbackId, translate(reply, account ? "botLoginOk" : "botLinkBad"));
@@ -141,10 +160,10 @@ async function handleVoice(
   reply: LocaleId,
   username: string | undefined,
   keyboard?: MaxKeyboard,
-) {
+): Promise<boolean> {
   if (!maxToken() || !redisConfigured()) {
     await say(userId, translate(reply, "botNotReady"), keyboard);
-    return;
+    return false;
   }
   const loaded = await loadWeekAccess(owner);
   // Numeric exemptions are Telegram ids. A MAX id can share a number, so only a username grant applies.
@@ -157,21 +176,21 @@ async function handleVoice(
   if (resolved.changed) await saveWeekAccess(owner, resolved.record);
   if (resolved.view.status !== "paid") {
     await say(userId, translate(reply, "botVoicePremium"), keyboard);
-    return;
+    return false;
   }
   if (!voiceKeyReady()) {
     await say(userId, translate(reply, "botVoiceNoKey"), keyboard);
-    return;
+    return false;
   }
   const bytes = await downloadMaxAudio(url);
   if (!bytes) {
     await say(userId, translate(reply, "botVoiceFail"), keyboard);
-    return;
+    return false;
   }
   const allowed = await takeBriefAttempt(owner, todayInTimeZone(await getUserTimezone(owner)), VOICE_DAILY_LIMIT, "voice");
   if (!allowed) {
     await say(userId, translate(reply, "botVoiceLimit"), keyboard);
-    return;
+    return false;
   }
   const heard = await transcribeVoice({
     bytes,
@@ -188,19 +207,21 @@ async function handleVoice(
             ? "botVoiceNoKey"
             : "botVoiceFail";
     await say(userId, translate(reply, key), keyboard);
-    return;
+    return false;
   }
   const body = voiceNoteBody(heard.text, caption);
   if (!body) {
     await say(userId, translate(reply, "botVoiceEmpty"), keyboard);
-    return;
+    return false;
   }
   try {
     await appendBotMessageForOwner(owner, body);
     await trackServerEvent({ userId, event: "note", messenger: "max" });
     await say(userId, translate(reply, "botVoiceSaved", { text: voiceReplyPreview(body) }), keyboard);
+    return true;
   } catch {
     await say(userId, translate(reply, "botSaveFail"), keyboard);
+    return false;
   }
 }
 
@@ -217,7 +238,17 @@ async function greet(
     sessionPlanKeyboard(greeting) ?? keyboard,
     chatId,
   );
-  await sendDueMood(userId, await resolveMaxJournalId(userId), reply, chatId);
+  const owner = await resolveMaxJournalId(userId);
+  const quiz = await openOnboarding(owner, reply);
+  if (quiz) {
+    await say(userId, quiz.text, maxOnboardKeyboard(quiz.rows), chatId);
+    return;
+  }
+  await sendDueMood(userId, owner, reply, chatId);
+}
+
+async function sendWeekFollow(userId: number, reply: LocaleId, chatId?: number) {
+  await say(userId, translate(reply, "botFirstNote"), weekOpenKeyboard(reply) ?? undefined, chatId);
 }
 
 async function handleStart(
@@ -286,7 +317,17 @@ export async function POST(req: Request) {
     }
 
     if (audio && !isBotCommand(text, "start") && !isBotCommand(text, "help")) {
-      await handleVoice(userId, owner, audio, text, reply, username, keyboard);
+      const intent = await onboardingNoteIntent(owner);
+      if (intent === "block") {
+        const reminder = await remindOnboarding(owner, reply);
+        if (reminder) await say(userId, reminder.text, maxOnboardKeyboard(reminder.rows), update.chat_id);
+        return NextResponse.json({ ok: true });
+      }
+      const saved = await handleVoice(userId, owner, audio, text, reply, username, keyboard);
+      if (saved && intent === "finish") {
+        await sendWeekFollow(userId, reply, update.chat_id);
+        await finishOnboarding(owner);
+      }
       return NextResponse.json({ ok: true });
     }
 
@@ -348,10 +389,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    const intent = await onboardingNoteIntent(owner);
+    if (intent === "block") {
+      const reminder = await remindOnboarding(owner, reply);
+      if (reminder) await say(userId, reminder.text, maxOnboardKeyboard(reminder.rows), update.chat_id);
+      return NextResponse.json({ ok: true });
+    }
+
     try {
       await appendBotMessageForOwner(owner, text);
       await trackServerEvent({ userId, event: "note", messenger: "max" });
-      await say(userId, translate(reply, "botSaved"), keyboard);
+      if (intent === "finish") {
+        await sendWeekFollow(userId, reply, update.chat_id);
+        await finishOnboarding(owner);
+      } else {
+        await say(userId, translate(reply, "botSaved"), keyboard);
+      }
     } catch {
       await say(userId, translate(reply, "botSaveFail"), keyboard);
     }
