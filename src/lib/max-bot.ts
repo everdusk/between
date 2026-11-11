@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { rootCertificates } from "node:tls";
-import { Agent, fetch as maxHttps } from "undici";
+import { Agent, fetch as maxHttps, FormData as MaxFormData } from "undici";
 import type { LocaleId } from "./i18n";
 import { RUSSIAN_TRUSTED_ROOT_CA, RUSSIAN_TRUSTED_SUB_CA } from "./max-ca";
 import { translate } from "./messages";
@@ -8,6 +8,7 @@ import { LANDING_ORIGIN } from "./landing-seo";
 import { appUrl } from "./telegram-auth";
 import { feelingKeyboard, parseFeelingCallback } from "./telegram-bot";
 import type { CheckinSlot } from "./types";
+import { loadWelcomeImage } from "./welcome-photo";
 
 /** MAX presents a certificate the public trust store rejects. Trust only this connection. */
 const maxDispatcher = new Agent({
@@ -303,6 +304,77 @@ export async function ensureMaxSubscription(): Promise<MaxSubscription> {
   if (data && data.success === false) return { ok: false, reason: "rejected" };
   subscribedFor = stamp;
   return { ok: true, reason: "ok" };
+}
+
+let welcomeImageToken = "";
+
+function maxImageToken(body: unknown): string {
+  if (!body || typeof body !== "object") return "";
+  const row = body as { token?: unknown; photos?: Record<string, { token?: unknown }> };
+  if (typeof row.token === "string" && row.token.trim()) return row.token.trim();
+  for (const photo of Object.values(row.photos ?? {})) {
+    if (typeof photo?.token === "string" && photo.token.trim()) return photo.token.trim();
+  }
+  return "";
+}
+
+async function ensureMaxImageToken(bytes: Uint8Array): Promise<string> {
+  if (welcomeImageToken) return welcomeImageToken;
+  const token = maxToken();
+  if (!token) return "";
+  const slot = await maxHttps(`${API}/uploads?type=image`, {
+    method: "POST",
+    dispatcher: maxDispatcher,
+    headers: { Authorization: token },
+  });
+  if (!slot.ok) return "";
+  const meta = (await slot.json().catch(() => null)) as { url?: unknown } | null;
+  const uploadUrl = typeof meta?.url === "string" ? meta.url : "";
+  if (!uploadUrl.startsWith("https://")) return "";
+  const form = new MaxFormData();
+  form.append("data", new Blob([Buffer.from(bytes)], { type: "image/png" }), "welcome.png");
+  const uploaded = await maxHttps(uploadUrl, {
+    method: "POST",
+    dispatcher: maxDispatcher,
+    headers: { Authorization: token },
+    body: form,
+  });
+  if (!uploaded.ok) return "";
+  const image = maxImageToken(await uploaded.json().catch(() => null));
+  if (image) welcomeImageToken = image;
+  return image;
+}
+
+async function deliverMax(userId: number, body: unknown, chatId?: number): Promise<boolean> {
+  const paths = [`/messages?user_id=${userId}`];
+  if (chatId && chatId !== userId) paths.push(`/messages?chat_id=${chatId}`);
+  for (const path of paths) {
+    if (await accepted(await maxFetch(path, body))) return true;
+  }
+  return false;
+}
+
+/** Welcome with the flow picture and the session button. Text follows if the picture cannot go out. */
+export async function sendMaxWelcome(
+  userId: number,
+  text: string,
+  keyboard?: MaxKeyboard,
+  chatId?: number,
+): Promise<boolean> {
+  const caption = text.slice(0, 4000);
+  const bytes = await loadWelcomeImage();
+  const image = bytes ? await ensureMaxImageToken(bytes) : "";
+  if (image) {
+    const attachments = [
+      { type: "image", payload: { token: image } },
+      ...(keyboard ? [keyboard] : []),
+    ];
+    const sent = await deliverMax(userId, { text: caption, attachments }, chatId);
+    if (sent) return true;
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    if (await deliverMax(userId, { text: caption, attachments }, chatId)) return true;
+  }
+  return sendMaxMessage(userId, text, keyboard, chatId);
 }
 
 export async function sendMaxMessage(

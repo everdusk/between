@@ -31,6 +31,7 @@ import {
   openOnboarding,
   remindOnboarding,
 } from "@/lib/onboarding-flow";
+import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
 import { startPayload } from "@/lib/landing";
 import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { isBotCommand } from "@/lib/telegram-bot";
@@ -54,6 +55,7 @@ import {
   maxUsername,
   maxWebhookSecretMatches,
   sendMaxMessage,
+  sendMaxWelcome,
   type MaxKeyboard,
   type MaxUpdate,
 } from "@/lib/max-bot";
@@ -87,7 +89,7 @@ async function localesFor(userId: number): Promise<{
 }
 
 async function say(userId: number, text: string, keyboard?: MaxKeyboard, chatId?: number) {
-  await sendMaxMessage(userId, text, keyboard, chatId);
+  return sendMaxMessage(userId, text, keyboard, chatId);
 }
 
 /** The hour may already have passed, so a new chat still gets today's question. */
@@ -232,7 +234,7 @@ async function greet(
   keyboard?: MaxKeyboard,
   chatId?: number,
 ) {
-  await say(
+  await sendMaxWelcome(
     userId,
     translate(greeting, "botHelpMax"),
     sessionPlanKeyboard(greeting) ?? keyboard,
@@ -241,7 +243,8 @@ async function greet(
   const owner = await resolveMaxJournalId(userId);
   const quiz = await openOnboarding(owner, reply);
   if (quiz) {
-    await say(userId, quiz.text, maxOnboardKeyboard(quiz.rows), chatId);
+    const asked = await say(userId, quiz.text, maxOnboardKeyboard(quiz.rows), chatId);
+    if (asked) await trackBotFunnel({ userId, messenger: "max", choice: { step: "start" } });
     return;
   }
   await sendDueMood(userId, owner, reply, chatId);
@@ -327,6 +330,7 @@ export async function POST(req: Request) {
       if (saved && intent === "finish") {
         await sendWeekFollow(userId, reply, update.chat_id);
         await finishOnboarding(owner);
+        await trackBotFunnel({ userId, messenger: "max", choice: { step: "note" } });
       }
       return NextResponse.json({ ok: true });
     }
@@ -370,7 +374,8 @@ export async function POST(req: Request) {
       const stats = redis
         ? formatAnalyticsReport(await loadAnalyticsReport(redis))
         : "Счётчики ещё не пишутся.";
-      await say(userId, stats, keyboard);
+      const funnel = await botFunnelBlock();
+      await say(userId, funnel ? `${stats}\n\n${funnel}` : stats, keyboard);
       return NextResponse.json({ ok: true });
     }
 
@@ -402,6 +407,7 @@ export async function POST(req: Request) {
       if (intent === "finish") {
         await sendWeekFollow(userId, reply, update.chat_id);
         await finishOnboarding(owner);
+        await trackBotFunnel({ userId, messenger: "max", choice: { step: "note" } });
       } else {
         await say(userId, translate(reply, "botSaved"), keyboard);
       }
