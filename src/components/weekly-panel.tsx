@@ -39,6 +39,23 @@ import { cn } from "@/lib/utils";
 const themeGaveUp = new Set<string>();
 const patternGaveUp = new Set<string>();
 
+function paintPdfWait(preview: Window, message: string) {
+  const doc = preview.document;
+  doc.title = "Between";
+  const body = doc.body;
+  body.textContent = "";
+  body.style.margin = "0";
+  body.style.background = "#060B09";
+  body.style.color = "#F2F7F4";
+  body.style.fontFamily = "sans-serif";
+  body.style.display = "grid";
+  body.style.minHeight = "100vh";
+  body.style.placeItems = "center";
+  const line = doc.createElement("p");
+  line.textContent = message;
+  body.appendChild(line);
+}
+
 interface WeeklyPanelProps {
   entries: JournalEntry[];
   sessions: SessionNote[];
@@ -280,6 +297,8 @@ export function WeeklyPanel({
 
   async function savePdf() {
     if (pdfState === "busy") return;
+    const preview = window.open("about:blank", "_blank");
+    if (preview) paintPdfWait(preview, t("weekPdfBusy"));
     setPdfState("busy");
     const spectrum = buildWeekSpectrum(days, weekEntries);
     const model = buildWeekPdfModel({
@@ -314,9 +333,10 @@ export function WeeklyPanel({
     });
     try {
       const { downloadWeekPdf } = await import("@/lib/week-pdf");
-      await downloadWeekPdf(model);
+      await downloadWeekPdf(model, preview);
       setPdfState("idle");
     } catch {
+      if (preview && !preview.closed) preview.close();
       setPdfState("fail");
     }
   }
