@@ -49,7 +49,6 @@ import {
   miniAppKeyboard,
   onboardReplyMarkup,
   sendTelegramWelcome,
-  sessionPlanKeyboard,
   weekOpenKeyboard,
   parseFeelingCallback,
   blockedTelegramUser,
@@ -515,11 +514,7 @@ export async function POST(req: Request) {
         }
       }
     }
-    await sendTelegramWelcome(
-      chatId,
-      translate(greeting, "botHelp"),
-      sessionPlanKeyboard(appUrl(), greeting),
-    );
+    await sendTelegramWelcome(chatId, translate(greeting, "botHelp"));
     if (userId) {
       await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
       await sendQuiz(chatId, userId, reply);

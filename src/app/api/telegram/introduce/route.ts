@@ -3,9 +3,9 @@ import { resolveBotLocale, resolveGreetingLocale } from "@/lib/i18n";
 import { openOnboarding } from "@/lib/onboarding-flow";
 import { translate } from "@/lib/messages";
 import { claimBotIntro, loadDeviceLocale, loadUserLocale, redisConfigured, releaseBotIntro } from "@/lib/redis";
-import { appUrl, validateInitData } from "@/lib/telegram-auth";
+import { validateInitData } from "@/lib/telegram-auth";
 import { trackBotFunnel } from "@/lib/bot-funnel";
-import { onboardReplyMarkup, sendTelegramWelcome, sessionPlanKeyboard, telegramRequest } from "@/lib/telegram-bot";
+import { onboardReplyMarkup, sendTelegramWelcome, telegramRequest } from "@/lib/telegram-bot";
 import { resolveJournalId } from "@/lib/web-account-store";
 
 /** One hello in the bot chat, so a direct Mini App open still creates the dialog. */
@@ -29,11 +29,7 @@ export async function POST(req: Request) {
   const selected = redisConfigured() ? await loadUserLocale(validated.user.id) : null;
   const greeting = resolveGreetingLocale(null, device, validated.user.language_code);
   const reply = resolveBotLocale(selected, device, validated.user.language_code);
-  const sent = await sendTelegramWelcome(
-    validated.user.id,
-    translate(greeting, "botHelp"),
-    sessionPlanKeyboard(appUrl(), greeting),
-  );
+  const sent = await sendTelegramWelcome(validated.user.id, translate(greeting, "botHelp"));
   if (!sent) {
     await releaseBotIntro(validated.user.id);
     return NextResponse.json({ ok: false, error: "not_delivered" }, { status: 502 });

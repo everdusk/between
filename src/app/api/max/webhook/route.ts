@@ -47,7 +47,6 @@ import {
   maxLoginKeyboard,
   maxOpenKeyboard,
   maxOnboardKeyboard,
-  sessionPlanKeyboard,
   weekOpenKeyboard,
   maxText,
   maxToken,
@@ -231,15 +230,9 @@ async function greet(
   userId: number,
   greeting: LocaleId,
   reply: LocaleId,
-  keyboard?: MaxKeyboard,
   chatId?: number,
 ) {
-  await sendMaxWelcome(
-    userId,
-    translate(greeting, "botHelpMax"),
-    sessionPlanKeyboard(greeting) ?? keyboard,
-    chatId,
-  );
+  await sendMaxWelcome(userId, translate(greeting, "botHelpMax"), undefined, chatId);
   const owner = await resolveMaxJournalId(userId);
   const quiz = await openOnboarding(owner, reply);
   if (quiz) {
@@ -274,10 +267,10 @@ async function handleStart(
     const linked = await claimMaxLink(linkCode, userId, username);
     const key = linked === "ok" ? "botLinkOk" : linked === "taken" ? "botLinkTakenMax" : "botLinkBad";
     await say(userId, translate(reply, key), keyboard, chatId);
-    if (linked === "ok") await greet(userId, greeting, reply, keyboard, chatId);
+    if (linked === "ok") await greet(userId, greeting, reply, chatId);
     return;
   }
-  await greet(userId, greeting, reply, keyboard, chatId);
+  await greet(userId, greeting, reply, chatId);
 }
 
 export async function POST(req: Request) {
