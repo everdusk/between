@@ -203,7 +203,6 @@ export const ru = {
   weekPdf: "Отправить PDF",
   weekPdfBusy: "Собираю…",
   weekPdfFail: "PDF не собрался.",
-  weekPdfAgain: "Нажмите ещё раз и выберите, куда отправить.",
   spectrumLabel: "Спектр недели",
   spectrumQuiet: "Пока тихо",
   spectrumSeveral: "Несколько состояний",

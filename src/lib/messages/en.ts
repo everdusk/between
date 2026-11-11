@@ -205,7 +205,6 @@ export const en: Catalog = {
   weekPdf: "Send PDF",
   weekPdfBusy: "Preparing…",
   weekPdfFail: "The PDF did not come together.",
-  weekPdfAgain: "Tap again and choose where to send it.",
   spectrumLabel: "Week spectrum",
   spectrumQuiet: "Quiet so far",
   spectrumSeveral: "Several states",

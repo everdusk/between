@@ -205,7 +205,6 @@ export const uz: Catalog = {
   weekPdf: "PDF yuborish",
   weekPdfBusy: "Yigʻyapman…",
   weekPdfFail: "PDF chiqmadi.",
-  weekPdfAgain: "Yana bir marta bosing va qayerga yuborishni tanlang.",
   spectrumLabel: "Hafta spektri",
   spectrumQuiet: "Hali jim",
   spectrumSeveral: "Bir necha holat",

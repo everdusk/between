@@ -205,7 +205,6 @@ export const es: Catalog = {
   weekPdf: "Enviar PDF",
   weekPdfBusy: "Preparo…",
   weekPdfFail: "El PDF no se armó.",
-  weekPdfAgain: "Pulse otra vez y elija adónde enviarlo.",
   spectrumLabel: "Espectro de la semana",
   spectrumQuiet: "Todavía en silencio",
   spectrumSeveral: "Varios estados",

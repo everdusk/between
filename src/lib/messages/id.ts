@@ -205,7 +205,6 @@ export const id: Catalog = {
   weekPdf: "Kirim PDF",
   weekPdfBusy: "Menyiapkan…",
   weekPdfFail: "PDF tidak jadi.",
-  weekPdfAgain: "Ketuk lagi dan pilih ke mana mengirimnya.",
   spectrumLabel: "Spektrum minggu",
   spectrumQuiet: "Masih sunyi",
   spectrumSeveral: "Beberapa keadaan",

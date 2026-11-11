@@ -205,7 +205,6 @@ export const ar: Catalog = {
   weekPdf: "إرسال PDF",
   weekPdfBusy: "أجهّز…",
   weekPdfFail: "لم يُنشأ PDF.",
-  weekPdfAgain: "اضغط مرة أخرى واختر أين ترسله.",
   spectrumLabel: "طيف الأسبوع",
   spectrumQuiet: "ما زال هادئًا",
   spectrumSeveral: "عدة أحوال",

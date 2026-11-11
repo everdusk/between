@@ -205,7 +205,6 @@ export const vi: Catalog = {
   weekPdf: "Gửi PDF",
   weekPdfBusy: "Đang soạn…",
   weekPdfFail: "PDF chưa tạo được.",
-  weekPdfAgain: "Chạm lần nữa và chọn nơi gửi.",
   spectrumLabel: "Phổ của tuần",
   spectrumQuiet: "Vẫn còn yên",
   spectrumSeveral: "Vài trạng thái",

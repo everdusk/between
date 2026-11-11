@@ -276,47 +276,26 @@ export function WeeklyPanel({
     patternGaveUp.has(patternStamp)
       ? t("patternThin")
       : "");
-  const [pdfState, setPdfState] = useState<"idle" | "busy" | "fail" | "again">("idle");
+  const [pdfAttempt, setPdfAttempt] = useState(0);
+  const [readyFor, setReadyFor] = useState<string | null>(null);
+  const [failedFor, setFailedFor] = useState<string | null>(null);
   const fileRef = useRef<File | null>(null);
-  const deliverRef = useRef<
-    ((file: File, fresh: boolean) => Promise<"sent" | "dismissed" | "again">) | null
-  >(null);
+  const deliverRef = useRef<((file: File, fresh: boolean) => Promise<"sent" | "dismissed" | "again">) | null>(null);
   const pdfSignature = [
     todayKey,
     days.join(","),
-    weekEntries.map((entry) => `${entry.id}:${entry.updatedAt}`).join(","),
+    weekEntries.map((entry) => `${entry.id}:${entry.updatedAt}:${entry.body}`).join(","),
     shownPattern,
     agenda.map((theme) => `${theme.id}:${theme.status}:${theme.title}`).join(","),
     said.map((theme) => `${theme.id}:${theme.title}`).join(","),
     themeLinks.map((link) => `${link.entryId}:${link.themeId}`).join(","),
     locale,
+    pdfAttempt,
   ].join("|");
-  const signatureRef = useRef(pdfSignature);
+  const pdfState = failedFor === pdfSignature ? "fail" : readyFor === pdfSignature ? "ready" : "busy";
   useEffect(() => {
-    if (signatureRef.current === pdfSignature) return;
-    signatureRef.current = pdfSignature;
+    let cancelled = false;
     fileRef.current = null;
-    setPdfState("idle");
-  }, [pdfSignature]);
-  useEffect(() => {
-    void import("@/lib/week-pdf")
-      .then((mod) => {
-        deliverRef.current = mod.deliverWeekPdf;
-        return mod.preloadWeekPdfFonts();
-      })
-      .catch(() => undefined);
-  }, []);
-
-  async function savePdf() {
-    if (pdfState === "busy") return;
-    const ready = fileRef.current;
-    if (ready && deliverRef.current) {
-      const outcome = await deliverRef.current(ready, true);
-      if (outcome === "sent") fileRef.current = null;
-      setPdfState(outcome === "again" ? "again" : "idle");
-      return;
-    }
-    setPdfState("busy");
     const spectrum = buildWeekSpectrum(days, weekEntries);
     const model = buildWeekPdfModel({
       todayKey,
@@ -348,17 +327,29 @@ export function WeeklyPanel({
       feeling,
       noteCount: (amount) => count(amount, "note"),
     });
-    try {
-      const { createWeekPdfFile, deliverWeekPdf } = await import("@/lib/week-pdf");
-      deliverRef.current = deliverWeekPdf;
-      const file = await createWeekPdfFile(model);
-      fileRef.current = file;
-      const outcome = await deliverWeekPdf(file, false);
-      if (outcome === "sent") fileRef.current = null;
-      setPdfState(outcome === "again" ? "again" : "idle");
-    } catch {
-      setPdfState("fail");
-    }
+    void import("@/lib/week-pdf")
+      .then(async (mod) => {
+        deliverRef.current = mod.deliverWeekPdf;
+        const file = await mod.createWeekPdfFile(model);
+        if (cancelled) return;
+        fileRef.current = file;
+        setReadyFor(pdfSignature);
+      })
+      .catch(() => {
+        if (!cancelled) setFailedFor(pdfSignature);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // pdfSignature already names every input the sheet is built from.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pdfSignature]);
+
+  function savePdf() {
+    const file = fileRef.current;
+    const deliver = deliverRef.current;
+    if (!file || !deliver) return;
+    void deliver(file, true);
   }
 
   return (
@@ -380,15 +371,18 @@ export function WeeklyPanel({
             variant="secondary"
             size="sm"
             disabled={pdfState === "busy"}
-            onClick={() => void savePdf()}
+            onClick={() => {
+              if (pdfState === "fail") {
+                setPdfAttempt((attempt) => attempt + 1);
+                return;
+              }
+              savePdf();
+            }}
           >
             <Share aria-hidden />
             {pdfState === "busy" ? t("weekPdfBusy") : t("weekPdf")}
           </Button>
           {pdfState === "fail" && <p className="text-xs text-muted-foreground">{t("weekPdfFail")}</p>}
-          {pdfState === "again" && (
-            <p className="max-w-52 text-right text-xs text-muted-foreground">{t("weekPdfAgain")}</p>
-          )}
         </div>
       </div>
 
