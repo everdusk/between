@@ -217,25 +217,6 @@ export function maxOnboardKeyboard(rows: { text: string; data: string }[][]): Ma
   };
 }
 
-/** Opens the MAX mini app on the session date. Payload may only be A–Z, 0–9, _ and -. */
-export function sessionPlanKeyboard(locale: LocaleId = "ru"): MaxKeyboard | null {
-  const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
-  if (!/^[A-Za-z0-9_]{3,64}$/.test(name)) return null;
-  return {
-    type: "inline_keyboard",
-    payload: {
-      buttons: [[
-        {
-          type: "open_app",
-          text: translate(locale, "botSessionOpen"),
-          web_app: name,
-          payload: "sessions",
-        },
-      ]],
-    },
-  };
-}
-
 export function feelingFromMaxPayload(payload: string | null | undefined) {
   if (!payload) return null;
   return parseFeelingCallback(payload);
@@ -397,7 +378,7 @@ export async function sendMaxDocument(
   return deliverMax(userId, { text, attachments: [file] });
 }
 
-/** Welcome with the flow picture and the session button. Text follows if the picture cannot go out. */
+/** Welcome with the flow picture. The quiz that follows asks about the session. Text follows if the picture cannot go out. */
 export async function sendMaxWelcome(
   userId: number,
   text: string,

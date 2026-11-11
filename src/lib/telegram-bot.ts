@@ -1,5 +1,5 @@
 import type { LocaleId } from "./i18n";
-import { sessionTabUrl, weekTabUrl } from "./launch-section";
+import { weekTabUrl } from "./launch-section";
 import { feelingLabel, translate } from "./messages";
 import { PICKER_FEELINGS, type CheckinSlot } from "./types";
 import { loadWelcomeImage } from "./welcome-photo";
@@ -44,15 +44,6 @@ export function parseFeelingCallback(
 export function miniAppKeyboard(url: string, locale: LocaleId = "ru") {
   return {
     inline_keyboard: [[{ text: translate(locale, "botOpen"), web_app: { url } }]],
-  };
-}
-
-/** Opens the journal on the session date. */
-export function sessionPlanKeyboard(url: string, locale: LocaleId = "ru") {
-  return {
-    inline_keyboard: [[
-      { text: translate(locale, "botSessionOpen"), web_app: { url: sessionTabUrl(url) } },
-    ]],
   };
 }
 
@@ -175,11 +166,11 @@ export async function telegramRequest(
   return result.ok;
 }
 
-/** Welcome with the flow picture. The caption keeps the session button. Text follows if the picture cannot go out. */
+/** Welcome with the flow picture. The quiz that follows asks about the session. Text follows if the picture cannot go out. */
 export async function sendTelegramWelcome(
   chatId: number,
   caption: string,
-  replyMarkup: unknown,
+  replyMarkup?: unknown,
 ): Promise<boolean> {
   const text = caption.slice(0, 1024);
   const bytes = await loadWelcomeImage();
@@ -188,7 +179,7 @@ export async function sendTelegramWelcome(
     const form = new FormData();
     form.set("chat_id", String(chatId));
     form.set("caption", text);
-    form.set("reply_markup", JSON.stringify(replyMarkup));
+    if (replyMarkup) form.set("reply_markup", JSON.stringify(replyMarkup));
     form.set("photo", new File([Buffer.from(bytes)], "welcome.png", { type: "image/png" }));
     try {
       const res = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
@@ -204,7 +195,7 @@ export async function sendTelegramWelcome(
   return telegramRequest("sendMessage", {
     chat_id: chatId,
     text,
-    reply_markup: replyMarkup,
+    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
   });
 }
 
