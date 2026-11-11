@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildSessionPdfModel, renderSessionPdf } from "./session-pdf";
+import { buildSessionPdfModel, renderSessionPdf, sessionPeriodNoteCount } from "./session-pdf";
 import { therapyWindow } from "./session-summary";
 import { emptyStore, type JournalEntry, type SessionPlan, type SessionTheme } from "./types";
 
@@ -68,6 +68,41 @@ describe("session pdf sheet", () => {
     assert.equal(model.themes.some((item) => item.title === "Тревога перед встречей"), true);
     assert.equal(model.themes.some((item) => item.title === "Убранная тема"), false);
     assert.match(model.filename, /^between-.*\.pdf$/);
+  });
+
+  it("counts written notes in the period and skips mood marks", () => {
+    const store = emptyStore();
+    store.sessionPlan = weekly();
+    const now = new Date(2026, 0, 8, 16, 0, 0);
+    const note = (id: string, body: string): JournalEntry => ({
+      id,
+      date: "2026-01-07",
+      createdAt: "2026-01-07T08:00:00.000Z",
+      updatedAt: "2026-01-07T08:00:00.000Z",
+      body,
+      feelings: ["тревожно"],
+      tags: [],
+      source: "app",
+    });
+    store.entries = [
+      note("a", "Первая"),
+      note("b", "Вторая"),
+      note("c", "   "),
+      {
+        id: "mood",
+        date: "2026-01-07",
+        createdAt: "2026-01-07T09:00:00.000Z",
+        updatedAt: "2026-01-07T09:00:00.000Z",
+        body: "",
+        feelings: ["грусть"],
+        tags: [],
+        source: "checkin",
+        slot: "morning",
+      },
+    ];
+    assert.equal(sessionPeriodNoteCount(store, THURSDAY, now), 2);
+    store.entries.push(note("d", "Третья"));
+    assert.equal(sessionPeriodNoteCount(store, THURSDAY, now), 3);
   });
 
   it("renders a pdf the bot can send", async () => {

@@ -23,8 +23,8 @@ import {
 import { resolveJournalId, resolveMaxJournalId } from "@/lib/web-account-store";
 import { ensureMaxSubscription, maxFeelingKeyboard, maxToken, sendMaxDocument, sendMaxMessage, weekOpenKeyboard as maxWeekKeyboard } from "@/lib/max-bot";
 import { accessForUser } from "@/lib/week-access";
-import { sessionBriefDue, SESSION_BRIEF_SLOT, sessionPdfCaption, sessionPdfOpen } from "@/lib/session-brief";
-import { renderSessionPdf } from "@/lib/session-pdf";
+import { sessionBriefDue, SESSION_BRIEF_SLOT, sessionPdfActive, sessionPdfCaption, sessionPdfOpen } from "@/lib/session-brief";
+import { renderSessionPdf, sessionPeriodNoteCount } from "@/lib/session-pdf";
 import { appUrl } from "@/lib/telegram-auth";
 import { ensureTelegramBlocks, feelingKeyboard, sendTelegramDocument, telegramRequest, weekOpenKeyboard } from "@/lib/telegram-bot";
 import type { TherapyStore } from "@/lib/types";
@@ -51,6 +51,8 @@ async function deliverSessionPdf(input: {
     input.now,
   );
   if (!sessionPdfOpen(access.view.status)) return false;
+  const notes = sessionPeriodNoteCount(input.store, input.dateKey, input.now);
+  if (!sessionPdfActive(notes)) return false;
   const claimed = await claimDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
   if (!claimed) return false;
   try {

@@ -36,6 +36,18 @@ function loadFonts(): Promise<WeekPdfFonts> {
   return fontCache;
 }
 
+/** Notes with text inside the same therapy period the sheet covers. Mood marks do not count. */
+export function sessionPeriodNoteCount(
+  store: TherapyStore,
+  todayKey: string,
+  now: Date,
+): number {
+  const period = therapyWindow(store.sessions, store.entries, todayKey, now, store.sessionPlan);
+  return store.entries.filter(
+    (entry) => entryInWindow(entry, period) && entry.body.trim().length > 0,
+  ).length;
+}
+
 /** The same sheet the week tab builds, from the stored journal. */
 export function buildSessionPdfModel(
   store: TherapyStore,
