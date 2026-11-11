@@ -602,9 +602,84 @@ async function loadFonts(): Promise<WeekPdfFonts> {
   return fontCache;
 }
 
-/** A same-page address for the sheet. A new tab is blocked on desktop, so the journal shows this itself. */
-export async function createWeekPdfUrl(model: WeekPdfModel): Promise<string> {
+export function preloadWeekPdfFonts(): Promise<WeekPdfFonts> {
+  return loadFonts();
+}
+
+export async function createWeekPdfFile(model: WeekPdfModel): Promise<File> {
   const bytes = await renderWeekPdf(model, await loadFonts());
-  const blob = new Blob([Uint8Array.from(bytes)], { type: "application/pdf" });
-  return URL.createObjectURL(blob);
+  return new File([Uint8Array.from(bytes)], model.filename, { type: "application/pdf" });
+}
+
+type PdfSavePicker = (options: {
+  suggestedName?: string;
+  types?: { description?: string; accept: Record<string, string[]> }[];
+}) => Promise<{
+  createWritable: () => Promise<{ write: (data: Blob) => Promise<void>; close: () => Promise<void> }>;
+}>;
+
+function errorName(error: unknown): string {
+  return typeof error === "object" && error !== null && "name" in error
+    ? String((error as { name: unknown }).name)
+    : "";
+}
+
+function canSendFile(file: File): boolean {
+  try {
+    return Boolean(globalThis.navigator?.canShare?.({ files: [file] }));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Hand the sheet to the system chooser.
+ * An embedded viewer cannot save a blob in Telegram, and MAX blocks that page,
+ * so the click asks where to send the file.
+ * `fresh` is true when this call is the start of the click, with the file already built.
+ */
+export async function deliverWeekPdf(file: File, fresh: boolean): Promise<"sent" | "dismissed" | "again"> {
+  const share = globalThis.navigator?.share?.bind(globalThis.navigator);
+  const shareReady = Boolean(share) && canSendFile(file);
+  if (share && shareReady) {
+    try {
+      await share({ files: [file], title: file.name });
+      return "sent";
+    } catch (error) {
+      if (errorName(error) === "AbortError") return "dismissed";
+      if (!fresh && errorName(error) === "NotAllowedError") return "again";
+    }
+  }
+
+  const host = globalThis.window as (Window & { showSaveFilePicker?: PdfSavePicker }) | undefined;
+  const picker = host?.showSaveFilePicker;
+  if (picker) {
+    try {
+      const handle = await picker({
+        suggestedName: file.name,
+        types: [{ description: "PDF", accept: { "application/pdf": [".pdf"] } }],
+      });
+      const stream = await handle.createWritable();
+      await stream.write(file);
+      await stream.close();
+      return "sent";
+    } catch (error) {
+      if (errorName(error) === "AbortError") return "dismissed";
+      if (!fresh && errorName(error) === "NotAllowedError") return "again";
+    }
+  }
+
+  if (!fresh) return "again";
+  const doc = globalThis.document;
+  if (!doc || !host) return "again";
+  const url = URL.createObjectURL(file);
+  const link = doc.createElement("a");
+  link.href = url;
+  link.download = file.name;
+  link.rel = "noopener";
+  doc.body.appendChild(link);
+  link.click();
+  link.remove();
+  host.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  return "sent";
 }

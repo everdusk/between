@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 import { buildWeekPdfModel, feelingRgb, oklchToRgb } from "./week-pdf-model";
-import { renderWeekPdf, type WeekPdfFonts } from "./week-pdf";
+import { deliverWeekPdf, renderWeekPdf, type WeekPdfFonts } from "./week-pdf";
 import type { JournalEntry, SessionTheme, ThemeLink } from "./types";
 
 function theme(partial: Partial<SessionTheme> & Pick<SessionTheme, "id" | "title" | "status">): SessionTheme {
@@ -121,5 +121,93 @@ describe("week pdf", () => {
     const bytes = await renderWeekPdf(built, fonts);
     assert.equal(Buffer.from(bytes.subarray(0, 5)).toString(), "%PDF-");
     assert.ok(bytes.byteLength > 8_000);
+  });
+});
+
+describe("deliver week pdf", () => {
+  const file = new File([Uint8Array.from([0x25, 0x50, 0x44, 0x46, 0x2d])], "between-a_b.pdf", {
+    type: "application/pdf",
+  });
+
+  async function withChooser(
+    nav: Record<string, unknown>,
+    win: Record<string, unknown> | undefined,
+    run: () => Promise<unknown>,
+  ) {
+    const previousNav = globalThis.navigator;
+    const previousWin = (globalThis as { window?: unknown }).window;
+    Object.defineProperty(globalThis, "navigator", { configurable: true, value: nav });
+    Object.defineProperty(globalThis, "window", { configurable: true, value: win });
+    try {
+      return await run();
+    } finally {
+      Object.defineProperty(globalThis, "navigator", { configurable: true, value: previousNav });
+      if (previousWin === undefined) delete (globalThis as { window?: unknown }).window;
+      else Object.defineProperty(globalThis, "window", { configurable: true, value: previousWin });
+    }
+  }
+
+  it("sends the file through the system chooser", async () => {
+    let sent: File | null = null;
+    let picked = false;
+    const outcome = await withChooser(
+      {
+        canShare: (data: { files?: File[] }) => data.files?.[0] === file,
+        share: async (data: { files: File[] }) => {
+          sent = data.files[0] ?? null;
+        },
+      },
+      { showSaveFilePicker: async () => { picked = true; } },
+      () => deliverWeekPdf(file, false),
+    );
+    assert.equal(outcome, "sent");
+    assert.equal(sent, file);
+    assert.equal(picked, false);
+  });
+
+  it("stops when the person closes the chooser", async () => {
+    let picked = false;
+    const outcome = await withChooser(
+      {
+        canShare: () => true,
+        share: async () => {
+          const error = new Error("closed");
+          error.name = "AbortError";
+          throw error;
+        },
+      },
+      { showSaveFilePicker: async () => { picked = true; } },
+      () => deliverWeekPdf(file, false),
+    );
+    assert.equal(outcome, "dismissed");
+    assert.equal(picked, false);
+  });
+
+  it("asks for another tap when the click has expired, then saves on the next one", async () => {
+    let picks = 0;
+    const lost = {
+      canShare: () => false,
+      showSaveFilePicker: async () => {
+        picks += 1;
+        const error = new Error("lost");
+        error.name = "NotAllowedError";
+        throw error;
+      },
+    };
+    const first = await withChooser({ canShare: () => false }, lost, () => deliverWeekPdf(file, false));
+    assert.equal(first, "again");
+    assert.equal(picks, 1);
+
+    const saved = {
+      canShare: () => false,
+      showSaveFilePicker: async (options: { suggestedName?: string }) => {
+        picks += 1;
+        assert.equal(options.suggestedName, "between-a_b.pdf");
+        return { createWritable: async () => ({ write: async () => undefined, close: async () => undefined }) };
+      },
+    };
+    const second = await withChooser({ canShare: () => false }, saved, () => deliverWeekPdf(file, true));
+    assert.equal(second, "sent");
+    assert.equal(picks, 2);
   });
 });
