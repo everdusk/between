@@ -8,7 +8,7 @@ import {
   pollText,
   slotForHour,
 } from "@/lib/digest";
-import { resolveBotLocale } from "@/lib/i18n";
+import { resolveBotLocale, type LocaleId } from "@/lib/i18n";
 import {
   claimDigestSlot,
   getUserTimezone,
@@ -20,9 +20,57 @@ import {
   releaseDigestSlot,
 } from "@/lib/redis";
 import { resolveJournalId, resolveMaxJournalId } from "@/lib/web-account-store";
-import { ensureMaxSubscription, maxFeelingKeyboard, maxToken, sendMaxMessage } from "@/lib/max-bot";
-import { ensureTelegramBlocks, feelingKeyboard, telegramRequest } from "@/lib/telegram-bot";
+import { ensureMaxSubscription, maxFeelingKeyboard, maxToken, sendMaxMessage, weekOpenKeyboard as maxWeekKeyboard } from "@/lib/max-bot";
+import { ensureTelegramBlocks, feelingKeyboard, telegramRequest, weekOpenKeyboard } from "@/lib/telegram-bot";
+import { appUrl } from "@/lib/telegram-auth";
+import {
+  SESSION_BRIEF_SLOT,
+  sessionBriefDue,
+  sessionBriefText,
+} from "@/lib/session-brief";
+import type { TherapyStore } from "@/lib/types";
 import { zonedParts } from "@/lib/zoned";
+
+async function deliverSessionBrief(input: {
+  channel: "telegram" | "max";
+  userId: string;
+  maxId: number | null;
+  dateKey: string;
+  hour: number;
+  now: Date;
+  store: TherapyStore;
+  locale: LocaleId;
+}): Promise<boolean> {
+  const due = sessionBriefDue({ plan: input.store.sessionPlan, dateKey: input.dateKey, hour: input.hour });
+  if (!due) return false;
+  const claimed = await claimDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
+  if (!claimed) return false;
+  try {
+    const text = sessionBriefText({
+      store: input.store,
+      locale: input.locale,
+      todayKey: input.dateKey,
+      now: input.now,
+      time: due.time,
+    });
+    const ok =
+      input.channel === "max" && input.maxId
+        ? await sendMaxMessage(input.maxId, text, maxWeekKeyboard(input.locale) ?? undefined)
+        : await telegramRequest("sendMessage", {
+            chat_id: Number(input.userId),
+            text,
+            reply_markup: weekOpenKeyboard(appUrl(), input.locale),
+          });
+    if (!ok) {
+      await releaseDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    await releaseDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
+    throw error;
+  }
+}
 
 function authorized(req: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim();
@@ -75,11 +123,30 @@ async function runDigest() {
       const timeZone = await getUserTimezone(owner);
       const clock = zonedParts(now, timeZone);
       const store = await loadUserStore(owner);
+      const locale =
+        channel === "max"
+          ? "ru"
+          : resolveBotLocale(
+              await loadUserLocale(owner),
+              await loadDeviceLocale(owner),
+              null,
+            );
+      const briefSent = await deliverSessionBrief({
+        channel,
+        userId,
+        maxId,
+        dateKey: clock.dateKey,
+        hour: clock.hour,
+        now,
+        store,
+        locale,
+      });
       const exact = slotForHour(clock.hour);
       const due = exact ? null : duePoll({ store, dateKey: clock.dateKey, hour: clock.hour });
       const slotName = exact ?? due;
       if (!slotName) {
-        skipped += 1;
+        if (briefSent) sent += 1;
+        else skipped += 1;
         continue;
       }
 
@@ -96,18 +163,11 @@ async function runDigest() {
           : { type: "skip" as const };
 
       if (action.type === "skip") {
-        skipped += 1;
+        if (briefSent) sent += 1;
+        else skipped += 1;
         continue;
       }
 
-      const locale =
-        channel === "max"
-          ? "ru"
-          : resolveBotLocale(
-              await loadUserLocale(owner),
-              await loadDeviceLocale(owner),
-              null,
-            );
       const ok =
         channel === "max" && maxId
           ? action.type === "poll"
@@ -130,10 +190,11 @@ async function runDigest() {
 
       if (!ok) {
         await releaseDigestSlot(userId, clock.dateKey, slotName);
-        skipped += 1;
+        if (!briefSent) skipped += 1;
+        else sent += 1;
         continue;
       }
-      sent += 1;
+      sent += briefSent ? 2 : 1;
     } catch {
       skipped += 1;
     }

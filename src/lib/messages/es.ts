@@ -352,6 +352,7 @@ export const es: Catalog = {
   botAskNote: "{feeling}. Escriba la primera nota aquí mismo — un par de líneas sobre ahora.",
   botFirstNote: "Guardado.\n\nEn la pestaña Semana ya se ve cómo queda una nota en la semana.",
   botWeekOpen: "Abrir la semana",
+  botSessionBriefLead: "Sesión a las {time}.",
   botPickButton: "Pulse un botón de abajo.",
   botHelp:
     "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nRespóndeme un par de minutos al día — el ánimo en un toque, los pensamientos en un par de líneas. La semana se arma en una imagen: se ve qué se repite.\n\nPara la sesión lo reúno en un resumen — no hará falta recordar qué pasó. Pon la fecha de la sesión, y empiezo.",

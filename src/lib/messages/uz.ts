@@ -352,6 +352,7 @@ export const uz: Catalog = {
   botAskNote: "{feeling}. Birinchi qaydni shu yerga yozing — hozirgi hol haqida bir necha qator.",
   botFirstNote: "Yozildi.\n\nHafta varag'ida qayd haftaga qanday tushishi ko'rinadi.",
   botWeekOpen: "Haftani ochish",
+  botSessionBriefLead: "Seans soat {time}.",
   botPickButton: "Pastdagi tugmani bosing.",
   botHelp:
     "Men Between — seansga bo'sh bosh bilan kelmaydigan kundalik.\n\nKuniga bir-ikki daqiqa savollarimga javob bering — kayfiyat bir bosishda, fikrlar bir necha qatorda. Hafta rasmga aylanadi: nima takrorlanayotgani ko'rinadi.\n\nSeansgacha buni jamlab beraman — nima bo'lganini eslash shart emas. Seans sanasini qo'ying, men boshlayman.",

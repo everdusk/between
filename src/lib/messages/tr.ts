@@ -352,6 +352,7 @@ export const tr: Catalog = {
   botAskNote: "{feeling}. İlk notu buraya yazın — şu an hakkında birkaç satır.",
   botFirstNote: "Yazıldı.\n\nHafta sekmesinde notun haftaya nasıl oturduğu görünüyor.",
   botWeekOpen: "Haftayı aç",
+  botSessionBriefLead: "Seans {time}.",
   botPickButton: "Aşağıdaki düğmeye basın.",
   botHelp:
     "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nGünde bir iki dakika sorularıma cevap ver — ruh hali bir dokunuş, düşünceler birkaç satır. Hafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Seans tarihini koy, başlayayım.",

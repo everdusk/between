@@ -352,6 +352,7 @@ export const id: Catalog = {
   botAskNote: "{feeling}. Tulis catatan pertama di sini — beberapa baris tentang saat ini.",
   botFirstNote: "Tersimpan.\n\nDi tab Minggu sudah terlihat bagaimana catatan masuk ke minggu.",
   botWeekOpen: "Buka minggu",
+  botSessionBriefLead: "Sesi pukul {time}.",
   botPickButton: "Tekan tombol di bawah.",
   botHelp:
     "Saya Between — jurnal yang membuat Anda tidak datang ke sesi dengan kepala kosong.\n\nJawab saya beberapa menit sehari — suasana hati satu ketukan, pikiran beberapa baris. Minggu tersusun jadi gambaran: terlihat apa yang berulang.\n\nMenjelang sesi saya kumpulkan ini jadi ringkasan — tidak perlu mengingat apa yang terjadi. Pasang tanggal sesi, dan saya mulai.",
