@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Download } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Download, X } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
 import { badgeVariants } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { SessionBacklog } from "@/components/session-backlog";
 import { spectrumLead, spectrumTitle, WeekSpectrum } from "@/components/week-spectrum";
 import {
@@ -39,21 +40,47 @@ import { cn } from "@/lib/utils";
 const themeGaveUp = new Set<string>();
 const patternGaveUp = new Set<string>();
 
-function paintPdfWait(preview: Window, message: string) {
-  const doc = preview.document;
-  doc.title = "Between";
-  const body = doc.body;
-  body.textContent = "";
-  body.style.margin = "0";
-  body.style.background = "#060B09";
-  body.style.color = "#F2F7F4";
-  body.style.fontFamily = "sans-serif";
-  body.style.display = "grid";
-  body.style.minHeight = "100vh";
-  body.style.placeItems = "center";
-  const line = doc.createElement("p");
-  line.textContent = message;
-  body.appendChild(line);
+function WeekPdfSheet({
+  url,
+  filename,
+  onClose,
+}: {
+  url: string;
+  filename: string;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return createPortal(
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-background"
+      style={{ top: "var(--vv-top, 0px)", height: "var(--vv-height, 100dvh)" }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t("weekPdf")}
+    >
+      <div className="flex items-center justify-between gap-3 border-b border-[color:var(--glass-border)] py-3 pr-[max(1rem,var(--safe-right))] pl-[max(1rem,var(--safe-left))]">
+        <p className="font-display text-lg tracking-tight text-foreground">{t("weekTitle")}</p>
+        <div className="flex items-center gap-2">
+          <a href={url} download={filename} className={buttonVariants({ variant: "secondary", size: "sm" })}>
+            <Download aria-hidden />
+            {t("weekPdf")}
+          </a>
+          <Button type="button" variant="ghost" size="icon" aria-label={t("accountClose")} onClick={onClose}>
+            <X aria-hidden />
+          </Button>
+        </div>
+      </div>
+      <iframe title={t("weekPdf")} src={url} className="min-h-0 w-full flex-1 border-0 bg-background" />
+    </div>,
+    document.body,
+  );
 }
 
 interface WeeklyPanelProps {
@@ -294,11 +321,26 @@ export function WeeklyPanel({
       ? t("patternThin")
       : "");
   const [pdfState, setPdfState] = useState<"idle" | "busy" | "fail">("idle");
+  const [pdfSheet, setPdfSheet] = useState<{ url: string; filename: string } | null>(null);
+  const pdfSheetRef = useRef(pdfSheet);
+  useEffect(() => {
+    pdfSheetRef.current = pdfSheet;
+  }, [pdfSheet]);
+  useEffect(() => {
+    return () => {
+      if (pdfSheetRef.current) URL.revokeObjectURL(pdfSheetRef.current.url);
+    };
+  }, []);
+
+  function closePdf() {
+    setPdfSheet((current) => {
+      if (current) URL.revokeObjectURL(current.url);
+      return null;
+    });
+  }
 
   async function savePdf() {
     if (pdfState === "busy") return;
-    const preview = window.open("about:blank", "_blank");
-    if (preview) paintPdfWait(preview, t("weekPdfBusy"));
     setPdfState("busy");
     const spectrum = buildWeekSpectrum(days, weekEntries);
     const model = buildWeekPdfModel({
@@ -332,11 +374,14 @@ export function WeeklyPanel({
       noteCount: (amount) => count(amount, "note"),
     });
     try {
-      const { downloadWeekPdf } = await import("@/lib/week-pdf");
-      await downloadWeekPdf(model, preview);
+      const { createWeekPdfUrl } = await import("@/lib/week-pdf");
+      const url = await createWeekPdfUrl(model);
+      setPdfSheet((current) => {
+        if (current) URL.revokeObjectURL(current.url);
+        return { url, filename: model.filename };
+      });
       setPdfState("idle");
     } catch {
-      if (preview && !preview.closed) preview.close();
       setPdfState("fail");
     }
   }
@@ -548,6 +593,7 @@ export function WeeklyPanel({
           );
         })}
       </ul>
+      {pdfSheet ? <WeekPdfSheet url={pdfSheet.url} filename={pdfSheet.filename} onClose={closePdf} /> : null}
     </div>
   );
 }
