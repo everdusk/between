@@ -25,7 +25,7 @@ import { ensureMaxSubscription, maxFeelingKeyboard, maxToken, sendMaxDocument, s
 import { accessForUser } from "@/lib/week-access";
 import { sessionBriefDue, SESSION_BRIEF_SLOT, sessionPdfActive, sessionPdfCaption, sessionPdfOpen } from "@/lib/session-brief";
 import { renderSessionPdf, sessionPeriodNoteCount } from "@/lib/session-pdf";
-import { prepareSessionSheet } from "@/lib/session-sheet";
+import { prepareSessionSheet, rememberSessionSheet } from "@/lib/session-sheet";
 import { appUrl } from "@/lib/telegram-auth";
 import { ensureTelegramBlocks, feelingKeyboard, sendTelegramDocument, telegramRequest, weekOpenKeyboard } from "@/lib/telegram-bot";
 import type { TherapyStore } from "@/lib/types";
@@ -64,6 +64,7 @@ async function deliverSessionPdf(input: {
       input.now,
       input.owner,
     );
+    await rememberSessionSheet(input.owner, sheet, input.now);
     const pdf = await renderSessionPdf(input.store, input.locale, input.dateKey, input.now, sheet);
     const caption = sessionPdfCaption(input.locale, due.time);
     const ok =

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { buildSessionPdfModel } from "./session-pdf";
-import { prepareSessionSheet, type SessionSheetAsk } from "./session-sheet";
+import { applySessionSheet, prepareSessionSheet, type SessionSheetAsk } from "./session-sheet";
 import { therapyWindow } from "./session-summary";
-import { judgeStamp } from "./themes";
+import { judgeStamp, patternKey, patternShouldRequest, pendingJudgeEntries, rankedThemes } from "./themes";
 import { emptyStore, type JournalEntry, type SessionPlan } from "./types";
 
 const THURSDAY = "2026-01-08";
@@ -64,6 +64,28 @@ describe("session sheet without a week visit", () => {
     assert.equal(sheet.patternText, "Тревога перед встречами возвращается по утрам.");
     assert.equal(store.themes.length, 0);
     assert.equal(store.weekPreps.length, 0);
+    const saved = applySessionSheet(store, sheet, NOW);
+    assert.equal(saved.themes.some((theme) => theme.title === "Тревога перед встречей"), true);
+    assert.equal(saved.weekPreps[0]?.patternText, "Тревога перед встречами возвращается по утрам.");
+    assert.equal(saved.judgeSettled.includes(judgeStamp(store.entries[0])), true);
+    assert.equal(pendingJudgeEntries(saved.entries, saved.judgeSettled ?? [], ["2026-01-07"]).length, 0);
+    const agenda = rankedThemes(saved.themes ?? [], THURSDAY, []);
+    assert.equal(
+      patternShouldRequest({
+        hasInitData: true,
+        disabled: false,
+        judging: false,
+        themeCount: agenda.length,
+        hasWords: true,
+        savedStamp: saved.weekPreps[0]?.patternStamp,
+        stamp: patternKey(agenda, "ru"),
+        savedText: saved.weekPreps[0]?.patternText ?? "",
+        gaveUp: false,
+        inFlight: false,
+      }),
+      false,
+    );
+    assert.equal(applySessionSheet(saved, sheet, NOW).themes.length, saved.themes.length);
     const model = buildSessionPdfModel(store, "ru", THURSDAY, NOW, sheet);
     assert.match(model.patternText, /по утрам/);
     assert.equal(model.themes.some((theme) => theme.title === "Тревога перед встречей"), true);

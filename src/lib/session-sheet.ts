@@ -1,5 +1,7 @@
 import { weekKey } from "./dates";
 import type { LocaleId } from "./i18n";
+import { mergeStores } from "./journal-api";
+import { loadUserStore, saveUserStore } from "./redis";
 import { entryInWindow, therapyWindow } from "./session-summary";
 import {
   applyVerdict,
@@ -21,7 +23,7 @@ import {
   themesForJudge,
   type ThemeState,
 } from "./themes";
-import type { SessionTheme, ThemeLink, TherapyStore } from "./types";
+import { emptyStore, type SessionTheme, type ThemeLink, type TherapyStore } from "./types";
 
 /** Notes judged for one file. The hourly job cannot walk a whole journal. */
 const SESSION_SHEET_JUDGE_CAP = 4;
@@ -30,6 +32,13 @@ export type SessionSheet = {
   themes: SessionTheme[];
   links: ThemeLink[];
   patternText: string;
+  /** Judge stamps handled for this file. The week tab skips these notes. */
+  judged: string[];
+  judgedEntryIds: string[];
+  patternStamp: string;
+  weekKey: string;
+  /** False when the paragraph was already on the week. */
+  freshPattern: boolean;
 };
 
 export type SessionSheetAsk = (input: {
@@ -55,8 +64,8 @@ async function defaultAsk(
 }
 
 /**
- * Pattern and backlog for the session file only.
- * The journal still receives them when the week tab is open.
+ * Pattern and backlog for the session file.
+ * `rememberSessionSheet` stores the result so the week tab does not ask again.
  */
 export async function prepareSessionSheet(
   store: TherapyStore,
@@ -77,8 +86,12 @@ export async function prepareSessionSheet(
     0,
     SESSION_SHEET_JUDGE_CAP,
   );
+  const judged: string[] = [];
+  const judgedEntryIds: string[] = [];
   for (const entry of pending) {
     const stamp = judgeStamp(entry);
+    judged.push(stamp);
+    judgedEntryIds.push(entry.id);
     let text: string | null = null;
     try {
       text = (await run({
@@ -130,8 +143,17 @@ export async function prepareSessionSheet(
     store.weekPreps.find((item) => item.weekKey === period.weekKey) ??
     store.weekPreps.find((item) => item.weekKey === weekKey(now));
   const stored = prep?.patternText ? clipPattern(0, prep.patternText) : "";
+  const patternStamp = patternKey(agenda, locale);
+  const carried = {
+    themes: state.themes,
+    links: state.links,
+    judged,
+    judgedEntryIds,
+    patternStamp,
+    weekKey: period.weekKey,
+  };
   if (pending.length === 0 && patternReplyUsable(stored)) {
-    return { themes: state.themes, links: state.links, patternText: stored };
+    return { ...carried, patternText: stored, freshPattern: false };
   }
 
   const facts = patternFacts(agenda);
@@ -150,8 +172,50 @@ export async function prepareSessionSheet(
     }
   }
   return {
-    themes: state.themes,
-    links: state.links,
+    ...carried,
     patternText: pattern || patternFromThemes(agenda),
+    freshPattern: true,
   };
+}
+
+/** Writes the sheet onto a journal without dropping notes the tab saved in the meantime. */
+export function applySessionSheet(store: TherapyStore, sheet: SessionSheet, now: Date): TherapyStore {
+  const settled = new Set(store.judgeSettled ?? []);
+  const freshIds = new Set(
+    sheet.judgedEntryIds.filter((id) => {
+      const entry = store.entries.find((item) => item.id === id);
+      return Boolean(entry && !settled.has(judgeStamp(entry)));
+    }),
+  );
+  const themeIds = new Set(
+    sheet.links.filter((link) => freshIds.has(link.entryId)).map((link) => link.themeId),
+  );
+  const patch = emptyStore();
+  patch.themes = sheet.themes.filter((theme) => themeIds.has(theme.id));
+  patch.themeLinks = sheet.links.filter((link) => freshIds.has(link.entryId));
+  patch.judgeSettled = sheet.judged.filter((_, index) => freshIds.has(sheet.judgedEntryIds[index] ?? ""));
+  const prep = store.weekPreps.find((item) => item.weekKey === sheet.weekKey);
+  const existing = prep?.patternText ? clipPattern(0, prep.patternText) : "";
+  if (sheet.freshPattern && patternReplyUsable(sheet.patternText) && !patternReplyUsable(existing)) {
+    patch.weekPreps = [
+      {
+        ...(prep ?? { weekKey: sheet.weekKey, talkNotes: "" }),
+        weekKey: sheet.weekKey,
+        updatedAt: now.toISOString(),
+        patternText: sheet.patternText,
+        patternStamp: sheet.patternStamp,
+      },
+    ];
+  }
+  return mergeStores(store, patch);
+}
+
+/** Keeps the formed sheet on the journal. A missed write still lets the file go out. */
+export async function rememberSessionSheet(owner: string, sheet: SessionSheet, now = new Date()): Promise<void> {
+  try {
+    const fresh = await loadUserStore(owner);
+    await saveUserStore(owner, applySessionSheet(fresh, sheet, now));
+  } catch {
+    // The tab forms the sheet later if this write does not land.
+  }
 }
