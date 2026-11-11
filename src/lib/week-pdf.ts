@@ -602,14 +602,29 @@ async function loadFonts(): Promise<WeekPdfFonts> {
   return fontCache;
 }
 
-/** Saves the week sheet. Fonts come from the site, so the file matches the brand offline after the first load. */
-export async function downloadWeekPdf(model: WeekPdfModel): Promise<void> {
+/**
+ * Shows the sheet. `preview` must be opened in the click, before the fonts load:
+ * a desktop browser will not start a download once that gesture has passed.
+ * The tab stays on the blob long enough for the viewer to read it.
+ */
+export async function downloadWeekPdf(model: WeekPdfModel, preview?: Window | null): Promise<void> {
   const bytes = await renderWeekPdf(model, await loadFonts());
   const blob = new Blob([Uint8Array.from(bytes)], { type: "application/pdf" });
   const url = URL.createObjectURL(blob);
+  window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
+  if (preview && !preview.closed) {
+    preview.location.href = url;
+    try {
+      preview.opener = null;
+    } catch {
+      /* The viewer does not need the journal. */
+    }
+    return;
+  }
   const link = document.createElement("a");
   link.href = url;
   link.download = model.filename;
+  document.body.appendChild(link);
   link.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+  link.remove();
 }
