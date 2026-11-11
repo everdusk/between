@@ -361,6 +361,7 @@ export const en: Catalog = {
     "A journal without a therapist does less: there is no one to go through what you notice. You can still leave notes, to watch your state and see what repeats.\n\nHow are you right now?",
   botAskNote: "{feeling}. Write the first note right here — a couple of lines about right now.",
   botFirstNote: "Saved.\n\nThe Week tab already shows how a note sits in the week.",
+  botSessionBriefLead: "Session at {time}.",
   botWeekOpen: "Open the week",
   botPickButton: "Tap a button below.",
   botHelp:

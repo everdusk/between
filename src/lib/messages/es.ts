@@ -354,6 +354,7 @@ export const es: Catalog = {
     "Llevar un diario sin terapeuta es menos útil: no hay quien revise lo que nota. Aun así puede dejar notas, para seguir su estado y ver patrones.\n\n¿Cómo está ahora?",
   botAskNote: "{feeling}. Escriba la primera nota aquí mismo — un par de líneas sobre ahora.",
   botFirstNote: "Guardado.\n\nEn la pestaña Semana ya se ve cómo queda una nota en la semana.",
+  botSessionBriefLead: "Sesión a las {time}.",
   botWeekOpen: "Abrir la semana",
   botPickButton: "Pulse un botón de abajo.",
   botHelp:
