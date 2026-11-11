@@ -205,7 +205,6 @@ export const uk: Catalog = {
   weekPdf: "Надіслати PDF",
   weekPdfBusy: "Збираю…",
   weekPdfFail: "PDF не зібрався.",
-  weekPdfAgain: "Натисніть ще раз і виберіть, куди надіслати.",
   spectrumLabel: "Спектр тижня",
   spectrumQuiet: "Поки тихо",
   spectrumSeveral: "Кілька станів",

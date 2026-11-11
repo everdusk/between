@@ -205,7 +205,6 @@ export const fa: Catalog = {
   weekPdf: "ارسال PDF",
   weekPdfBusy: "دارم آماده می‌کنم…",
   weekPdfFail: "PDF ساخته نشد.",
-  weekPdfAgain: "یک بار دیگر بزنید و انتخاب کنید کجا بفرستید.",
   spectrumLabel: "طیف هفته",
   spectrumQuiet: "هنوز آرام است",
   spectrumSeveral: "چند حال",

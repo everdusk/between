@@ -205,7 +205,6 @@ export const tr: Catalog = {
   weekPdf: "PDF gönder",
   weekPdfBusy: "Hazırlanıyor…",
   weekPdfFail: "PDF oluşmadı.",
-  weekPdfAgain: "Bir kez daha dokunun ve nereye göndereceğinizi seçin.",
   spectrumLabel: "Haftanın spektrumu",
   spectrumQuiet: "Şimdilik sessiz",
   spectrumSeveral: "Birkaç durum",

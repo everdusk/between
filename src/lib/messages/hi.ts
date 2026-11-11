@@ -205,7 +205,6 @@ export const hi: Catalog = {
   weekPdf: "PDF भेजें",
   weekPdfBusy: "तैयार हो रहा है…",
   weekPdfFail: "PDF नहीं बना.",
-  weekPdfAgain: "एक बार और दबाएँ और चुनें, कहाँ भेजना है.",
   spectrumLabel: "सप्ताह का स्पेक्ट्रम",
   spectrumQuiet: "अभी शांत है",
   spectrumSeveral: "कई अवस्थाएँ",
