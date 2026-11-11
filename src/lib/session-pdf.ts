@@ -6,6 +6,7 @@ import { countPhrase, feelingLabel, translate } from "./messages";
 import { entryInWindow, therapyWindow } from "./session-summary";
 import { buildWeekSpectrum } from "./spectrum";
 import { clipPattern, patternReplyUsable, rankedThemes } from "./themes";
+import type { SessionSheet } from "./session-sheet";
 import type { TherapyStore } from "./types";
 import { buildWeekPdfModel, type WeekPdfModel } from "./week-pdf-model";
 import { renderWeekPdf, type WeekPdfFonts } from "./week-pdf";
@@ -54,18 +55,23 @@ export function buildSessionPdfModel(
   locale: LocaleId,
   todayKey: string,
   now: Date,
+  sheet?: SessionSheet,
 ): WeekPdfModel {
   const period = therapyWindow(store.sessions, store.entries, todayKey, now, store.sessionPlan);
   const days = period.days;
   const weekEntries = store.entries.filter((entry) => entryInWindow(entry, period));
   const sessionDates = store.sessions.map((session) => session.date);
-  const themes = store.themes ?? [];
+  const themes = sheet?.themes ?? store.themes ?? [];
   const agenda = rankedThemes(themes, todayKey, sessionDates);
   const said = themes.filter((theme) => theme.status === "discussed" && !theme.dismissed);
   const prep =
     store.weekPreps.find((item) => item.weekKey === period.weekKey) ??
     store.weekPreps.find((item) => item.weekKey === weekKey(now));
-  const patternRaw = prep?.patternText ? clipPattern(0, prep.patternText) : "";
+  const patternRaw = sheet
+    ? clipPattern(0, sheet.patternText)
+    : prep?.patternText
+      ? clipPattern(0, prep.patternText)
+      : "";
   const pattern = patternReplyUsable(patternRaw) ? patternRaw : "";
   const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number | undefined>) =>
     translate(locale, key, vars);
@@ -76,7 +82,7 @@ export function buildSessionPdfModel(
     dayKeys: days,
     entries: store.entries,
     themes: [...agenda, ...said],
-    links: store.themeLinks ?? [],
+    links: sheet?.links ?? store.themeLinks ?? [],
     now,
     range:
       period.last && days.length === 0
@@ -134,8 +140,9 @@ export async function renderSessionPdf(
   locale: LocaleId,
   todayKey: string,
   now: Date,
+  sheet?: SessionSheet,
 ): Promise<{ bytes: Uint8Array; filename: string }> {
-  const model = buildSessionPdfModel(store, locale, todayKey, now);
+  const model = buildSessionPdfModel(store, locale, todayKey, now, sheet);
   const bytes = await renderWeekPdf(model, await loadFonts());
   return { bytes, filename: model.filename };
 }
