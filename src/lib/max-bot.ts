@@ -354,6 +354,49 @@ async function deliverMax(userId: number, body: unknown, chatId?: number): Promi
   return false;
 }
 
+async function uploadMaxFile(bytes: Uint8Array, filename: string): Promise<string> {
+  const token = maxToken();
+  if (!token || bytes.byteLength === 0) return "";
+  const slot = await maxHttps(`${API}/uploads?type=file`, {
+    method: "POST",
+    dispatcher: maxDispatcher,
+    headers: { Authorization: token },
+  });
+  if (!slot.ok) return "";
+  const meta = (await slot.json().catch(() => null)) as { url?: unknown } | null;
+  const uploadUrl = typeof meta?.url === "string" ? meta.url : "";
+  if (!uploadUrl.startsWith("https://")) return "";
+  const form = new MaxFormData();
+  form.append("data", new Blob([Buffer.from(bytes)], { type: "application/pdf" }), filename);
+  const uploaded = await maxHttps(uploadUrl, {
+    method: "POST",
+    dispatcher: maxDispatcher,
+    headers: { Authorization: token },
+    body: form,
+  });
+  if (!uploaded.ok) return "";
+  return maxImageToken(await uploaded.json().catch(() => null));
+}
+
+/** The week sheet on the session day. The caption is one line, not the summary. */
+export async function sendMaxDocument(
+  userId: number,
+  filename: string,
+  bytes: Uint8Array,
+  caption: string,
+  keyboard?: MaxKeyboard | null,
+): Promise<boolean> {
+  const token = await uploadMaxFile(bytes, filename);
+  if (!token) return false;
+  const text = caption.slice(0, 4000);
+  const file = { type: "file", payload: { token } };
+  if (keyboard) {
+    const withKeys = await deliverMax(userId, { text, attachments: [file, keyboard] });
+    if (withKeys) return true;
+  }
+  return deliverMax(userId, { text, attachments: [file] });
+}
+
 /** Welcome with the flow picture and the session button. Text follows if the picture cannot go out. */
 export async function sendMaxWelcome(
   userId: number,

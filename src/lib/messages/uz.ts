@@ -354,6 +354,7 @@ export const uz: Catalog = {
     "Terapevtsiz kundalik kamroq foyda beradi: sezganingizni birga ko'radigan odam yo'q. Qaydlarni baribir qoldirish mumkin — holatni kuzatish va takrorlanishni ko'rish uchun.\n\nHozir qandaysiz?",
   botAskNote: "{feeling}. Birinchi qaydni shu yerga yozing — hozirgi hol haqida bir necha qator.",
   botFirstNote: "Yozildi.\n\nHafta varag'ida qayd haftaga qanday tushishi ko'rinadi.",
+  botSessionBriefLead: "Seans soat {time}.",
   botWeekOpen: "Haftani ochish",
   botPickButton: "Pastdagi tugmani bosing.",
   botHelp:

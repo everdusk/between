@@ -354,6 +354,7 @@ export const vi: Catalog = {
     "Nhật ký không có nhà trị liệu kém hiệu quả hơn: không có ai cùng xem điều bạn nhận ra. Vẫn nên ghi chú — để theo dõi trạng thái và thấy những gì lặp lại.\n\nBây giờ bạn thấy thế nào?",
   botAskNote: "{feeling}. Viết ghi chú đầu tiên ngay tại đây — vài dòng về lúc này.",
   botFirstNote: "Đã ghi.\n\nTab Tuần đã cho thấy ghi chú nằm trong tuần thế nào.",
+  botSessionBriefLead: "Buổi trị liệu lúc {time}.",
   botWeekOpen: "Mở tuần",
   botPickButton: "Bấm nút bên dưới.",
   botHelp:

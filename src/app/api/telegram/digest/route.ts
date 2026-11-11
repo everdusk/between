@@ -8,7 +8,7 @@ import {
   pollText,
   slotForHour,
 } from "@/lib/digest";
-import { resolveBotLocale } from "@/lib/i18n";
+import { resolveBotLocale, type LocaleId } from "@/lib/i18n";
 import {
   claimDigestSlot,
   getUserTimezone,
@@ -16,13 +16,66 @@ import {
   loadDeviceLocale,
   loadUserLocale,
   loadUserStore,
+  loadWeekAccess,
   redisConfigured,
   releaseDigestSlot,
 } from "@/lib/redis";
 import { resolveJournalId, resolveMaxJournalId } from "@/lib/web-account-store";
-import { ensureMaxSubscription, maxFeelingKeyboard, maxToken, sendMaxMessage } from "@/lib/max-bot";
-import { ensureTelegramBlocks, feelingKeyboard, telegramRequest } from "@/lib/telegram-bot";
+import { ensureMaxSubscription, maxFeelingKeyboard, maxToken, sendMaxDocument, sendMaxMessage, weekOpenKeyboard as maxWeekKeyboard } from "@/lib/max-bot";
+import { accessForUser } from "@/lib/week-access";
+import { sessionBriefDue, SESSION_BRIEF_SLOT, sessionPdfCaption, sessionPdfOpen } from "@/lib/session-brief";
+import { renderSessionPdf } from "@/lib/session-pdf";
+import { appUrl } from "@/lib/telegram-auth";
+import { ensureTelegramBlocks, feelingKeyboard, sendTelegramDocument, telegramRequest, weekOpenKeyboard } from "@/lib/telegram-bot";
+import type { TherapyStore } from "@/lib/types";
 import { zonedParts } from "@/lib/zoned";
+
+async function deliverSessionPdf(input: {
+  channel: "telegram" | "max";
+  userId: string;
+  owner: string;
+  actorId: number;
+  maxId: number | null;
+  dateKey: string;
+  hour: number;
+  now: Date;
+  store: TherapyStore;
+  locale: LocaleId;
+}): Promise<boolean> {
+  const due = sessionBriefDue({ plan: input.store.sessionPlan, dateKey: input.dateKey, hour: input.hour });
+  if (!due) return false;
+  const access = accessForUser(
+    await loadWeekAccess(input.owner),
+    { id: input.actorId },
+    process.env.WEEK_EXEMPT_USER_IDS,
+    input.now,
+  );
+  if (!sessionPdfOpen(access.view.status)) return false;
+  const claimed = await claimDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
+  if (!claimed) return false;
+  try {
+    const pdf = await renderSessionPdf(input.store, input.locale, input.dateKey, input.now);
+    const caption = sessionPdfCaption(input.locale, due.time);
+    const ok =
+      input.channel === "max" && input.maxId
+        ? await sendMaxDocument(input.maxId, pdf.filename, pdf.bytes, caption, maxWeekKeyboard(input.locale))
+        : await sendTelegramDocument(
+            Number(input.userId),
+            pdf.filename,
+            pdf.bytes,
+            caption,
+            weekOpenKeyboard(appUrl(), input.locale),
+          );
+    if (!ok) {
+      await releaseDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
+      return false;
+    }
+    return true;
+  } catch {
+    await releaseDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
+    return false;
+  }
+}
 
 function authorized(req: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim();
@@ -75,11 +128,32 @@ async function runDigest() {
       const timeZone = await getUserTimezone(owner);
       const clock = zonedParts(now, timeZone);
       const store = await loadUserStore(owner);
+      const locale =
+        channel === "max"
+          ? "ru"
+          : resolveBotLocale(
+              await loadUserLocale(owner),
+              await loadDeviceLocale(owner),
+              null,
+            );
+      const pdfSent = await deliverSessionPdf({
+        channel,
+        userId,
+        owner,
+        actorId: channel === "max" && maxId ? maxId : Number(userId),
+        maxId,
+        dateKey: clock.dateKey,
+        hour: clock.hour,
+        now,
+        store,
+        locale,
+      });
       const exact = slotForHour(clock.hour);
       const due = exact ? null : duePoll({ store, dateKey: clock.dateKey, hour: clock.hour });
       const slotName = exact ?? due;
       if (!slotName) {
-        skipped += 1;
+        if (pdfSent) sent += 1;
+        else skipped += 1;
         continue;
       }
 
@@ -96,18 +170,11 @@ async function runDigest() {
           : { type: "skip" as const };
 
       if (action.type === "skip") {
-        skipped += 1;
+        if (pdfSent) sent += 1;
+        else skipped += 1;
         continue;
       }
 
-      const locale =
-        channel === "max"
-          ? "ru"
-          : resolveBotLocale(
-              await loadUserLocale(owner),
-              await loadDeviceLocale(owner),
-              null,
-            );
       const ok =
         channel === "max" && maxId
           ? action.type === "poll"
@@ -130,10 +197,11 @@ async function runDigest() {
 
       if (!ok) {
         await releaseDigestSlot(userId, clock.dateKey, slotName);
-        skipped += 1;
+        if (!pdfSent) skipped += 1;
+        else sent += 1;
         continue;
       }
-      sent += 1;
+      sent += pdfSent ? 2 : 1;
     } catch {
       skipped += 1;
     }

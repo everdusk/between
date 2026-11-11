@@ -208,6 +208,33 @@ export async function sendTelegramWelcome(
   });
 }
 
+/** The week sheet on the session day. The caption is one line, not the summary. */
+export async function sendTelegramDocument(
+  chatId: number,
+  filename: string,
+  bytes: Uint8Array,
+  caption: string,
+  replyMarkup: unknown,
+): Promise<boolean> {
+  const token = process.env.BOT_TOKEN?.trim();
+  if (!token || bytes.byteLength === 0) return false;
+  const form = new FormData();
+  form.set("chat_id", String(chatId));
+  form.set("caption", caption.slice(0, 1024));
+  form.set("reply_markup", JSON.stringify(replyMarkup));
+  form.set("document", new File([Buffer.from(bytes)], filename, { type: "application/pdf" }));
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
+      method: "POST",
+      body: form,
+    });
+    const data = (await res.json()) as { ok?: boolean };
+    return data.ok === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Downloads a voice or audio file. The bot token stays in the request URL and is not logged. */
 export async function downloadTelegramFile(
   fileId: string,

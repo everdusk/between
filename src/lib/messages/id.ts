@@ -354,6 +354,7 @@ export const id: Catalog = {
     "Jurnal tanpa terapis kurang efektif: tidak ada yang mengurai yang Anda perhatikan. Catatan tetap bisa ditinggal — untuk memantau keadaan dan melihat pola.\n\nBagaimana perasaan Anda sekarang?",
   botAskNote: "{feeling}. Tulis catatan pertama di sini — beberapa baris tentang saat ini.",
   botFirstNote: "Tersimpan.\n\nDi tab Minggu sudah terlihat bagaimana catatan masuk ke minggu.",
+  botSessionBriefLead: "Sesi pukul {time}.",
   botWeekOpen: "Buka minggu",
   botPickButton: "Tekan tombol di bawah.",
   botHelp:

@@ -354,6 +354,7 @@ export const tr: Catalog = {
     "Terapistsiz günlük daha az işe yarar: fark ettiklerinizi açacak kimse yoktur. Yine de not bırakabilirsiniz — durumunuzu izlemek ve örüntüleri görmek için.\n\nŞu an nasılsınız?",
   botAskNote: "{feeling}. İlk notu buraya yazın — şu an hakkında birkaç satır.",
   botFirstNote: "Yazıldı.\n\nHafta sekmesinde notun haftaya nasıl oturduğu görünüyor.",
+  botSessionBriefLead: "Seans {time}.",
   botWeekOpen: "Haftayı aç",
   botPickButton: "Aşağıdaki düğmeye basın.",
   botHelp:
