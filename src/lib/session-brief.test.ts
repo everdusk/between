@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { sessionBriefDue, sessionPdfCaption, sessionPdfOpen } from "./session-brief";
+import { sessionBriefDue, sessionPdfActive, sessionPdfCaption, sessionPdfOpen } from "./session-brief";
 import type { SessionPlan } from "./types";
 
 const THURSDAY = "2026-01-08";
@@ -41,6 +41,12 @@ describe("session pdf", () => {
     assert.equal(sessionPdfOpen("trial"), true);
     assert.equal(sessionPdfOpen("locked"), false);
     assert.equal(sessionPdfOpen("new"), false);
+  });
+
+  it("sends only after more than two written notes in the period", () => {
+    assert.equal(sessionPdfActive(0), false);
+    assert.equal(sessionPdfActive(2), false);
+    assert.equal(sessionPdfActive(3), true);
   });
 
   it("puts only the session time on the file, not the summary", () => {

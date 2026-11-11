@@ -54,6 +54,13 @@ export function sessionPdfOpen(status: WeekAccessStatus): boolean {
   return status === "paid" || status === "trial";
 }
 
+/** Written notes in the therapy period. Two is still quiet; the file starts at three. */
+export const SESSION_PDF_ACTIVE_NOTES = 2;
+
+export function sessionPdfActive(writtenNotes: number): boolean {
+  return writtenNotes > SESSION_PDF_ACTIVE_NOTES;
+}
+
 /** One line on the file. The sheet itself is the summary. */
 export function sessionPdfCaption(locale: LocaleId, time: string): string {
   return translate(locale, "botSessionBriefLead", { time });
