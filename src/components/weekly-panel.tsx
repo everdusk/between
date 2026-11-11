@@ -1,22 +1,26 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Download } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
 import { badgeVariants } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { SessionBacklog } from "@/components/session-backlog";
-import { WeekSpectrum } from "@/components/week-spectrum";
+import { spectrumLead, spectrumTitle, WeekSpectrum } from "@/components/week-spectrum";
 import {
   formatDateSpan,
   formatDayLabel,
   formatLongDate,
   formatTime,
   toDateKey,
+  weekdayShort,
   weekKey,
 } from "@/lib/dates";
 import { entryInWindow, therapyWindow } from "@/lib/session-summary";
 import { briefStamp, tagCounts } from "@/lib/brief";
 import { parseModelThemes, shownEntryTags, themeContextChunks } from "@/lib/tags";
-import { feelingFill } from "@/lib/spectrum";
+import { buildWeekSpectrum, feelingFill } from "@/lib/spectrum";
+import { buildWeekPdfModel } from "@/lib/week-pdf-model";
 import { requestBrief } from "@/lib/journal-api";
 import {
   clipPattern,
@@ -264,18 +268,85 @@ export function WeeklyPanel({
 
   const notesPhrase = count(weekEntries.length, "note");
   const notesSpace = notesPhrase.indexOf(" ");
+  const shownPattern =
+    patternBody ||
+    (!patternWords ||
+    Boolean(patternRaw) ||
+    failedPatternStamp === patternStamp ||
+    patternGaveUp.has(patternStamp)
+      ? t("patternThin")
+      : "");
+  const [pdfState, setPdfState] = useState<"idle" | "busy" | "fail">("idle");
+
+  async function savePdf() {
+    if (pdfState === "busy") return;
+    setPdfState("busy");
+    const spectrum = buildWeekSpectrum(days, weekEntries);
+    const model = buildWeekPdfModel({
+      todayKey,
+      dayKeys: days,
+      entries,
+      themes: [...agenda, ...said],
+      links: themeLinks,
+      now,
+      range:
+        period.last && days.length === 0
+          ? t("afterSessionLead", { date: formatLongDate(period.last.date, locale) })
+          : t("weekLead", {
+              range: formatDateSpan(days[0] ?? todayKey, days[days.length - 1] ?? todayKey, locale),
+            }),
+      spectrumLabel: t("spectrumLabel"),
+      spectrumTitle: spectrumTitle(spectrum, t, feeling),
+      spectrumLead: spectrumLead(spectrum, weekEntries.length, t, feeling),
+      axis: t("spectrumAxis"),
+      patternTitle: t("briefPatternTitle"),
+      patternText: shownPattern || t("patternThin"),
+      backlogTitle: t("backlogTitle"),
+      backlogLead: t("backlogLead"),
+      emptyBacklog: t("backlogEmpty"),
+      noNotes: t("backlogNoNotes"),
+      said: t("backlogSaid"),
+      weekday: (day) => weekdayShort(day, locale),
+      dayNumber: (day) => String(Number(day.slice(8))),
+      when: (day) => formatDayLabel(day, locale),
+      feeling,
+      noteCount: (amount) => count(amount, "note"),
+    });
+    try {
+      const { downloadWeekPdf } = await import("@/lib/week-pdf");
+      await downloadWeekPdf(model);
+      setPdfState("idle");
+    } catch {
+      setPdfState("fail");
+    }
+  }
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2 px-2 pt-1 pb-1">
-        <p className="eyebrow text-section-header">{t("weekTitle")}</p>
-        <h2 className="font-display text-[2.125rem] leading-[1.05] tracking-tight text-foreground sm:text-[2.5rem]">
-          {period.last && days.length === 0
-            ? t("afterSessionLead", { date: formatLongDate(period.last.date, locale) })
-            : t("weekLead", {
-                range: formatDateSpan(days[0] ?? todayKey, days[days.length - 1] ?? todayKey, locale),
-              })}
-        </h2>
+      <div className="flex flex-col items-start gap-3 px-2 pt-1 pb-1 sm:flex-row sm:items-end sm:justify-between">
+        <div className="min-w-0 space-y-2">
+          <p className="eyebrow text-section-header">{t("weekTitle")}</p>
+          <h2 className="font-display text-[2.125rem] leading-[1.05] tracking-tight text-foreground sm:text-[2.5rem]">
+            {period.last && days.length === 0
+              ? t("afterSessionLead", { date: formatLongDate(period.last.date, locale) })
+              : t("weekLead", {
+                  range: formatDateSpan(days[0] ?? todayKey, days[days.length - 1] ?? todayKey, locale),
+                })}
+          </h2>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            disabled={pdfState === "busy"}
+            onClick={() => void savePdf()}
+          >
+            <Download aria-hidden />
+            {pdfState === "busy" ? t("weekPdfBusy") : t("weekPdf")}
+          </Button>
+          {pdfState === "fail" && <p className="text-xs text-muted-foreground">{t("weekPdfFail")}</p>}
+        </div>
       </div>
 
       <WeekSpectrum
@@ -283,15 +354,7 @@ export function WeeklyPanel({
         entries={weekEntries}
         todayKey={todayKey}
         patternTitle={t("briefPatternTitle")}
-        patternText={
-          patternBody ||
-          (!patternWords ||
-          Boolean(patternRaw) ||
-          failedPatternStamp === patternStamp ||
-          patternGaveUp.has(patternStamp)
-            ? t("patternThin")
-            : "")
-        }
+        patternText={shownPattern}
         patternPending={
           patternBody ||
           !patternWords ||

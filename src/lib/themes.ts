@@ -469,6 +469,22 @@ export function splitBacklog(
   return { live, archive };
 }
 
+/** Notes tied to a backlog title: a link, or a quote the theme kept. */
+export function entriesForTheme(
+  theme: SessionTheme,
+  entries: JournalEntry[],
+  links: ThemeLink[],
+): JournalEntry[] {
+  const ids = new Set<string>();
+  for (const link of links) {
+    if (link.themeId === theme.id) ids.add(link.entryId);
+  }
+  for (const quote of theme.quotes) ids.add(quote.entryId);
+  return entries
+    .filter((entry) => ids.has(entry.id))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+}
+
 export function discussTheme(themes: SessionTheme[], id: string, discussed: boolean, now = new Date().toISOString()): SessionTheme[] {
   return themes.map((theme) => {
     if (theme.id !== id) return theme;
