@@ -1,3 +1,4 @@
+import { trackBotFunnel, type BotFunnelChoice } from "./bot-funnel";
 import { saveWeeklyPlanForOwner, addCheckinForOwner } from "./journal-server";
 import { getRedis, getUserTimezone } from "./redis";
 import { trackServerEvent } from "./analytics";
@@ -11,7 +12,9 @@ import {
   onboardReminder,
   parseOnboardCallback,
   parseOnboarding,
+  type OnboardAction,
   type OnboardButton,
+  type OnboardMove,
   type OnboardState,
 } from "./onboarding";
 import { zonedParts } from "./zoned";
@@ -21,6 +24,16 @@ export type OnboardView = { text: string; rows: OnboardButton[][] };
 export type OnboardAnswer =
   | { type: "ignore" }
   | { type: "update"; text: string; rows: OnboardButton[][]; markupOnly?: boolean };
+
+function trackedChoice(action: OnboardAction, move: OnboardMove): BotFunnelChoice | null {
+  if (!move.ok || move.markupOnly) return null;
+  if (action.kind === "yes") return { step: "yes" };
+  if (action.kind === "no") return { step: "no" };
+  if (action.kind === "days-done") return { step: "days", days: move.state.days };
+  if (action.kind === "time") return { step: "time", hour: Number(action.time.slice(0, 2)) };
+  if (action.kind === "mood" && move.feeling) return { step: "mood", feeling: move.feeling };
+  return null;
+}
 
 function key(owner: string): string {
   return `between:onboard:${owner}`;
@@ -89,6 +102,10 @@ export async function answerOnboarding(
       await trackServerEvent({ userId: channel.userId, event: "mood", messenger: channel.messenger });
     }
     await saveOnboarding(owner, move.state);
+    const choice = trackedChoice(action, move);
+    if (choice) {
+      await trackBotFunnel({ userId: channel.userId, messenger: channel.messenger, choice });
+    }
   } catch {
     return { type: "ignore" };
   }

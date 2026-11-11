@@ -2,6 +2,7 @@ import type { LocaleId } from "./i18n";
 import { sessionTabUrl, weekTabUrl } from "./launch-section";
 import { feelingLabel, translate } from "./messages";
 import { PICKER_FEELINGS, type CheckinSlot } from "./types";
+import { loadWelcomeImage } from "./welcome-photo";
 
 const SLOT_CODE: Record<CheckinSlot, string> = {
   morning: "m",
@@ -172,6 +173,39 @@ export async function telegramRequest(
 ): Promise<boolean> {
   const result = await telegramCall<unknown>(method, body);
   return result.ok;
+}
+
+/** Welcome with the flow picture. The caption keeps the session button. Text follows if the picture cannot go out. */
+export async function sendTelegramWelcome(
+  chatId: number,
+  caption: string,
+  replyMarkup: unknown,
+): Promise<boolean> {
+  const text = caption.slice(0, 1024);
+  const bytes = await loadWelcomeImage();
+  const token = process.env.BOT_TOKEN?.trim();
+  if (bytes && token) {
+    const form = new FormData();
+    form.set("chat_id", String(chatId));
+    form.set("caption", text);
+    form.set("reply_markup", JSON.stringify(replyMarkup));
+    form.set("photo", new File([Buffer.from(bytes)], "welcome.png", { type: "image/png" }));
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: "POST",
+        body: form,
+      });
+      const data = (await res.json()) as { ok?: boolean };
+      if (data.ok) return true;
+    } catch {
+      // The text welcome still goes out.
+    }
+  }
+  return telegramRequest("sendMessage", {
+    chat_id: chatId,
+    text,
+    reply_markup: replyMarkup,
+  });
 }
 
 /** Downloads a voice or audio file. The bot token stays in the request URL and is not logged. */

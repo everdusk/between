@@ -40,6 +40,7 @@ import {
   rememberLandingSource,
   startPayload,
 } from "@/lib/landing";
+import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
 import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { appUrl } from "@/lib/telegram-auth";
 import {
@@ -47,6 +48,7 @@ import {
   isBotCommand,
   miniAppKeyboard,
   onboardReplyMarkup,
+  sendTelegramWelcome,
   sessionPlanKeyboard,
   weekOpenKeyboard,
   parseFeelingCallback,
@@ -162,11 +164,12 @@ async function sendQuiz(chatId: number, userId: number, locale: LocaleId) {
   try {
     const quiz = await openOnboarding(await resolveJournalId(userId), locale);
     if (!quiz) return;
-    await telegramRequest("sendMessage", {
+    const sent = await telegramRequest("sendMessage", {
       chat_id: chatId,
       text: quiz.text,
       reply_markup: onboardReplyMarkup(quiz.rows),
     });
+    if (sent) await trackBotFunnel({ userId, messenger: "telegram", choice: { step: "start" } });
   } catch {
     // The welcome already went out.
   }
@@ -466,9 +469,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
     const saved = await handleVoice(message, media, reply, keyboard);
-    if (saved && intent === "finish" && owner) {
+    if (saved && intent === "finish" && owner && userId) {
       await sendWeekFollow(chatId, reply);
       await finishOnboarding(owner);
+      await trackBotFunnel({ userId, messenger: "telegram", choice: { step: "note" } });
     }
     return NextResponse.json({ ok: true });
   }
@@ -511,11 +515,11 @@ export async function POST(req: Request) {
         }
       }
     }
-    await telegramRequest("sendMessage", {
-      chat_id: chatId,
-      text: translate(greeting, "botHelp"),
-      reply_markup: sessionPlanKeyboard(appUrl(), greeting),
-    });
+    await sendTelegramWelcome(
+      chatId,
+      translate(greeting, "botHelp"),
+      sessionPlanKeyboard(appUrl(), greeting),
+    );
     if (userId) {
       await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
       await sendQuiz(chatId, userId, reply);
@@ -569,6 +573,7 @@ export async function POST(req: Request) {
     const stats = redis
       ? formatAnalyticsReport(await loadAnalyticsReport(redis))
       : "Счётчики ещё не пишутся.";
+    const funnel = await botFunnelBlock();
     let landing = "";
     const sourceRedis = getRedis();
     if (sourceRedis) {
@@ -580,7 +585,7 @@ export async function POST(req: Request) {
     }
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: `${stats}${landing}`,
+      text: funnel ? `${stats}${landing}\n\n${funnel}` : `${stats}${landing}`,
       reply_markup: keyboard,
     });
     return NextResponse.json({ ok: true });
@@ -637,6 +642,7 @@ export async function POST(req: Request) {
     if (intent === "finish") {
       await sendWeekFollow(chatId, reply);
       await finishOnboarding(owner);
+      await trackBotFunnel({ userId, messenger: "telegram", choice: { step: "note" } });
     } else {
       await telegramRequest("sendMessage", {
         chat_id: chatId,
