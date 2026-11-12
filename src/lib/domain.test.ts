@@ -94,6 +94,7 @@ import {
   voiceNotesOpen,
   whitelistSpan,
 } from "./week-access";
+import { localWeekView } from "./week-access-client";
 
 function note(partial: Partial<JournalEntry> & Pick<JournalEntry, "id" | "body">): JournalEntry {
   return {
@@ -1460,7 +1461,9 @@ describe("week access", () => {
     assert.equal(starPriceFromEnv("12.5"), 150);
     assert.equal(rubPriceFromEnv(undefined), 150);
     assert.equal(rubPriceFromEnv("299"), 299);
+    assert.equal(rubPriceFromEnv("350"), 350);
     assert.equal(rubPriceFromEnv("0"), 150);
+    assert.equal(localWeekView(emptyWeekAccess(), new Date(), { rubPrice: 350 }).rubPrice, 350);
   });
 
   it("adds paid time from both sides and keeps the earlier trial", () => {

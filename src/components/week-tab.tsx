@@ -18,6 +18,7 @@ import {
   readLocalWeekAccess,
   writeLocalWeekAccess,
 } from "@/lib/week-access-client";
+import { useWeekPrices } from "@/components/week-prices";
 import {
   markWeekIntroSeen,
   openWeekAccess,
@@ -50,6 +51,7 @@ export function WeekTab({
   children,
 }: WeekTabProps) {
   const { t, count } = useI18n();
+  const prices = useWeekPrices();
   const [access, setAccess] = useState<WeekAccessView | null>(null);
   const [failedOpen, setFailedOpen] = useState(false);
   const [payingPlan, setPayingPlan] = useState<PremiumPlan | null>(null);
@@ -83,7 +85,7 @@ export function WeekTab({
       if (!opened) {
         const next = openWeekAccess(readLocalWeekAccess(), new Date());
         writeLocalWeekAccess(next);
-        publish(localWeekView(next));
+        publish(localWeekView(next, new Date(), prices));
         return;
       }
       publish(opened);
@@ -93,7 +95,7 @@ export function WeekTab({
     return () => {
       cancelled = true;
     };
-  }, [ready, inTelegram, reloadToken]);
+  }, [ready, inTelegram, reloadToken, prices]);
 
   useEffect(() => {
     if (!ready || !inTelegram) return;
@@ -149,7 +151,7 @@ export function WeekTab({
       }
       const next = markWeekIntroSeen(readLocalWeekAccess());
       writeLocalWeekAccess(next);
-      publish(localWeekView(next));
+      publish(localWeekView(next, new Date(), prices));
       return;
     }
     const seen = await postWeekAccess(initData, "seen");

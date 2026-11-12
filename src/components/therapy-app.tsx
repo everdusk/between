@@ -29,6 +29,7 @@ import { clearStore, WEB_STORAGE_KEY } from "@/lib/storage";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
 import { trackAnalytics } from "@/lib/analytics-client";
 import { fetchWeekAccess, localWeekView, readLocalWeekAccess } from "@/lib/week-access-client";
+import { useWeekPrices } from "@/components/week-prices";
 import type { WeekAccessStatus, WeekAccessView } from "@/lib/week-access";
 
 const SECTIONS = ["journal", "week", "sessions"] as const;
@@ -111,6 +112,7 @@ function localizeStorageError(
 
 function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: boolean }) {
   const { t, locale, greetingLocale } = useI18n();
+  const prices = useWeekPrices();
   const pathname = usePathname();
   const webEntry = pathname === "/journal" || pathname.startsWith("/journal/");
   const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
@@ -257,7 +259,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     if (!telegram.ready) return;
     if (!telegram.inTelegram) {
       if (tabOwnsAccess.current) return;
-      const local = localWeekView(readLocalWeekAccess());
+      const local = localWeekView(readLocalWeekAccess(), new Date(), prices);
       setPremium(local.status === "paid");
       setAccessStatus(local.status);
       return;
@@ -272,7 +274,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     return () => {
       cancelled = true;
     };
-  }, [telegram.ready, telegram.inTelegram, telegram.initData]);
+  }, [telegram.ready, telegram.inTelegram, telegram.initData, prices]);
 
   function onWeekAccess(view: WeekAccessView) {
     tabOwnsAccess.current = true;

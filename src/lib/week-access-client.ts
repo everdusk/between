@@ -24,8 +24,12 @@ export function writeLocalWeekAccess(record: WeekAccessRecord): void {
   window.localStorage.setItem(LOCAL_KEY, JSON.stringify(normalizeWeekAccess(record)));
 }
 
-export function localWeekView(record: WeekAccessRecord, now = new Date()): WeekAccessView {
-  return describeWeekAccess(record, now);
+export function localWeekView(
+  record: WeekAccessRecord,
+  now = new Date(),
+  prices?: { starPrice?: number; rubPrice?: number },
+): WeekAccessView {
+  return describeWeekAccess(record, now, prices?.starPrice, { rubPrice: prices?.rubPrice });
 }
 
 function isView(value: unknown): value is WeekAccessView {

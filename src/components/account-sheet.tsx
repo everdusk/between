@@ -24,6 +24,7 @@ import {
   localWeekView,
   readLocalWeekAccess,
 } from "@/lib/week-access-client";
+import { useWeekPrices } from "@/components/week-prices";
 import { type PremiumPlan, type WeekAccessView } from "@/lib/week-access";
 
 const PLANS = ["month", "quarter", "year"] as const satisfies readonly PremiumPlan[];
@@ -85,6 +86,7 @@ export function AccountSheet({
   onPremium: () => void;
 }) {
   const { t, locale } = useI18n();
+  const prices = useWeekPrices();
   const titleId = useId();
   const [access, setAccess] = useState<WeekAccessView | null>(null);
   const [payingPlan, setPayingPlan] = useState<PremiumPlan | null>(null);
@@ -106,13 +108,13 @@ export function AccountSheet({
       const view =
         inTelegram && initData
           ? await fetchWeekAccess(initData)
-          : await fetchSessionAccess();
+          : await fetchSessionAccess(prices);
       if (!cancelled) setAccess(view);
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, inTelegram, initData]);
+  }, [open, inTelegram, initData, prices]);
 
   async function refreshAfterPay() {
     const first = await fetchWeekAccess(initData);
@@ -353,7 +355,7 @@ function PasswordSettings({
   );
 }
 
-async function fetchSessionAccess(): Promise<WeekAccessView> {
+async function fetchSessionAccess(prices: { starPrice: number; rubPrice: number }): Promise<WeekAccessView> {
   try {
     const res = await fetch("/api/week-access", { cache: "no-store" });
     if (res.ok) {
@@ -363,5 +365,5 @@ async function fetchSessionAccess(): Promise<WeekAccessView> {
   } catch {
     /* The local stamp still describes the trial. */
   }
-  return localWeekView(readLocalWeekAccess());
+  return localWeekView(readLocalWeekAccess(), new Date(), prices);
 }
