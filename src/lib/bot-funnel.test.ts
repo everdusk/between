@@ -127,7 +127,7 @@ describe("bot funnel", () => {
       assert.ok(translate(locale.id, "botHelp").length <= 1024, locale.id);
       assert.ok(translate(locale.id, "botHelpMax").length <= 1024, locale.id);
       assert.ok(welcomeCaption(locale.id).length <= 1024, locale.id);
-      assert.match(welcomeCaption(locale.id), /Stars/);
+      assert.match(welcomeCaption(locale.id), /150 ₽/);
     }
     const bytes = await loadWelcomeImage();
     assert.ok(bytes);
