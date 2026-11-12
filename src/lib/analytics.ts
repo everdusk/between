@@ -9,7 +9,7 @@ import {
   analyticsDedupKey,
   emptyAnalyticsCounts,
   reportDaySpan,
-  shiftDay,
+  statsWindow,
   analyticsQuiet,
   snapshotFromReads,
   sumCountRows,
@@ -106,16 +106,8 @@ export async function loadAnalyticsReport(
 ): Promise<AnalyticsSnapshot> {
   const today = todayInTimeZone(DEFAULT_TIME_ZONE, now);
   const { reportDays, cohortDays: cohortSpan } = reportDaySpan();
-  const days: string[] = [];
-  for (let ago = reportDays - 1; ago >= 0; ago -= 1) {
-    const day = shiftDay(today, -ago);
-    if (day) days.push(day);
-  }
-  const cohortDays: string[] = [];
-  for (let ago = cohortSpan - 1; ago >= 0; ago -= 1) {
-    const day = shiftDay(today, -ago);
-    if (day) cohortDays.push(day);
-  }
+  const days = statsWindow(today, reportDays);
+  const cohortDays = statsWindow(today, cohortSpan);
 
   const keys: string[] = [];
   for (const messenger of ANALYTICS_MESSENGERS) {
