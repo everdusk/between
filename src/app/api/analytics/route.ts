@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { acceptClientEvent, analyticsRedis, loadAnalyticsReport, recordAnalytics } from "@/lib/analytics";
+import { analyticsQuiet } from "@/lib/analytics-model";
 import { validateMaxInitData } from "@/lib/max-auth";
 import { redisConfigured } from "@/lib/redis";
 import { validateInitData } from "@/lib/telegram-auth";
 import { DEFAULT_TIME_ZONE } from "@/lib/types";
+import { sessionSecret, sessionTokenFromRequest } from "@/lib/web-account";
+import { accountFromSession } from "@/lib/web-account-store";
 import { todayInTimeZone } from "@/lib/zoned";
+
+function quiet(input: { username?: string | null; userId?: number | string | null; messenger?: "telegram" | "max" | "web" }): boolean {
+  return analyticsQuiet({ ...input, owners: process.env.ANALYTICS_OWNERS });
+}
 
 function authorized(req: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim();
@@ -52,6 +59,9 @@ export async function POST(req: Request) {
     if (!validated) {
       return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
     }
+    if (quiet({ username: validated.user.username, userId: validated.user.id, messenger: "max" })) {
+      return NextResponse.json({ ok: true, quiet: true });
+    }
     await recordAnalytics(redis, {
       userId: validated.user.id,
       event: accepted.event,
@@ -68,6 +78,16 @@ export async function POST(req: Request) {
     const device = req.headers.get("x-between-device") ?? "";
     if (!/^[a-z0-9]{32}$/.test(device)) {
       return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+    }
+    const secret = sessionSecret();
+    const token = secret ? sessionTokenFromRequest(req) : null;
+    const account = secret && token ? await accountFromSession(token, secret) : null;
+    if (
+      account &&
+      (quiet({ username: account.telegramUsername, messenger: "web" }) ||
+        quiet({ userId: account.maxUserId, messenger: "max" }))
+    ) {
+      return NextResponse.json({ ok: true, quiet: true });
     }
     await recordAnalytics(redis, {
       userId: `web:${device}`,
@@ -88,6 +108,9 @@ export async function POST(req: Request) {
   const validated = validateInitData(initData);
   if (!validated) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+  if (quiet({ username: validated.user.username, userId: validated.user.id, messenger: "telegram" })) {
+    return NextResponse.json({ ok: true, quiet: true });
   }
   await recordAnalytics(redis, {
     userId: validated.user.id,
