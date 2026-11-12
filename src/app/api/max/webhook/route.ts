@@ -35,6 +35,7 @@ import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
 import { startPayload } from "@/lib/landing";
 import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { isBotCommand } from "@/lib/telegram-bot";
+import { welcomeCaption } from "@/lib/welcome-text";
 import {
   answerMaxCallback,
   downloadMaxAudio,
@@ -232,7 +233,7 @@ async function greet(
   reply: LocaleId,
   chatId?: number,
 ) {
-  await sendMaxWelcome(userId, translate(greeting, "botHelpMax"), undefined, chatId);
+  await sendMaxWelcome(userId, welcomeCaption(greeting, "max"), undefined, chatId);
   const owner = await resolveMaxJournalId(userId);
   const quiz = await openOnboarding(owner, reply);
   if (quiz) {

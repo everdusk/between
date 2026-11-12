@@ -358,9 +358,9 @@ export const es: Catalog = {
   botWeekOpen: "Abrir la semana",
   botPickButton: "Pulse un botón de abajo.",
   botHelp:
-    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nRespóndeme un par de minutos al día — el ánimo en un toque, los pensamientos en un par de líneas. La semana se arma en una imagen: se ve qué se repite.\n\nPara la sesión lo reúno en un resumen — no hará falta recordar qué pasó. Pon la fecha de la sesión, y empiezo.",
+    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nEscriba aquí sus pensamientos y lo que siente: todo se guarda.\nUn par de veces al día preguntaré el ánimo: márquelo de un toque.\nLa semana se arma en una imagen: se ve qué se repite.\n\nLos primeros 7 días son gratis; después, {price} ₽ al mes.\n\nAntes de la sesión lo reúno en un resumen: no hará falta recordar qué pasó. Para empezar, haré un par de preguntas.",
   botHelpMax:
-    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nRespóndeme un par de minutos al día — el ánimo en un toque, los pensamientos en un par de líneas. La semana se arma en una imagen: se ve qué se repite.\n\nPara la sesión lo reúno en un resumen — no hará falta recordar qué pasó. Pon la fecha de la sesión, y empiezo.",
+    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nEscriba aquí sus pensamientos y lo que siente: todo se guarda.\nUn par de veces al día preguntaré el ánimo: márquelo de un toque.\nLa semana se arma en una imagen: se ve qué se repite.\n\nLos primeros 7 días son gratis; después, {price} ₽ al mes.\n\nAntes de la sesión lo reúno en un resumen: no hará falta recordar qué pasó. Para empezar, haré un par de preguntas.",
   botUnknown:
     "Escribe un texto y lo guardo como nota.",
   botNotReady:

@@ -1558,10 +1558,10 @@ describe("languages", () => {
       help.split("\n")[0],
       "Я Between — дневник, с которым на сессию не приходишь с пустой головой.",
     );
-    assert.match(help, /Поставьте дату сеанса, и я начну\.$/);
+    assert.match(help, /Для начала задам пару вопросов\.$/);
     assert.equal(help, translate("ru", "botHelpMax"));
     assert.doesNotMatch(help, /Stars/);
-    assert.doesNotMatch(help, /\{price\}/);
+    assert.match(help, /\{price\} ₽ в месяц/);
     assert.equal(translate("en", "botSessionOpen"), "Set the date");
     assert.equal(isBotCommand("/paysupport", "paysupport"), true);
     assert.equal(isBotCommand("/paysupport@BetweenJournalBot", "paysupport"), true);
