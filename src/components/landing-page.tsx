@@ -192,7 +192,6 @@ export function LandingPage({ qr }: { qr: string }) {
               <a href="#kak" onClick={(event) => jump(event, "kak")}>
                 Как это работает
               </a>
-              <a href="/subscribe">Премиум</a>
             </nav>
             <MessengerButtons compact />
           </div>
@@ -337,8 +336,6 @@ export function LandingPage({ qr }: { qr: string }) {
               <a href="/terms">Условия использования</a>
               {" · "}
               <a href="/privacy">Политика конфиденциальности</a>
-              {" · "}
-              <a href="/subscribe">Премиум</a>
             </p>
             <p className="mt-1 text-sm" style={{ color: "var(--bl-dim)" }}>
               ИНН {LEGAL_INN}
