@@ -8,7 +8,7 @@ import { LegalLinks } from "@/components/legal-links";
 import { useI18n } from "@/components/locale-provider";
 import { trackAnalytics } from "@/lib/analytics-client";
 import { captureProduct } from "@/lib/product-analytics";
-import { PremiumPaywall } from "@/components/premium-paywall";
+import { SubscribeCheckout } from "@/components/subscribe-checkout";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   createWeekInvoice,
@@ -210,17 +210,14 @@ export function WeekTab({
 
   if (access.status === "locked" && (inTelegram || inMax)) {
     return (
-      <div className="px-1 pt-1">
-        <PremiumPaywall
-          access={access}
-          inTelegram={inTelegram}
-          inMax={inMax}
-          canSubscribe={canSubscribe}
-          payingPlan={payingPlan}
-          payError={payError}
-          onPay={(plan) => void pay(plan)}
-        />
-      </div>
+      <SubscribeCheckout
+        embed
+        monthly={access.rubPrice}
+        stars={inTelegram ? access.prices : null}
+        onStarsPay={(plan) => void pay(plan)}
+        starsBusy={payingPlan !== null}
+        starsError={payError}
+      />
     );
   }
 
