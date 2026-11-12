@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { analyticsDedupToken, recordAnalytics, type AnalyticsRedis } from "./analytics";
+import { captureServerProduct, productDistinctId } from "./product-analytics-server";
 import {
   acceptClientEvent,
   clientMessenger,
@@ -338,5 +339,53 @@ describe("analytics", () => {
     const token = analyticsDedupToken("pepper", "424242:visit:2026-11-01");
     assert.equal(token.includes("424242"), false);
     assert.equal(token.length, 64);
+  });
+
+  it("uses one PostHog person for the bot and the mini app", async () => {
+    const pepper = "bot-token";
+    const person = productDistinctId(pepper, "telegram", 42);
+    assert.equal(productDistinctId(pepper, "telegram", "42"), person);
+    assert.equal(person.length, 32);
+    assert.equal(person.includes("42"), false);
+    assert.notEqual(productDistinctId(pepper, "max", 42), person);
+    assert.notEqual(productDistinctId("other-token", "telegram", 42), person);
+
+    const previous = {
+      key: process.env.POSTHOG_KEY,
+      host: process.env.POSTHOG_HOST,
+      token: process.env.BOT_TOKEN,
+    };
+    const calls: { url: string; body: { event?: string; distinct_id?: string; properties?: { plan?: string } } }[] = [];
+    const original = globalThis.fetch;
+    process.env.POSTHOG_KEY = "phc_publictoken12";
+    process.env.POSTHOG_HOST = "https://us.i.posthog.com";
+    process.env.BOT_TOKEN = pepper;
+    globalThis.fetch = async (url, init) => {
+      calls.push({
+        url: String(url),
+        body: JSON.parse(String(init?.body)) as { event?: string; distinct_id?: string; properties?: { plan?: string } },
+      });
+      return new Response("ok");
+    };
+    try {
+      await captureServerProduct({ messenger: "telegram", event: "note", userId: 42, plan: "month" });
+      await captureServerProduct({ messenger: "max", event: "visit", userId: 42 });
+    } finally {
+      globalThis.fetch = original;
+      if (previous.key === undefined) delete process.env.POSTHOG_KEY;
+      else process.env.POSTHOG_KEY = previous.key;
+      if (previous.host === undefined) delete process.env.POSTHOG_HOST;
+      else process.env.POSTHOG_HOST = previous.host;
+      if (previous.token === undefined) delete process.env.BOT_TOKEN;
+      else process.env.BOT_TOKEN = previous.token;
+    }
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0]?.url, "https://us.i.posthog.com/capture/");
+    assert.equal(calls[0]?.body.event, "telegram_note");
+    assert.equal(calls[0]?.body.distinct_id, person);
+    assert.equal(calls[0]?.body.properties?.plan, "month");
+    assert.equal(calls[1]?.body.event, "max_visit");
+    assert.equal(calls[1]?.body.distinct_id, productDistinctId(pepper, "max", 42));
+    assert.equal(calls[1]?.body.properties?.plan, undefined);
   });
 });
