@@ -91,6 +91,7 @@ import {
   rubPriceFromEnv,
   starPriceFromEnv,
   TRIAL_MS,
+  canPreviewPaywall,
   voiceNotesOpen,
   whitelistSpan,
 } from "./week-access";
@@ -1366,6 +1367,8 @@ describe("week access", () => {
     assert.equal(isWeekAccessExempt({ id: 42 }, "12.5"), false);
     assert.equal(whitelistSpan({ id: 1, username: "@Aliatorovskaia" }), "forever");
     assert.equal(whitelistSpan({ id: 7, username: "odinzrage" }), null);
+    assert.equal(canPreviewPaywall({ id: 1, username: "@Aliatorovskaia" }), true);
+    assert.equal(canPreviewPaywall({ id: 7, username: "odinzrage" }), false);
 
     const forever = describeWeekAccess(opened, now, 150, { grant: "forever" });
     assert.equal(forever.premium, "forever");

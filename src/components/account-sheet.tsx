@@ -9,6 +9,7 @@ import { LanguageSwitch } from "@/components/language-switch";
 import { PasswordChange } from "@/components/password-change";
 import { SchemeSwitch } from "@/components/scheme-switch";
 import { WebAccountCard } from "@/components/web-account-card";
+import { SubscribeCheckout } from "@/components/subscribe-checkout";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/components/locale-provider";
@@ -89,6 +90,7 @@ export function AccountSheet({
   const [access, setAccess] = useState<WeekAccessView | null>(null);
   const [payingPlan, setPayingPlan] = useState<PremiumPlan | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
+  const [preview, setPreview] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -292,6 +294,11 @@ export function AccountSheet({
                 ) : null}
               </div>
             ) : null}
+            {access?.previewPaywall ? (
+              <Button type="button" className="w-full" onClick={() => setPreview(true)}>
+                Посмотреть пейвол
+              </Button>
+            ) : null}
           </section>
 
           <section className="space-y-3">
@@ -307,6 +314,28 @@ export function AccountSheet({
           </section>
         </div>
       </section>
+      {preview && access ? (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-[#07090d] px-4 py-5"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="mb-4 text-sm text-[#a9b4ae]"
+            onClick={() => setPreview(false)}
+          >
+            Закрыть
+          </button>
+          <SubscribeCheckout
+            embed
+            monthly={access.rubPrice}
+            stars={inTelegram ? access.prices : null}
+            onStarsPay={(plan) => void pay(plan)}
+            starsBusy={payingPlan !== null}
+            starsError={payError}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
