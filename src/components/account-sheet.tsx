@@ -2,20 +2,20 @@
 
 import { useEffect, useId, useState } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
-import { CircleUser, Star, X } from "lucide-react";
+import { CircleUser, X } from "lucide-react";
 import { DeleteJournal } from "@/components/delete-data";
 import { FeedbackForm } from "@/components/feedback-form";
 import { LanguageSwitch } from "@/components/language-switch";
 import { PasswordChange } from "@/components/password-change";
 import { SchemeSwitch } from "@/components/scheme-switch";
 import { WebAccountCard } from "@/components/web-account-card";
+import { PremiumPaywall } from "@/components/premium-paywall";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/components/locale-provider";
 import type { WebAccount } from "@/hooks/use-web-account";
 import { trackAnalytics } from "@/lib/analytics-client";
 import { captureProduct } from "@/lib/product-analytics";
-import { formatPremiumStatus } from "@/lib/messages";
 import { passwordSettingsKind } from "@/lib/password-settings";
 import type { NotifyPrefs } from "@/lib/types";
 import {
@@ -26,8 +26,6 @@ import {
 } from "@/lib/week-access-client";
 import { useWeekPrices } from "@/components/week-prices";
 import { type PremiumPlan, type WeekAccessView } from "@/lib/week-access";
-
-const PLANS = ["month", "quarter", "year"] as const satisfies readonly PremiumPlan[];
 
 export function AccountButton({
   pressed,
@@ -85,7 +83,7 @@ export function AccountSheet({
   onLogout: () => void;
   onPremium: () => void;
 }) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const prices = useWeekPrices();
   const titleId = useId();
   const [access, setAccess] = useState<WeekAccessView | null>(null);
@@ -155,16 +153,7 @@ export function AccountSheet({
     });
   }
 
-  function planLabel(plan: PremiumPlan, price: number) {
-    if (payingPlan === plan) return t("paying");
-    if (plan === "quarter") return t("payQuarter", { price });
-    if (plan === "year") return t("payYear", { price });
-    return t("payStars", { price });
-  }
-
   if (!open) return null;
-
-  const premiumText = access ? formatPremiumStatus(locale, access) : t("loading");
   // The site and MAX paint glass at 14% white, and the MAX webview drops the blur,
   // so the journal reads through the settings. The sheet itself stays a solid panel.
   const solidSheet = inMax || !inTelegram;
@@ -264,37 +253,15 @@ export function AccountSheet({
             <FeedbackForm initData={initData} maxInitData={maxInitData} />
           </section>
 
-          <section className="space-y-3">
-            <h3 className="font-display text-lg tracking-tight text-foreground">{t("premiumMark")}</h3>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{premiumText}</p>
-            {access && access.premium !== "forever" ? (
-              <div className="space-y-2">
-                {inTelegram
-                  ? PLANS.map((plan) => (
-                      <Button
-                        key={plan}
-                        type="button"
-                        className="w-full"
-                        disabled={payingPlan !== null}
-                        onClick={() => void pay(plan)}
-                      >
-                        <Star aria-hidden />
-                        {planLabel(plan, access.prices[plan])}
-                      </Button>
-                    ))
-                  : account || inMax ? (
-                      <a href="/subscribe" className={buttonVariants({ className: "w-full" })}>
-                        {t("sbpBuy")}
-                      </a>
-                    ) : null}
-                {payError ? (
-                  <p className="text-sm text-destructive" role="alert">
-                    {payError}
-                  </p>
-                ) : null}
-              </div>
-            ) : null}
-          </section>
+          <PremiumPaywall
+            access={access}
+            inTelegram={inTelegram}
+            inMax={inMax}
+            canSubscribe={Boolean(account) || inMax}
+            payingPlan={payingPlan}
+            payError={payError}
+            onPay={(plan) => void pay(plan)}
+          />
 
           <section className="space-y-3">
             <h3 className="font-display text-lg tracking-tight text-foreground">{t("deleteTitle")}</h3>
