@@ -57,6 +57,7 @@ import {
   telegramRequest,
 } from "@/lib/telegram-bot";
 import { todayInTimeZone } from "@/lib/zoned";
+import { welcomeCaption } from "@/lib/welcome-text";
 import {
   VOICE_DAILY_LIMIT,
   transcribeVoice,
@@ -514,7 +515,7 @@ export async function POST(req: Request) {
         }
       }
     }
-    await sendTelegramWelcome(chatId, translate(greeting, "botHelp"));
+    await sendTelegramWelcome(chatId, welcomeCaption(greeting));
     if (userId) {
       await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
       await sendQuiz(chatId, userId, reply);

@@ -7,6 +7,7 @@ import { validateInitData } from "@/lib/telegram-auth";
 import { trackBotFunnel } from "@/lib/bot-funnel";
 import { onboardReplyMarkup, sendTelegramWelcome, telegramRequest } from "@/lib/telegram-bot";
 import { resolveJournalId } from "@/lib/web-account-store";
+import { welcomeCaption } from "@/lib/welcome-text";
 
 /** One hello in the bot chat, so a direct Mini App open still creates the dialog. */
 export async function POST(req: Request) {
@@ -29,7 +30,7 @@ export async function POST(req: Request) {
   const selected = redisConfigured() ? await loadUserLocale(validated.user.id) : null;
   const greeting = resolveGreetingLocale(null, device, validated.user.language_code);
   const reply = resolveBotLocale(selected, device, validated.user.language_code);
-  const sent = await sendTelegramWelcome(validated.user.id, translate(greeting, "botHelp"));
+  const sent = await sendTelegramWelcome(validated.user.id, welcomeCaption(greeting));
   if (!sent) {
     await releaseBotIntro(validated.user.id);
     return NextResponse.json({ ok: false, error: "not_delivered" }, { status: 502 });
