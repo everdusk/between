@@ -427,8 +427,6 @@ export const ru = {
   botPayNow: "Оформить подписку",
   botPayLater: "Позже",
   botEntryClosed: "Новые записи закрыты. Всё, что вы уже написали, на месте.",
-  entryClosedTitle: "Новые записи закрыты",
-  entryClosedBody: "Всё написанное остаётся. Чтобы продолжить, откройте «Неделю» и оформите подписку.",
   pausedLine: "Подписка на паузе. Эти дни не тратятся.",
   botPremiumForever: "Премиум без срока.",
   botPremiumDays: "Премиум ещё {days}.",

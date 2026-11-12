@@ -412,8 +412,6 @@ export const tr: Catalog = {
   botPayNow: "Subscribe",
   botPayLater: "Later",
   botEntryClosed: "New notes are closed. What you already wrote is still here.",
-  entryClosedTitle: "New notes are closed",
-  entryClosedBody: "What you wrote stays. Open Week to subscribe and continue.",
   pausedLine: "Subscription is paused. These days are not spent.",
   botPremiumForever: "Premium süresiz.",
   botPremiumDays: "Premium için {days} kaldı.",

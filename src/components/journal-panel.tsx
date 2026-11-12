@@ -29,9 +29,6 @@ interface JournalPanelProps {
   }) => boolean;
   onDelete: (id: string) => boolean;
   disabled?: boolean;
-  /** Trial or subscription has ended. History stays, the composer does not. */
-  closed?: boolean;
-  onSubscribe?: () => void;
   initData?: string;
 }
 
@@ -78,8 +75,6 @@ export function JournalPanel({
   onSave,
   onDelete,
   disabled,
-  closed = false,
-  onSubscribe,
   initData = "",
 }: JournalPanelProps) {
   const { t, locale, count, feeling: feelingLabel, slot } = useI18n();
@@ -203,19 +198,6 @@ export function JournalPanel({
         </div>
       </section>
 
-      {closed ? (
-        <section className="ink rounded-3xl p-6 sm:p-7">
-          <p className="font-display text-[1.5rem] leading-snug tracking-tight text-ink-foreground">
-            {t("entryClosedTitle")}
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-ink-muted">{t("entryClosedBody")}</p>
-          {onSubscribe ? (
-            <Button type="button" size="lg" className="mt-5 bg-ink-foreground text-ink hover:bg-ink-foreground/90" onClick={onSubscribe}>
-              {t("botWeekOpen")}
-            </Button>
-          ) : null}
-        </section>
-      ) : (
       <section ref={composerRef} className="glass scroll-mt-4 rounded-3xl p-5 sm:p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="flex items-center justify-between gap-3">
@@ -297,7 +279,6 @@ export function JournalPanel({
           </div>
         </form>
       </section>
-      )}
 
       <section className="space-y-3 px-1 pt-2">
         <div className="flex items-baseline justify-between gap-3 px-1">
@@ -345,7 +326,6 @@ export function JournalPanel({
                       )}
                       {checkin && entry.source === "checkin" && <span>· {t("checkinMark")}</span>}
                     </div>
-                    {closed ? null : (
                     <div className="-mt-1.5 -me-2 flex shrink-0 items-center">
                       <Button
                         type="button"
@@ -371,7 +351,6 @@ export function JournalPanel({
                         <Trash2 aria-hidden />
                       </Button>
                     </div>
-                    )}
                   </div>
 
                   {entry.feelings.length > 0 && (

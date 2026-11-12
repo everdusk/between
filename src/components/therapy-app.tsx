@@ -202,9 +202,15 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   const [premium, setPremium] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [accessStatus, setAccessStatus] = useState<WeekAccessStatus | null>(null);
+  const locked = accessStatus === "locked";
+  const wantsSubscribe = requested === "subscribe" || fromMax === "subscribe";
   useEffect(() => {
-    if (requested === "subscribe" || fromMax === "subscribe") setAccountOpen(true);
-  }, [requested, fromMax]);
+    if (accessStatus === "locked") {
+      if (wantsSubscribe) setAccountOpen(false);
+      return;
+    }
+    if (wantsSubscribe) setAccountOpen(true);
+  }, [wantsSubscribe, accessStatus]);
   const [passwordSeen, setPasswordSeen] = useState(false);
   const passwordHash = useSyncExternalStore(
     (onStoreChange) => {
@@ -354,7 +360,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
             <div className="flex flex-wrap items-center gap-2">{corner}</div>
           </div>
           <div className="journal-side-scroll">
-            {!showGate && status === "ready" ? (
+            {!showGate && status === "ready" && !locked ? (
               <nav className="grid gap-1" aria-label={t("sections")}>
                 {SECTIONS.map((id) => {
                   const Icon = SECTION_ICON[id];
@@ -410,6 +416,27 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
       <div className="journal-column relative z-10 mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col">
         {showGate ? (
           <WebAccountGate onSignedIn={web.setAccount} />
+        ) : locked ? (
+          <div className="journal-scroll pt-3 pr-[max(1rem,var(--safe-right))] pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]">
+            <div className="journal-scroll-inner">
+              {accountPending || status === "loading" ? (
+                <JournalSkeleton />
+              ) : (
+                <WeekTab
+                  active
+                  ready={telegram.ready}
+                  inTelegram={telegram.inTelegram}
+                  initData={telegram.initData}
+                  canSubscribe={Boolean(web.account) || inMax}
+                  reloadToken={accessNonce}
+                  onAccess={onWeekAccess}
+                >
+                  {null}
+                </WeekTab>
+              )}
+              {status === "ready" && !accountPending ? footer : null}
+            </div>
+          </div>
         ) : (
           <Tabs
             value={section}
@@ -444,8 +471,6 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                   onSave={upsertEntry}
                   onDelete={deleteEntry}
                   disabled={disabled}
-                  closed={accessStatus === "locked"}
-                  onSubscribe={() => selectSection("week")}
                   initData={telegram.inTelegram ? telegram.initData : ""}
                 />
               </TabsContent>
