@@ -8,7 +8,9 @@ import {
   analyticsCounterKey,
   analyticsDedupKey,
   formatAnalyticsReport,
+  analyticsQuiet,
   isAnalyticsOwner,
+  quietClientLaunch,
   messengerEventName,
   parseMessengerEvent,
   planAnalyticsSend,
@@ -314,6 +316,25 @@ describe("analytics", () => {
     assert.equal(isAnalyticsOwner("@aliatorovskaia", "aliatorovskaia, other"), true);
     assert.equal(isAnalyticsOwner("someone", "aliatorovskaia"), false);
     assert.equal(isAnalyticsOwner(undefined, "aliatorovskaia"), false);
+    assert.equal(analyticsQuiet({ username: "Aliatorovskaia", messenger: "telegram" }), true);
+    assert.equal(analyticsQuiet({ username: "reader", messenger: "web", owners: "reader" }), true);
+    assert.equal(analyticsQuiet({ userId: 1062664437, messenger: "max" }), true);
+    assert.equal(analyticsQuiet({ userId: 1062664437, messenger: "telegram" }), false);
+    assert.equal(analyticsQuiet({ username: "someone", userId: 5, messenger: "telegram" }), false);
+    assert.equal(
+      quietClientLaunch({
+        telegramInit: "user=" + encodeURIComponent(JSON.stringify({ id: 7, username: "aliatorovskaia" })),
+      }),
+      true,
+    );
+    assert.equal(
+      quietClientLaunch({ maxInit: "user=" + encodeURIComponent(JSON.stringify({ id: 1062664437 })) }),
+      true,
+    );
+    assert.equal(
+      quietClientLaunch({ telegramInit: "user=" + encodeURIComponent(JSON.stringify({ id: 7, username: "ada" })) }),
+      false,
+    );
     const token = analyticsDedupToken("pepper", "424242:visit:2026-11-01");
     assert.equal(token.includes("424242"), false);
     assert.equal(token.length, 64);

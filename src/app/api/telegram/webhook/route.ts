@@ -159,7 +159,7 @@ async function localesFor(user: TelegramUser | undefined): Promise<{
   };
 }
 
-async function sendQuiz(chatId: number, userId: number, locale: LocaleId) {
+async function sendQuiz(chatId: number, userId: number, locale: LocaleId, username?: string) {
   if (!redisConfigured()) return;
   try {
     const quiz = await openOnboarding(await resolveJournalId(userId), locale);
@@ -169,7 +169,9 @@ async function sendQuiz(chatId: number, userId: number, locale: LocaleId) {
       text: quiz.text,
       reply_markup: onboardReplyMarkup(quiz.rows),
     });
-    if (sent) await trackBotFunnel({ userId, messenger: "telegram", choice: { step: "start" } });
+    if (sent) {
+      await trackBotFunnel({ userId, messenger: "telegram", username, choice: { step: "start" } });
+    }
   } catch {
     // The welcome already went out.
   }
@@ -199,6 +201,7 @@ async function handleCallback(callback: TelegramCallback) {
     const result = await answerOnboarding(owner, reply, callback.data, {
       userId: callback.from.id,
       messenger: "telegram",
+      username: callback.from.username,
     });
     await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
     if (result.type !== "update" || !callback.message) return;
@@ -247,7 +250,12 @@ async function handleCallback(callback: TelegramCallback) {
 
   try {
     await addCheckin(callback.from.id, parsed.slot, parsed.feeling);
-    await trackServerEvent({ userId: callback.from.id, event: "mood", messenger: "telegram" });
+    await trackServerEvent({
+      userId: callback.from.id,
+      event: "mood",
+      messenger: "telegram",
+      username: callback.from.username,
+    });
     await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
     if (callback.message) {
       await telegramRequest("editMessageText", {
@@ -302,7 +310,7 @@ async function handlePayment(message: TelegramMessage) {
       throw error;
     }
   }
-  await recordPaidAnalytics(userId, chargeId);
+  await recordPaidAnalytics(userId, chargeId, new Date(), message.from?.username);
   if (!claimed) return;
 
   const { reply } = await localesFor(message.from);
@@ -393,7 +401,12 @@ async function handleVoice(
 
   try {
     await appendBotMessageToToday(userId, body);
-    await trackServerEvent({ userId, event: "note", messenger: "telegram" });
+    await trackServerEvent({
+      userId,
+      event: "note",
+      messenger: "telegram",
+      username: message.from?.username,
+    });
     await say(translate(reply, "botVoiceSaved", { text: voiceReplyPreview(body) }));
     return true;
   } catch {
@@ -472,7 +485,12 @@ export async function POST(req: Request) {
     if (saved && intent === "finish" && owner && userId) {
       await sendWeekFollow(chatId, reply);
       await finishOnboarding(owner);
-      await trackBotFunnel({ userId, messenger: "telegram", choice: { step: "note" } });
+      await trackBotFunnel({
+        userId,
+        messenger: "telegram",
+        username: message.from?.username,
+        choice: { step: "note" },
+      });
     }
     return NextResponse.json({ ok: true });
   }
@@ -502,7 +520,12 @@ export async function POST(req: Request) {
         text: translate(reply, key),
         reply_markup: keyboard,
       });
-      await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
+      await trackServerEvent({
+        userId,
+        event: "visit",
+        messenger: "telegram",
+        username: message.from?.username,
+      });
       return NextResponse.json({ ok: true });
     }
     if (userId && isLandingStart(text)) {
@@ -517,8 +540,13 @@ export async function POST(req: Request) {
     }
     await sendTelegramWelcome(chatId, welcomeCaption(greeting));
     if (userId) {
-      await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
-      await sendQuiz(chatId, userId, reply);
+      await trackServerEvent({
+        userId,
+        event: "visit",
+        messenger: "telegram",
+        username: message.from?.username,
+      });
+      await sendQuiz(chatId, userId, reply, message.from?.username);
     }
     return NextResponse.json({ ok: true });
   }
@@ -634,11 +662,21 @@ export async function POST(req: Request) {
 
   try {
     await appendBotMessageToToday(userId, text);
-    await trackServerEvent({ userId, event: "note", messenger: "telegram" });
+    await trackServerEvent({
+      userId,
+      event: "note",
+      messenger: "telegram",
+      username: message.from?.username,
+    });
     if (intent === "finish") {
       await sendWeekFollow(chatId, reply);
       await finishOnboarding(owner);
-      await trackBotFunnel({ userId, messenger: "telegram", choice: { step: "note" } });
+      await trackBotFunnel({
+        userId,
+        messenger: "telegram",
+        username: message.from?.username,
+        choice: { step: "note" },
+      });
     } else {
       await telegramRequest("sendMessage", {
         chat_id: chatId,

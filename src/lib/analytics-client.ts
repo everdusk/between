@@ -1,11 +1,53 @@
 import { toDateKey } from "./dates";
-import { clientMessenger, planAnalyticsSend, type AnalyticsMessenger, type ClientAnalyticsEvent, type ProductPlan } from "./analytics-model";
+import {
+  clientMessenger,
+  planAnalyticsSend,
+  quietClientLaunch,
+  type AnalyticsMessenger,
+  type ClientAnalyticsEvent,
+  type ProductPlan,
+} from "./analytics-model";
 import { readMaxInitData } from "./max-webapp";
 import { captureProduct } from "./product-analytics";
 
 export { clientMessenger };
 
 const DEVICE_KEY = "between:device";
+const QUIET_KEY = "between:analytics-quiet";
+
+/** Telegram or MAX launch of the stats owner. The website learns the same fact from the server. */
+export function clientAnalyticsQuiet(telegramInit = ""): boolean {
+  if (typeof window === "undefined") return false;
+  return quietClientLaunch({ telegramInit, maxInit: readMaxInitData() });
+}
+
+/** Launch identity, or a website session the server already marked. */
+export function analyticsStaysQuiet(telegramInit = ""): boolean {
+  return clientAnalyticsQuiet(telegramInit) || quietFlag();
+}
+
+function quietFlag(): boolean {
+  try {
+    return localStorage.getItem(QUIET_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function rememberQuiet(response: Response): void {
+  void response
+    .json()
+    .then((body: unknown) => {
+      const quiet = Boolean(body && typeof body === "object" && (body as { quiet?: unknown }).quiet);
+      try {
+        if (quiet) localStorage.setItem(QUIET_KEY, "1");
+        else localStorage.removeItem(QUIET_KEY);
+      } catch {
+        /* private mode */
+      }
+    })
+    .catch(() => undefined);
+}
 
 function storageKeys(messenger: AnalyticsMessenger): { cohort: string; sent: string } {
   if (messenger === "web") {
@@ -54,6 +96,7 @@ export function trackAnalytics(
   detail?: { plan?: ProductPlan },
 ): void {
   if (typeof window === "undefined") return;
+  if (clientAnalyticsQuiet(initData)) return;
   const maxInit = readMaxInitData();
   const messenger = clientMessenger(initData, maxInit);
   const keys = storageKeys(messenger);
@@ -66,7 +109,7 @@ export function trackAnalytics(
     return;
   }
   if (!plan.send) return;
-  captureProduct(event, { ...(detail?.plan ? { plan: detail.plan } : {}), messenger });
+  if (!quietFlag()) captureProduct(event, { ...(detail?.plan ? { plan: detail.plan } : {}), messenger });
   if (messenger === "telegram") {
     void fetch("/api/analytics", {
       method: "POST",
@@ -76,7 +119,9 @@ export function trackAnalytics(
       },
       body: JSON.stringify({ event, cohort: plan.cohort, day: plan.day, messenger: "telegram" }),
       keepalive: true,
-    }).catch(() => undefined);
+    })
+      .then(rememberQuiet)
+      .catch(() => undefined);
     return;
   }
   if (messenger === "max" && maxInit) {
@@ -88,7 +133,9 @@ export function trackAnalytics(
       },
       body: JSON.stringify({ event, cohort: plan.cohort, day: plan.day, messenger: "max" }),
       keepalive: true,
-    }).catch(() => undefined);
+    })
+      .then(rememberQuiet)
+      .catch(() => undefined);
     return;
   }
   const device = deviceToken();
@@ -101,5 +148,7 @@ export function trackAnalytics(
     },
     body: JSON.stringify({ event, cohort: plan.cohort, day: plan.day, messenger: "web" }),
     keepalive: true,
-  }).catch(() => undefined);
+  })
+    .then(rememberQuiet)
+    .catch(() => undefined);
 }

@@ -237,6 +237,63 @@ export function isAnalyticsOwner(username: string | undefined, owners: string): 
     .includes(name);
 }
 
+/** MAX id of the account that reads /stats. A Telegram id is not in this list. */
+const ANALYTICS_QUIET_MAX_IDS: readonly number[] = [1062664437];
+
+/**
+ * The people who read /stats. Their own steps stay out of the counters and PostHog.
+ * The username list defaults to the stats owner. The MAX id is matched only as MAX.
+ */
+export function analyticsQuiet(input: {
+  username?: string | null;
+  userId?: number | string | null;
+  messenger?: AnalyticsMessenger | null;
+  owners?: string | null;
+}): boolean {
+  const owners = input.owners?.trim() || "aliatorovskaia";
+  if (isAnalyticsOwner(input.username ?? undefined, owners)) return true;
+  if (input.messenger !== "max") return false;
+  const raw = input.userId;
+  const id = typeof raw === "number" ? raw : typeof raw === "string" && /^\d+$/.test(raw) ? Number(raw) : NaN;
+  return Number.isSafeInteger(id) && ANALYTICS_QUIET_MAX_IDS.includes(id);
+}
+
+/** User object inside a Telegram or MAX launch string. The signature is not checked. */
+export function launchUser(initData: string | null | undefined): { id?: number; username?: string } | null {
+  if (!initData) return null;
+  let raw: string | null;
+  try {
+    raw = new URLSearchParams(initData).get("user");
+  } catch {
+    return null;
+  }
+  if (!raw) return null;
+  let parsed: { id?: unknown; username?: unknown };
+  try {
+    parsed = JSON.parse(raw) as { id?: unknown; username?: unknown };
+  } catch {
+    return null;
+  }
+  const id =
+    typeof parsed.id === "number"
+      ? parsed.id
+      : typeof parsed.id === "string" && /^\d+$/.test(parsed.id)
+        ? Number(parsed.id)
+        : undefined;
+  const username = typeof parsed.username === "string" ? parsed.username : undefined;
+  if (id == null && !username) return null;
+  return { id, username };
+}
+
+/** True when this browser launch is the stats owner in Telegram or MAX. */
+export function quietClientLaunch(input: { telegramInit?: string | null; maxInit?: string | null }): boolean {
+  const telegram = launchUser(input.telegramInit);
+  const max = launchUser(input.maxInit);
+  if (telegram && analyticsQuiet({ username: telegram.username, messenger: "telegram" })) return true;
+  if (max && analyticsQuiet({ username: max.username, userId: max.id, messenger: "max" })) return true;
+  return false;
+}
+
 export function sumCountRows(
   left: { day: string; counts: Record<AnalyticsEvent, number> }[],
   right: { day: string; counts: Record<AnalyticsEvent, number> }[],

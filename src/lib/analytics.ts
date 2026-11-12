@@ -10,6 +10,7 @@ import {
   emptyAnalyticsCounts,
   reportDaySpan,
   shiftDay,
+  analyticsQuiet,
   snapshotFromReads,
   sumCountRows,
   type AnalyticsEvent,
@@ -206,7 +207,18 @@ export async function recordPaidAnalytics(
   userId: number,
   chargeId: string | undefined,
   now = new Date(),
+  username?: string | null,
 ): Promise<void> {
+  if (
+    analyticsQuiet({
+      username,
+      userId,
+      messenger: "telegram",
+      owners: process.env.ANALYTICS_OWNERS,
+    })
+  ) {
+    return;
+  }
   const redis = analyticsRedis();
   const pepper = process.env.BOT_TOKEN?.trim();
   if (!redis || !pepper) return;
@@ -247,6 +259,15 @@ export async function recordSbpPaid(input: {
   step: "paid" | "pending";
   at?: Date;
 }): Promise<"counted" | "duplicate" | "skipped"> {
+  if (
+    analyticsQuiet({
+      userId: input.userId,
+      messenger: input.messenger,
+      owners: process.env.ANALYTICS_OWNERS,
+    })
+  ) {
+    return "skipped";
+  }
   const redis = analyticsRedis();
   const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
   if (!redis || !pepper) return "skipped";
@@ -279,7 +300,18 @@ export async function trackServerEvent(input: {
   userId: number | string;
   event: AnalyticsEvent;
   messenger: AnalyticsMessenger;
+  username?: string | null;
 }): Promise<void> {
+  if (
+    analyticsQuiet({
+      username: input.username,
+      userId: input.userId,
+      messenger: input.messenger,
+      owners: process.env.ANALYTICS_OWNERS,
+    })
+  ) {
+    return;
+  }
   const redis = analyticsRedis();
   const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
   let counted = !redis || !pepper;

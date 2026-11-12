@@ -2,6 +2,7 @@ import { analyticsDedupToken, analyticsRedis } from "./analytics";
 import {
   analyticsCount,
   analyticsDedupKey,
+  analyticsQuiet,
   reportDaySpan,
   shiftDay,
 } from "./analytics-model";
@@ -263,7 +264,18 @@ export async function trackBotFunnel(input: {
   userId: number | string;
   messenger: "telegram" | "max";
   choice: BotFunnelChoice;
+  username?: string | null;
 }): Promise<void> {
+  if (
+    analyticsQuiet({
+      username: input.username,
+      userId: input.userId,
+      messenger: input.messenger,
+      owners: process.env.ANALYTICS_OWNERS,
+    })
+  ) {
+    return;
+  }
   const redis = analyticsRedis();
   const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
   if (!redis || !pepper) return;
