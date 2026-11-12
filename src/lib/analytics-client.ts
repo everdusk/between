@@ -8,7 +8,6 @@ import {
   type ProductPlan,
 } from "./analytics-model";
 import { readMaxInitData } from "./max-webapp";
-import { captureProduct } from "./product-analytics";
 
 export { clientMessenger };
 
@@ -88,6 +87,7 @@ function deviceToken(): string | null {
 
 /**
  * One funnel step per device per day.
+ * PostHog is written on the server, under the same person as the bot.
  * A Telegram launch stays on `telegram_*`. An empty initData is the website and stays on `web_*`.
  */
 export function trackAnalytics(
@@ -109,46 +109,22 @@ export function trackAnalytics(
     return;
   }
   if (!plan.send) return;
-  if (!quietFlag()) captureProduct(event, { ...(detail?.plan ? { plan: detail.plan } : {}), messenger });
-  if (messenger === "telegram") {
-    void fetch("/api/analytics", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": initData,
-      },
-      body: JSON.stringify({ event, cohort: plan.cohort, day: plan.day, messenger: "telegram" }),
-      keepalive: true,
-    })
-      .then(rememberQuiet)
-      .catch(() => undefined);
-    return;
+  const body = JSON.stringify({
+    event,
+    cohort: plan.cohort,
+    day: plan.day,
+    messenger,
+    ...(detail?.plan ? { plan: detail.plan } : {}),
+  });
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (messenger === "telegram") headers["X-Telegram-Init-Data"] = initData;
+  else if (messenger === "max" && maxInit) headers["X-Max-Init-Data"] = maxInit;
+  else {
+    const device = deviceToken();
+    if (!device) return;
+    headers["X-Between-Device"] = device;
   }
-  if (messenger === "max" && maxInit) {
-    void fetch("/api/analytics", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Max-Init-Data": maxInit,
-      },
-      body: JSON.stringify({ event, cohort: plan.cohort, day: plan.day, messenger: "max" }),
-      keepalive: true,
-    })
-      .then(rememberQuiet)
-      .catch(() => undefined);
-    return;
-  }
-  const device = deviceToken();
-  if (!device) return;
-  void fetch("/api/analytics", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Between-Device": device,
-    },
-    body: JSON.stringify({ event, cohort: plan.cohort, day: plan.day, messenger: "web" }),
-    keepalive: true,
-  })
+  void fetch("/api/analytics", { method: "POST", headers, body, keepalive: true })
     .then(rememberQuiet)
     .catch(() => undefined);
 }

@@ -295,7 +295,7 @@ export async function recordSbpPaid(input: {
   }
 }
 
-/** A bot step. The Mini App still reports through `/api/analytics`. One person, one step, one messenger, one day. */
+/** A bot step. The mini app reports the same person through `/api/analytics`. One person, one step, one messenger, one day. */
 export async function trackServerEvent(input: {
   userId: number | string;
   event: AnalyticsEvent;
