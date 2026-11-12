@@ -79,11 +79,11 @@ const CSS = `
 .bl-kicker i{width:1.15rem;height:1px;background:currentColor;display:block}
 .bl-shift{background:linear-gradient(102deg,#5df0c6 0%,#7ee0d2 32%,#8eb6ff 70%,#c9b4ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 ${MESSENGER_CSS}
-.bl-qrcard{display:inline-flex;align-items:center;gap:.7rem;padding:.4rem .85rem .4rem .4rem;border-radius:1.1rem;border:1px solid rgba(94,231,197,.22);background:rgba(94,231,197,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:#c9d4ce;font-size:.78rem;line-height:1.35;text-align:left;white-space:nowrap;text-decoration:none}
+.bl-qrcard{display:inline-flex;align-items:center;gap:.7rem;padding:.4rem .85rem .4rem .4rem;border-radius:1.1rem;border:1px solid rgba(94,231,197,.22);background:rgba(94,231,197,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:#c9d4ce;font-size:.78rem;line-height:1.35;text-align:left;white-space:nowrap;cursor:default;pointer-events:none}
 .bl-qrcard b{display:block;color:#5ee7c5;font-weight:600}
 .bl-qr{display:block;width:5.15rem;height:5.15rem;flex:none;border-radius:.75rem;background:#c8f8c4;padding:.28rem}
 .bl-qr svg{display:block;width:100%;height:100%}
-.bl-bar a:focus-visible,.bl-qrcard:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(94,231,197,.28)}
+.bl-bar a:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(94,231,197,.28)}
 .bl-meta{display:inline-flex;align-items:center;gap:.4rem;height:2.15rem;padding:0 .85rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#c9d4ce;font-size:.82rem}
 .bl-meta b{color:var(--bl-teal);font-weight:600}
 .bl-phone{position:relative;width:100%;aspect-ratio:642/1266;border-radius:2.15rem;padding:.42rem;background:linear-gradient(165deg,#3a4246,#14191c 40%,#0c1012);box-shadow:0 30px 60px -28px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.14)}
