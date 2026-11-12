@@ -35,6 +35,9 @@ import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
 import { startPayload } from "@/lib/landing";
 import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { isBotCommand } from "@/lib/telegram-bot";
+import { welcomeCaption } from "@/lib/welcome-text";
+import { applyPause, ensureTrial, sessionMenu } from "@/lib/trial-bot";
+import { accessForUser, entriesOpen } from "@/lib/week-access";
 import {
   answerMaxCallback,
   downloadMaxAudio,
@@ -66,7 +69,6 @@ import {
   voiceNoteBody,
   voiceReplyPreview,
 } from "@/lib/voice";
-import { accessForUser } from "@/lib/week-access";
 
 function verifyWebhookSecret(req: Request): boolean {
   return maxWebhookSecretMatches(
@@ -130,6 +132,15 @@ async function handleCallback(update: MaxUpdate, userId: number) {
     await answerMaxCallback(callbackId, result.text, maxOnboardKeyboard(result.rows));
     return;
   }
+  if (payload === "ps:1" || payload === "ps:0" || payload === "pay:later") {
+    if (payload === "pay:later") {
+      await answerMaxCallback(callbackId, null);
+      return;
+    }
+    const text = await applyPause(owner, { id: 0, username: maxUsername(update) }, payload === "ps:1", reply);
+    await answerMaxCallback(callbackId, text);
+    return;
+  }
   const login = /^lin:([a-z0-9]{32})$/i.exec(payload);
   if (login) {
     const account = await finishMaxLogin(login[1].toLowerCase(), userId, maxUsername(update));
@@ -142,6 +153,16 @@ async function handleCallback(update: MaxUpdate, userId: number) {
     return;
   }
   try {
+    const access = accessForUser(
+      await loadWeekAccess(owner),
+      { id: 0, username: maxUsername(update) },
+      process.env.WEEK_EXEMPT_USER_IDS,
+      new Date(),
+    );
+    if (!entriesOpen(access.view.status)) {
+      await answerMaxCallback(callbackId, translate(reply, "botEntryClosed"));
+      return;
+    }
     await addCheckinForOwner(owner, parsed.slot, parsed.feeling);
     await trackServerEvent({ userId, event: "mood", messenger: "max" });
     await answerMaxCallback(
@@ -175,8 +196,8 @@ async function handleVoice(
     new Date(),
   );
   if (resolved.changed) await saveWeekAccess(owner, resolved.record);
-  if (resolved.view.status !== "paid") {
-    await say(userId, translate(reply, "botVoicePremium"), keyboard);
+  if (resolved.view.status !== "trial" && resolved.view.status !== "paid") {
+    await say(userId, translate(reply, resolved.view.status === "locked" ? "botEntryClosed" : "botVoicePremium"), keyboard);
     return false;
   }
   if (!voiceKeyReady()) {
@@ -232,8 +253,9 @@ async function greet(
   reply: LocaleId,
   chatId?: number,
 ) {
-  await sendMaxWelcome(userId, translate(greeting, "botHelpMax"), undefined, chatId);
+  await sendMaxWelcome(userId, welcomeCaption(greeting, "max"), undefined, chatId);
   const owner = await resolveMaxJournalId(userId);
+  await ensureTrial(owner);
   const quiz = await openOnboarding(owner, reply);
   if (quiz) {
     const asked = await say(userId, quiz.text, maxOnboardKeyboard(quiz.rows), chatId);
@@ -335,6 +357,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    if (isBotCommand(text, "sessions")) {
+      const menu = await sessionMenu(owner, { id: 0, username }, reply);
+      const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
+      const app = /^[A-Za-z0-9_]{3,64}$/.test(name);
+      await say(
+        userId,
+        menu.text,
+        {
+          type: "inline_keyboard",
+          payload: {
+            buttons: menu.rows.map((row) =>
+              row.map((button) =>
+                button.data === "ps:edit" && app
+                  ? { type: "open_app" as const, text: button.text, web_app: name, payload: "sessions" }
+                  : { type: "callback" as const, text: button.text, payload: button.data },
+              ),
+            ),
+          },
+        },
+        update.chat_id,
+      );
+      return NextResponse.json({ ok: true });
+    }
+
     if (isBotCommand(text, "premium")) {
       if (!maxToken() || !redisConfigured()) {
         await say(userId, translate(reply, "botNotReady"), keyboard);
@@ -387,6 +433,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
+    const noteAccess = accessForUser(
+      await loadWeekAccess(owner),
+      { id: 0, username },
+      process.env.WEEK_EXEMPT_USER_IDS,
+      new Date(),
+    );
+    if (!entriesOpen(noteAccess.view.status)) {
+      await say(userId, translate(reply, "botEntryClosed"), keyboard, update.chat_id);
+      return NextResponse.json({ ok: true });
+    }
     const intent = await onboardingNoteIntent(owner);
     if (intent === "block") {
       const reminder = await remindOnboarding(owner, reply);

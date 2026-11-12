@@ -29,11 +29,16 @@ import { clearStore, WEB_STORAGE_KEY } from "@/lib/storage";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
 import { trackAnalytics } from "@/lib/analytics-client";
 import { fetchWeekAccess, localWeekView, readLocalWeekAccess } from "@/lib/week-access-client";
-import type { WeekAccessView } from "@/lib/week-access";
+import type { WeekAccessStatus, WeekAccessView } from "@/lib/week-access";
 
 const SECTIONS = ["journal", "week", "sessions"] as const;
 
 type SectionId = (typeof SECTIONS)[number];
+
+function tabOf(value: LaunchSection | null): SectionId | null {
+  if (value === "journal" || value === "week" || value === "sessions") return value;
+  return null;
+}
 
 function readLaunch(): LaunchSection | null {
   return launchSection({
@@ -177,7 +182,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   const requested = useSyncExternalStore(subscribeLaunch, readLaunch, () => null);
   const fromMax = launchSection({ initData: maxLaunch });
   const [picked, setPicked] = useState<SectionId | null>(null);
-  const section: SectionId = picked ?? requested ?? fromMax ?? "journal";
+  const section: SectionId = picked ?? tabOf(requested) ?? tabOf(fromMax) ?? "journal";
   const scrollerRef = useRef<HTMLDivElement>(null);
   const scrollTops = useRef<Partial<Record<SectionId, number>>>({});
 
@@ -196,6 +201,10 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   }, [section]);
   const [premium, setPremium] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [accessStatus, setAccessStatus] = useState<WeekAccessStatus | null>(null);
+  useEffect(() => {
+    if (requested === "subscribe" || fromMax === "subscribe") setAccountOpen(true);
+  }, [requested, fromMax]);
   const [passwordSeen, setPasswordSeen] = useState(false);
   const passwordHash = useSyncExternalStore(
     (onStoreChange) => {
@@ -242,7 +251,9 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     if (!telegram.ready) return;
     if (!telegram.inTelegram) {
       if (tabOwnsAccess.current) return;
-      setPremium(localWeekView(readLocalWeekAccess()).status === "paid");
+      const local = localWeekView(readLocalWeekAccess());
+      setPremium(local.status === "paid");
+      setAccessStatus(local.status);
       return;
     }
     if (!telegram.initData) return;
@@ -250,6 +261,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     void fetchWeekAccess(telegram.initData).then((view) => {
       if (cancelled || tabOwnsAccess.current || !view) return;
       setPremium(view.status === "paid");
+      setAccessStatus(view.status);
     });
     return () => {
       cancelled = true;
@@ -259,6 +271,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   function onWeekAccess(view: WeekAccessView) {
     tabOwnsAccess.current = true;
     setPremium(view.status === "paid");
+    setAccessStatus(view.status);
   }
 
   const maxPending = inMax && webEntry && !telegram.inTelegram && maxLaunch === null;
@@ -431,6 +444,8 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                   onSave={upsertEntry}
                   onDelete={deleteEntry}
                   disabled={disabled}
+                  closed={accessStatus === "locked"}
+                  onSubscribe={() => selectSection("week")}
                   initData={telegram.inTelegram ? telegram.initData : ""}
                 />
               </TabsContent>

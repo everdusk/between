@@ -76,7 +76,7 @@ export async function POST(req: Request) {
   let current = await loadWeekAccess(actor.id);
   if (action === "open") {
     current = adoptClientTrial(current, normalizeWeekAccess((body as { local?: unknown }).local), now);
-    current = openWeekAccess(current, now);
+    if (actor.messenger === "web") current = openWeekAccess(current, now);
   } else {
     current = markWeekIntroSeen(current);
   }

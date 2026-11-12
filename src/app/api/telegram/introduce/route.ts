@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { resolveBotLocale, resolveGreetingLocale } from "@/lib/i18n";
 import { openOnboarding } from "@/lib/onboarding-flow";
-import { translate } from "@/lib/messages";
-import { claimBotIntro, loadDeviceLocale, loadUserLocale, redisConfigured, releaseBotIntro } from "@/lib/redis";
+import { claimBotIntro, loadDeviceLocale, loadUserLocale, redisConfigured, releaseBotIntro, rememberUser } from "@/lib/redis";
+import { welcomeCaption } from "@/lib/welcome-text";
+import { ensureTrial } from "@/lib/trial-bot";
 import { validateInitData } from "@/lib/telegram-auth";
 import { trackBotFunnel } from "@/lib/bot-funnel";
 import { onboardReplyMarkup, sendTelegramWelcome, telegramRequest } from "@/lib/telegram-bot";
@@ -29,13 +30,16 @@ export async function POST(req: Request) {
   const selected = redisConfigured() ? await loadUserLocale(validated.user.id) : null;
   const greeting = resolveGreetingLocale(null, device, validated.user.language_code);
   const reply = resolveBotLocale(selected, device, validated.user.language_code);
-  const sent = await sendTelegramWelcome(validated.user.id, translate(greeting, "botHelp"));
+  const sent = await sendTelegramWelcome(validated.user.id, welcomeCaption(greeting));
   if (!sent) {
     await releaseBotIntro(validated.user.id);
     return NextResponse.json({ ok: false, error: "not_delivered" }, { status: 502 });
   }
+  const owner = await resolveJournalId(validated.user.id);
+  await rememberUser(validated.user.id);
+  await ensureTrial(owner);
   try {
-    const quiz = await openOnboarding(await resolveJournalId(validated.user.id), reply);
+    const quiz = await openOnboarding(owner, reply);
     if (quiz) {
       const asked = await telegramRequest("sendMessage", {
         chat_id: validated.user.id,

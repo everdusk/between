@@ -66,7 +66,7 @@ export async function openOnboarding(owner: string, locale: LocaleId): Promise<O
   if (!getRedis()) return null;
   const current = await loadOnboarding(owner);
   if (current?.step === "done") return null;
-  const state = freshOnboarding();
+  const state = { ...freshOnboarding(), since: new Date().toISOString() };
   await saveOnboarding(owner, state);
   return onboardPrompt(state, locale);
 }
@@ -101,7 +101,7 @@ export async function answerOnboarding(
       await addCheckinForOwner(owner, checkinSlotForHour(hour), move.feeling);
       await trackServerEvent({ userId: channel.userId, event: "mood", messenger: channel.messenger });
     }
-    await saveOnboarding(owner, move.state);
+    await saveOnboarding(owner, { ...move.state, since: current.since, reminded: current.reminded });
     const choice = trackedChoice(action, move);
     if (choice) {
       await trackBotFunnel({ userId: channel.userId, messenger: channel.messenger, choice });
@@ -127,6 +127,20 @@ export async function onboardingNoteIntent(owner: string): Promise<"free" | "blo
   if (!state || state.step === "done") return "free";
   if (state.step === "note") return "finish";
   return "block";
+}
+
+export async function markQuizReminded(owner: string): Promise<void> {
+  const state = await loadOnboarding(owner);
+  if (!state || state.step === "done") return;
+  await saveOnboarding(owner, { ...state, reminded: true });
+}
+
+export function quizReminderDue(state: OnboardState | null, now: Date, hour: number): boolean {
+  if (!state || state.step === "done" || state.reminded) return false;
+  if (hour < 9 || hour >= 22) return false;
+  const since = state.since ? Date.parse(state.since) : NaN;
+  if (!Number.isFinite(since)) return false;
+  return now.getTime() - since >= 24 * 60 * 60 * 1000;
 }
 
 export async function finishOnboarding(owner: string): Promise<void> {

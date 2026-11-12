@@ -231,6 +231,26 @@ export function applyJournalWrite(
   );
 }
 
+function entryStamp(entry: TherapyStore["entries"][number]): string {
+  return JSON.stringify({
+    body: entry.body,
+    date: entry.date,
+    feelings: entry.feelings,
+    tags: entry.tags,
+    createdAt: entry.createdAt,
+    slot: entry.slot ?? null,
+    source: entry.source ?? null,
+  });
+}
+
+/** True when a locked journal is not gaining, editing, or losing notes. */
+export function entriesHeld(previous: TherapyStore | null, next: TherapyStore): boolean {
+  const before = previous?.entries ?? [];
+  if (before.length !== next.entries.length) return false;
+  const stamps = new Map(before.map((entry) => [entry.id, entryStamp(entry)]));
+  return next.entries.every((entry) => stamps.get(entry.id) === entryStamp(entry));
+}
+
 /** Keep every note. Same id keeps the newer copy; a deleted id stays deleted. */
 export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
   const droppedEntryIds = unionIds(a.droppedEntryIds, b.droppedEntryIds);

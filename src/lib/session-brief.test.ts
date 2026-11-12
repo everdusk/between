@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { sessionBriefDue, sessionPdfActive, sessionPdfCaption, sessionPdfOpen } from "./session-brief";
+import { sessionBriefDue, sessionPdfCaption, sessionPdfOpen } from "./session-brief";
 import type { SessionPlan } from "./types";
 
 const THURSDAY = "2026-01-08";
@@ -17,23 +17,22 @@ function weekly(time = "18:00"): SessionPlan {
 }
 
 describe("session pdf", () => {
-  it("is due on the session day from two hours before until the session hour", () => {
+  it("is due at 09:00 on the session day", () => {
     const plan = weekly("18:30");
-    assert.equal(sessionBriefDue({ plan, dateKey: THURSDAY, hour: 15 }), null);
-    assert.deepEqual(sessionBriefDue({ plan, dateKey: THURSDAY, hour: 16 }), { time: "18:30" });
-    assert.deepEqual(sessionBriefDue({ plan, dateKey: THURSDAY, hour: 17 }), { time: "18:30" });
-    assert.equal(sessionBriefDue({ plan, dateKey: THURSDAY, hour: 18 }), null);
-    assert.equal(sessionBriefDue({ plan, dateKey: "2026-01-07", hour: 16 }), null);
-    assert.equal(sessionBriefDue({ plan: weekly("01:00"), dateKey: THURSDAY, hour: 0 }), null);
+    assert.equal(sessionBriefDue({ plan, dateKey: THURSDAY, hour: 8 }), null);
+    assert.deepEqual(sessionBriefDue({ plan, dateKey: THURSDAY, hour: 9 }), { time: "18:30" });
+    assert.equal(sessionBriefDue({ plan, dateKey: THURSDAY, hour: 10 }), null);
+    assert.equal(sessionBriefDue({ plan, dateKey: "2026-01-07", hour: 9 }), null);
+    assert.deepEqual(sessionBriefDue({ plan: weekly("01:00"), dateKey: THURSDAY, hour: 9 }), { time: "01:00" });
     assert.deepEqual(
       sessionBriefDue({
         plan: { ...weekly(), mode: "once", date: THURSDAY, slots: [] },
         dateKey: THURSDAY,
-        hour: 16,
+        hour: 9,
       }),
       { time: "18:00" },
     );
-    assert.equal(sessionBriefDue({ plan: null, dateKey: THURSDAY, hour: 16 }), null);
+    assert.equal(sessionBriefDue({ plan: null, dateKey: THURSDAY, hour: 9 }), null);
   });
 
   it("sends while premium is paid or the trial is still open", () => {
@@ -43,13 +42,7 @@ describe("session pdf", () => {
     assert.equal(sessionPdfOpen("new"), false);
   });
 
-  it("sends only after more than two written notes in the period", () => {
-    assert.equal(sessionPdfActive(0), false);
-    assert.equal(sessionPdfActive(2), false);
-    assert.equal(sessionPdfActive(3), true);
-  });
-
-  it("puts only the session time on the file, not the summary", () => {
+  it("puts the session time on the file", () => {
     assert.equal(sessionPdfCaption("ru", "18:30"), "К сеансу в 18:30.");
     assert.equal(sessionPdfCaption("en", "18:30"), "Session at 18:30.");
   });

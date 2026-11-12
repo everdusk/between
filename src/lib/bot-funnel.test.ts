@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { LOCALES } from "./i18n";
 import { translate } from "./messages";
 import { loadWelcomeImage } from "./welcome-photo";
+import { welcomeCaption } from "./welcome-text";
 import {
   emptyBotFunnel,
   formatBotFunnel,
@@ -125,6 +126,8 @@ describe("bot funnel", () => {
     for (const locale of LOCALES) {
       assert.ok(translate(locale.id, "botHelp").length <= 1024, locale.id);
       assert.ok(translate(locale.id, "botHelpMax").length <= 1024, locale.id);
+      assert.ok(welcomeCaption(locale.id).length <= 1024, locale.id);
+      assert.match(welcomeCaption(locale.id), /Stars/);
     }
     const bytes = await loadWelcomeImage();
     assert.ok(bytes);

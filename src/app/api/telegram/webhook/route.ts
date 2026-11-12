@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale, type LocaleId } from "@/lib/i18n";
 import { addCheckin, appendBotMessageToToday } from "@/lib/journal-server";
-import { countPhrase, feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
+import { feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
 import {
   getRedis,
   getUserTimezone,
@@ -12,6 +12,7 @@ import {
   redisConfigured,
   releasePaymentCharge,
   rememberDeviceLocale,
+  rememberUser,
   saveWeekAccess,
   takeBriefAttempt,
 } from "@/lib/redis";
@@ -43,6 +44,11 @@ import {
 import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
 import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { appUrl } from "@/lib/telegram-auth";
+import { sessionTabUrl } from "@/lib/launch-section";
+import { welcomeCaption } from "@/lib/welcome-text";
+import { applyPause, ensureTrial, sessionMenu } from "@/lib/trial-bot";
+import { formatLongDate } from "@/lib/dates";
+import { todayInTimeZone, zonedParts } from "@/lib/zoned";
 import {
   downloadTelegramFile,
   isBotCommand,
@@ -56,7 +62,6 @@ import {
   publishBotCommands,
   telegramRequest,
 } from "@/lib/telegram-bot";
-import { todayInTimeZone } from "@/lib/zoned";
 import {
   VOICE_DAILY_LIMIT,
   transcribeVoice,
@@ -67,9 +72,8 @@ import {
 } from "@/lib/voice";
 import {
   accessForUser,
-  grantWeekPaidUntil,
-  paidUntilForPlan,
-  planDays,
+  entriesOpen,
+  grantStackedPlan,
   planFromPayload,
   starPriceFromEnv,
   starsChargeAccepted,
@@ -218,6 +222,24 @@ async function handleCallback(callback: TelegramCallback) {
     });
     return;
   }
+  if ((callback.data === "ps:1" || callback.data === "ps:0" || callback.data === "pay:later") && callback.from?.id) {
+    const { reply } = await localesFor(callback.from);
+    await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
+    if (callback.data === "pay:later" || !callback.message) return;
+    const owner = await resolveJournalId(callback.from.id);
+    const text = await applyPause(
+      owner,
+      { id: callback.from.id, username: callback.from.username },
+      callback.data === "ps:1",
+      reply,
+    );
+    await telegramRequest("sendMessage", {
+      chat_id: callback.message.chat.id,
+      text,
+      reply_markup: miniAppKeyboard(appUrl(), reply),
+    });
+    return;
+  }
   const login = /^lin:([a-z0-9]{32})$/i.exec(callback.data ?? "");
   if (login && callback.from?.id) {
     const { reply } = await localesFor(callback.from);
@@ -245,6 +267,21 @@ async function handleCallback(callback: TelegramCallback) {
   }
 
   try {
+    const owner = await resolveJournalId(callback.from.id);
+    const access = accessForUser(
+      await loadWeekAccess(owner),
+      { id: callback.from.id, username: callback.from.username },
+      process.env.WEEK_EXEMPT_USER_IDS,
+      new Date(),
+    );
+    if (!entriesOpen(access.view.status)) {
+      await telegramRequest("answerCallbackQuery", {
+        callback_query_id: callback.id,
+        text: translate(reply, "botEntryClosed"),
+        show_alert: true,
+      });
+      return;
+    }
     await addCheckin(callback.from.id, parsed.slot, parsed.feeling);
     await trackServerEvent({ userId: callback.from.id, event: "mood", messenger: "telegram" });
     await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
@@ -290,12 +327,14 @@ async function handlePayment(message: TelegramMessage) {
   const chargeId = payment.telegram_payment_charge_id?.trim() ?? "";
   if (!chargeId) return;
   const claimed = await claimPaymentCharge(chargeId);
+  let paidUntil = "";
   if (claimed) {
-    const paidUntil = paidUntilForPlan(plan, new Date(), payment.subscription_expiration_date);
     try {
       const owner = await resolveJournalId(userId);
       const current = await loadWeekAccess(owner);
-      await saveWeekAccess(owner, grantWeekPaidUntil(current, paidUntil));
+      const next = grantStackedPlan(current, plan, new Date(), payment.subscription_expiration_date);
+      await saveWeekAccess(owner, next);
+      paidUntil = next.paidUntil ?? "";
     } catch (error) {
       await releasePaymentCharge(chargeId);
       throw error;
@@ -305,9 +344,12 @@ async function handlePayment(message: TelegramMessage) {
   if (!claimed) return;
 
   const { reply } = await localesFor(message.from);
+  const endKey = paidUntil
+    ? zonedParts(new Date(paidUntil), await getUserTimezone(await resolveJournalId(userId))).dateKey
+    : "";
   await telegramRequest("sendMessage", {
     chat_id: message.chat.id,
-    text: translate(reply, "botWeekPaid", { days: countPhrase(reply, planDays(plan), "day") }),
+    text: translate(reply, "botWeekPaid", { date: endKey ? formatLongDate(endKey, reply) : "" }),
     reply_markup: miniAppKeyboard(appUrl(), reply),
   });
 }
@@ -337,9 +379,8 @@ async function handleVoice(
     new Date(),
   );
   if (resolved.changed) await saveWeekAccess(owner, resolved.record);
-  const premium = resolved.view.status === "paid";
-  if (!premium) {
-    await say(translate(reply, "botVoicePremium"));
+  if (resolved.view.status !== "trial" && resolved.view.status !== "paid") {
+    await say(translate(reply, resolved.view.status === "locked" ? "botEntryClosed" : "botVoicePremium"));
     return false;
   }
 
@@ -514,11 +555,40 @@ export async function POST(req: Request) {
         }
       }
     }
-    await sendTelegramWelcome(chatId, translate(greeting, "botHelp"));
+    await sendTelegramWelcome(chatId, welcomeCaption(greeting));
     if (userId) {
+      await rememberUser(userId);
+      await ensureTrial(await resolveJournalId(userId));
       await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
       await sendQuiz(chatId, userId, reply);
     }
+    return NextResponse.json({ ok: true });
+  }
+
+  if (isBotCommand(text, "sessions")) {
+    if (!userId || !redisConfigured()) {
+      await telegramRequest("sendMessage", {
+        chat_id: chatId,
+        text: translate(reply, "botNotReady"),
+        reply_markup: keyboard,
+      });
+      return NextResponse.json({ ok: true });
+    }
+    const owner = await resolveJournalId(userId);
+    const menu = await sessionMenu(owner, { id: userId, username: message.from?.username }, reply);
+    await telegramRequest("sendMessage", {
+      chat_id: chatId,
+      text: menu.text,
+      reply_markup: {
+        inline_keyboard: menu.rows.map((row) =>
+          row.map((button) =>
+            button.data === "ps:edit"
+              ? { text: button.text, web_app: { url: sessionTabUrl(appUrl()) } }
+              : { text: button.text, callback_data: button.data },
+          ),
+        ),
+      },
+    });
     return NextResponse.json({ ok: true });
   }
 
@@ -618,6 +688,20 @@ export async function POST(req: Request) {
   }
 
   const owner = await resolveJournalId(userId);
+  const access = accessForUser(
+    await loadWeekAccess(owner),
+    { id: userId, username: message.from?.username },
+    process.env.WEEK_EXEMPT_USER_IDS,
+    new Date(),
+  );
+  if (!entriesOpen(access.view.status)) {
+    await telegramRequest("sendMessage", {
+      chat_id: chatId,
+      text: translate(reply, "botEntryClosed"),
+      reply_markup: keyboard,
+    });
+    return NextResponse.json({ ok: true });
+  }
   const intent = await onboardingNoteIntent(owner);
   if (intent === "block") {
     const reminder = await remindOnboarding(owner, reply);

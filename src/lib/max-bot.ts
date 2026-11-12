@@ -187,6 +187,21 @@ export function maxOpenKeyboard(locale: LocaleId = "ru"): MaxKeyboard {
 }
 
 /** Opens the MAX mini app on the week. Payload may only be A–Z, 0–9, _ and -. */
+export function subscribeOpenKeyboard(locale: LocaleId = "ru", later = false): MaxKeyboard | null {
+  const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
+  if (!/^[A-Za-z0-9_]{3,64}$/.test(name)) return null;
+  const pay = {
+    type: "open_app" as const,
+    text: translate(locale, "botPayNow"),
+    web_app: name,
+    payload: "subscribe",
+  };
+  const row = later
+    ? [pay, { type: "callback" as const, text: translate(locale, "botPayLater"), payload: "pay:later" }]
+    : [pay];
+  return { type: "inline_keyboard", payload: { buttons: [row] } };
+}
+
 export function weekOpenKeyboard(locale: LocaleId = "ru"): MaxKeyboard | null {
   const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
   if (!/^[A-Za-z0-9_]{3,64}$/.test(name)) return null;

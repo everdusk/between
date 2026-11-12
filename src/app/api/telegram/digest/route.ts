@@ -8,7 +8,7 @@ import {
   pollText,
   slotForHour,
 } from "@/lib/digest";
-import { resolveBotLocale, type LocaleId } from "@/lib/i18n";
+import { resolveBotLocale } from "@/lib/i18n";
 import {
   claimDigestSlot,
   getUserTimezone,
@@ -21,72 +21,15 @@ import {
   releaseDigestSlot,
 } from "@/lib/redis";
 import { resolveJournalId, resolveMaxJournalId } from "@/lib/web-account-store";
-import { ensureMaxSubscription, maxFeelingKeyboard, maxToken, sendMaxDocument, sendMaxMessage, weekOpenKeyboard as maxWeekKeyboard } from "@/lib/max-bot";
+import { ensureMaxSubscription, maxFeelingKeyboard, maxOnboardKeyboard, maxToken, sendMaxMessage } from "@/lib/max-bot";
+import { translate } from "@/lib/messages";
 import { accessForUser } from "@/lib/week-access";
-import { sessionBriefDue, SESSION_BRIEF_SLOT, sessionPdfActive, sessionPdfCaption, sessionPdfOpen } from "@/lib/session-brief";
-import { renderSessionPdf, sessionPeriodNoteCount } from "@/lib/session-pdf";
-import { prepareSessionSheet, rememberSessionSheet } from "@/lib/session-sheet";
-import { appUrl } from "@/lib/telegram-auth";
-import { ensureTelegramBlocks, feelingKeyboard, sendTelegramDocument, telegramRequest, weekOpenKeyboard } from "@/lib/telegram-bot";
-import type { TherapyStore } from "@/lib/types";
+import { deliverCycle } from "@/lib/trial-dispatch";
+import { pingsReduced, quietHour } from "@/lib/trial-cycle";
+import { ensureTrial } from "@/lib/trial-bot";
+import { loadOnboarding, markQuizReminded, quizReminderDue, remindOnboarding } from "@/lib/onboarding-flow";
+import { ensureTelegramBlocks, feelingKeyboard, onboardReplyMarkup, telegramRequest } from "@/lib/telegram-bot";
 import { zonedParts } from "@/lib/zoned";
-
-async function deliverSessionPdf(input: {
-  channel: "telegram" | "max";
-  userId: string;
-  owner: string;
-  actorId: number;
-  maxId: number | null;
-  dateKey: string;
-  hour: number;
-  now: Date;
-  store: TherapyStore;
-  locale: LocaleId;
-}): Promise<boolean> {
-  const due = sessionBriefDue({ plan: input.store.sessionPlan, dateKey: input.dateKey, hour: input.hour });
-  if (!due) return false;
-  const access = accessForUser(
-    await loadWeekAccess(input.owner),
-    { id: input.actorId },
-    process.env.WEEK_EXEMPT_USER_IDS,
-    input.now,
-  );
-  if (!sessionPdfOpen(access.view.status)) return false;
-  const notes = sessionPeriodNoteCount(input.store, input.dateKey, input.now);
-  if (!sessionPdfActive(notes)) return false;
-  const claimed = await claimDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
-  if (!claimed) return false;
-  try {
-    const sheet = await prepareSessionSheet(
-      input.store,
-      input.locale,
-      input.dateKey,
-      input.now,
-      input.owner,
-    );
-    await rememberSessionSheet(input.owner, sheet, input.now);
-    const pdf = await renderSessionPdf(input.store, input.locale, input.dateKey, input.now, sheet);
-    const caption = sessionPdfCaption(input.locale, due.time);
-    const ok =
-      input.channel === "max" && input.maxId
-        ? await sendMaxDocument(input.maxId, pdf.filename, pdf.bytes, caption, maxWeekKeyboard(input.locale))
-        : await sendTelegramDocument(
-            Number(input.userId),
-            pdf.filename,
-            pdf.bytes,
-            caption,
-            weekOpenKeyboard(appUrl(), input.locale),
-          );
-    if (!ok) {
-      await releaseDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
-      return false;
-    }
-    return true;
-  } catch {
-    await releaseDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
-    return false;
-  }
-}
 
 function authorized(req: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim();
@@ -138,6 +81,7 @@ async function runDigest() {
         channel === "max" && maxId
           ? await resolveMaxJournalId(maxId)
           : await resolveJournalId(Number(userId));
+      await ensureTrial(owner, now);
       const timeZone = await getUserTimezone(owner);
       const clock = zonedParts(now, timeZone);
       const store = await loadUserStore(owner);
@@ -149,23 +93,63 @@ async function runDigest() {
               await loadDeviceLocale(owner),
               null,
             );
-      const pdfSent = await deliverSessionPdf({
-        channel,
-        userId,
-        owner,
-        actorId: channel === "max" && maxId ? maxId : Number(userId),
-        maxId,
-        dateKey: clock.dateKey,
-        hour: clock.hour,
+      const actorId = channel === "max" && maxId ? maxId : Number(userId);
+      const access = accessForUser(
+        await loadWeekAccess(owner),
+        { id: channel === "max" ? 0 : actorId },
+        process.env.WEEK_EXEMPT_USER_IDS,
         now,
-        store,
-        locale,
-      });
-      const exact = slotForHour(clock.hour);
-      const due = exact ? null : duePoll({ store, dateKey: clock.dateKey, hour: clock.hour });
+      );
+      const onboarding = await loadOnboarding(owner);
+      const onboardingOpen = Boolean(onboarding && onboarding.step !== "done");
+      let cycleSent = 0;
+      if (quietHour(clock.hour)) {
+        skipped += 1;
+        continue;
+      }
+      if (quizReminderDue(onboarding, now, clock.hour)) {
+        const reminder = await remindOnboarding(owner, locale);
+        if (reminder) {
+          const text = `${translate(locale, "botQuizRemind")}\n\n${reminder.text}`;
+          const asked =
+            channel === "max" && maxId
+              ? await sendMaxMessage(maxId, text, maxOnboardKeyboard(reminder.rows))
+              : await telegramRequest("sendMessage", {
+                  chat_id: Number(userId),
+                  text,
+                  reply_markup: onboardReplyMarkup(reminder.rows),
+                });
+          if (asked) {
+            await markQuizReminded(owner);
+            cycleSent += 1;
+          }
+        }
+      }
+      if (!access.view.paused) {
+        cycleSent += await deliverCycle({
+          channel,
+          userId,
+          owner,
+          maxId,
+          record: access.record,
+          status: access.view.status,
+          store,
+          plan: store.sessionPlan,
+          dateKey: clock.dateKey,
+          hour: clock.hour,
+          now,
+          timeZone: timeZone ?? "Europe/Moscow",
+          locale,
+          onboardingOpen,
+        });
+      }
+      const reduced = pingsReduced(access.record.openedAt, store.entries, now);
+      const pollsOpen = !onboardingOpen && !access.view.paused && access.view.status !== "locked" && access.view.status !== "new";
+      const exact = !pollsOpen || (reduced && slotForHour(clock.hour) !== "nudge") ? null : slotForHour(clock.hour);
+      const due = pollsOpen && !reduced && !exact ? duePoll({ store, dateKey: clock.dateKey, hour: clock.hour }) : null;
       const slotName = exact ?? due;
       if (!slotName) {
-        if (pdfSent) sent += 1;
+        if (cycleSent) sent += cycleSent;
         else skipped += 1;
         continue;
       }
@@ -183,7 +167,7 @@ async function runDigest() {
           : { type: "skip" as const };
 
       if (action.type === "skip") {
-        if (pdfSent) sent += 1;
+        if (cycleSent) sent += cycleSent;
         else skipped += 1;
         continue;
       }
@@ -210,11 +194,11 @@ async function runDigest() {
 
       if (!ok) {
         await releaseDigestSlot(userId, clock.dateKey, slotName);
-        if (!pdfSent) skipped += 1;
-        else sent += 1;
+        if (cycleSent) sent += cycleSent;
+        else skipped += 1;
         continue;
       }
-      sent += pdfSent ? 2 : 1;
+      sent += cycleSent + 1;
     } catch {
       skipped += 1;
     }

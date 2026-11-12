@@ -290,6 +290,9 @@ export function WeekTab({
           </Button>
         </section>
       )}
+      {access.paused && (
+        <p className="px-2 text-xs text-muted-foreground">{t("pausedLine")}</p>
+      )}
       {access.status === "trial" && access.introSeen && (
         <p className="px-2 text-xs text-muted-foreground">
           {inTelegram
