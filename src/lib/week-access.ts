@@ -88,6 +88,8 @@ export type WeekAccessView = {
   prices: { month: number; quarter: number; year: number };
   /** Paid time is frozen. Pings and reminders stay quiet until resume. */
   paused: boolean;
+  /** Forever grant for this account. The journal stays open, and settings can still show the paywall. */
+  previewPaywall?: boolean;
 };
 
 export function emptyWeekAccess(): WeekAccessRecord {
@@ -225,6 +227,11 @@ export function isWeekAccessExempt(
   extraIdsRaw?: string,
 ): boolean {
   return whitelistSpan(user, extraIdsRaw) === "forever";
+}
+
+/** The forever grant keeps the journal open. That account can still open the paywall to look at it. */
+export function canPreviewPaywall(user: WeekAccessIdentity, extraIdsRaw?: string): boolean {
+  return isWeekAccessExempt(user, extraIdsRaw);
 }
 
 function grantEndMs(
