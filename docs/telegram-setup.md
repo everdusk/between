@@ -135,17 +135,19 @@ curl -sS "https://between-rouge.vercel.app/api/telegram/webhook"
 
 1. В Vercel задайте длинный `CRON_SECRET`.
 2. В [Upstash QStash](https://console.upstash.com/qstash) создайте schedule:
-   - Destination: `https://between-rouge.vercel.app/api/telegram/digest`
+   - Destination: `https://www.between-journal.ru/api/telegram/digest`
    - Cron: `0 * * * *` (каждый час, UTC)
    - Forward header: `Authorization` = `Bearer <CRON_SECRET>`
 3. Проверка вручную:
 
 ```bash
-curl -sS "https://between-rouge.vercel.app/api/telegram/digest" \
+curl -sS "https://www.between-journal.ru/api/telegram/digest" \
   -H "Authorization: Bearer ${CRON_SECRET}"
 ```
 
-Бот пишет пользователю только в местный час 9, 14, 18 или 21. В остальные часы вызов ничего не отправляет. Пользователь попадает в список после сообщения боту или открытия Mini App.
+Ответ: `{"ok":true,"users":12,"sent":3,"skipped":9,"failed":0,"errors":0,"ms":2400}`. `sent` — сколько сообщений ушло, `skipped` — у кого сейчас не тот час или уже отвечено, `failed` — Telegram или MAX не приняли сообщение (чаще всего человек не нажимал Start или заблокировал бота), `errors` — упало на нашей стороне. Тот же итог пишется в Redis и показывается последним блоком в `/stats`: когда был прогон, сколько ушло, и предупреждение, если расписание молчит дольше двух часов.
+
+Пользователи обрабатываются пачками по восемь параллельно, у функции лимит 60 секунд. Бот пишет пользователю только в местный час 9, 14, 18 или 21. В остальные часы вызов ничего не отправляет. Пользователь попадает в список после сообщения боту или открытия Mini App.
 
 ## Локальная разработка
 

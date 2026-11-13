@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis";
+import { parseDigestRun, type DigestRun } from "./digest";
 import { isLocale, type LocaleId } from "./i18n";
 import { normalizeStore } from "./migrate";
 import { emptyStore, type TherapyStore } from "./types";
@@ -145,6 +146,20 @@ export async function releaseDigestSlot(
   const redis = getRedis();
   if (!redis) return;
   await redis.del(digestKey(userId, dateKey, slot));
+}
+
+const DIGEST_RUN_KEY = "between:digest:last-run";
+
+export async function saveDigestRun(run: DigestRun): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(DIGEST_RUN_KEY, run, { ex: 60 * 60 * 24 * 14 });
+}
+
+export async function loadDigestRun(): Promise<DigestRun | null> {
+  const redis = getRedis();
+  if (!redis) return null;
+  return parseDigestRun(await redis.get(DIGEST_RUN_KEY));
 }
 
 export async function getCachedBrief(
