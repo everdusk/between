@@ -1,11 +1,15 @@
 import { createHmac } from "node:crypto";
 import {
   PRODUCT_PLANS,
+  SUBSCRIBE_FAILS,
+  SUBSCRIBE_STEPS,
   messengerEventName,
   subscribeEventName,
   type AnalyticsEvent,
   type AnalyticsMessenger,
   type ProductPlan,
+  type SubscribeFail,
+  type SubscribeStep,
 } from "./analytics-model";
 import { posthogBrowserConfig } from "./posthog-env";
 
@@ -52,20 +56,34 @@ export async function captureServerProduct(input: {
   }
 }
 
-/** A confirmed SBP charge. PostHog only: it does not move the `/stats` counters. */
+/** A checkout action. PostHog only: it does not move the `/stats` counters. Same person as the funnel. */
 export async function captureServerSubscribe(input: {
   messenger: AnalyticsMessenger;
-  step: "paid" | "pending";
-  plan: ProductPlan;
-  actorId: string;
+  step: SubscribeStep;
+  plan?: ProductPlan | null;
+  fail?: SubscribeFail | null;
+  actorId: string | number;
 }): Promise<void> {
+  if (!(SUBSCRIBE_STEPS as readonly string[]).includes(input.step)) return;
   const cfg = posthogBrowserConfig({
     key: process.env.POSTHOG_KEY,
     host: process.env.POSTHOG_HOST,
   });
   const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
-  if (!cfg || !pepper || !(PRODUCT_PLANS as readonly string[]).includes(input.plan)) return;
-  const distinctId = productDistinctId(pepper, input.messenger, input.actorId);
+  if (!cfg || !pepper) return;
+  const properties: Record<string, unknown> = {
+    messenger: input.messenger,
+    step: input.step,
+    $geoip_disable: true,
+  };
+  if (input.plan && (PRODUCT_PLANS as readonly string[]).includes(input.plan)) properties.plan = input.plan;
+  if (
+    input.step === "pay_fail" &&
+    input.fail &&
+    (SUBSCRIBE_FAILS as readonly string[]).includes(input.fail)
+  ) {
+    properties.fail = input.fail;
+  }
   try {
     await fetch(`${cfg.host}/capture/`, {
       method: "POST",
@@ -73,13 +91,8 @@ export async function captureServerSubscribe(input: {
       body: JSON.stringify({
         api_key: cfg.token,
         event: subscribeEventName(input.messenger),
-        distinct_id: distinctId,
-        properties: {
-          messenger: input.messenger,
-          step: input.step,
-          plan: input.plan,
-          $geoip_disable: true,
-        },
+        distinct_id: productDistinctId(pepper, input.messenger, input.actorId),
+        properties,
       }),
     });
   } catch {

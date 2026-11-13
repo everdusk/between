@@ -7,7 +7,6 @@ import { WeekSkeleton } from "@/components/journal-skeleton";
 import { LegalLinks } from "@/components/legal-links";
 import { useI18n } from "@/components/locale-provider";
 import { trackAnalytics } from "@/lib/analytics-client";
-import { captureProduct } from "@/lib/product-analytics";
 import { SubscribeCheckout } from "@/components/subscribe-checkout";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -124,7 +123,7 @@ export function WeekTab({
   }, [ready, inTelegram, initData, reloadToken]);
 
   useEffect(() => {
-    if (!active || !access) return;
+    if (!active || !access || access.status === "locked") return;
     if (inTelegram) {
       if (initData) trackAnalytics("week", initData);
       return;
@@ -194,7 +193,6 @@ export function WeekTab({
     webApp.openInvoice(url, (status: InvoiceStatuses) => {
       if (!alive.current) return;
       if (status === "paid") {
-        captureProduct("paid", { plan });
         void refreshAfterPay();
         return;
       }

@@ -10,7 +10,7 @@ import {
   type SubscribeStep,
 } from "./analytics-model";
 import { analyticsStaysQuiet } from "./analytics-client";
-import { readPosthogBrowserConfig } from "./posthog-env";
+import { readMaxInitData } from "./max-webapp";
 
 export { parseSubscribeEvent, subscribeEventName };
 export type { SubscribeFail, SubscribeStep };
@@ -58,7 +58,22 @@ function deviceId(): string | null {
   }
 }
 
-/** One PostHog event. It does not touch the `/stats` counters. No-op until the public token is on the page. */
+function readTelegramInitData(): string {
+  if (typeof window === "undefined") return "";
+  const match = /(?:^|#|&)tgWebAppData=([^&]*)/.exec(window.location.hash);
+  if (match?.[1]) {
+    try {
+      return decodeURIComponent(match[1]);
+    } catch {
+      return match[1];
+    }
+  }
+  const init = (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp
+    ?.initData;
+  return init?.trim() ?? "";
+}
+
+/** One checkout step for the same person as the funnel. The server writes PostHog. `/stats` stays unchanged. */
 export function captureSubscribe(input: {
   messenger: AnalyticsMessenger;
   step: SubscribeStep;
@@ -69,20 +84,26 @@ export function captureSubscribe(input: {
   if (analyticsStaysQuiet()) return;
   const properties = subscribeProperties(input);
   if (!properties) return;
-  const cfg = readPosthogBrowserConfig();
-  const distinctId = deviceId();
-  if (cfg && distinctId) {
-    const body = JSON.stringify({
-      api_key: cfg.token,
-      event: subscribeEventName(input.messenger),
-      distinct_id: distinctId,
-      properties: { ...properties, $geoip_disable: true },
-    });
-    void fetch(`${cfg.host}/capture/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-      keepalive: true,
-    }).catch(() => undefined);
+  const maxInit = readMaxInitData();
+  const telegramInit = readTelegramInitData();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (input.messenger === "max" && maxInit) headers["X-Max-Init-Data"] = maxInit;
+  else if (input.messenger === "telegram" && telegramInit) headers["X-Telegram-Init-Data"] = telegramInit;
+  else {
+    const device = deviceId();
+    if (!device) return;
+    headers["X-Between-Device"] = device;
   }
+  void fetch("/api/analytics", {
+    method: "POST",
+    headers,
+    credentials: "same-origin",
+    keepalive: true,
+    body: JSON.stringify({
+      event: "subscribe",
+      step: input.step,
+      ...(properties.plan ? { plan: properties.plan } : {}),
+      ...(properties.fail ? { fail: properties.fail } : {}),
+    }),
+  }).catch(() => undefined);
 }

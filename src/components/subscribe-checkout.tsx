@@ -150,7 +150,6 @@ export function SubscribeCheckout({
   const emailSeen = useRef(false);
 
   useEffect(() => {
-    captureSubscribe({ messenger: pageMessenger(), step: "open", plan: "quarter" });
     if (!embed) trackAnalytics("paywall", readTelegramInitData());
   }, [embed]);
 
@@ -186,6 +185,7 @@ export function SubscribeCheckout({
     }
     setBusy(true);
     setError(null);
+    trackAnalytics("checkout", readTelegramInitData(), { plan });
     captureSubscribe({ messenger: pageMessenger(), step: "pay", plan });
     const maxInit = readMaxInitData();
     const telegramInit = readTelegramInitData();

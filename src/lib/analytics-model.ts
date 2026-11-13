@@ -109,10 +109,12 @@ export function messengerEventName(messenger: AnalyticsMessenger, event: Analyti
   return `${messenger}_${event}`;
 }
 
-/** One action on the checkout. The receipt address and the bank link never travel with it. */
+/**
+ * One action on the checkout. Seeing the paywall is `paywall`, not a step here.
+ * The receipt address and the bank link never travel with it.
+ */
 export const SUBSCRIBE_STEPS = [
   "signed_out",
-  "open",
   "plan",
   "email",
   "email_bad",

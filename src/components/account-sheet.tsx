@@ -16,7 +16,6 @@ import { Switch } from "@/components/ui/switch";
 import { useI18n } from "@/components/locale-provider";
 import type { WebAccount } from "@/hooks/use-web-account";
 import { trackAnalytics } from "@/lib/analytics-client";
-import { captureProduct } from "@/lib/product-analytics";
 import { passwordSettingsKind } from "@/lib/password-settings";
 import type { NotifyPrefs } from "@/lib/types";
 import {
@@ -146,7 +145,6 @@ export function AccountSheet({
     const webApp = (await import("@twa-dev/sdk")).default;
     webApp.openInvoice(url, (status: InvoiceStatuses) => {
       if (status === "paid") {
-        captureProduct("paid", { plan });
         void refreshAfterPay();
         return;
       }

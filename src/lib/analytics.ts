@@ -18,6 +18,8 @@ import {
   type AnalyticsSnapshot,
   type MessengerReport,
   type ProductPlan,
+  type SubscribeFail,
+  type SubscribeStep,
 } from "./analytics-model";
 import { captureServerProduct, captureServerSubscribe } from "./product-analytics-server";
 import { getRedis } from "./redis";
@@ -200,6 +202,7 @@ export async function recordPaidAnalytics(
   chargeId: string | undefined,
   now = new Date(),
   username?: string | null,
+  plan?: ProductPlan,
 ): Promise<void> {
   if (
     analyticsQuiet({
@@ -215,7 +218,7 @@ export async function recordPaidAnalytics(
   const pepper = process.env.BOT_TOKEN?.trim();
   if (!redis || !pepper) return;
   const day = todayInTimeZone(DEFAULT_TIME_ZONE, now);
-  await recordAnalytics(redis, {
+  const result = await recordAnalytics(redis, {
     userId,
     event: "paid",
     messenger: "telegram",
@@ -223,6 +226,9 @@ export async function recordPaidAnalytics(
     salt: chargeId || undefined,
     pepper,
   });
+  if (result === "counted") {
+    await captureServerProduct({ messenger: "telegram", event: "paid", userId, plan });
+  }
 }
 
 const SBP_BOOKED_KEY = "between:analytics:sbp-booked";
@@ -273,6 +279,12 @@ export async function recordSbpPaid(input: {
       pepper,
     });
     if (result === "counted") {
+      await captureServerProduct({
+        messenger: input.messenger,
+        event: "paid",
+        userId: input.userId,
+        plan: input.plan,
+      });
       await captureServerSubscribe({
         messenger: input.messenger,
         step: input.step,
@@ -285,6 +297,34 @@ export async function recordSbpPaid(input: {
   } catch {
     return "skipped";
   }
+}
+
+/** A checkout step for the same person as the funnel. It does not move `/stats`. */
+export async function trackSubscribeStep(input: {
+  userId: number | string;
+  messenger: AnalyticsMessenger;
+  username?: string | null;
+  step: SubscribeStep;
+  plan?: ProductPlan;
+  fail?: SubscribeFail;
+}): Promise<void> {
+  if (
+    analyticsQuiet({
+      username: input.username,
+      userId: input.userId,
+      messenger: input.messenger,
+      owners: process.env.ANALYTICS_OWNERS,
+    })
+  ) {
+    return;
+  }
+  await captureServerSubscribe({
+    messenger: input.messenger,
+    step: input.step,
+    plan: input.plan,
+    fail: input.fail,
+    actorId: input.userId,
+  });
 }
 
 /** A bot step. The mini app reports the same person through `/api/analytics`. One person, one step, one messenger, one day. */
