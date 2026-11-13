@@ -41,7 +41,7 @@ import {
   startPayload,
 } from "@/lib/landing";
 import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
-import { loadPollDay } from "@/lib/poll-day";
+import { loadPollDay, rememberQuietChat } from "@/lib/poll-day";
 import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { appUrl } from "@/lib/telegram-auth";
 import { sessionTabUrl } from "@/lib/launch-section";
@@ -494,7 +494,10 @@ export async function POST(req: Request) {
   }
 
   if (update.callback_query) {
-    if (update.callback_query.from?.id) await forgetBotBlocked(update.callback_query.from.id);
+    if (update.callback_query.from?.id) {
+      await forgetBotBlocked(update.callback_query.from.id);
+      await rememberQuietChat(update.callback_query.from.id, update.callback_query.from.username, "telegram");
+    }
     await handleCallback(update.callback_query);
     return NextResponse.json({ ok: true });
   }
@@ -513,7 +516,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  if (message.from?.id) await forgetBotBlocked(message.from.id);
+  if (message.from?.id) {
+    await forgetBotBlocked(message.from.id);
+    await rememberQuietChat(message.from.id, message.from.username, "telegram");
+  }
 
   const text = (message.text ?? "").trim();
   const chatId = message.chat.id;
