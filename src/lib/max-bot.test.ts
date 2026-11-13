@@ -19,6 +19,7 @@ import {
   MAX_UPDATE_TYPES,
   maxText,
   maxUserId,
+  maxUsername,
   type MaxUpdate,
 } from "./max-bot";
 import { parseFeelingCallback } from "./telegram-bot";
@@ -142,6 +143,10 @@ describe("MAX bot", () => {
     assert.equal(maxUserId({ ...started, user: { user_id: 15 } }), 15);
     assert.equal(maxUserId({ update_type: "bot_started", user: { user_id: "15" as unknown as number } }), 15);
     assert.equal(maxUserId({ update_type: "bot_stopped", user: { user_id: 15 } }), 15);
+    assert.equal(
+      maxUsername({ update_type: "bot_stopped", user: { user_id: 15, username: "@aliatorovskaia" } }),
+      "aliatorovskaia",
+    );
     assert.equal(isMaxPrivate({ update_type: "bot_stopped", user: { user_id: 15 } }), true);
     assert.equal(MAX_UPDATE_TYPES.includes("bot_stopped"), true);
   });
