@@ -202,6 +202,9 @@ export const es: Catalog = {
   planSlot: "{day} a las {time}",
   weekTitle: "Semana",
   weekLead: "{range}",
+  weekPdf: "Enviar PDF",
+  weekPdfBusy: "Preparo…",
+  weekPdfFail: "El PDF no se armó.",
   spectrumLabel: "Espectro de la semana",
   spectrumQuiet: "Todavía en silencio",
   spectrumSeveral: "Varios estados",
@@ -351,13 +354,13 @@ export const es: Catalog = {
     "Llevar un diario sin terapeuta es menos útil: no hay quien revise lo que nota. Aun así puede dejar notas, para seguir su estado y ver patrones.\n\n¿Cómo está ahora?",
   botAskNote: "{feeling}. Escriba la primera nota aquí mismo — un par de líneas sobre ahora.",
   botFirstNote: "Guardado.\n\nEn la pestaña Semana ya se ve cómo queda una nota en la semana.",
-  botWeekOpen: "Abrir la semana",
   botSessionBriefLead: "Sesión a las {time}.",
+  botWeekOpen: "Abrir la semana",
   botPickButton: "Pulse un botón de abajo.",
   botHelp:
-    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nRespóndeme un par de minutos al día — el ánimo en un toque, los pensamientos en un par de líneas. La semana se arma en una imagen: se ve qué se repite.\n\nPara la sesión lo reúno en un resumen — no hará falta recordar qué pasó. Pon la fecha de la sesión, y empiezo.",
+    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nEscriba aquí sus pensamientos y lo que siente: todo se guarda.\nUn par de veces al día preguntaré el ánimo: márquelo de un toque.\nLa semana se arma en una imagen: se ve qué se repite.\n\nLos primeros 7 días son gratis; después, {price} ₽ al mes.\n\nAntes de la sesión lo reúno en un resumen: no hará falta recordar qué pasó. Para empezar, haré un par de preguntas.",
   botHelpMax:
-    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nRespóndeme un par de minutos al día — el ánimo en un toque, los pensamientos en un par de líneas. La semana se arma en una imagen: se ve qué se repite.\n\nPara la sesión lo reúno en un resumen — no hará falta recordar qué pasó. Pon la fecha de la sesión, y empiezo.",
+    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nEscriba aquí sus pensamientos y lo que siente: todo se guarda.\nUn par de veces al día preguntaré el ánimo: márquelo de un toque.\nLa semana se arma en una imagen: se ve qué se repite.\n\nLos primeros 7 días son gratis; después, {price} ₽ al mes.\n\nAntes de la sesión lo reúno en un resumen: no hará falta recordar qué pasó. Para empezar, haré un par de preguntas.",
   botUnknown:
     "Escribe un texto y lo guardo como nota.",
   botNotReady:

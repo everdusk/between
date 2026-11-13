@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { rootCertificates } from "node:tls";
-import { Agent, fetch as maxHttps } from "undici";
+import { Agent, fetch as maxHttps, FormData as MaxFormData } from "undici";
 import type { LocaleId } from "./i18n";
 import { RUSSIAN_TRUSTED_ROOT_CA, RUSSIAN_TRUSTED_SUB_CA } from "./max-ca";
 import { translate } from "./messages";
@@ -8,6 +8,7 @@ import { LANDING_ORIGIN } from "./landing-seo";
 import { appUrl } from "./telegram-auth";
 import { feelingKeyboard, parseFeelingCallback } from "./telegram-bot";
 import type { CheckinSlot } from "./types";
+import { loadWelcomeImage } from "./welcome-photo";
 
 /** MAX presents a certificate the public trust store rejects. Trust only this connection. */
 const maxDispatcher = new Agent({
@@ -94,7 +95,7 @@ export function maxUsername(update: MaxUpdate): string | undefined {
   const user =
     update.update_type === "message_callback"
       ? update.callback?.user
-      : update.update_type === "bot_started"
+      : update.update_type === "bot_started" || update.update_type === "bot_stopped"
         ? update.user
         : update.message?.sender;
   const name = user?.username?.trim().replace(/^@/, "");
@@ -216,25 +217,6 @@ export function maxOnboardKeyboard(rows: { text: string; data: string }[][]): Ma
   };
 }
 
-/** Opens the MAX mini app on the session date. Payload may only be A–Z, 0–9, _ and -. */
-export function sessionPlanKeyboard(locale: LocaleId = "ru"): MaxKeyboard | null {
-  const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
-  if (!/^[A-Za-z0-9_]{3,64}$/.test(name)) return null;
-  return {
-    type: "inline_keyboard",
-    payload: {
-      buttons: [[
-        {
-          type: "open_app",
-          text: translate(locale, "botSessionOpen"),
-          web_app: name,
-          payload: "sessions",
-        },
-      ]],
-    },
-  };
-}
-
 export function feelingFromMaxPayload(payload: string | null | undefined) {
   if (!payload) return null;
   return parseFeelingCallback(payload);
@@ -303,6 +285,120 @@ export async function ensureMaxSubscription(): Promise<MaxSubscription> {
   if (data && data.success === false) return { ok: false, reason: "rejected" };
   subscribedFor = stamp;
   return { ok: true, reason: "ok" };
+}
+
+let welcomeImageToken = "";
+
+function maxImageToken(body: unknown): string {
+  if (!body || typeof body !== "object") return "";
+  const row = body as { token?: unknown; photos?: Record<string, { token?: unknown }> };
+  if (typeof row.token === "string" && row.token.trim()) return row.token.trim();
+  for (const photo of Object.values(row.photos ?? {})) {
+    if (typeof photo?.token === "string" && photo.token.trim()) return photo.token.trim();
+  }
+  return "";
+}
+
+async function ensureMaxImageToken(bytes: Uint8Array): Promise<string> {
+  if (welcomeImageToken) return welcomeImageToken;
+  const token = maxToken();
+  if (!token) return "";
+  const slot = await maxHttps(`${API}/uploads?type=image`, {
+    method: "POST",
+    dispatcher: maxDispatcher,
+    headers: { Authorization: token },
+  });
+  if (!slot.ok) return "";
+  const meta = (await slot.json().catch(() => null)) as { url?: unknown } | null;
+  const uploadUrl = typeof meta?.url === "string" ? meta.url : "";
+  if (!uploadUrl.startsWith("https://")) return "";
+  const form = new MaxFormData();
+  form.append("data", new Blob([Buffer.from(bytes)], { type: "image/png" }), "welcome.png");
+  const uploaded = await maxHttps(uploadUrl, {
+    method: "POST",
+    dispatcher: maxDispatcher,
+    headers: { Authorization: token },
+    body: form,
+  });
+  if (!uploaded.ok) return "";
+  const image = maxImageToken(await uploaded.json().catch(() => null));
+  if (image) welcomeImageToken = image;
+  return image;
+}
+
+async function deliverMax(userId: number, body: unknown, chatId?: number): Promise<boolean> {
+  const paths = [`/messages?user_id=${userId}`];
+  if (chatId && chatId !== userId) paths.push(`/messages?chat_id=${chatId}`);
+  for (const path of paths) {
+    if (await accepted(await maxFetch(path, body))) return true;
+  }
+  return false;
+}
+
+async function uploadMaxFile(bytes: Uint8Array, filename: string): Promise<string> {
+  const token = maxToken();
+  if (!token || bytes.byteLength === 0) return "";
+  const slot = await maxHttps(`${API}/uploads?type=file`, {
+    method: "POST",
+    dispatcher: maxDispatcher,
+    headers: { Authorization: token },
+  });
+  if (!slot.ok) return "";
+  const meta = (await slot.json().catch(() => null)) as { url?: unknown } | null;
+  const uploadUrl = typeof meta?.url === "string" ? meta.url : "";
+  if (!uploadUrl.startsWith("https://")) return "";
+  const form = new MaxFormData();
+  form.append("data", new Blob([Buffer.from(bytes)], { type: "application/pdf" }), filename);
+  const uploaded = await maxHttps(uploadUrl, {
+    method: "POST",
+    dispatcher: maxDispatcher,
+    headers: { Authorization: token },
+    body: form,
+  });
+  if (!uploaded.ok) return "";
+  return maxImageToken(await uploaded.json().catch(() => null));
+}
+
+/** The week sheet on the session day. The caption is one line, not the summary. */
+export async function sendMaxDocument(
+  userId: number,
+  filename: string,
+  bytes: Uint8Array,
+  caption: string,
+  keyboard?: MaxKeyboard | null,
+): Promise<boolean> {
+  const token = await uploadMaxFile(bytes, filename);
+  if (!token) return false;
+  const text = caption.slice(0, 4000);
+  const file = { type: "file", payload: { token } };
+  if (keyboard) {
+    const withKeys = await deliverMax(userId, { text, attachments: [file, keyboard] });
+    if (withKeys) return true;
+  }
+  return deliverMax(userId, { text, attachments: [file] });
+}
+
+/** Welcome with the flow picture. The quiz that follows asks about the session. Text follows if the picture cannot go out. */
+export async function sendMaxWelcome(
+  userId: number,
+  text: string,
+  keyboard?: MaxKeyboard,
+  chatId?: number,
+): Promise<boolean> {
+  const caption = text.slice(0, 4000);
+  const bytes = await loadWelcomeImage();
+  const image = bytes ? await ensureMaxImageToken(bytes) : "";
+  if (image) {
+    const attachments = [
+      { type: "image", payload: { token: image } },
+      ...(keyboard ? [keyboard] : []),
+    ];
+    const sent = await deliverMax(userId, { text: caption, attachments }, chatId);
+    if (sent) return true;
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    if (await deliverMax(userId, { text: caption, attachments }, chatId)) return true;
+  }
+  return sendMaxMessage(userId, text, keyboard, chatId);
 }
 
 export async function sendMaxMessage(

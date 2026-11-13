@@ -31,9 +31,11 @@ import {
   openOnboarding,
   remindOnboarding,
 } from "@/lib/onboarding-flow";
+import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
 import { startPayload } from "@/lib/landing";
 import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { isBotCommand } from "@/lib/telegram-bot";
+import { welcomeCaption } from "@/lib/welcome-text";
 import {
   answerMaxCallback,
   downloadMaxAudio,
@@ -46,7 +48,6 @@ import {
   maxLoginKeyboard,
   maxOpenKeyboard,
   maxOnboardKeyboard,
-  sessionPlanKeyboard,
   weekOpenKeyboard,
   maxText,
   maxToken,
@@ -54,6 +55,7 @@ import {
   maxUsername,
   maxWebhookSecretMatches,
   sendMaxMessage,
+  sendMaxWelcome,
   type MaxKeyboard,
   type MaxUpdate,
 } from "@/lib/max-bot";
@@ -87,7 +89,7 @@ async function localesFor(userId: number): Promise<{
 }
 
 async function say(userId: number, text: string, keyboard?: MaxKeyboard, chatId?: number) {
-  await sendMaxMessage(userId, text, keyboard, chatId);
+  return sendMaxMessage(userId, text, keyboard, chatId);
 }
 
 /** The hour may already have passed, so a new chat still gets today's question. */
@@ -229,19 +231,14 @@ async function greet(
   userId: number,
   greeting: LocaleId,
   reply: LocaleId,
-  keyboard?: MaxKeyboard,
   chatId?: number,
 ) {
-  await say(
-    userId,
-    translate(greeting, "botHelpMax"),
-    sessionPlanKeyboard(greeting) ?? keyboard,
-    chatId,
-  );
+  await sendMaxWelcome(userId, welcomeCaption(greeting, "max"), undefined, chatId);
   const owner = await resolveMaxJournalId(userId);
   const quiz = await openOnboarding(owner, reply);
   if (quiz) {
-    await say(userId, quiz.text, maxOnboardKeyboard(quiz.rows), chatId);
+    const asked = await say(userId, quiz.text, maxOnboardKeyboard(quiz.rows), chatId);
+    if (asked) await trackBotFunnel({ userId, messenger: "max", choice: { step: "start" } });
     return;
   }
   await sendDueMood(userId, owner, reply, chatId);
@@ -271,10 +268,10 @@ async function handleStart(
     const linked = await claimMaxLink(linkCode, userId, username);
     const key = linked === "ok" ? "botLinkOk" : linked === "taken" ? "botLinkTakenMax" : "botLinkBad";
     await say(userId, translate(reply, key), keyboard, chatId);
-    if (linked === "ok") await greet(userId, greeting, reply, keyboard, chatId);
+    if (linked === "ok") await greet(userId, greeting, reply, chatId);
     return;
   }
-  await greet(userId, greeting, reply, keyboard, chatId);
+  await greet(userId, greeting, reply, chatId);
 }
 
 export async function POST(req: Request) {
@@ -296,7 +293,7 @@ export async function POST(req: Request) {
     if (redisConfigured()) await rememberUser(maxStorageId(userId));
 
     if (update.update_type === "bot_stopped") {
-      await trackServerEvent({ userId, event: "block", messenger: "max" });
+      await trackServerEvent({ userId, event: "block", messenger: "max", username: maxUsername(update) });
       return NextResponse.json({ ok: true });
     }
 
@@ -327,6 +324,7 @@ export async function POST(req: Request) {
       if (saved && intent === "finish") {
         await sendWeekFollow(userId, reply, update.chat_id);
         await finishOnboarding(owner);
+        await trackBotFunnel({ userId, messenger: "max", choice: { step: "note" } });
       }
       return NextResponse.json({ ok: true });
     }
@@ -370,7 +368,8 @@ export async function POST(req: Request) {
       const stats = redis
         ? formatAnalyticsReport(await loadAnalyticsReport(redis))
         : "Счётчики ещё не пишутся.";
-      await say(userId, stats, keyboard);
+      const funnel = await botFunnelBlock();
+      await say(userId, funnel ? `${stats}\n\n${funnel}` : stats, keyboard);
       return NextResponse.json({ ok: true });
     }
 
@@ -402,6 +401,7 @@ export async function POST(req: Request) {
       if (intent === "finish") {
         await sendWeekFollow(userId, reply, update.chat_id);
         await finishOnboarding(owner);
+        await trackBotFunnel({ userId, messenger: "max", choice: { step: "note" } });
       } else {
         await say(userId, translate(reply, "botSaved"), keyboard);
       }

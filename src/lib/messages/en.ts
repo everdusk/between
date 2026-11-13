@@ -202,6 +202,9 @@ export const en: Catalog = {
   planSlot: "{day} at {time}",
   weekTitle: "Week",
   weekLead: "{range}",
+  weekPdf: "Send PDF",
+  weekPdfBusy: "Preparing…",
+  weekPdfFail: "The PDF did not come together.",
   spectrumLabel: "Week spectrum",
   spectrumQuiet: "Quiet so far",
   spectrumSeveral: "Several states",
@@ -358,13 +361,13 @@ export const en: Catalog = {
     "A journal without a therapist does less: there is no one to go through what you notice. You can still leave notes, to watch your state and see what repeats.\n\nHow are you right now?",
   botAskNote: "{feeling}. Write the first note right here — a couple of lines about right now.",
   botFirstNote: "Saved.\n\nThe Week tab already shows how a note sits in the week.",
-  botWeekOpen: "Open the week",
   botSessionBriefLead: "Session at {time}.",
+  botWeekOpen: "Open the week",
   botPickButton: "Tap a button below.",
   botHelp:
-    "I'm Between — a journal so you don't come to a session with an empty head.\n\nAnswer me for a couple of minutes a day — mood in one tap, thoughts in a few lines. The week turns into a picture: you can see what repeats.\n\nBy the session I'll gather it into a brief — no need to remember what happened. Set the session date, and I'll start.",
+    "I'm Between — a journal so you don't come to a session with an empty head.\n\nWrite your thoughts and feelings right in this chat — they are saved.\nA couple of times a day I'll ask how you feel — mark it in one tap.\nThe week turns into a picture: you can see what repeats.\n\nThe first 7 days are free, then {price} ₽ a month.\n\nBefore a session I'll gather this into a brief — no need to remember what happened. To start, I'll ask a couple of questions.",
   botHelpMax:
-    "I'm Between — a journal so you don't come to a session with an empty head.\n\nAnswer me for a couple of minutes a day — mood in one tap, thoughts in a few lines. The week turns into a picture: you can see what repeats.\n\nBy the session I'll gather it into a brief — no need to remember what happened. Set the session date, and I'll start.",
+    "I'm Between — a journal so you don't come to a session with an empty head.\n\nWrite your thoughts and feelings right in this chat — they are saved.\nA couple of times a day I'll ask how you feel — mark it in one tap.\nThe week turns into a picture: you can see what repeats.\n\nThe first 7 days are free, then {price} ₽ a month.\n\nBefore a session I'll gather this into a brief — no need to remember what happened. To start, I'll ask a couple of questions.",
   botUnknown:
     "Send text and I will save a note.",
   botNotReady:

@@ -79,14 +79,11 @@ const CSS = `
 .bl-kicker i{width:1.15rem;height:1px;background:currentColor;display:block}
 .bl-shift{background:linear-gradient(102deg,#5df0c6 0%,#7ee0d2 32%,#8eb6ff 70%,#c9b4ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 ${MESSENGER_CSS}
-.bl-qrcard{display:inline-flex;align-items:center;gap:.7rem;padding:.4rem .85rem .4rem .4rem;border-radius:1.1rem;border:1px solid rgba(94,231,197,.22);background:rgba(94,231,197,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:#c9d4ce;font-size:.78rem;line-height:1.35;text-align:left;white-space:nowrap;text-decoration:none}
+.bl-qrcard{display:inline-flex;align-items:center;gap:.7rem;padding:.4rem .85rem .4rem .4rem;border-radius:1.1rem;border:1px solid rgba(94,231,197,.22);background:rgba(94,231,197,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.05);color:#c9d4ce;font-size:.78rem;line-height:1.35;text-align:left;white-space:nowrap;cursor:default;pointer-events:none}
 .bl-qrcard b{display:block;color:#5ee7c5;font-weight:600}
 .bl-qr{display:block;width:5.15rem;height:5.15rem;flex:none;border-radius:.75rem;background:#c8f8c4;padding:.28rem}
 .bl-qr svg{display:block;width:100%;height:100%}
-.bl-ghost{display:inline-flex;align-items:center;justify-content:center;height:2.85rem;padding:0 1.15rem;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:#e7eeea;font-weight:500;font-size:.95rem;white-space:nowrap}
-.bl-ghost:hover{background:rgba(255,255,255,.08)}
-.bl-ghost:active{transform:scale(.98)}
-.bl-ghost:focus-visible,.bl-bar a:focus-visible,.bl-qrcard:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(94,231,197,.28)}
+.bl-bar a:focus-visible{outline:none;box-shadow:0 0 0 4px rgba(94,231,197,.28)}
 .bl-meta{display:inline-flex;align-items:center;gap:.4rem;height:2.15rem;padding:0 .85rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#c9d4ce;font-size:.82rem}
 .bl-meta b{color:var(--bl-teal);font-weight:600}
 .bl-phone{position:relative;width:100%;aspect-ratio:642/1266;border-radius:2.15rem;padding:.42rem;background:linear-gradient(165deg,#3a4246,#14191c 40%,#0c1012);box-shadow:0 30px 60px -28px rgba(0,0,0,.85),0 0 0 1px rgba(255,255,255,.14)}
@@ -101,7 +98,6 @@ ${MESSENGER_CSS}
 .bl-shot{display:block;width:min(100%,18.5rem);height:auto;margin-inline:auto;border-radius:1.35rem}
 @media (max-width:639px){
   .bl-bar{gap:.55rem;padding-left:.7rem}
-  .bl-ghost{width:100%}
   .bl-qrcard{display:none}
   .bl-kicker{letter-spacing:.12em}
   .bl-close{padding-left:1.15rem;padding-right:1.15rem}
@@ -192,7 +188,6 @@ export function LandingPage({ qr }: { qr: string }) {
               <a href="#kak" onClick={(event) => jump(event, "kak")}>
                 Как это работает
               </a>
-              <a href="/subscribe">Премиум</a>
             </nav>
             <MessengerButtons compact />
           </div>
@@ -218,9 +213,6 @@ export function LandingPage({ qr }: { qr: string }) {
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                 <MessengerButtons />
-                <a href="#kak" onClick={(event) => jump(event, "kak")} className="bl-ghost">
-                  Как это работает
-                </a>
               </div>
               <div className="mt-5 hidden sm:block">
                 <QrCard svg={qr} />
@@ -337,8 +329,6 @@ export function LandingPage({ qr }: { qr: string }) {
               <a href="/terms">Условия использования</a>
               {" · "}
               <a href="/privacy">Политика конфиденциальности</a>
-              {" · "}
-              <a href="/subscribe">Премиум</a>
             </p>
             <p className="mt-1 text-sm" style={{ color: "var(--bl-dim)" }}>
               ИНН {LEGAL_INN}

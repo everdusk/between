@@ -202,6 +202,9 @@ export const tr: Catalog = {
   planSlot: "{day} {time}",
   weekTitle: "Hafta",
   weekLead: "{range}",
+  weekPdf: "PDF gönder",
+  weekPdfBusy: "Hazırlanıyor…",
+  weekPdfFail: "PDF oluşmadı.",
   spectrumLabel: "Haftanın spektrumu",
   spectrumQuiet: "Şimdilik sessiz",
   spectrumSeveral: "Birkaç durum",
@@ -351,13 +354,13 @@ export const tr: Catalog = {
     "Terapistsiz günlük daha az işe yarar: fark ettiklerinizi açacak kimse yoktur. Yine de not bırakabilirsiniz — durumunuzu izlemek ve örüntüleri görmek için.\n\nŞu an nasılsınız?",
   botAskNote: "{feeling}. İlk notu buraya yazın — şu an hakkında birkaç satır.",
   botFirstNote: "Yazıldı.\n\nHafta sekmesinde notun haftaya nasıl oturduğu görünüyor.",
-  botWeekOpen: "Haftayı aç",
   botSessionBriefLead: "Seans {time}.",
+  botWeekOpen: "Haftayı aç",
   botPickButton: "Aşağıdaki düğmeye basın.",
   botHelp:
-    "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nGünde bir iki dakika sorularıma cevap ver — ruh hali bir dokunuş, düşünceler birkaç satır. Hafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Seans tarihini koy, başlayayım.",
+    "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nDüşüncelerini ve hislerini bu sohbete yaz — hepsi saklanır.\nGünde bir iki kez ruh halini sorarım — bir dokunuşla işaretle.\nHafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nİlk 7 gün ücretsiz, sonrası ayda {price} ₽.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Başlangıç için birkaç soru soracağım.",
   botHelpMax:
-    "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nGünde bir iki dakika sorularıma cevap ver — ruh hali bir dokunuş, düşünceler birkaç satır. Hafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Seans tarihini koy, başlayayım.",
+    "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nDüşüncelerini ve hislerini bu sohbete yaz — hepsi saklanır.\nGünde bir iki kez ruh halini sorarım — bir dokunuşla işaretle.\nHafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nİlk 7 gün ücretsiz, sonrası ayda {price} ₽.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Başlangıç için birkaç soru soracağım.",
   botUnknown:
     "Metin yazın, not olarak kaydederim.",
   botNotReady:

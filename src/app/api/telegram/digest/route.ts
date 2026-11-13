@@ -16,24 +16,26 @@ import {
   loadDeviceLocale,
   loadUserLocale,
   loadUserStore,
+  loadWeekAccess,
   redisConfigured,
   releaseDigestSlot,
 } from "@/lib/redis";
 import { resolveJournalId, resolveMaxJournalId } from "@/lib/web-account-store";
-import { ensureMaxSubscription, maxFeelingKeyboard, maxToken, sendMaxMessage, weekOpenKeyboard as maxWeekKeyboard } from "@/lib/max-bot";
-import { ensureTelegramBlocks, feelingKeyboard, telegramRequest, weekOpenKeyboard } from "@/lib/telegram-bot";
+import { ensureMaxSubscription, maxFeelingKeyboard, maxToken, sendMaxDocument, sendMaxMessage, weekOpenKeyboard as maxWeekKeyboard } from "@/lib/max-bot";
+import { accessForUser } from "@/lib/week-access";
+import { sessionBriefDue, SESSION_BRIEF_SLOT, sessionPdfActive, sessionPdfCaption, sessionPdfOpen } from "@/lib/session-brief";
+import { renderSessionPdf, sessionPeriodNoteCount } from "@/lib/session-pdf";
+import { prepareSessionSheet, rememberSessionSheet } from "@/lib/session-sheet";
 import { appUrl } from "@/lib/telegram-auth";
-import {
-  SESSION_BRIEF_SLOT,
-  sessionBriefDue,
-  sessionBriefText,
-} from "@/lib/session-brief";
+import { ensureTelegramBlocks, feelingKeyboard, sendTelegramDocument, telegramRequest, weekOpenKeyboard } from "@/lib/telegram-bot";
 import type { TherapyStore } from "@/lib/types";
 import { zonedParts } from "@/lib/zoned";
 
-async function deliverSessionBrief(input: {
+async function deliverSessionPdf(input: {
   channel: "telegram" | "max";
   userId: string;
+  owner: string;
+  actorId: number;
   maxId: number | null;
   dateKey: string;
   hour: number;
@@ -43,32 +45,46 @@ async function deliverSessionBrief(input: {
 }): Promise<boolean> {
   const due = sessionBriefDue({ plan: input.store.sessionPlan, dateKey: input.dateKey, hour: input.hour });
   if (!due) return false;
+  const access = accessForUser(
+    await loadWeekAccess(input.owner),
+    { id: input.actorId },
+    process.env.WEEK_EXEMPT_USER_IDS,
+    input.now,
+  );
+  if (!sessionPdfOpen(access.view.status)) return false;
+  const notes = sessionPeriodNoteCount(input.store, input.dateKey, input.now);
+  if (!sessionPdfActive(notes)) return false;
   const claimed = await claimDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
   if (!claimed) return false;
   try {
-    const text = sessionBriefText({
-      store: input.store,
-      locale: input.locale,
-      todayKey: input.dateKey,
-      now: input.now,
-      time: due.time,
-    });
+    const sheet = await prepareSessionSheet(
+      input.store,
+      input.locale,
+      input.dateKey,
+      input.now,
+      input.owner,
+    );
+    await rememberSessionSheet(input.owner, sheet, input.now);
+    const pdf = await renderSessionPdf(input.store, input.locale, input.dateKey, input.now, sheet);
+    const caption = sessionPdfCaption(input.locale, due.time);
     const ok =
       input.channel === "max" && input.maxId
-        ? await sendMaxMessage(input.maxId, text, maxWeekKeyboard(input.locale) ?? undefined)
-        : await telegramRequest("sendMessage", {
-            chat_id: Number(input.userId),
-            text,
-            reply_markup: weekOpenKeyboard(appUrl(), input.locale),
-          });
+        ? await sendMaxDocument(input.maxId, pdf.filename, pdf.bytes, caption, maxWeekKeyboard(input.locale))
+        : await sendTelegramDocument(
+            Number(input.userId),
+            pdf.filename,
+            pdf.bytes,
+            caption,
+            weekOpenKeyboard(appUrl(), input.locale),
+          );
     if (!ok) {
       await releaseDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
       return false;
     }
     return true;
-  } catch (error) {
+  } catch {
     await releaseDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
-    throw error;
+    return false;
   }
 }
 
@@ -78,6 +94,8 @@ function authorized(req: Request): boolean {
   const header = req.headers.get("authorization");
   return header === `Bearer ${secret}`;
 }
+
+export const maxDuration = 60;
 
 async function runDigest() {
   const telegramOn = Boolean(process.env.BOT_TOKEN?.trim());
@@ -131,9 +149,11 @@ async function runDigest() {
               await loadDeviceLocale(owner),
               null,
             );
-      const briefSent = await deliverSessionBrief({
+      const pdfSent = await deliverSessionPdf({
         channel,
         userId,
+        owner,
+        actorId: channel === "max" && maxId ? maxId : Number(userId),
         maxId,
         dateKey: clock.dateKey,
         hour: clock.hour,
@@ -145,7 +165,7 @@ async function runDigest() {
       const due = exact ? null : duePoll({ store, dateKey: clock.dateKey, hour: clock.hour });
       const slotName = exact ?? due;
       if (!slotName) {
-        if (briefSent) sent += 1;
+        if (pdfSent) sent += 1;
         else skipped += 1;
         continue;
       }
@@ -163,7 +183,7 @@ async function runDigest() {
           : { type: "skip" as const };
 
       if (action.type === "skip") {
-        if (briefSent) sent += 1;
+        if (pdfSent) sent += 1;
         else skipped += 1;
         continue;
       }
@@ -190,11 +210,11 @@ async function runDigest() {
 
       if (!ok) {
         await releaseDigestSlot(userId, clock.dateKey, slotName);
-        if (!briefSent) skipped += 1;
+        if (!pdfSent) skipped += 1;
         else sent += 1;
         continue;
       }
-      sent += briefSent ? 2 : 1;
+      sent += pdfSent ? 2 : 1;
     } catch {
       skipped += 1;
     }

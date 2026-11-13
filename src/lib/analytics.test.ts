@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { analyticsDedupToken, recordAnalytics, type AnalyticsRedis } from "./analytics";
+import { analyticsDedupToken, loadAnalyticsReport, recordAnalytics, type AnalyticsRedis } from "./analytics";
+import { captureServerProduct, productDistinctId } from "./product-analytics-server";
 import {
   acceptClientEvent,
   clientMessenger,
@@ -8,7 +9,10 @@ import {
   analyticsCounterKey,
   analyticsDedupKey,
   formatAnalyticsReport,
+  analyticsQuiet,
   isAnalyticsOwner,
+  statsWindow,
+  quietClientLaunch,
   messengerEventName,
   parseMessengerEvent,
   planAnalyticsSend,
@@ -39,8 +43,8 @@ function memoryRedis(): AnalyticsRedis & { keys: Map<string, number>; sets: Map<
       keys.set(key, next);
       return next;
     },
-    async mget() {
-      return [];
+    async mget(...names: string[]) {
+      return names.map((name) => keys.get(name) ?? null);
     },
   };
 }
@@ -215,10 +219,9 @@ describe("analytics", () => {
     });
     assert.match(text, /Telegram[\s\S]*Визит 4[\s\S]*Заметка 2[\s\S]*Настроение 3[\s\S]*Блокировка 1[\s\S]*График 2/);
     assert.match(text, /MAX[\s\S]*Настроение 1/);
-    assert.match(text, /Сайт[\s\S]*Настроение 0/);
     assert.match(text, /MAX[\s\S]*Визит 1/);
-    assert.match(text, /Сайт[\s\S]*Визит 9/);
-    assert.doesNotMatch(text.slice(0, text.indexOf("Сайт")), /Визит 9/);
+    assert.doesNotMatch(text, /Сайт/);
+    assert.doesNotMatch(text, /Визит 9/);
     assert.match(text, /Пейволл 1/);
     assert.match(text, /1 ноя — 4 новых, за неделю ещё нет/);
     assert.match(text, /20 окт — 8 новых, за неделю 3 из 8/);
@@ -231,6 +234,71 @@ describe("analytics", () => {
       [{ day: "2026-11-01", counts: { visit: 3, note: 0, mood: 0, block: 0, plan: 0, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
     );
     assert.equal(merged[0].counts.visit, 7);
+  });
+
+  it("starts the report on 13 Nov and prints only Telegram and MAX", async () => {
+    assert.deepEqual(statsWindow("2026-11-13", 7), ["2026-11-13"]);
+    assert.deepEqual(statsWindow("2026-11-12", 7), []);
+    assert.equal(statsWindow("2026-11-20", 7).length, 7);
+    assert.equal(statsWindow("2026-11-20", 7)[0], "2026-11-14");
+
+    const redis = memoryRedis();
+    const pepper = "pepper";
+    await recordAnalytics(redis, {
+      userId: 1,
+      event: "visit",
+      messenger: "telegram",
+      day: "2026-11-12",
+      pepper,
+    });
+    await recordAnalytics(redis, {
+      userId: 2,
+      event: "note",
+      messenger: "telegram",
+      day: "2026-11-13",
+      pepper,
+    });
+    await recordAnalytics(redis, {
+      userId: 3,
+      event: "mood",
+      messenger: "max",
+      day: "2026-11-13",
+      pepper,
+    });
+    await recordAnalytics(redis, {
+      userId: "web:device",
+      event: "visit",
+      messenger: "web",
+      day: "2026-11-13",
+      pepper,
+    });
+    const report = await loadAnalyticsReport(redis, new Date("2026-11-13T12:00:00.000Z"));
+    assert.equal(report.today, "2026-11-13");
+    assert.equal(report.windowDays, 1);
+    assert.equal(report.messengers.telegram.totals.visit, 0);
+    assert.equal(report.messengers.telegram.totals.note, 1);
+    assert.equal(report.messengers.max.totals.mood, 1);
+    const text = formatAnalyticsReport(report);
+    assert.match(text, /Between за 1 дн\., по Москве/);
+    assert.match(text, /Telegram[\s\S]*Заметка 1/);
+    assert.match(text, /MAX[\s\S]*Настроение 1/);
+    assert.doesNotMatch(text, /Сайт/);
+    assert.doesNotMatch(text, /Визит [1-9]/);
+
+    const empty = snapshotFromReads("2026-11-13", [], []);
+    const siteOnly = snapshotFromReads(
+      "2026-11-13",
+      [{ day: "2026-11-13", counts: { visit: 9, note: 0, mood: 0, block: 0, plan: 0, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
+      [],
+    );
+    assert.equal(
+      formatAnalyticsReport({
+        today: "2026-11-13",
+        windowDays: 1,
+        messengers: { telegram: empty, max: empty, web: siteOnly },
+      }),
+      "Пока никто не открывал Between.",
+    );
   });
 
   it("sends a funnel step to PostHog without a person, an ip, or the launch hash", () => {
@@ -314,8 +382,75 @@ describe("analytics", () => {
     assert.equal(isAnalyticsOwner("@aliatorovskaia", "aliatorovskaia, other"), true);
     assert.equal(isAnalyticsOwner("someone", "aliatorovskaia"), false);
     assert.equal(isAnalyticsOwner(undefined, "aliatorovskaia"), false);
+    assert.equal(analyticsQuiet({ username: "Aliatorovskaia", messenger: "telegram" }), true);
+    assert.equal(analyticsQuiet({ username: "reader", messenger: "web", owners: "reader" }), true);
+    assert.equal(analyticsQuiet({ userId: 1062664437, messenger: "max" }), true);
+    assert.equal(analyticsQuiet({ userId: 1062664437, messenger: "telegram" }), false);
+    assert.equal(analyticsQuiet({ username: "someone", userId: 5, messenger: "telegram" }), false);
+    assert.equal(
+      quietClientLaunch({
+        telegramInit: "user=" + encodeURIComponent(JSON.stringify({ id: 7, username: "aliatorovskaia" })),
+      }),
+      true,
+    );
+    assert.equal(
+      quietClientLaunch({ maxInit: "user=" + encodeURIComponent(JSON.stringify({ id: 1062664437 })) }),
+      true,
+    );
+    assert.equal(
+      quietClientLaunch({ telegramInit: "user=" + encodeURIComponent(JSON.stringify({ id: 7, username: "ada" })) }),
+      false,
+    );
     const token = analyticsDedupToken("pepper", "424242:visit:2026-11-01");
     assert.equal(token.includes("424242"), false);
     assert.equal(token.length, 64);
+  });
+
+  it("uses one PostHog person for the bot and the mini app", async () => {
+    const pepper = "bot-token";
+    const person = productDistinctId(pepper, "telegram", 42);
+    assert.equal(productDistinctId(pepper, "telegram", "42"), person);
+    assert.equal(person.length, 32);
+    assert.equal(person.includes("42"), false);
+    assert.notEqual(productDistinctId(pepper, "max", 42), person);
+    assert.notEqual(productDistinctId("other-token", "telegram", 42), person);
+
+    const previous = {
+      key: process.env.POSTHOG_KEY,
+      host: process.env.POSTHOG_HOST,
+      token: process.env.BOT_TOKEN,
+    };
+    const calls: { url: string; body: { event?: string; distinct_id?: string; properties?: { plan?: string } } }[] = [];
+    const original = globalThis.fetch;
+    process.env.POSTHOG_KEY = "phc_publictoken12";
+    process.env.POSTHOG_HOST = "https://us.i.posthog.com";
+    process.env.BOT_TOKEN = pepper;
+    globalThis.fetch = async (url, init) => {
+      calls.push({
+        url: String(url),
+        body: JSON.parse(String(init?.body)) as { event?: string; distinct_id?: string; properties?: { plan?: string } },
+      });
+      return new Response("ok");
+    };
+    try {
+      await captureServerProduct({ messenger: "telegram", event: "note", userId: 42, plan: "month" });
+      await captureServerProduct({ messenger: "max", event: "visit", userId: 42 });
+    } finally {
+      globalThis.fetch = original;
+      if (previous.key === undefined) delete process.env.POSTHOG_KEY;
+      else process.env.POSTHOG_KEY = previous.key;
+      if (previous.host === undefined) delete process.env.POSTHOG_HOST;
+      else process.env.POSTHOG_HOST = previous.host;
+      if (previous.token === undefined) delete process.env.BOT_TOKEN;
+      else process.env.BOT_TOKEN = previous.token;
+    }
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0]?.url, "https://us.i.posthog.com/capture/");
+    assert.equal(calls[0]?.body.event, "telegram_note");
+    assert.equal(calls[0]?.body.distinct_id, person);
+    assert.equal(calls[0]?.body.properties?.plan, "month");
+    assert.equal(calls[1]?.body.event, "max_visit");
+    assert.equal(calls[1]?.body.distinct_id, productDistinctId(pepper, "max", 42));
+    assert.equal(calls[1]?.body.properties?.plan, undefined);
   });
 });

@@ -9,7 +9,8 @@ import {
   analyticsDedupKey,
   emptyAnalyticsCounts,
   reportDaySpan,
-  shiftDay,
+  statsWindow,
+  analyticsQuiet,
   snapshotFromReads,
   sumCountRows,
   type AnalyticsEvent,
@@ -105,16 +106,8 @@ export async function loadAnalyticsReport(
 ): Promise<AnalyticsSnapshot> {
   const today = todayInTimeZone(DEFAULT_TIME_ZONE, now);
   const { reportDays, cohortDays: cohortSpan } = reportDaySpan();
-  const days: string[] = [];
-  for (let ago = reportDays - 1; ago >= 0; ago -= 1) {
-    const day = shiftDay(today, -ago);
-    if (day) days.push(day);
-  }
-  const cohortDays: string[] = [];
-  for (let ago = cohortSpan - 1; ago >= 0; ago -= 1) {
-    const day = shiftDay(today, -ago);
-    if (day) cohortDays.push(day);
-  }
+  const days = statsWindow(today, reportDays);
+  const cohortDays = statsWindow(today, cohortSpan);
 
   const keys: string[] = [];
   for (const messenger of ANALYTICS_MESSENGERS) {
@@ -206,7 +199,18 @@ export async function recordPaidAnalytics(
   userId: number,
   chargeId: string | undefined,
   now = new Date(),
+  username?: string | null,
 ): Promise<void> {
+  if (
+    analyticsQuiet({
+      username,
+      userId,
+      messenger: "telegram",
+      owners: process.env.ANALYTICS_OWNERS,
+    })
+  ) {
+    return;
+  }
   const redis = analyticsRedis();
   const pepper = process.env.BOT_TOKEN?.trim();
   if (!redis || !pepper) return;
@@ -247,6 +251,15 @@ export async function recordSbpPaid(input: {
   step: "paid" | "pending";
   at?: Date;
 }): Promise<"counted" | "duplicate" | "skipped"> {
+  if (
+    analyticsQuiet({
+      userId: input.userId,
+      messenger: input.messenger,
+      owners: process.env.ANALYTICS_OWNERS,
+    })
+  ) {
+    return "skipped";
+  }
   const redis = analyticsRedis();
   const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
   if (!redis || !pepper) return "skipped";
@@ -274,12 +287,23 @@ export async function recordSbpPaid(input: {
   }
 }
 
-/** A bot step. The Mini App still reports through `/api/analytics`. One person, one step, one messenger, one day. */
+/** A bot step. The mini app reports the same person through `/api/analytics`. One person, one step, one messenger, one day. */
 export async function trackServerEvent(input: {
   userId: number | string;
   event: AnalyticsEvent;
   messenger: AnalyticsMessenger;
+  username?: string | null;
 }): Promise<void> {
+  if (
+    analyticsQuiet({
+      username: input.username,
+      userId: input.userId,
+      messenger: input.messenger,
+      owners: process.env.ANALYTICS_OWNERS,
+    })
+  ) {
+    return;
+  }
   const redis = analyticsRedis();
   const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
   let counted = !redis || !pepper;

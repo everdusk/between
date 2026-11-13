@@ -16,7 +16,7 @@ interface WeekSpectrumProps {
   patternPending: string;
 }
 
-function spectrumTitle(
+export function spectrumTitle(
   spectrum: ReturnType<typeof buildWeekSpectrum>,
   t: (key: MessageKey, vars?: Record<string, string | number | undefined>) => string,
   feeling: (value: Feeling) => string,
@@ -29,7 +29,7 @@ function spectrumTitle(
   return t("spectrumSeveral");
 }
 
-function spectrumLead(
+export function spectrumLead(
   spectrum: ReturnType<typeof buildWeekSpectrum>,
   noteCount: number,
   t: (key: MessageKey, vars?: Record<string, string | number | undefined>) => string,

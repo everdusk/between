@@ -202,6 +202,9 @@ export const pt: Catalog = {
   planSlot: "{day} às {time}",
   weekTitle: "Semana",
   weekLead: "{range}",
+  weekPdf: "Enviar PDF",
+  weekPdfBusy: "Preparando…",
+  weekPdfFail: "O PDF não saiu.",
   spectrumLabel: "Espectro da semana",
   spectrumQuiet: "Ainda quieto",
   spectrumSeveral: "Vários estados",
@@ -351,13 +354,13 @@ export const pt: Catalog = {
     "Um diário sem terapeuta rende menos: não há quem olhe o que você nota. Ainda dá para deixar notas, para acompanhar o estado e ver padrões.\n\nComo você está agora?",
   botAskNote: "{feeling}. Escreva a primeira nota aqui — umas linhas sobre agora.",
   botFirstNote: "Salvo.\n\nNa aba Semana já dá para ver como uma nota entra na semana.",
-  botWeekOpen: "Abrir a semana",
   botSessionBriefLead: "Sessão às {time}.",
+  botWeekOpen: "Abrir a semana",
   botPickButton: "Toque num botão abaixo.",
   botHelp:
-    "Sou o Between — um diário com o qual você não chega à sessão de cabeça vazia.\n\nResponda por uns minutos por dia — o humor num toque, os pensamentos em algumas linhas. A semana vira um quadro: dá para ver o que se repete.\n\nAté a sessão eu junto isso num resumo — sem precisar lembrar o que houve. Marque a data da sessão, e eu começo.",
+    "Sou o Between — um diário com o qual você não chega à sessão de cabeça vazia.\n\nEscreva pensamentos e sentimentos aqui neste chat — tudo fica salvo.\nAlgumas vezes por dia vou perguntar o humor — marque num toque.\nA semana vira um quadro: dá para ver o que se repete.\n\nOs primeiros 7 dias são grátis; depois, {price} ₽ por mês.\n\nAntes da sessão eu junto isso num resumo — sem precisar lembrar o que aconteceu. Para começar, faço algumas perguntas.",
   botHelpMax:
-    "Sou o Between — um diário com o qual você não chega à sessão de cabeça vazia.\n\nResponda por uns minutos por dia — o humor num toque, os pensamentos em algumas linhas. A semana vira um quadro: dá para ver o que se repete.\n\nAté a sessão eu junto isso num resumo — sem precisar lembrar o que houve. Marque a data da sessão, e eu começo.",
+    "Sou o Between — um diário com o qual você não chega à sessão de cabeça vazia.\n\nEscreva pensamentos e sentimentos aqui neste chat — tudo fica salvo.\nAlgumas vezes por dia vou perguntar o humor — marque num toque.\nA semana vira um quadro: dá para ver o que se repete.\n\nOs primeiros 7 dias são grátis; depois, {price} ₽ por mês.\n\nAntes da sessão eu junto isso num resumo — sem precisar lembrar o que aconteceu. Para começar, faço algumas perguntas.",
   botUnknown:
     "Escreva um texto e eu salvo como nota.",
   botNotReady:

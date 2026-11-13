@@ -82,7 +82,58 @@ function rub(value: number): string {
   return `${new Intl.NumberFormat("ru-RU").format(value)} ₽`;
 }
 
-export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: number }) {
+function starAmount(value: number): string {
+  return `${new Intl.NumberFormat("ru-RU").format(value)} Stars`;
+}
+
+function StarMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M8 1.35 9.74 5.55l4.56.4-3.48 3.02.99 4.5L8 11.35 4.19 13.47l.99-4.5L1.7 5.95l4.56-.4L8 1.35Z"
+      />
+    </svg>
+  );
+}
+
+function starCatalog(prices: { month: number; quarter: number; year: number }) {
+  return {
+    month: { rub: prices.month, perMonth: prices.month, title: "Месяц", span: "на месяц" },
+    quarter: {
+      rub: prices.quarter,
+      perMonth: Math.round(prices.quarter / 3),
+      title: "3 месяца",
+      span: "на 3 месяца",
+      popular: true as const,
+    },
+    year: {
+      rub: prices.year,
+      perMonth: Math.round(prices.year / 12),
+      title: "Год",
+      span: "на год",
+      off: 50,
+    },
+  };
+}
+
+export function SubscribeCheckout({
+  monthly = DEFAULT_RUB_PRICE,
+  embed = false,
+  stars = null,
+  onStarsPay,
+  starsBusy = false,
+  starsError = null,
+}: {
+  monthly?: number;
+  /** Phone card only. Telegram and MAX never get the wide marketing column. */
+  embed?: boolean;
+  /** Stars prices. Omits the ruble receipt, the email, and YooKassa. */
+  stars?: { month: number; quarter: number; year: number } | null;
+  onStarsPay?: (plan: SbpPlanId) => void;
+  starsBusy?: boolean;
+  starsError?: string | null;
+}) {
   const [plan, setPlan] = useState<SbpPlanId>("quarter");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -100,8 +151,8 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
 
   useEffect(() => {
     captureSubscribe({ messenger: pageMessenger(), step: "open", plan: "quarter" });
-    trackAnalytics("paywall", readTelegramInitData());
-  }, []);
+    if (!embed) trackAnalytics("paywall", readTelegramInitData());
+  }, [embed]);
 
   useEffect(() => {
     if (!order) return;
@@ -184,20 +235,24 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
     setOrder({ paymentId: body.paymentId, amount: body.amount, plan, email: trimmed, url: body.url, svg: body.svg });
   }
 
-  const plans = sbpCatalog(monthly);
+  const plans = stars ? starCatalog(stars) : sbpCatalog(monthly);
   const chosen = plans[plan];
+  const price = (value: number) => (stars ? starAmount(value) : rub(value));
 
   return (
-    <article className="subscribe-page fixed inset-0 z-30 overflow-y-auto">
+    <article className={embed ? "subscribe-page" : "subscribe-page fixed inset-0 z-30 overflow-y-auto"}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 sm:py-10">
+      <div className={embed ? "" : "mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 sm:py-10"}>
+        {embed ? null : (
         <header>
           <a href="/journal" className="sub-display text-lg" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "journal" })}>
             Between
           </a>
         </header>
+        )}
 
-        <div className="mt-8 grid items-start gap-10 lg:mt-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16">
+        <div className={embed ? "" : "mt-8 grid items-start gap-10 lg:mt-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16"}>
+          {embed ? null : (
           <div className="hidden lg:block">
             <p className="sub-kicker">Дневник для тех, кто в терапии</p>
             <h1 className="sub-display mt-4 text-5xl leading-[1.05]">
@@ -235,9 +290,10 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
               <li className="sub-chip">0 установок</li>
             </ul>
           </div>
+          )}
 
           <section className="sub-card">
-            <div className="lg:hidden">
+            <div className={embed ? "" : "lg:hidden"}>
               <p className="sub-kicker">Подписка Between</p>
               <h1 className="sub-display mt-3 text-[2.05rem] leading-[1.05]">
                 Оформление подписки.
@@ -245,7 +301,7 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
                 <span className="sub-shift">Вы честно экономите.</span>
               </h1>
             </div>
-            <h2 className="sub-display hidden text-2xl lg:block">Выберите план</h2>
+            <h2 className={embed ? "hidden" : "sub-display hidden text-2xl lg:block"}>Выберите план</h2>
             <fieldset className="mt-5 space-y-3">
               <legend className="sr-only">Срок подписки</legend>
               {PLANS.map((id) => {
@@ -271,16 +327,16 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
                       </span>
                       <span className="mt-1 block text-sm text-[#8aa097]">
                         {id === "month" ? (
-                          `${rub(item.perMonth)}/мес`
+                          `${price(item.perMonth)}/мес`
                         ) : (
                           <>
-                            <s className="me-2">{rub(plans.month.perMonth)}</s>
-                            <span className="text-[#8FF0BC]">{rub(item.perMonth)}/мес</span>
+                            <s className="me-2">{price(plans.month.perMonth)}</s>
+                            <span className="text-[#8FF0BC]">{price(item.perMonth)}/мес</span>
                           </>
                         )}
                       </span>
                     </span>
-                    <b className="tabular ms-auto whitespace-nowrap">{rub(item.rub)}</b>
+                    <b className="tabular ms-auto whitespace-nowrap">{price(item.rub)}</b>
                   </label>
                 );
               })}
@@ -291,36 +347,55 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
                 <p className="text-sm text-[#a9b4ae]">Итого к оплате</p>
                 <p className="text-xs text-[#74827b]">Разовый платёж · доступ {chosen.span}</p>
               </div>
-              <p className="sub-display text-3xl">{rub(chosen.rub)}</p>
+              {stars ? (
+                <p className="sub-display text-3xl leading-none whitespace-nowrap">
+                  {new Intl.NumberFormat("ru-RU").format(chosen.rub)}
+                  <span className="ms-1.5 align-baseline text-xl">Stars</span>
+                </p>
+              ) : (
+                <p className="sub-display text-3xl">{rub(chosen.rub)}</p>
+              )}
             </div>
 
-            <label className="mt-5 block text-sm text-[#a9b4ae]" htmlFor="sbp-email">
-              Email для чека
-            </label>
-            <input
-              id="sbp-email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              placeholder="masha@example.ru"
-              value={email}
-              onChange={(event) => {
-                const next = event.target.value;
-                setEmail(next);
-                if (!emailSeen.current && next.trim()) {
-                  emailSeen.current = true;
-                  captureSubscribe({ messenger: pageMessenger(), step: "email", plan });
-                }
-              }}
-              className="sub-email"
-            />
+            {stars ? null : (
+              <>
+                <label className="mt-5 block text-sm text-[#a9b4ae]" htmlFor="sbp-email">
+                  Email для чека
+                </label>
+                <input
+                  id="sbp-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="masha@example.ru"
+                  value={email}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    setEmail(next);
+                    if (!emailSeen.current && next.trim()) {
+                      emailSeen.current = true;
+                      captureSubscribe({ messenger: pageMessenger(), step: "email", plan });
+                    }
+                  }}
+                  className="sub-email"
+                />
+              </>
+            )}
             <p className="mt-3 text-xs leading-relaxed text-[#74827b]">
-              Нажимая «Оплатить через СБП», вы соглашаетесь с{" "}
+              Нажимая «{stars ? "Оплатить" : "Оплатить через СБП"}», вы соглашаетесь с{" "}
               <a href="/terms" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "terms", plan })}>публичной офертой</a> и даёте{" "}
               <a href="/privacy" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "privacy", plan })}>согласие на обработку персональных данных</a>
             </p>
+            {stars ? null : (
             <p className="mt-2 text-xs text-[#74827b]">Платёж через ЮKassa · чек по 54-ФЗ на почту</p>
-            {error ? (
+            )}
+            {stars ? (
+              starsError ? (
+                <p className="mt-3 text-sm text-[#ffb4b0]" role="alert">
+                  {starsError}
+                </p>
+              ) : null
+            ) : error ? (
               <p className="mt-3 text-sm text-[#ffb4b0]" role="alert">
                 {error}
               </p>
@@ -329,12 +404,24 @@ export function SubscribeCheckout({ monthly = DEFAULT_RUB_PRICE }: { monthly?: n
               <p className="text-sm text-[#a9b4ae]">
                 Подписка · {chosen.title.toLowerCase()}
               </p>
-              <p className="text-sm">{rub(chosen.rub)}</p>
+              <p className="text-sm">{price(chosen.rub)}</p>
             </div>
+            {stars ? (
+              <button
+                type="button"
+                className="sub-pay"
+                disabled={starsBusy || !onStarsPay}
+                onClick={() => onStarsPay?.(plan)}
+              >
+                <StarMark />
+                {starsBusy ? "Открываю оплату…" : "Оплатить"}
+              </button>
+            ) : (
             <button type="button" className="sub-pay" disabled={busy} onClick={() => void pay()}>
               <SbpSign />
               {busy ? "Создаём платёж…" : "Оплатить через СБП"}
             </button>
+            )}
           </section>
         </div>
       </div>

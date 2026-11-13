@@ -1,11 +1,9 @@
 import { parseDateKey } from "./dates";
 import type { LocaleId } from "./i18n";
-import { feelingLabel, translate } from "./messages";
-import { entryInWindow, therapyWindow } from "./session-summary";
+import { translate } from "./messages";
 import { isSessionTime, weeklySlots } from "./session-plan";
-import { buildWeekSpectrum } from "./spectrum";
-import { patternReplyUsable, rankedThemes } from "./themes";
-import type { SessionPlan, TherapyStore } from "./types";
+import type { SessionPlan } from "./types";
+import type { WeekAccessStatus } from "./week-access";
 
 /** The hourly job sends once inside this window, on the session day. */
 export const SESSION_BRIEF_LEAD_HOURS = 2;
@@ -51,63 +49,19 @@ export function sessionBriefDue(input: {
   return { time };
 }
 
-function patternParagraph(store: TherapyStore, weekKey: string): string {
-  const usable = (text: string | undefined) => {
-    const clean = text?.replace(/\s+/g, " ").trim() ?? "";
-    return patternReplyUsable(clean) ? clean : "";
-  };
-  const matched = store.weekPreps.find((item) => item.weekKey === weekKey);
-  const fromWindow = usable(matched?.patternText);
-  if (fromWindow) return fromWindow;
-  const latest = [...store.weekPreps]
-    .filter((item) => usable(item.patternText))
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
-  return usable(latest?.patternText);
+/** Paid premium and a live trial both get the sheet. A locked week does not. */
+export function sessionPdfOpen(status: WeekAccessStatus): boolean {
+  return status === "paid" || status === "trial";
 }
 
-/** Pattern, the most common mood, and the backlog as bullets. */
-export function sessionBriefText(input: {
-  store: TherapyStore;
-  locale: LocaleId;
-  todayKey: string;
-  now: Date;
-  time: string;
-}): string {
-  const { store, locale, todayKey, now, time } = input;
-  const period = therapyWindow(store.sessions, store.entries, todayKey, now, store.sessionPlan);
-  const entries = store.entries.filter((entry) => entryInWindow(entry, period));
-  const spectrum = buildWeekSpectrum(period.days, entries);
-  const pattern = patternParagraph(store, period.weekKey) || translate(locale, "patternThin");
-  const mood =
-    spectrum.top.length === 0
-      ? translate(locale, "spectrumNoFeelings")
-      : spectrum.top.length === 1
-        ? translate(locale, "spectrumTopOne", { feeling: feelingLabel(locale, spectrum.top[0]) })
-        : spectrum.top.length === 2
-          ? translate(locale, "spectrumTopTwo", {
-              a: feelingLabel(locale, spectrum.top[0]),
-              b: feelingLabel(locale, spectrum.top[1]),
-            })
-          : translate(locale, "spectrumTopMany");
-  const themes = rankedThemes(
-    store.themes,
-    todayKey,
-    store.sessions.map((session) => session.date),
-  );
-  const bullets = themes
-    .map((theme) => theme.title.replace(/\s+/g, " ").trim())
-    .filter(Boolean)
-    .map((title) => `• ${title}`);
-  const backlog = bullets.length > 0 ? bullets.join("\n") : translate(locale, "backlogEmpty");
-  return [
-    translate(locale, "botSessionBriefLead", { time }),
-    "",
-    translate(locale, "briefPatternTitle"),
-    pattern,
-    "",
-    mood,
-    "",
-    translate(locale, "backlogTitle"),
-    backlog,
-  ].join("\n");
+/** Written notes in the therapy period. Two is still quiet; the file starts at three. */
+export const SESSION_PDF_ACTIVE_NOTES = 2;
+
+export function sessionPdfActive(writtenNotes: number): boolean {
+  return writtenNotes > SESSION_PDF_ACTIVE_NOTES;
+}
+
+/** One line on the file. The sheet itself is the summary. */
+export function sessionPdfCaption(locale: LocaleId, time: string): string {
+  return translate(locale, "botSessionBriefLead", { time });
 }

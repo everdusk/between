@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { sessionBriefDue, sessionBriefText } from "./session-brief";
-import { emptyStore, type JournalEntry, type SessionPlan, type SessionTheme } from "./types";
+import { sessionBriefDue, sessionPdfActive, sessionPdfCaption, sessionPdfOpen } from "./session-brief";
+import type { SessionPlan } from "./types";
 
 const THURSDAY = "2026-01-08";
 
@@ -16,24 +16,7 @@ function weekly(time = "18:00"): SessionPlan {
   };
 }
 
-function theme(partial: Partial<SessionTheme> & Pick<SessionTheme, "id" | "title" | "status">): SessionTheme {
-  return {
-    userId: "1",
-    count: 2,
-    firstSeen: "2026-01-06",
-    lastSeen: "2026-01-07",
-    peakIntensity: 3,
-    reopened: false,
-    dismissed: false,
-    confidence: 0.8,
-    summary: partial.title,
-    quotes: [],
-    updatedAt: "2026-01-07T00:00:00.000Z",
-    ...partial,
-  };
-}
-
-describe("session brief", () => {
+describe("session pdf", () => {
   it("is due on the session day from two hours before until the session hour", () => {
     const plan = weekly("18:30");
     assert.equal(sessionBriefDue({ plan, dateKey: THURSDAY, hour: 15 }), null);
@@ -53,53 +36,21 @@ describe("session brief", () => {
     assert.equal(sessionBriefDue({ plan: null, dateKey: THURSDAY, hour: 16 }), null);
   });
 
-  it("names the pattern, the most common mood, and the open backlog", () => {
-    const store = emptyStore();
-    store.sessionPlan = weekly();
-    const entry: JournalEntry = {
-      id: "e1",
-      date: "2026-01-07",
-      createdAt: "2026-01-07T08:00:00.000Z",
-      updatedAt: "2026-01-07T08:00:00.000Z",
-      body: "Перед встречей снова тревожно",
-      feelings: ["тревожно", "тревожно"],
-      tags: [],
-      source: "bot",
-    };
-    const calm: JournalEntry = {
-      ...entry,
-      id: "e2",
-      feelings: ["спокойно"],
-      body: "Утро тихое и ровное",
-    };
-    store.entries = [entry, { ...entry, id: "e3", createdAt: "2026-01-07T19:00:00.000Z" }, calm];
-    store.themes = [
-      theme({ id: "open", title: "Тревога перед встречей", status: "active" }),
-      theme({ id: "said", title: "Уже сказано", status: "discussed", discussedAt: "2026-01-07T12:00:00.000Z" }),
-      theme({ id: "gone", title: "Убранная тема", status: "active", dismissed: true }),
-    ];
-    store.weekPreps = [
-      {
-        weekKey: "other",
-        talkNotes: "",
-        updatedAt: "2026-01-07T00:00:00.000Z",
-        patternText: "Тревога перед встречами возвращается по утрам.",
-      },
-    ];
-    const text = sessionBriefText({
-      store,
-      locale: "ru",
-      todayKey: THURSDAY,
-      now: new Date(2026, 0, 8, 16, 0, 0),
-      time: "18:00",
-    });
-    assert.match(text, /К сеансу в 18:00/);
-    assert.match(text, /Что смотрится как паттерн/);
-    assert.match(text, /Тревога перед встречами возвращается по утрам/);
-    assert.match(text, /Чаще всего — тревожно/);
-    assert.match(text, /Что обсудить/);
-    assert.match(text, /• Тревога перед встречей/);
-    assert.doesNotMatch(text, /Уже сказано/);
-    assert.doesNotMatch(text, /Убранная тема/);
+  it("sends while premium is paid or the trial is still open", () => {
+    assert.equal(sessionPdfOpen("paid"), true);
+    assert.equal(sessionPdfOpen("trial"), true);
+    assert.equal(sessionPdfOpen("locked"), false);
+    assert.equal(sessionPdfOpen("new"), false);
+  });
+
+  it("sends only after more than two written notes in the period", () => {
+    assert.equal(sessionPdfActive(0), false);
+    assert.equal(sessionPdfActive(2), false);
+    assert.equal(sessionPdfActive(3), true);
+  });
+
+  it("puts only the session time on the file, not the summary", () => {
+    assert.equal(sessionPdfCaption("ru", "18:30"), "К сеансу в 18:30.");
+    assert.equal(sessionPdfCaption("en", "18:30"), "Session at 18:30.");
   });
 });

@@ -5,6 +5,7 @@ import { claimPendingSbp } from "@/lib/sbp-live";
 import { loadAccount } from "@/lib/web-account-store";
 import {
   accessForUser,
+  canPreviewPaywall,
   adoptClientTrial,
   markWeekIntroSeen,
   normalizeWeekAccess,
@@ -40,6 +41,9 @@ async function granted(record: WeekAccessRecord, actor: Actor) {
     rubPriceFromEnv(process.env.WEEK_RUB_PRICE),
   );
   if (resolved.changed) await saveWeekAccess(actor.id, resolved.record);
+  if (canPreviewPaywall(identityOf(actor), process.env.WEEK_EXEMPT_USER_IDS)) {
+    resolved.view = { ...resolved.view, previewPaywall: true };
+  }
   return resolved;
 }
 
