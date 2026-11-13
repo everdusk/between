@@ -360,7 +360,7 @@ export const vi: Catalog = {
   botWeekOpen: "Mở tuần",
   botPickButton: "Bấm nút bên dưới.",
   botHelp:
-    "Tôi là Between — nhật ký để bạn không đến buổi trị liệu với đầu trống rỗng.\n\nViết suy nghĩ và cảm xúc ngay trong chat này — mọi thứ được lưu.\nMỗi ngày vài lần tôi hỏi tâm trạng — đánh dấu bằng một lần chạm.\nTuần xếp thành một bức tranh: thấy điều gì lặp lại.\n\n7 ngày đầu miễn phí, sau đó {price} ₽ một tháng.\n\nĐến buổi trị liệu tôi gom lại thành bản tóm tắt — không phải nhớ chuyện gì đã xảy ra. Để bắt đầu, tôi hỏi vài câu.",
+    "Tôi là Between — nhật ký để bạn không đến buổi trị liệu với đầu trống rỗng.\n\nViết suy nghĩ và cảm xúc ngay trong chat này — mọi thứ được lưu.\nMỗi ngày vài lần tôi hỏi tâm trạng — đánh dấu bằng một lần chạm.\nTuần xếp thành một bức tranh: thấy điều gì lặp lại.\n\n7 ngày đầu miễn phí, sau đó {price} ⭐ một tháng.\n\nĐến buổi trị liệu tôi gom lại thành bản tóm tắt — không phải nhớ chuyện gì đã xảy ra. Để bắt đầu, tôi hỏi vài câu.",
   botHelpMax:
     "Tôi là Between — nhật ký để bạn không đến buổi trị liệu với đầu trống rỗng.\n\nViết suy nghĩ và cảm xúc ngay trong chat này — mọi thứ được lưu.\nMỗi ngày vài lần tôi hỏi tâm trạng — đánh dấu bằng một lần chạm.\nTuần xếp thành một bức tranh: thấy điều gì lặp lại.\n\n7 ngày đầu miễn phí, sau đó {price} ₽ một tháng.\n\nĐến buổi trị liệu tôi gom lại thành bản tóm tắt — không phải nhớ chuyện gì đã xảy ra. Để bắt đầu, tôi hỏi vài câu.",
   botUnknown: "Gửi chữ, tôi lưu thành ghi chép.",

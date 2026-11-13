@@ -365,7 +365,7 @@ export const en: Catalog = {
   botWeekOpen: "Open the week",
   botPickButton: "Tap a button below.",
   botHelp:
-    "I'm Between — a journal so you don't come to a session with an empty head.\n\nWrite your thoughts and feelings right in this chat — they are saved.\nA couple of times a day I'll ask how you feel — mark it in one tap.\nThe week turns into a picture: you can see what repeats.\n\nThe first 7 days are free, then {price} ₽ a month.\n\nBefore a session I'll gather this into a brief — no need to remember what happened. To start, I'll ask a couple of questions.",
+    "I'm Between — a journal so you don't come to a session with an empty head.\n\nWrite your thoughts and feelings right in this chat — they are saved.\nA couple of times a day I'll ask how you feel — mark it in one tap.\nThe week turns into a picture: you can see what repeats.\n\nThe first 7 days are free, then {price} ⭐ a month.\n\nBefore a session I'll gather this into a brief — no need to remember what happened. To start, I'll ask a couple of questions.",
   botHelpMax:
     "I'm Between — a journal so you don't come to a session with an empty head.\n\nWrite your thoughts and feelings right in this chat — they are saved.\nA couple of times a day I'll ask how you feel — mark it in one tap.\nThe week turns into a picture: you can see what repeats.\n\nThe first 7 days are free, then {price} ₽ a month.\n\nBefore a session I'll gather this into a brief — no need to remember what happened. To start, I'll ask a couple of questions.",
   botUnknown:

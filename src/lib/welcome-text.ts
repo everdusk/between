@@ -1,10 +1,12 @@
 import type { LocaleId } from "./i18n";
 import { translate } from "./messages";
-import { rubPriceFromEnv } from "./week-access";
+import { rubPriceFromEnv, starPriceFromEnv } from "./week-access";
 
-/** Welcome caption. The monthly ruble price comes from WEEK_RUB_PRICE. */
+/** Welcome caption. Telegram uses WEEK_STAR_PRICE, MAX uses WEEK_RUB_PRICE. */
 export function welcomeCaption(locale: LocaleId, kind: "telegram" | "max" = "telegram"): string {
-  return translate(locale, kind === "max" ? "botHelpMax" : "botHelp", {
-    price: rubPriceFromEnv(process.env.WEEK_RUB_PRICE),
-  });
+  const price =
+    kind === "max"
+      ? rubPriceFromEnv(process.env.WEEK_RUB_PRICE)
+      : starPriceFromEnv(process.env.WEEK_STAR_PRICE);
+  return translate(locale, kind === "max" ? "botHelpMax" : "botHelp", { price });
 }

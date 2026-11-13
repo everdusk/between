@@ -360,7 +360,7 @@ export const id: Catalog = {
   botWeekOpen: "Buka minggu",
   botPickButton: "Tekan tombol di bawah.",
   botHelp:
-    "Saya Between — jurnal yang membuat Anda tidak datang ke sesi dengan kepala kosong.\n\nTulis pikiran dan perasaan di chat ini — semuanya tersimpan.\nBeberapa kali sehari saya tanya suasana hati — tandai dengan satu ketukan.\nMinggu tersusun jadi gambaran: terlihat apa yang berulang.\n\n7 hari pertama gratis, selanjutnya {price} ₽ sebulan.\n\nMenjelang sesi saya kumpulkan ini jadi ringkasan — tidak perlu mengingat apa yang terjadi. Untuk mulai, saya ajukan beberapa pertanyaan.",
+    "Saya Between — jurnal yang membuat Anda tidak datang ke sesi dengan kepala kosong.\n\nTulis pikiran dan perasaan di chat ini — semuanya tersimpan.\nBeberapa kali sehari saya tanya suasana hati — tandai dengan satu ketukan.\nMinggu tersusun jadi gambaran: terlihat apa yang berulang.\n\n7 hari pertama gratis, selanjutnya {price} ⭐ sebulan.\n\nMenjelang sesi saya kumpulkan ini jadi ringkasan — tidak perlu mengingat apa yang terjadi. Untuk mulai, saya ajukan beberapa pertanyaan.",
   botHelpMax:
     "Saya Between — jurnal yang membuat Anda tidak datang ke sesi dengan kepala kosong.\n\nTulis pikiran dan perasaan di chat ini — semuanya tersimpan.\nBeberapa kali sehari saya tanya suasana hati — tandai dengan satu ketukan.\nMinggu tersusun jadi gambaran: terlihat apa yang berulang.\n\n7 hari pertama gratis, selanjutnya {price} ₽ sebulan.\n\nMenjelang sesi saya kumpulkan ini jadi ringkasan — tidak perlu mengingat apa yang terjadi. Untuk mulai, saya ajukan beberapa pertanyaan.",
   botUnknown:
