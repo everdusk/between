@@ -75,7 +75,7 @@ export async function answerOnboarding(
   owner: string,
   locale: LocaleId,
   data: string,
-  channel: { userId: number; messenger: "telegram" | "max" },
+  channel: { userId: number; messenger: "telegram" | "max"; username?: string | null },
 ): Promise<OnboardAnswer> {
   const action = parseOnboardCallback(data);
   const current = await loadOnboarding(owner);
@@ -99,12 +99,22 @@ export async function answerOnboarding(
     if (move.feeling) {
       const hour = zonedParts(new Date(), await getUserTimezone(owner)).hour;
       await addCheckinForOwner(owner, checkinSlotForHour(hour), move.feeling);
-      await trackServerEvent({ userId: channel.userId, event: "mood", messenger: channel.messenger });
+      await trackServerEvent({
+        userId: channel.userId,
+        event: "mood",
+        messenger: channel.messenger,
+        username: channel.username,
+      });
     }
     await saveOnboarding(owner, { ...move.state, since: current.since, reminded: current.reminded });
     const choice = trackedChoice(action, move);
     if (choice) {
-      await trackBotFunnel({ userId: channel.userId, messenger: channel.messenger, choice });
+      await trackBotFunnel({
+        userId: channel.userId,
+        messenger: channel.messenger,
+        username: channel.username,
+        choice,
+      });
     }
   } catch {
     return { type: "ignore" };

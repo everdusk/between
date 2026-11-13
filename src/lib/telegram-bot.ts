@@ -99,15 +99,17 @@ let blocksReady = false;
 /** Person who blocked the bot in a private chat. A group kick is not this. */
 export function blockedTelegramUser(update: {
   chat?: { id?: number; type?: string };
-  from?: { id?: number };
+  from?: { id?: number; username?: string };
   old_chat_member?: { status?: string };
   new_chat_member?: { status?: string };
-}): number | null {
+}): { id: number; username?: string } | null {
   if (update.chat?.type !== "private") return null;
   if (update.new_chat_member?.status !== "kicked") return null;
   if (update.old_chat_member?.status === "kicked") return null;
   const userId = update.from?.id ?? update.chat.id;
-  return typeof userId === "number" && userId > 0 ? userId : null;
+  if (typeof userId !== "number" || userId <= 0) return null;
+  const username = update.from?.username?.trim().replace(/^@/, "");
+  return username ? { id: userId, username } : { id: userId };
 }
 
 /**

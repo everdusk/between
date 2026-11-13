@@ -97,6 +97,7 @@ export async function PUT(req: Request) {
       userId: actor.analyticsId,
       event: "plan",
       messenger: actor.messenger,
+      username: actor.telegramUsername,
     });
   }
 

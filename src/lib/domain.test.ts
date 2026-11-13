@@ -1579,14 +1579,23 @@ describe("languages", () => {
     assert.equal(board.inline_keyboard[0][0].text, "anxious");
     assert.equal(board.inline_keyboard[0][0].callback_data, "c:m:0");
     assert.equal(parseFeelingCallback("c:m:0")?.feeling, "тревожно");
-    assert.equal(
+    assert.deepEqual(
+      blockedTelegramUser({
+        chat: { id: 7, type: "private" },
+        from: { id: 7, username: "@Aliatorovskaia" },
+        old_chat_member: { status: "member" },
+        new_chat_member: { status: "kicked" },
+      }),
+      { id: 7, username: "Aliatorovskaia" },
+    );
+    assert.deepEqual(
       blockedTelegramUser({
         chat: { id: 7, type: "private" },
         from: { id: 7 },
         old_chat_member: { status: "member" },
         new_chat_member: { status: "kicked" },
       }),
-      7,
+      { id: 7 },
     );
     assert.equal(
       blockedTelegramUser({

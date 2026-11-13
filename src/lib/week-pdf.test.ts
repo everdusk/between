@@ -183,6 +183,49 @@ describe("deliver week pdf", () => {
     assert.equal(picked, false);
   });
 
+  it("asks Telegram Desktop to save the file and does not open the share sheet", async () => {
+    let shared = false;
+    const saved = { url: "", file_name: "", called: false };
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ ok: true, url: "https://www.between-journal.ru/api/week-pdf/abc" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })) as typeof fetch;
+    try {
+      const outcome = await withChooser(
+        {
+          canShare: () => true,
+          share: async () => {
+            shared = true;
+          },
+        },
+        {
+          Telegram: {
+            WebApp: {
+              platform: "tdesktop",
+              initData: "signed",
+              downloadFile: (params: { url: string; file_name: string }, callback?: (accepted: boolean) => void) => {
+                saved.url = params.url;
+                saved.file_name = params.file_name;
+                saved.called = true;
+                callback?.(true);
+              },
+            },
+          },
+        },
+        () => deliverWeekPdf(file, true),
+      );
+      assert.equal(outcome, "sent");
+      assert.equal(shared, false);
+      assert.equal(saved.called, true);
+      assert.equal(saved.url, "https://www.between-journal.ru/api/week-pdf/abc");
+      assert.equal(saved.file_name, "between-a_b.pdf");
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
+  });
+
   it("asks for another tap when the click has expired, then saves on the next one", async () => {
     let picks = 0;
     const lost = {

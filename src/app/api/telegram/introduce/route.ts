@@ -47,7 +47,12 @@ export async function POST(req: Request) {
         reply_markup: onboardReplyMarkup(quiz.rows),
       });
       if (asked) {
-        await trackBotFunnel({ userId: validated.user.id, messenger: "telegram", choice: { step: "start" } });
+        await trackBotFunnel({
+          userId: validated.user.id,
+          messenger: "telegram",
+          username: validated.user.username,
+          choice: { step: "start" },
+        });
       }
     }
   } catch {

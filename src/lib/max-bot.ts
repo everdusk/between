@@ -95,7 +95,7 @@ export function maxUsername(update: MaxUpdate): string | undefined {
   const user =
     update.update_type === "message_callback"
       ? update.callback?.user
-      : update.update_type === "bot_started"
+      : update.update_type === "bot_started" || update.update_type === "bot_stopped"
         ? update.user
         : update.message?.sender;
   const name = user?.username?.trim().replace(/^@/, "");

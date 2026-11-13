@@ -314,7 +314,7 @@ export async function POST(req: Request) {
     if (redisConfigured()) await rememberUser(maxStorageId(userId));
 
     if (update.update_type === "bot_stopped") {
-      await trackServerEvent({ userId, event: "block", messenger: "max" });
+      await trackServerEvent({ userId, event: "block", messenger: "max", username: maxUsername(update) });
       return NextResponse.json({ ok: true });
     }
 

@@ -632,15 +632,89 @@ function canSendFile(file: File): boolean {
   }
 }
 
+const TELEGRAM_DESKTOP = new Set(["tdesktop", "macos", "weba", "webk", "unigram"]);
+
+type TelegramDesktopSave = {
+  initData: string;
+  downloadFile: (
+    params: { url: string; file_name: string },
+    callback?: (accepted: boolean) => void,
+  ) => void;
+};
+
+/** Desktop Telegram's share sheet cannot list targets, so the client saves the file itself. */
+function telegramDesktop(): TelegramDesktopSave | null {
+  const host = globalThis.window as
+    | {
+        Telegram?: {
+          WebApp?: {
+            platform?: string;
+            initData?: string;
+            downloadFile?: TelegramDesktopSave["downloadFile"];
+          };
+        };
+      }
+    | undefined;
+  const webApp = host?.Telegram?.WebApp;
+  if (!webApp?.downloadFile || !webApp.initData || !webApp.platform) return null;
+  if (!TELEGRAM_DESKTOP.has(webApp.platform)) return null;
+  return { initData: webApp.initData, downloadFile: webApp.downloadFile.bind(webApp) };
+}
+
+async function publishWeekPdf(file: File, initData: string): Promise<string | null> {
+  try {
+    const response = await fetch("/api/week-pdf", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/pdf",
+        "X-Telegram-Init-Data": initData,
+        "X-Week-Pdf-Name": file.name,
+      },
+      body: file,
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as { url?: unknown };
+    return typeof data.url === "string" && data.url.startsWith("https://") ? data.url : null;
+  } catch {
+    return null;
+  }
+}
+
+function handToTelegram(
+  file: File,
+  desktop: TelegramDesktopSave,
+  url: string,
+): Promise<"sent" | "dismissed" | null> {
+  return new Promise((resolve) => {
+    try {
+      desktop.downloadFile({ url, file_name: file.name }, (accepted) => {
+        resolve(accepted === false ? "dismissed" : "sent");
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
 /**
  * Hand the sheet to the system chooser.
  * An embedded viewer cannot save a blob in Telegram, and MAX blocks that page,
  * so the click asks where to send the file.
+ * Desktop Telegram cannot show that chooser, so the file goes through Telegram's own save.
  * `fresh` is true when this call is the start of the click, with the file already built.
  */
 export async function deliverWeekPdf(file: File, fresh: boolean): Promise<"sent" | "dismissed" | "again"> {
+  const desktop = telegramDesktop();
+  if (desktop) {
+    const url = await publishWeekPdf(file, desktop.initData);
+    if (url) {
+      const handed = await handToTelegram(file, desktop, url);
+      if (handed) return handed;
+    }
+  }
+
   const share = globalThis.navigator?.share?.bind(globalThis.navigator);
-  const shareReady = Boolean(share) && canSendFile(file);
+  const shareReady = Boolean(share) && canSendFile(file) && !desktop;
   if (share && shareReady) {
     try {
       await share({ files: [file], title: file.name });
