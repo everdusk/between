@@ -112,6 +112,27 @@ export function blockedTelegramUser(update: {
   return username ? { id: userId, username } : { id: userId };
 }
 
+/** Person who unblocked the bot in a private chat. */
+export function returnedTelegramUser(update: {
+  chat?: { id?: number; type?: string };
+  from?: { id?: number };
+  old_chat_member?: { status?: string };
+  new_chat_member?: { status?: string };
+}): { id: number } | null {
+  if (update.chat?.type !== "private") return null;
+  if (update.old_chat_member?.status !== "kicked") return null;
+  const next = update.new_chat_member?.status;
+  if (!next || next === "kicked" || next === "left") return null;
+  const userId = update.from?.id ?? update.chat.id;
+  if (typeof userId !== "number" || userId <= 0) return null;
+  return { id: userId };
+}
+
+/** Telegram names this when sendMessage fails because the person blocked the bot. */
+export function telegramDeliveryBlocked(description: string): boolean {
+  return /blocked by the user/i.test(description);
+}
+
 /**
  * The production webhook lists update types and leaves blocks out.
  * Add `my_chat_member` without dropping the secret already configured.

@@ -3,15 +3,16 @@ import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale, type Local
 import { addCheckin, appendBotMessageToToday } from "@/lib/journal-server";
 import { feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
 import {
+  forgetBotBlocked,
   getRedis,
   getUserTimezone,
   loadDeviceLocale,
-  loadDigestRun,
   loadUserLocale,
   claimPaymentCharge,
   loadWeekAccess,
   redisConfigured,
   releasePaymentCharge,
+  rememberBotBlocked,
   rememberDeviceLocale,
   rememberUser,
   saveWeekAccess,
@@ -40,7 +41,7 @@ import {
   startPayload,
 } from "@/lib/landing";
 import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
-import { formatDigestRun } from "@/lib/digest";
+import { loadPollDay } from "@/lib/poll-day";
 import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { appUrl } from "@/lib/telegram-auth";
 import { sessionTabUrl } from "@/lib/launch-section";
@@ -57,6 +58,7 @@ import {
   weekOpenKeyboard,
   parseFeelingCallback,
   blockedTelegramUser,
+  returnedTelegramUser,
   ensureTelegramBlocks,
   publishBotCommands,
   telegramRequest,
@@ -472,12 +474,16 @@ export async function POST(req: Request) {
   if (update.my_chat_member) {
     const blocked = blockedTelegramUser(update.my_chat_member);
     if (blocked) {
+      await rememberBotBlocked(blocked.id);
       await trackServerEvent({
         userId: blocked.id,
         event: "block",
         messenger: "telegram",
         username: blocked.username,
       });
+    } else {
+      const returned = returnedTelegramUser(update.my_chat_member);
+      if (returned) await forgetBotBlocked(returned.id);
     }
     return NextResponse.json({ ok: true });
   }
@@ -488,6 +494,7 @@ export async function POST(req: Request) {
   }
 
   if (update.callback_query) {
+    if (update.callback_query.from?.id) await forgetBotBlocked(update.callback_query.from.id);
     await handleCallback(update.callback_query);
     return NextResponse.json({ ok: true });
   }
@@ -505,6 +512,8 @@ export async function POST(req: Request) {
   if (message.chat.type && message.chat.type !== "private") {
     return NextResponse.json({ ok: true });
   }
+
+  if (message.from?.id) await forgetBotBlocked(message.from.id);
 
   const text = (message.text ?? "").trim();
   const chatId = message.chat.id;
@@ -675,7 +684,7 @@ export async function POST(req: Request) {
     const funnel = await botFunnelBlock();
     let digest = "";
     try {
-      digest = `\n\n${formatDigestRun(await loadDigestRun())}`;
+      digest = `\n\n${await loadPollDay()}`;
     } catch {
       digest = "";
     }
