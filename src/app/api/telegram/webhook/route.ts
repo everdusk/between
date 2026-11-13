@@ -6,6 +6,7 @@ import {
   getRedis,
   getUserTimezone,
   loadDeviceLocale,
+  loadDigestRun,
   loadUserLocale,
   claimPaymentCharge,
   loadWeekAccess,
@@ -39,6 +40,7 @@ import {
   startPayload,
 } from "@/lib/landing";
 import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
+import { formatDigestRun } from "@/lib/digest";
 import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { appUrl } from "@/lib/telegram-auth";
 import { sessionTabUrl } from "@/lib/launch-section";
@@ -671,9 +673,16 @@ export async function POST(req: Request) {
       ? formatAnalyticsReport(await loadAnalyticsReport(redis))
       : "Счётчики ещё не пишутся.";
     const funnel = await botFunnelBlock();
+    let digest = "";
+    try {
+      digest = `\n\n${formatDigestRun(await loadDigestRun())}`;
+    } catch {
+      digest = "";
+    }
+    const text = `${funnel ? `${stats}\n\n${funnel}` : stats}${digest}`;
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: funnel ? `${stats}\n\n${funnel}` : stats,
+      text,
       reply_markup: keyboard,
     });
     return NextResponse.json({ ok: true });
