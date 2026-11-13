@@ -347,7 +347,7 @@ async function handlePayment(message: TelegramMessage) {
       throw error;
     }
   }
-  await recordPaidAnalytics(userId, chargeId, new Date(), message.from?.username);
+  await recordPaidAnalytics(userId, chargeId, new Date(), message.from?.username, plan);
   if (!claimed) return;
 
   const { reply } = await localesFor(message.from);

@@ -14,6 +14,7 @@ describe("subscribe analytics", () => {
       plan: "year",
     });
     assert.equal(subscribeProperties({ messenger: "web", step: "nope" }), null);
+    assert.equal(subscribeProperties({ messenger: "max", step: "open" }), null);
     assert.deepEqual(
       subscribeProperties({ messenger: "telegram", step: "pay", plan: "forever", fail: "auth" }),
       { messenger: "telegram", step: "pay" },
