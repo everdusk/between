@@ -202,6 +202,9 @@ export const id: Catalog = {
   planSlot: "{day} pukul {time}",
   weekTitle: "Minggu",
   weekLead: "{range}",
+  weekPdf: "Kirim PDF",
+  weekPdfBusy: "Menyiapkan…",
+  weekPdfFail: "PDF tidak jadi.",
   spectrumLabel: "Spektrum minggu",
   spectrumQuiet: "Masih sunyi",
   spectrumSeveral: "Beberapa keadaan",
@@ -338,10 +341,26 @@ export const id: Catalog = {
     "Pagi, siang, dan sore bot menanyakan kabar Anda. Jika tidak ingin, matikan di tab Sesi.",
   botChatAllow: "Izinkan pesan",
   botOpen: "Buka Between",
+  botSessionOpen: "Pasang tanggal",
+  botAskTherapist: "Apakah Anda bekerja dengan terapis?",
+  botTherapistYes: "Ya",
+  botTherapistNo: "Tidak",
+  botAskDays: "Sesi di hari apa?",
+  botDaysReady: "Lanjut",
+  botNeedDay: "Pilih setidaknya satu hari.",
+  botAskTime: "Jam berapa?",
+  botPlanSaved: "Tersimpan di tab Sesi: {when}.\n\nBagaimana perasaan Anda sekarang?",
+  botNoTherapist:
+    "Jurnal tanpa terapis kurang efektif: tidak ada yang mengurai yang Anda perhatikan. Catatan tetap bisa ditinggal — untuk memantau keadaan dan melihat pola.\n\nBagaimana perasaan Anda sekarang?",
+  botAskNote: "{feeling}. Tulis catatan pertama di sini — beberapa baris tentang saat ini.",
+  botFirstNote: "Tersimpan.\n\nDi tab Minggu sudah terlihat bagaimana catatan masuk ke minggu.",
+  botSessionBriefLead: "Sesi pukul {time}.",
+  botWeekOpen: "Buka minggu",
+  botPickButton: "Tekan tombol di bawah.",
   botHelp:
-    "Between adalah jurnal untuk sesi.\n\nJurnalnya gratis. Teks apa pun di sini menjadi catatan hari ini. Saya bisa bertanya kabarmu pagi, siang, dan malam.\n\nMinggu mengumpulkan spektrum, pola, dan topik untuk sesi. 7 hari pertama setelah membuka tab gratis. Lalu {price} Stars untuk 30 hari.\n\nCatatan suara disimpan sebagai teks hanya setelah Minggu dibayar, sampai 10 sehari. 7 hari gratis tidak mencakupnya.",
+    "Saya Between — jurnal yang membuat Anda tidak datang ke sesi dengan kepala kosong.\n\nTulis pikiran dan perasaan di chat ini — semuanya tersimpan.\nBeberapa kali sehari saya tanya suasana hati — tandai dengan satu ketukan.\nMinggu tersusun jadi gambaran: terlihat apa yang berulang.\n\n7 hari pertama gratis, selanjutnya {price} ₽ sebulan.\n\nMenjelang sesi saya kumpulkan ini jadi ringkasan — tidak perlu mengingat apa yang terjadi. Untuk mulai, saya ajukan beberapa pertanyaan.",
   botHelpMax:
-    "Between adalah jurnal untuk sesi.\n\nJurnalnya gratis. Teks apa pun di sini menjadi catatan hari ini. Saya bisa bertanya kabarmu pagi, siang, dan malam.\n\nMinggu mengumpulkan spektrum, pola, dan topik untuk sesi. 7 hari pertama setelah membuka tab gratis. Lalu {price} ₽ untuk 30 hari, dibayar di situs.\n\nCatatan suara disimpan sebagai teks hanya setelah Minggu dibayar, sampai 10 sehari. 7 hari gratis tidak mencakupnya.",
+    "Saya Between — jurnal yang membuat Anda tidak datang ke sesi dengan kepala kosong.\n\nTulis pikiran dan perasaan di chat ini — semuanya tersimpan.\nBeberapa kali sehari saya tanya suasana hati — tandai dengan satu ketukan.\nMinggu tersusun jadi gambaran: terlihat apa yang berulang.\n\n7 hari pertama gratis, selanjutnya {price} ₽ sebulan.\n\nMenjelang sesi saya kumpulkan ini jadi ringkasan — tidak perlu mengingat apa yang terjadi. Untuk mulai, saya ajukan beberapa pertanyaan.",
   botUnknown:
     "Kirim teks, saya simpan sebagai catatan.",
   botNotReady:

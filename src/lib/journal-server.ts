@@ -8,6 +8,7 @@ import {
 import { resolveJournalId } from "./web-account-store";
 import type { CheckinSlot, Feeling, JournalEntry, TherapyStore } from "./types";
 import { emptyStore } from "./types";
+import { weeklySessionPlan } from "./session-plan";
 import { todayInTimeZone } from "./zoned";
 
 export { timeLabelInZone, todayInTimeZone } from "./zoned";
@@ -49,6 +50,19 @@ export async function appendBotMessageForOwner(
   };
   await saveUserStore(owner, next);
   return { date, store: next };
+}
+
+/** Writes the weekly session rhythm onto the journal the Sessions tab reads. */
+export async function saveWeeklyPlanForOwner(
+  owner: string,
+  days: number[],
+  time: string,
+): Promise<boolean> {
+  const sessionPlan = weeklySessionPlan(days, time, new Date().toISOString());
+  if (!sessionPlan) return false;
+  const store = await loadUserStore(owner);
+  await saveUserStore(owner, { ...store, sessionPlan });
+  return true;
 }
 
 export async function addCheckin(

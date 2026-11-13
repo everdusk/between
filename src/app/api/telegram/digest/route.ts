@@ -10,7 +10,7 @@ import {
   slotForHour,
   type DigestRun,
 } from "@/lib/digest";
-import { resolveBotLocale } from "@/lib/i18n";
+import { resolveBotLocale, type LocaleId } from "@/lib/i18n";
 import {
   claimDigestSlot,
   getUserTimezone,
@@ -18,17 +18,81 @@ import {
   loadDeviceLocale,
   loadUserLocale,
   loadUserStore,
+  loadWeekAccess,
   redisConfigured,
   releaseDigestSlot,
   saveDigestRun,
 } from "@/lib/redis";
 import { resolveJournalId, resolveMaxJournalId } from "@/lib/web-account-store";
-import { ensureMaxSubscription, maxFeelingKeyboard, maxToken, sendMaxMessage } from "@/lib/max-bot";
-import { ensureTelegramBlocks, feelingKeyboard, telegramRequest } from "@/lib/telegram-bot";
+import { ensureMaxSubscription, maxFeelingKeyboard, maxToken, sendMaxDocument, sendMaxMessage, weekOpenKeyboard as maxWeekKeyboard } from "@/lib/max-bot";
+import { accessForUser } from "@/lib/week-access";
+import { sessionBriefDue, SESSION_BRIEF_SLOT, sessionPdfActive, sessionPdfCaption, sessionPdfOpen } from "@/lib/session-brief";
+import { renderSessionPdf, sessionPeriodNoteCount } from "@/lib/session-pdf";
+import { prepareSessionSheet, rememberSessionSheet } from "@/lib/session-sheet";
+import { appUrl } from "@/lib/telegram-auth";
+import { ensureTelegramBlocks, feelingKeyboard, sendTelegramDocument, telegramRequest, weekOpenKeyboard } from "@/lib/telegram-bot";
+import type { TherapyStore } from "@/lib/types";
 import { zonedParts } from "@/lib/zoned";
 
 /** The hourly run walks every user. The default function limit cut the tail of the list off. */
 export const maxDuration = 60;
+
+async function deliverSessionPdf(input: {
+  channel: "telegram" | "max";
+  userId: string;
+  owner: string;
+  actorId: number;
+  maxId: number | null;
+  dateKey: string;
+  hour: number;
+  now: Date;
+  store: TherapyStore;
+  locale: LocaleId;
+}): Promise<boolean> {
+  const due = sessionBriefDue({ plan: input.store.sessionPlan, dateKey: input.dateKey, hour: input.hour });
+  if (!due) return false;
+  const access = accessForUser(
+    await loadWeekAccess(input.owner),
+    { id: input.actorId },
+    process.env.WEEK_EXEMPT_USER_IDS,
+    input.now,
+  );
+  if (!sessionPdfOpen(access.view.status)) return false;
+  const notes = sessionPeriodNoteCount(input.store, input.dateKey, input.now);
+  if (!sessionPdfActive(notes)) return false;
+  const claimed = await claimDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
+  if (!claimed) return false;
+  try {
+    const sheet = await prepareSessionSheet(
+      input.store,
+      input.locale,
+      input.dateKey,
+      input.now,
+      input.owner,
+    );
+    await rememberSessionSheet(input.owner, sheet, input.now);
+    const pdf = await renderSessionPdf(input.store, input.locale, input.dateKey, input.now, sheet);
+    const caption = sessionPdfCaption(input.locale, due.time);
+    const ok =
+      input.channel === "max" && input.maxId
+        ? await sendMaxDocument(input.maxId, pdf.filename, pdf.bytes, caption, maxWeekKeyboard(input.locale))
+        : await sendTelegramDocument(
+            Number(input.userId),
+            pdf.filename,
+            pdf.bytes,
+            caption,
+            weekOpenKeyboard(appUrl(), input.locale),
+          );
+    if (!ok) {
+      await releaseDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
+      return false;
+    }
+    return true;
+  } catch {
+    await releaseDigestSlot(input.userId, input.dateKey, SESSION_BRIEF_SLOT);
+    return false;
+  }
+}
 
 function authorized(req: Request): boolean {
   const secret = process.env.CRON_SECRET?.trim();
@@ -37,19 +101,21 @@ function authorized(req: Request): boolean {
   return header === `Bearer ${secret}`;
 }
 
-type Outcome = "sent" | "skipped" | "failed" | "error";
+type Tally = { sent: number; skipped: number; failed: number; error: number };
+
+const EMPTY_TALLY: Tally = { sent: 0, skipped: 0, failed: 0, error: 0 };
 
 async function digestUser(
   userId: string,
   now: Date,
   channels: { telegram: boolean; max: boolean },
-): Promise<Outcome> {
+): Promise<Tally> {
   const channel = digestChannel(userId);
-  if (!channel) return "skipped";
-  if (channel === "telegram" && !channels.telegram) return "skipped";
-  if (channel === "max" && !channels.max) return "skipped";
+  if (!channel) return { ...EMPTY_TALLY, skipped: 1 };
+  if (channel === "telegram" && !channels.telegram) return { ...EMPTY_TALLY, skipped: 1 };
+  if (channel === "max" && !channels.max) return { ...EMPTY_TALLY, skipped: 1 };
   const maxId = channel === "max" ? maxUserIdFromDigest(userId) : null;
-  if (channel === "max" && !maxId) return "skipped";
+  if (channel === "max" && !maxId) return { ...EMPTY_TALLY, skipped: 1 };
 
   const owner =
     channel === "max" && maxId
@@ -58,10 +124,26 @@ async function digestUser(
   const timeZone = await getUserTimezone(owner);
   const clock = zonedParts(now, timeZone);
   const store = await loadUserStore(owner);
+  const locale =
+    channel === "max"
+      ? "ru"
+      : resolveBotLocale(await loadUserLocale(owner), await loadDeviceLocale(owner), null);
+  const pdfSent = await deliverSessionPdf({
+    channel,
+    userId,
+    owner,
+    actorId: channel === "max" && maxId ? maxId : Number(userId),
+    maxId,
+    dateKey: clock.dateKey,
+    hour: clock.hour,
+    now,
+    store,
+    locale,
+  });
   const exact = slotForHour(clock.hour);
   const due = exact ? null : duePoll({ store, dateKey: clock.dateKey, hour: clock.hour });
   const slotName = exact ?? due;
-  if (!slotName) return "skipped";
+  if (!slotName) return pdfSent ? { ...EMPTY_TALLY, sent: 1 } : { ...EMPTY_TALLY, skipped: 1 };
 
   const claimed = await claimDigestSlot(userId, clock.dateKey, slotName);
   const action = exact
@@ -74,12 +156,8 @@ async function digestUser(
     : claimed && due
       ? { type: "poll" as const, slot: due }
       : { type: "skip" as const };
-  if (action.type === "skip") return "skipped";
+  if (action.type === "skip") return pdfSent ? { ...EMPTY_TALLY, sent: 1 } : { ...EMPTY_TALLY, skipped: 1 };
 
-  const locale =
-    channel === "max"
-      ? "ru"
-      : resolveBotLocale(await loadUserLocale(owner), await loadDeviceLocale(owner), null);
   const ok =
     channel === "max" && maxId
       ? action.type === "poll"
@@ -98,9 +176,9 @@ async function digestUser(
 
   if (!ok) {
     await releaseDigestSlot(userId, clock.dateKey, slotName);
-    return "failed";
+    return pdfSent ? { ...EMPTY_TALLY, sent: 1 } : { ...EMPTY_TALLY, failed: 1 };
   }
-  return "sent";
+  return { ...EMPTY_TALLY, sent: pdfSent ? 2 : 1 };
 }
 
 async function runDigest() {
@@ -120,14 +198,19 @@ async function runDigest() {
 
   const now = new Date();
   const userIds = await listUserIds();
-  const counts: Record<Outcome, number> = { sent: 0, skipped: 0, failed: 0, error: 0 };
+  const counts: Tally = { ...EMPTY_TALLY };
 
   for (let index = 0; index < userIds.length; index += DIGEST_BATCH) {
     const batch = userIds.slice(index, index + DIGEST_BATCH);
     const outcomes = await Promise.all(
-      batch.map((userId) => digestUser(userId, now, channels).catch((): Outcome => "error")),
+      batch.map((userId) => digestUser(userId, now, channels).catch((): Tally => ({ ...EMPTY_TALLY, error: 1 }))),
     );
-    for (const outcome of outcomes) counts[outcome] += 1;
+    for (const outcome of outcomes) {
+      counts.sent += outcome.sent;
+      counts.skipped += outcome.skipped;
+      counts.failed += outcome.failed;
+      counts.error += outcome.error;
+    }
   }
 
   const run: DigestRun = {

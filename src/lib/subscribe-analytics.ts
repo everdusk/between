@@ -9,6 +9,7 @@ import {
   type SubscribeFail,
   type SubscribeStep,
 } from "./analytics-model";
+import { analyticsStaysQuiet } from "./analytics-client";
 import { readPosthogBrowserConfig } from "./posthog-env";
 
 export { parseSubscribeEvent, subscribeEventName };
@@ -65,6 +66,7 @@ export function captureSubscribe(input: {
   fail?: SubscribeFail;
 }): void {
   if (typeof window === "undefined") return;
+  if (analyticsStaysQuiet()) return;
   const properties = subscribeProperties(input);
   if (!properties) return;
   const cfg = readPosthogBrowserConfig();

@@ -202,6 +202,9 @@ export const tr: Catalog = {
   planSlot: "{day} {time}",
   weekTitle: "Hafta",
   weekLead: "{range}",
+  weekPdf: "PDF gönder",
+  weekPdfBusy: "Hazırlanıyor…",
+  weekPdfFail: "PDF oluşmadı.",
   spectrumLabel: "Haftanın spektrumu",
   spectrumQuiet: "Şimdilik sessiz",
   spectrumSeveral: "Birkaç durum",
@@ -338,10 +341,26 @@ export const tr: Catalog = {
     "Sabah, öğlen ve akşam bot halinizi sorar. İstemezseniz Seanslar sekmesinden kapatın.",
   botChatAllow: "Mesajlara izin ver",
   botOpen: "Between’i aç",
+  botSessionOpen: "Tarihi koy",
+  botAskTherapist: "Bir terapistle çalışıyor musunuz?",
+  botTherapistYes: "Evet",
+  botTherapistNo: "Hayır",
+  botAskDays: "Seanslar hangi günler?",
+  botDaysReady: "İleri",
+  botNeedDay: "En az bir gün seçin.",
+  botAskTime: "Saat kaçta?",
+  botPlanSaved: "Seanslar sekmesine yazıldı: {when}.\n\nŞu an nasılsınız?",
+  botNoTherapist:
+    "Terapistsiz günlük daha az işe yarar: fark ettiklerinizi açacak kimse yoktur. Yine de not bırakabilirsiniz — durumunuzu izlemek ve örüntüleri görmek için.\n\nŞu an nasılsınız?",
+  botAskNote: "{feeling}. İlk notu buraya yazın — şu an hakkında birkaç satır.",
+  botFirstNote: "Yazıldı.\n\nHafta sekmesinde notun haftaya nasıl oturduğu görünüyor.",
+  botSessionBriefLead: "Seans {time}.",
+  botWeekOpen: "Haftayı aç",
+  botPickButton: "Aşağıdaki düğmeye basın.",
   botHelp:
-    "Between, seans için bir günlük.\n\nGünlük ücretsiz. Buradaki her metin bugünün notu olur. Sabah, öğlen ve akşam nasıl olduğunu sorabilirim.\n\nHafta, spektrumu, örüntüyü ve seans konularını toplar. Sekmeyi açtıktan sonraki ilk 7 gün ücretsiz. Sonra 30 gün için {price} Stars.\n\nSesli not, Hafta ödendikten sonra metin olur, günde 10’a kadar. 7 ücretsiz gün bunu kapsamaz.",
+    "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nDüşüncelerini ve hislerini bu sohbete yaz — hepsi saklanır.\nGünde bir iki kez ruh halini sorarım — bir dokunuşla işaretle.\nHafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nİlk 7 gün ücretsiz, sonrası ayda {price} ₽.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Başlangıç için birkaç soru soracağım.",
   botHelpMax:
-    "Between, seans için bir günlük.\n\nGünlük ücretsiz. Buradaki her metin bugünün notu olur. Sabah, öğlen ve akşam nasıl olduğunu sorabilirim.\n\nHafta, spektrumu, örüntüyü ve seans konularını toplar. Sekmeyi açtıktan sonraki ilk 7 gün ücretsiz. Sonra sitede 30 gün için {price} ₽.\n\nSesli not, Hafta ödendikten sonra metin olur, günde 10’a kadar. 7 ücretsiz gün bunu kapsamaz.",
+    "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nDüşüncelerini ve hislerini bu sohbete yaz — hepsi saklanır.\nGünde bir iki kez ruh halini sorarım — bir dokunuşla işaretle.\nHafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nİlk 7 gün ücretsiz, sonrası ayda {price} ₽.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Başlangıç için birkaç soru soracağım.",
   botUnknown:
     "Metin yazın, not olarak kaydederim.",
   botNotReady:

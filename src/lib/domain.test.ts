@@ -91,6 +91,7 @@ import {
   rubPriceFromEnv,
   starPriceFromEnv,
   TRIAL_MS,
+  canPreviewPaywall,
   voiceNotesOpen,
   whitelistSpan,
 } from "./week-access";
@@ -1366,6 +1367,8 @@ describe("week access", () => {
     assert.equal(isWeekAccessExempt({ id: 42 }, "12.5"), false);
     assert.equal(whitelistSpan({ id: 1, username: "@Aliatorovskaia" }), "forever");
     assert.equal(whitelistSpan({ id: 7, username: "odinzrage" }), null);
+    assert.equal(canPreviewPaywall({ id: 1, username: "@Aliatorovskaia" }), true);
+    assert.equal(canPreviewPaywall({ id: 7, username: "odinzrage" }), false);
 
     const forever = describeWeekAccess(opened, now, 150, { grant: "forever" });
     assert.equal(forever.premium, "forever");
@@ -1550,15 +1553,16 @@ describe("languages", () => {
     assert.equal(resolveGreetingLocale("en-US", "ru", "hi"), "en");
     assert.equal(resolveGreetingLocale(null, "id", "ru"), "id");
     assert.equal(resolveGreetingLocale(undefined, null, "de"), "ru");
+    const help = translate("ru", "botHelp");
     assert.equal(
-      translate("ru", "botHelp").split("\n")[0],
-      "Between — дневник к сеансу.",
+      help.split("\n")[0],
+      "Я Between — дневник, с которым на сессию не приходишь с пустой головой.",
     );
-    const help = translate("ru", "botHelp", { price: 150 });
-    assert.match(help, /Первые 7 дней/);
-    assert.match(help, /150 Stars на 30 дней/);
-    assert.match(help, /до 10 в день/);
-    assert.match(help, /Пробные 7 дней/);
+    assert.match(help, /Для начала задам пару вопросов\.$/);
+    assert.equal(help, translate("ru", "botHelpMax"));
+    assert.doesNotMatch(help, /Stars/);
+    assert.match(help, /\{price\} ₽ в месяц/);
+    assert.equal(translate("en", "botSessionOpen"), "Set the date");
     assert.equal(isBotCommand("/paysupport", "paysupport"), true);
     assert.equal(isBotCommand("/paysupport@BetweenJournalBot", "paysupport"), true);
     assert.equal(isBotCommand("/PaySupport refund", "paysupport"), true);
@@ -1572,14 +1576,23 @@ describe("languages", () => {
     assert.equal(board.inline_keyboard[0][0].text, "anxious");
     assert.equal(board.inline_keyboard[0][0].callback_data, "c:m:0");
     assert.equal(parseFeelingCallback("c:m:0")?.feeling, "тревожно");
-    assert.equal(
+    assert.deepEqual(
+      blockedTelegramUser({
+        chat: { id: 7, type: "private" },
+        from: { id: 7, username: "@Aliatorovskaia" },
+        old_chat_member: { status: "member" },
+        new_chat_member: { status: "kicked" },
+      }),
+      { id: 7, username: "Aliatorovskaia" },
+    );
+    assert.deepEqual(
       blockedTelegramUser({
         chat: { id: 7, type: "private" },
         from: { id: 7 },
         old_chat_member: { status: "member" },
         new_chat_member: { status: "kicked" },
       }),
-      7,
+      { id: 7 },
     );
     assert.equal(
       blockedTelegramUser({

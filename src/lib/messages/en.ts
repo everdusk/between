@@ -202,6 +202,9 @@ export const en: Catalog = {
   planSlot: "{day} at {time}",
   weekTitle: "Week",
   weekLead: "{range}",
+  weekPdf: "Send PDF",
+  weekPdfBusy: "Preparing…",
+  weekPdfFail: "The PDF did not come together.",
   spectrumLabel: "Week spectrum",
   spectrumQuiet: "Quiet so far",
   spectrumSeveral: "Several states",
@@ -345,10 +348,26 @@ export const en: Catalog = {
     "Morning, afternoon, and evening, the bot asks how you are. If you would rather not, turn it off on the Sessions tab.",
   botChatAllow: "Allow messages",
   botOpen: "Open Between",
+  botSessionOpen: "Set the date",
+  botAskTherapist: "Do you work with a therapist?",
+  botTherapistYes: "Yes",
+  botTherapistNo: "No",
+  botAskDays: "Which days are the sessions?",
+  botDaysReady: "Next",
+  botNeedDay: "Choose at least one day.",
+  botAskTime: "What time?",
+  botPlanSaved: "Saved on the Sessions tab: {when}.\n\nHow are you right now?",
+  botNoTherapist:
+    "A journal without a therapist does less: there is no one to go through what you notice. You can still leave notes, to watch your state and see what repeats.\n\nHow are you right now?",
+  botAskNote: "{feeling}. Write the first note right here — a couple of lines about right now.",
+  botFirstNote: "Saved.\n\nThe Week tab already shows how a note sits in the week.",
+  botSessionBriefLead: "Session at {time}.",
+  botWeekOpen: "Open the week",
+  botPickButton: "Tap a button below.",
   botHelp:
-    "Between is a journal for the session.\n\nThe journal is free. Any text here becomes a note for today. I can ask how you are in the morning, afternoon, and evening.\n\nWeek gathers the spectrum, the pattern, and topics for the session. The first 7 days after you open the tab are free. Then {price} Stars for 30 days.\n\nA voice note is saved as text only after Week is paid, up to 10 a day. The 7 free days do not include it.",
+    "I'm Between — a journal so you don't come to a session with an empty head.\n\nWrite your thoughts and feelings right in this chat — they are saved.\nA couple of times a day I'll ask how you feel — mark it in one tap.\nThe week turns into a picture: you can see what repeats.\n\nThe first 7 days are free, then {price} ₽ a month.\n\nBefore a session I'll gather this into a brief — no need to remember what happened. To start, I'll ask a couple of questions.",
   botHelpMax:
-    "Between is a journal for the session.\n\nThe journal is free. Any text here becomes a note for today. I can ask how you are in the morning, afternoon, and evening.\n\nWeek gathers the spectrum, the pattern, and topics for the session. The first 7 days after you open the tab are free. Then {price} ₽ for 30 days, paid on the site.\n\nA voice note is saved as text only after Week is paid, up to 10 a day. The 7 free days do not include it.",
+    "I'm Between — a journal so you don't come to a session with an empty head.\n\nWrite your thoughts and feelings right in this chat — they are saved.\nA couple of times a day I'll ask how you feel — mark it in one tap.\nThe week turns into a picture: you can see what repeats.\n\nThe first 7 days are free, then {price} ₽ a month.\n\nBefore a session I'll gather this into a brief — no need to remember what happened. To start, I'll ask a couple of questions.",
   botUnknown:
     "Send text and I will save a note.",
   botNotReady:

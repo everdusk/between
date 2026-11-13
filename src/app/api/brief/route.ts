@@ -489,12 +489,103 @@ async function aitunnel(
   };
 }
 
+export async function completeBrief(input: {
+  userId: string;
+  facts: string;
+  stamp: string;
+  locale: LocaleId;
+  kind: BriefKind;
+}): Promise<{ text: string | null; reason?: string; detail?: string }> {
+  const facts = input.facts.trim();
+  const stamp = input.stamp.trim();
+  const locale = input.locale;
+  const kind = input.kind;
+  const userId = input.userId;
+  const limits: GenLimits =
+    kind === "backlog"
+      ? { temperature: 0.2, maxTokens: 700 }
+      : kind === "themes"
+        ? { temperature: 0.1, maxTokens: 2000 }
+        : kind === "judge"
+          ? { temperature: 0.1, maxTokens: 400 }
+          : kind === "dedup"
+            ? { temperature: 0.1, maxTokens: 220 }
+            : kind === "pattern"
+              ? { temperature: 0.2, maxTokens: 220 }
+              : { temperature: 0.2, maxTokens: 480 };
+  const system = briefSystemPrompt(locale, kind);
+  if (!facts || facts.length > 4000 || !stamp || stamp.length > 64) {
+    return { text: null, reason: "invalid_brief" };
+  }
+
+  const tunnelConfigured = Boolean(process.env.AITUNNEL_API_KEY?.trim());
+  const tunnelKey = normalizeAitunnelKey(process.env.AITUNNEL_API_KEY);
+  const geminiKey = process.env.GEMINI_API_KEY?.trim();
+  const groqKey = process.env.GROQ_API_KEY?.trim();
+  async function remembered() {
+    if (!redisConfigured()) return null;
+    return textAfterModelFailure(await getLatestBrief(userId, kind), kind);
+  }
+  if (redisConfigured()) {
+    const cached = await getCachedBrief(userId, stamp);
+    if (cached && (kind !== "pattern" || patternReplyUsable(cached))) {
+      return { text: cached };
+    }
+  }
+  if (!tunnelConfigured && !geminiKey && !groqKey) {
+    const earlier = await remembered();
+    if (earlier) return { text: earlier };
+    return { text: null, reason: "no_model" };
+  }
+  if (tunnelConfigured && aitunnelKeyProblem(tunnelKey)) {
+    const earlier = await remembered();
+    if (earlier) return { text: earlier };
+    return { text: null, reason: "model_failed", detail: "aitunnel_key_shape" };
+  }
+
+  const budget = modelBudget(kind);
+  const day = todayInTimeZone(null);
+  if (redisConfigured()) {
+    const allowed = await takeBriefAttempt(userId, day, budget.limit, budget.bucket);
+    if (!allowed) {
+      const earlier = await remembered();
+      if (earlier) return { text: earlier };
+      return { text: null, reason: "limit" };
+    }
+  }
+
+  const result = tunnelKey
+    ? await aitunnel(facts, tunnelKey, system, kind, limits)
+    : geminiKey
+      ? await gemini(facts, geminiKey, system, kind, limits)
+      : await groq(facts, groqKey as string, system, kind, limits);
+
+  let text = result.text;
+  if (!text && !tunnelKey && geminiKey && groqKey) {
+    text = (await groq(facts, groqKey, system, kind, limits)).text;
+  }
+
+  if (!text) {
+    const earlier = await remembered();
+    if (earlier) return { text: earlier };
+    return { text: null, reason: "model_failed", detail: result.detail };
+  }
+
+  if (kind === "pattern" && !patternReplyUsable(text)) {
+    return { text: null, reason: "thin" };
+  }
+
+  if (redisConfigured()) {
+    await cacheBrief(userId, stamp, text, kind);
+  }
+  return { text };
+}
+
 export async function POST(req: Request) {
   const actor = await actorFromRequest(req);
   if (!actor) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
-  const userId = actor.id;
 
   let body: unknown;
   try {
@@ -519,92 +610,17 @@ export async function POST(req: Request) {
     payload.kind === "pattern"
       ? payload.kind
       : "brief";
-  const limits: GenLimits =
-    kind === "backlog"
-      ? { temperature: 0.2, maxTokens: 700 }
-      : kind === "themes"
-        ? { temperature: 0.1, maxTokens: 2000 }
-        : kind === "judge"
-          ? { temperature: 0.1, maxTokens: 400 }
-          : kind === "dedup"
-            ? { temperature: 0.1, maxTokens: 220 }
-            : kind === "pattern"
-              ? { temperature: 0.2, maxTokens: 220 }
-              : { temperature: 0.2, maxTokens: 480 };
-  const system = briefSystemPrompt(locale, kind);
   if (!facts || facts.length > 4000 || !stamp || stamp.length > 64) {
     return NextResponse.json({ ok: false, error: "invalid_brief" }, { status: 400 });
   }
-
-  const tunnelConfigured = Boolean(process.env.AITUNNEL_API_KEY?.trim());
-  const tunnelKey = normalizeAitunnelKey(process.env.AITUNNEL_API_KEY);
-  const geminiKey = process.env.GEMINI_API_KEY?.trim();
-  const groqKey = process.env.GROQ_API_KEY?.trim();
-  async function remembered() {
-    if (!redisConfigured()) return null;
-    return textAfterModelFailure(await getLatestBrief(userId, kind), kind);
+  const result = await completeBrief({ userId: actor.id, facts, stamp, locale, kind });
+  if (result.reason === "invalid_brief") {
+    return NextResponse.json({ ok: false, error: "invalid_brief" }, { status: 400 });
   }
-  if (redisConfigured()) {
-    const cached = await getCachedBrief(userId, stamp);
-    if (cached && (kind !== "pattern" || patternReplyUsable(cached))) {
-      return NextResponse.json({ ok: true, text: cached, cached: true });
-    }
-  }
-  if (!tunnelConfigured && !geminiKey && !groqKey) {
-    const earlier = await remembered();
-    if (earlier) return NextResponse.json({ ok: true, text: earlier, cached: true });
-    return NextResponse.json({ ok: true, text: null, reason: "no_model" });
-  }
-  if (tunnelConfigured && aitunnelKeyProblem(tunnelKey)) {
-    const earlier = await remembered();
-    if (earlier) return NextResponse.json({ ok: true, text: earlier, cached: true });
-    return NextResponse.json({
-      ok: true,
-      text: null,
-      reason: "model_failed",
-      detail: "aitunnel_key_shape",
-    });
-  }
-
-  const budget = modelBudget(kind);
-  const day = todayInTimeZone(null);
-  if (redisConfigured()) {
-    const allowed = await takeBriefAttempt(userId, day, budget.limit, budget.bucket);
-    if (!allowed) {
-      const earlier = await remembered();
-      if (earlier) return NextResponse.json({ ok: true, text: earlier, cached: true });
-      return NextResponse.json({ ok: true, text: null, reason: "limit" });
-    }
-  }
-
-  const result = tunnelKey
-    ? await aitunnel(facts, tunnelKey, system, kind, limits)
-    : geminiKey
-      ? await gemini(facts, geminiKey, system, kind, limits)
-      : await groq(facts, groqKey as string, system, kind, limits);
-
-  let text = result.text;
-  if (!text && !tunnelKey && geminiKey && groqKey) {
-    text = (await groq(facts, groqKey, system, kind, limits)).text;
-  }
-
-  if (!text) {
-    const earlier = await remembered();
-    if (earlier) return NextResponse.json({ ok: true, text: earlier, cached: true });
-    return NextResponse.json({
-      ok: true,
-      text: null,
-      reason: "model_failed",
-      detail: result.detail,
-    });
-  }
-
-  if (kind === "pattern" && !patternReplyUsable(text)) {
-    return NextResponse.json({ ok: true, text: null, reason: "thin" });
-  }
-
-  if (redisConfigured()) {
-    await cacheBrief(userId, stamp, text, kind);
-  }
-  return NextResponse.json({ ok: true, text });
+  return NextResponse.json({
+    ok: true,
+    text: result.text,
+    ...(result.reason ? { reason: result.reason } : {}),
+    ...(result.detail ? { detail: result.detail } : {}),
+  });
 }

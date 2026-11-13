@@ -8,6 +8,7 @@ import {
   SBP_MCC,
   SBP_MERCHANT_ID,
   sbpCatalog,
+  sbpCapturedAt,
   sbpPaid,
   sbpQrPayload,
   yookassaPaymentBody,
@@ -63,7 +64,20 @@ describe("sbp checkout", () => {
     assert.equal(sbpQrPayload({ confirmation: { type: "qr", confirmation_data: "https://qr.nspk.ru/AS1" } }), "https://qr.nspk.ru/AS1");
     assert.equal(sbpQrPayload({ confirmation: { type: "redirect", confirmation_data: "https://qr.nspk.ru/AS1" } }), null);
     assert.equal(sbpQrPayload({ confirmation: { type: "qr", confirmation_data: "https://evil.example/qr" } }), null);
-    assert.ok(sbpPaid(payment()));
+    const paid = sbpPaid(payment());
+    assert.equal(paid?.messenger, "web");
+    assert.equal(sbpPaid(payment({ paid: undefined }))?.id, paid?.id);
+    assert.ok(sbpPaid(payment({ amount: { value: "360", currency: "RUB" } })));
+    assert.ok(sbpPaid(payment({ amount: { value: 360, currency: "RUB" } })));
+    const webId = `web:w${"a".repeat(32)}`;
+    assert.equal(
+      sbpPaid(payment({ metadata: { ...payment().metadata, messenger: "max", actorId: webId } }))?.messenger,
+      "max",
+    );
+    assert.equal(
+      sbpCapturedAt({ captured_at: "2026-11-08T21:30:00.000Z" }).toISOString(),
+      "2026-11-08T21:30:00.000Z",
+    );
     assert.equal(sbpPaid(payment({ amount: { value: "1.00", currency: "RUB" } })), null);
     assert.equal(sbpPaid(payment({ metadata: { ...payment().metadata, merchantId: "MA0000000000" } })), null);
     assert.equal(sbpPaid(payment({ status: "pending", paid: false })), null);

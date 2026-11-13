@@ -27,19 +27,28 @@ import {
 import { linkCodeFromStart, loginTokenFromStart } from "@/lib/web-account";
 import { claimTelegramLink, finishTelegramLogin, resolveJournalId } from "@/lib/web-account-store";
 import {
+  answerOnboarding,
+  finishOnboarding,
+  onboardingNoteIntent,
+  openOnboarding,
+  remindOnboarding,
+} from "@/lib/onboarding-flow";
+import {
   isLandingStart,
-  LANDING_COUNT_KEY,
-  landingCount,
-  landingStatsLine,
   rememberLandingSource,
   startPayload,
 } from "@/lib/landing";
+import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
 import { formatDigestRun } from "@/lib/digest";
+import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { appUrl } from "@/lib/telegram-auth";
 import {
   downloadTelegramFile,
   isBotCommand,
   miniAppKeyboard,
+  onboardReplyMarkup,
+  sendTelegramWelcome,
+  weekOpenKeyboard,
   parseFeelingCallback,
   blockedTelegramUser,
   ensureTelegramBlocks,
@@ -47,6 +56,7 @@ import {
   telegramRequest,
 } from "@/lib/telegram-bot";
 import { todayInTimeZone } from "@/lib/zoned";
+import { welcomeCaption } from "@/lib/welcome-text";
 import {
   VOICE_DAILY_LIMIT,
   transcribeVoice,
@@ -114,7 +124,7 @@ type TelegramUpdate = {
   pre_checkout_query?: PreCheckoutQuery;
   my_chat_member?: {
     chat?: { id?: number; type?: string };
-    from?: { id?: number };
+    from?: { id?: number; username?: string };
     old_chat_member?: { status?: string };
     new_chat_member?: { status?: string };
   };
@@ -148,6 +158,32 @@ async function localesFor(user: TelegramUser | undefined): Promise<{
   };
 }
 
+async function sendQuiz(chatId: number, userId: number, locale: LocaleId, username?: string) {
+  if (!redisConfigured()) return;
+  try {
+    const quiz = await openOnboarding(await resolveJournalId(userId), locale);
+    if (!quiz) return;
+    const sent = await telegramRequest("sendMessage", {
+      chat_id: chatId,
+      text: quiz.text,
+      reply_markup: onboardReplyMarkup(quiz.rows),
+    });
+    if (sent) {
+      await trackBotFunnel({ userId, messenger: "telegram", username, choice: { step: "start" } });
+    }
+  } catch {
+    // The welcome already went out.
+  }
+}
+
+async function sendWeekFollow(chatId: number, locale: LocaleId) {
+  await telegramRequest("sendMessage", {
+    chat_id: chatId,
+    text: translate(locale, "botFirstNote"),
+    reply_markup: weekOpenKeyboard(appUrl(), locale),
+  });
+}
+
 export async function GET() {
   return NextResponse.json({
     ok: true,
@@ -158,6 +194,33 @@ export async function GET() {
 }
 
 async function handleCallback(callback: TelegramCallback) {
+  if (callback.data?.startsWith("ob:") && callback.from?.id) {
+    const { reply } = await localesFor(callback.from);
+    const owner = await resolveJournalId(callback.from.id);
+    const result = await answerOnboarding(owner, reply, callback.data, {
+      userId: callback.from.id,
+      messenger: "telegram",
+      username: callback.from.username,
+    });
+    await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
+    if (result.type !== "update" || !callback.message) return;
+    const markup = onboardReplyMarkup(result.rows);
+    if (result.markupOnly) {
+      await telegramRequest("editMessageReplyMarkup", {
+        chat_id: callback.message.chat.id,
+        message_id: callback.message.message_id,
+        reply_markup: markup,
+      });
+      return;
+    }
+    await telegramRequest("editMessageText", {
+      chat_id: callback.message.chat.id,
+      message_id: callback.message.message_id,
+      text: result.text,
+      reply_markup: markup,
+    });
+    return;
+  }
   const login = /^lin:([a-z0-9]{32})$/i.exec(callback.data ?? "");
   if (login && callback.from?.id) {
     const { reply } = await localesFor(callback.from);
@@ -186,7 +249,12 @@ async function handleCallback(callback: TelegramCallback) {
 
   try {
     await addCheckin(callback.from.id, parsed.slot, parsed.feeling);
-    await trackServerEvent({ userId: callback.from.id, event: "mood", messenger: "telegram" });
+    await trackServerEvent({
+      userId: callback.from.id,
+      event: "mood",
+      messenger: "telegram",
+      username: callback.from.username,
+    });
     await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
     if (callback.message) {
       await telegramRequest("editMessageText", {
@@ -228,19 +296,21 @@ async function handlePayment(message: TelegramMessage) {
   const monthly = starPriceFromEnv(process.env.WEEK_STAR_PRICE);
   if (!plan || !starsChargeAccepted(plan, payment.currency, payment.total_amount, monthly)) return;
   const chargeId = payment.telegram_payment_charge_id?.trim() ?? "";
-  if (!chargeId || !(await claimPaymentCharge(chargeId))) return;
-
-  const paidUntil = paidUntilForPlan(plan, new Date(), payment.subscription_expiration_date);
-
-  try {
-    const owner = await resolveJournalId(userId);
-    const current = await loadWeekAccess(owner);
-    await saveWeekAccess(owner, grantWeekPaidUntil(current, paidUntil));
-  } catch (error) {
-    await releasePaymentCharge(chargeId);
-    throw error;
+  if (!chargeId) return;
+  const claimed = await claimPaymentCharge(chargeId);
+  if (claimed) {
+    const paidUntil = paidUntilForPlan(plan, new Date(), payment.subscription_expiration_date);
+    try {
+      const owner = await resolveJournalId(userId);
+      const current = await loadWeekAccess(owner);
+      await saveWeekAccess(owner, grantWeekPaidUntil(current, paidUntil));
+    } catch (error) {
+      await releasePaymentCharge(chargeId);
+      throw error;
+    }
   }
-  await recordPaidAnalytics(userId, chargeId);
+  await recordPaidAnalytics(userId, chargeId, new Date(), message.from?.username);
+  if (!claimed) return;
 
   const { reply } = await localesFor(message.from);
   await telegramRequest("sendMessage", {
@@ -255,7 +325,7 @@ async function handleVoice(
   media: TelegramMedia,
   reply: LocaleId,
   keyboard: ReturnType<typeof miniAppKeyboard>,
-) {
+): Promise<boolean> {
   const chatId = message.chat.id;
   const userId = message.from?.id;
   const say = (text: string) =>
@@ -263,7 +333,7 @@ async function handleVoice(
 
   if (!userId || !botToken() || !redisConfigured()) {
     await say(translate(reply, "botNotReady"));
-    return;
+    return false;
   }
 
   const owner = await resolveJournalId(userId);
@@ -278,30 +348,30 @@ async function handleVoice(
   const premium = resolved.view.status === "paid";
   if (!premium) {
     await say(translate(reply, "botVoicePremium"));
-    return;
+    return false;
   }
 
   if ((media.file_size ?? 0) > 20 * 1024 * 1024) {
     await say(translate(reply, "botVoiceFail"));
-    return;
+    return false;
   }
 
   if (!voiceKeyReady()) {
     await say(translate(reply, "botVoiceNoKey"));
-    return;
+    return false;
   }
 
   const file = await downloadTelegramFile(media.file_id);
   if (!file.ok || file.bytes.byteLength === 0 || file.bytes.byteLength > 20 * 1024 * 1024) {
     await say(translate(reply, "botVoiceFail"));
-    return;
+    return false;
   }
 
   const tz = await getUserTimezone(userId);
   const allowed = await takeBriefAttempt(userId, todayInTimeZone(tz), VOICE_DAILY_LIMIT, "voice");
   if (!allowed) {
     await say(translate(reply, "botVoiceLimit"));
-    return;
+    return false;
   }
 
   const heard = await transcribeVoice({
@@ -319,21 +389,28 @@ async function handleVoice(
             ? "botVoiceNoKey"
             : "botVoiceFail";
     await say(translate(reply, key));
-    return;
+    return false;
   }
 
   const body = voiceNoteBody(heard.text, message.caption);
   if (!body) {
     await say(translate(reply, "botVoiceEmpty"));
-    return;
+    return false;
   }
 
   try {
     await appendBotMessageToToday(userId, body);
-    await trackServerEvent({ userId, event: "note", messenger: "telegram" });
+    await trackServerEvent({
+      userId,
+      event: "note",
+      messenger: "telegram",
+      username: message.from?.username,
+    });
     await say(translate(reply, "botVoiceSaved", { text: voiceReplyPreview(body) }));
+    return true;
   } catch {
     await say(translate(reply, "botSaveFail"));
+    return false;
   }
 }
 
@@ -353,8 +430,15 @@ export async function POST(req: Request) {
   await ensureTelegramBlocks();
 
   if (update.my_chat_member) {
-    const userId = blockedTelegramUser(update.my_chat_member);
-    if (userId) await trackServerEvent({ userId, event: "block", messenger: "telegram" });
+    const blocked = blockedTelegramUser(update.my_chat_member);
+    if (blocked) {
+      await trackServerEvent({
+        userId: blocked.id,
+        event: "block",
+        messenger: "telegram",
+        username: blocked.username,
+      });
+    }
     return NextResponse.json({ ok: true });
   }
 
@@ -390,7 +474,30 @@ export async function POST(req: Request) {
   const media = message.voice ?? message.audio;
 
   if (media) {
-    await handleVoice(message, media, reply, keyboard);
+    const owner = userId && redisConfigured() ? await resolveJournalId(userId) : null;
+    const intent = owner ? await onboardingNoteIntent(owner) : "free";
+    if (intent === "block" && owner) {
+      const reminder = await remindOnboarding(owner, reply);
+      if (reminder) {
+        await telegramRequest("sendMessage", {
+          chat_id: chatId,
+          text: reminder.text,
+          reply_markup: onboardReplyMarkup(reminder.rows),
+        });
+      }
+      return NextResponse.json({ ok: true });
+    }
+    const saved = await handleVoice(message, media, reply, keyboard);
+    if (saved && intent === "finish" && owner && userId) {
+      await sendWeekFollow(chatId, reply);
+      await finishOnboarding(owner);
+      await trackBotFunnel({
+        userId,
+        messenger: "telegram",
+        username: message.from?.username,
+        choice: { step: "note" },
+      });
+    }
     return NextResponse.json({ ok: true });
   }
 
@@ -419,7 +526,12 @@ export async function POST(req: Request) {
         text: translate(reply, key),
         reply_markup: keyboard,
       });
-      await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
+      await trackServerEvent({
+        userId,
+        event: "visit",
+        messenger: "telegram",
+        username: message.from?.username,
+      });
       return NextResponse.json({ ok: true });
     }
     if (userId && isLandingStart(text)) {
@@ -432,14 +544,16 @@ export async function POST(req: Request) {
         }
       }
     }
-    await telegramRequest("sendMessage", {
-      chat_id: chatId,
-      text: translate(greeting, "botHelp", {
-        price: starPriceFromEnv(process.env.WEEK_STAR_PRICE),
-      }),
-      reply_markup: miniAppKeyboard(appUrl(), greeting),
-    });
-    if (userId) await trackServerEvent({ userId, event: "visit", messenger: "telegram" });
+    await sendTelegramWelcome(chatId, welcomeCaption(greeting));
+    if (userId) {
+      await trackServerEvent({
+        userId,
+        event: "visit",
+        messenger: "telegram",
+        username: message.from?.username,
+      });
+      await sendQuiz(chatId, userId, reply, message.from?.username);
+    }
     return NextResponse.json({ ok: true });
   }
 
@@ -480,28 +594,26 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({ ok: true });
     }
+    try {
+      await reconcileSbpPayments();
+    } catch {
+      // The report still renders when a replay cannot reach YooKassa.
+    }
     const redis = analyticsRedis();
     const stats = redis
       ? formatAnalyticsReport(await loadAnalyticsReport(redis))
       : "Счётчики ещё не пишутся.";
-    let landing = "";
-    const sourceRedis = getRedis();
-    if (sourceRedis) {
-      try {
-        landing = landingStatsLine(landingCount(await sourceRedis.get(LANDING_COUNT_KEY)));
-      } catch {
-        landing = "";
-      }
-    }
+    const funnel = await botFunnelBlock();
     let digest = "";
     try {
       digest = `\n\n${formatDigestRun(await loadDigestRun())}`;
     } catch {
       digest = "";
     }
+    const text = `${funnel ? `${stats}\n\n${funnel}` : stats}${digest}`;
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: `${stats}${landing}${digest}`,
+      text,
       reply_markup: keyboard,
     });
     return NextResponse.json({ ok: true });
@@ -538,14 +650,44 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  const owner = await resolveJournalId(userId);
+  const intent = await onboardingNoteIntent(owner);
+  if (intent === "block") {
+    const reminder = await remindOnboarding(owner, reply);
+    if (reminder) {
+      await telegramRequest("sendMessage", {
+        chat_id: chatId,
+        text: reminder.text,
+        reply_markup: onboardReplyMarkup(reminder.rows),
+      });
+    }
+    return NextResponse.json({ ok: true });
+  }
+
   try {
     await appendBotMessageToToday(userId, text);
-    await trackServerEvent({ userId, event: "note", messenger: "telegram" });
-    await telegramRequest("sendMessage", {
-      chat_id: chatId,
-      text: translate(reply, "botSaved"),
-      reply_markup: keyboard,
+    await trackServerEvent({
+      userId,
+      event: "note",
+      messenger: "telegram",
+      username: message.from?.username,
     });
+    if (intent === "finish") {
+      await sendWeekFollow(chatId, reply);
+      await finishOnboarding(owner);
+      await trackBotFunnel({
+        userId,
+        messenger: "telegram",
+        username: message.from?.username,
+        choice: { step: "note" },
+      });
+    } else {
+      await telegramRequest("sendMessage", {
+        chat_id: chatId,
+        text: translate(reply, "botSaved"),
+        reply_markup: keyboard,
+      });
+    }
   } catch {
     await telegramRequest("sendMessage", {
       chat_id: chatId,

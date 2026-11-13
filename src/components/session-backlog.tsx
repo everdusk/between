@@ -6,7 +6,7 @@ import { useI18n } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDayLabel } from "@/lib/dates";
-import { discussedDateKey, splitBacklog } from "@/lib/themes";
+import { discussedDateKey, entriesForTheme, splitBacklog } from "@/lib/themes";
 import type { JournalEntry, SessionTheme, ThemeLink } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -144,17 +144,6 @@ function ThemeRow({
   );
 }
 
-function notesForTheme(theme: SessionTheme, entries: JournalEntry[], links: ThemeLink[]): JournalEntry[] {
-  const ids = new Set<string>();
-  for (const link of links) {
-    if (link.themeId === theme.id) ids.add(link.entryId);
-  }
-  for (const quote of theme.quotes) ids.add(quote.entryId);
-  return entries
-    .filter((entry) => ids.has(entry.id))
-    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
-}
-
 export function SessionBacklog({
   themes,
   entries,
@@ -217,7 +206,7 @@ export function SessionBacklog({
               said={theme.status === "discussed"}
               when={formatDayLabel(theme.lastSeen, locale)}
               open={openId === theme.id}
-              notes={notesForTheme(theme, entries, links)}
+              notes={entriesForTheme(theme, entries, links)}
               disabled={disabled}
               saidLabel={t("backlogSaid")}
               emptyLabel={t("backlogNoNotes")}
@@ -263,7 +252,7 @@ export function SessionBacklog({
                     said
                     when={formatDayLabel(discussedDateKey(theme), locale)}
                     open={openId === theme.id}
-                    notes={notesForTheme(theme, entries, links)}
+                    notes={entriesForTheme(theme, entries, links)}
                     disabled={disabled}
                     saidLabel={t("backlogSaid")}
                     emptyLabel={t("backlogNoNotes")}

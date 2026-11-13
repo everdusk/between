@@ -1,12 +1,59 @@
 import { toDateKey } from "./dates";
-import { planAnalyticsSend, type AnalyticsMessenger, type ClientAnalyticsEvent, type ProductPlan } from "./analytics-model";
-import { captureProduct } from "./product-analytics";
+import {
+  clientMessenger,
+  planAnalyticsSend,
+  quietClientLaunch,
+  type AnalyticsMessenger,
+  type ClientAnalyticsEvent,
+  type ProductPlan,
+} from "./analytics-model";
+import { readMaxInitData } from "./max-webapp";
+
+export { clientMessenger };
 
 const DEVICE_KEY = "between:device";
+const QUIET_KEY = "between:analytics-quiet";
+
+/** Telegram or MAX launch of the stats owner. The website learns the same fact from the server. */
+export function clientAnalyticsQuiet(telegramInit = ""): boolean {
+  if (typeof window === "undefined") return false;
+  return quietClientLaunch({ telegramInit, maxInit: readMaxInitData() });
+}
+
+/** Launch identity, or a website session the server already marked. */
+export function analyticsStaysQuiet(telegramInit = ""): boolean {
+  return clientAnalyticsQuiet(telegramInit) || quietFlag();
+}
+
+function quietFlag(): boolean {
+  try {
+    return localStorage.getItem(QUIET_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function rememberQuiet(response: Response): void {
+  void response
+    .json()
+    .then((body: unknown) => {
+      const quiet = Boolean(body && typeof body === "object" && (body as { quiet?: unknown }).quiet);
+      try {
+        if (quiet) localStorage.setItem(QUIET_KEY, "1");
+        else localStorage.removeItem(QUIET_KEY);
+      } catch {
+        /* private mode */
+      }
+    })
+    .catch(() => undefined);
+}
 
 function storageKeys(messenger: AnalyticsMessenger): { cohort: string; sent: string } {
   if (messenger === "web") {
     return { cohort: "between:analytics-cohort-web", sent: "between:analytics-sent-web" };
+  }
+  if (messenger === "max") {
+    return { cohort: "between:analytics-cohort-max", sent: "between:analytics-sent-max" };
   }
   return { cohort: "between:analytics-cohort", sent: "between:analytics-sent" };
 }
@@ -40,6 +87,7 @@ function deviceToken(): string | null {
 
 /**
  * One funnel step per device per day.
+ * PostHog is written on the server, under the same person as the bot.
  * A Telegram launch stays on `telegram_*`. An empty initData is the website and stays on `web_*`.
  */
 export function trackAnalytics(
@@ -48,7 +96,9 @@ export function trackAnalytics(
   detail?: { plan?: ProductPlan },
 ): void {
   if (typeof window === "undefined") return;
-  const messenger: AnalyticsMessenger = initData ? "telegram" : "web";
+  if (clientAnalyticsQuiet(initData)) return;
+  const maxInit = readMaxInitData();
+  const messenger = clientMessenger(initData, maxInit);
   const keys = storageKeys(messenger);
   let plan: ReturnType<typeof planAnalyticsSend>;
   try {
@@ -59,28 +109,22 @@ export function trackAnalytics(
     return;
   }
   if (!plan.send) return;
-  captureProduct(event, { ...(detail?.plan ? { plan: detail.plan } : {}), messenger });
-  if (messenger === "telegram") {
-    void fetch("/api/analytics", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Telegram-Init-Data": initData,
-      },
-      body: JSON.stringify({ event, cohort: plan.cohort, day: plan.day }),
-      keepalive: true,
-    }).catch(() => undefined);
-    return;
+  const body = JSON.stringify({
+    event,
+    cohort: plan.cohort,
+    day: plan.day,
+    messenger,
+    ...(detail?.plan ? { plan: detail.plan } : {}),
+  });
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (messenger === "telegram") headers["X-Telegram-Init-Data"] = initData;
+  else if (messenger === "max" && maxInit) headers["X-Max-Init-Data"] = maxInit;
+  else {
+    const device = deviceToken();
+    if (!device) return;
+    headers["X-Between-Device"] = device;
   }
-  const device = deviceToken();
-  if (!device) return;
-  void fetch("/api/analytics", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Between-Device": device,
-    },
-    body: JSON.stringify({ event, cohort: plan.cohort, day: plan.day, messenger: "web" }),
-    keepalive: true,
-  }).catch(() => undefined);
+  void fetch("/api/analytics", { method: "POST", headers, body, keepalive: true })
+    .then(rememberQuiet)
+    .catch(() => undefined);
 }

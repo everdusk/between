@@ -202,6 +202,9 @@ export const es: Catalog = {
   planSlot: "{day} a las {time}",
   weekTitle: "Semana",
   weekLead: "{range}",
+  weekPdf: "Enviar PDF",
+  weekPdfBusy: "Preparo…",
+  weekPdfFail: "El PDF no se armó.",
   spectrumLabel: "Espectro de la semana",
   spectrumQuiet: "Todavía en silencio",
   spectrumSeveral: "Varios estados",
@@ -338,10 +341,26 @@ export const es: Catalog = {
     "Por la mañana, por la tarde y por la noche el bot pregunta cómo está. Si no quiere, desactívelo en la pestaña Sesiones.",
   botChatAllow: "Permitir mensajes",
   botOpen: "Abrir Between",
+  botSessionOpen: "Poner la fecha",
+  botAskTherapist: "¿Trabaja con un terapeuta?",
+  botTherapistYes: "Sí",
+  botTherapistNo: "No",
+  botAskDays: "¿Qué días son las sesiones?",
+  botDaysReady: "Seguir",
+  botNeedDay: "Elija al menos un día.",
+  botAskTime: "¿A qué hora?",
+  botPlanSaved: "Guardado en Sesiones: {when}.\n\n¿Cómo está ahora?",
+  botNoTherapist:
+    "Llevar un diario sin terapeuta es menos útil: no hay quien revise lo que nota. Aun así puede dejar notas, para seguir su estado y ver patrones.\n\n¿Cómo está ahora?",
+  botAskNote: "{feeling}. Escriba la primera nota aquí mismo — un par de líneas sobre ahora.",
+  botFirstNote: "Guardado.\n\nEn la pestaña Semana ya se ve cómo queda una nota en la semana.",
+  botSessionBriefLead: "Sesión a las {time}.",
+  botWeekOpen: "Abrir la semana",
+  botPickButton: "Pulse un botón de abajo.",
   botHelp:
-    "Between es un diario para la sesión.\n\nEl diario es gratis. Cualquier texto aquí se vuelve una nota de hoy. Puedo preguntar cómo estás por la mañana, por la tarde y por la noche.\n\nSemana reúne el espectro, el patrón y los temas para la sesión. Los primeros 7 días tras abrir la pestaña son gratis. Luego, {price} Stars por 30 días.\n\nLa nota de voz se guarda como texto solo con la Semana pagada, hasta 10 al día. Los 7 días gratis no la incluyen.",
+    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nEscriba aquí sus pensamientos y lo que siente: todo se guarda.\nUn par de veces al día preguntaré el ánimo: márquelo de un toque.\nLa semana se arma en una imagen: se ve qué se repite.\n\nLos primeros 7 días son gratis; después, {price} ₽ al mes.\n\nAntes de la sesión lo reúno en un resumen: no hará falta recordar qué pasó. Para empezar, haré un par de preguntas.",
   botHelpMax:
-    "Between es un diario para la sesión.\n\nEl diario es gratis. Cualquier texto aquí se vuelve una nota de hoy. Puedo preguntar cómo estás por la mañana, por la tarde y por la noche.\n\nSemana reúne el espectro, el patrón y los temas para la sesión. Los primeros 7 días tras abrir la pestaña son gratis. Luego, {price} ₽ por 30 días, en el sitio.\n\nLa nota de voz se guarda como texto solo con la Semana pagada, hasta 10 al día. Los 7 días gratis no la incluyen.",
+    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nEscriba aquí sus pensamientos y lo que siente: todo se guarda.\nUn par de veces al día preguntaré el ánimo: márquelo de un toque.\nLa semana se arma en una imagen: se ve qué se repite.\n\nLos primeros 7 días son gratis; después, {price} ₽ al mes.\n\nAntes de la sesión lo reúno en un resumen: no hará falta recordar qué pasó. Para empezar, haré un par de preguntas.",
   botUnknown:
     "Escribe un texto y lo guardo como nota.",
   botNotReady:

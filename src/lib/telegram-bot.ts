@@ -1,6 +1,8 @@
 import type { LocaleId } from "./i18n";
+import { weekTabUrl } from "./launch-section";
 import { feelingLabel, translate } from "./messages";
 import { PICKER_FEELINGS, type CheckinSlot } from "./types";
+import { loadWelcomeImage } from "./welcome-photo";
 
 const SLOT_CODE: Record<CheckinSlot, string> = {
   morning: "m",
@@ -45,6 +47,23 @@ export function miniAppKeyboard(url: string, locale: LocaleId = "ru") {
   };
 }
 
+/** Opens the journal on the week, after the first note. */
+export function weekOpenKeyboard(url: string, locale: LocaleId = "ru") {
+  return {
+    inline_keyboard: [[
+      { text: translate(locale, "botWeekOpen"), web_app: { url: weekTabUrl(url) } },
+    ]],
+  };
+}
+
+export function onboardReplyMarkup(rows: { text: string; data: string }[][]) {
+  return {
+    inline_keyboard: rows.map((row) =>
+      row.map((button) => ({ text: button.text, callback_data: button.data })),
+    ),
+  };
+}
+
 /** `/paysupport`, `/paysupport@Bot`, and `/paysupport something`. */
 export function isBotCommand(text: string, name: string): boolean {
   const lower = text.trim().toLowerCase();
@@ -70,15 +89,17 @@ let blocksReady = false;
 /** Person who blocked the bot in a private chat. A group kick is not this. */
 export function blockedTelegramUser(update: {
   chat?: { id?: number; type?: string };
-  from?: { id?: number };
+  from?: { id?: number; username?: string };
   old_chat_member?: { status?: string };
   new_chat_member?: { status?: string };
-}): number | null {
+}): { id: number; username?: string } | null {
   if (update.chat?.type !== "private") return null;
   if (update.new_chat_member?.status !== "kicked") return null;
   if (update.old_chat_member?.status === "kicked") return null;
   const userId = update.from?.id ?? update.chat.id;
-  return typeof userId === "number" && userId > 0 ? userId : null;
+  if (typeof userId !== "number" || userId <= 0) return null;
+  const username = update.from?.username?.trim().replace(/^@/, "");
+  return username ? { id: userId, username } : { id: userId };
 }
 
 /**
@@ -145,6 +166,66 @@ export async function telegramRequest(
 ): Promise<boolean> {
   const result = await telegramCall<unknown>(method, body);
   return result.ok;
+}
+
+/** Welcome with the flow picture. The quiz that follows asks about the session. Text follows if the picture cannot go out. */
+export async function sendTelegramWelcome(
+  chatId: number,
+  caption: string,
+  replyMarkup?: unknown,
+): Promise<boolean> {
+  const text = caption.slice(0, 1024);
+  const bytes = await loadWelcomeImage();
+  const token = process.env.BOT_TOKEN?.trim();
+  if (bytes && token) {
+    const form = new FormData();
+    form.set("chat_id", String(chatId));
+    form.set("caption", text);
+    if (replyMarkup) form.set("reply_markup", JSON.stringify(replyMarkup));
+    form.set("photo", new File([Buffer.from(bytes)], "welcome.png", { type: "image/png" }));
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+        method: "POST",
+        body: form,
+      });
+      const data = (await res.json()) as { ok?: boolean };
+      if (data.ok) return true;
+    } catch {
+      // The text welcome still goes out.
+    }
+  }
+  return telegramRequest("sendMessage", {
+    chat_id: chatId,
+    text,
+    ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+  });
+}
+
+/** The week sheet on the session day. The caption is one line, not the summary. */
+export async function sendTelegramDocument(
+  chatId: number,
+  filename: string,
+  bytes: Uint8Array,
+  caption: string,
+  replyMarkup: unknown,
+): Promise<boolean> {
+  const token = process.env.BOT_TOKEN?.trim();
+  if (!token || bytes.byteLength === 0) return false;
+  const form = new FormData();
+  form.set("chat_id", String(chatId));
+  form.set("caption", caption.slice(0, 1024));
+  form.set("reply_markup", JSON.stringify(replyMarkup));
+  form.set("document", new File([Buffer.from(bytes)], filename, { type: "application/pdf" }));
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
+      method: "POST",
+      body: form,
+    });
+    const data = (await res.json()) as { ok?: boolean };
+    return data.ok === true;
+  } catch {
+    return false;
+  }
 }
 
 /** Downloads a voice or audio file. The bot token stays in the request URL and is not logged. */

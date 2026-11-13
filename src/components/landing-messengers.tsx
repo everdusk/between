@@ -60,7 +60,7 @@ export function MessengerButtons({
 
 export function QrCard({ svg }: { svg: string }) {
   return (
-    <a href="/open" className="bl-qrcard">
+    <div className="bl-qrcard">
       <span className="bl-qr" aria-hidden dangerouslySetInnerHTML={{ __html: svg }} />
       <span>
         <b>Наведите камеру</b>
@@ -68,6 +68,6 @@ export function QrCard({ svg }: { svg: string }) {
         <br />
         Telegram или MAX
       </span>
-    </a>
+    </div>
   );
 }
