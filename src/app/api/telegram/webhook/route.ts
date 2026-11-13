@@ -125,7 +125,7 @@ type TelegramUpdate = {
   pre_checkout_query?: PreCheckoutQuery;
   my_chat_member?: {
     chat?: { id?: number; type?: string };
-    from?: { id?: number };
+    from?: { id?: number; username?: string };
     old_chat_member?: { status?: string };
     new_chat_member?: { status?: string };
   };
@@ -431,8 +431,15 @@ export async function POST(req: Request) {
   await ensureTelegramBlocks();
 
   if (update.my_chat_member) {
-    const userId = blockedTelegramUser(update.my_chat_member);
-    if (userId) await trackServerEvent({ userId, event: "block", messenger: "telegram" });
+    const blocked = blockedTelegramUser(update.my_chat_member);
+    if (blocked) {
+      await trackServerEvent({
+        userId: blocked.id,
+        event: "block",
+        messenger: "telegram",
+        username: blocked.username,
+      });
+    }
     return NextResponse.json({ ok: true });
   }
 
