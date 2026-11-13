@@ -1,6 +1,7 @@
 import { normalizeEmail } from "./web-account";
 import { isSbpPlan, sbpCatalog, sbpMoney, type SbpPlanId } from "./sbp-plans";
 import {
+  grantStackedPlan,
   grantWeekPaidUntil,
   paidUntilForPlan,
   type PremiumPlan,
@@ -170,7 +171,7 @@ export async function fulfillSbp(
       return "pending";
     }
     const current = await ledger.loadAccess(owner);
-    await ledger.saveAccess(owner, grantWeekPaidUntil(current, paidUntil));
+    await ledger.saveAccess(owner, grantStackedPlan(current, paid.plan, now));
     return "granted";
   } catch (error) {
     await ledger.release(paid.id);
@@ -189,7 +190,13 @@ export async function applyPendingSbp(
   const pending = await ledger.readPending(email);
   if (!pending) return false;
   const current = await ledger.loadAccess(owner);
-  await ledger.saveAccess(owner, grantWeekPaidUntil(current, pending.paidUntil));
+  const now = new Date();
+  const paidMs = current.paidUntil ? Date.parse(current.paidUntil) : NaN;
+  const stillPaid = Number.isFinite(paidMs) && paidMs > now.getTime();
+  await ledger.saveAccess(
+    owner,
+    stillPaid ? grantStackedPlan(current, pending.plan, now) : grantWeekPaidUntil(current, pending.paidUntil),
+  );
   await ledger.clearPending(email);
   return true;
 }

@@ -29,6 +29,9 @@ export type OnboardState = {
   /** How the person reached the mood question. */
   via?: "plan" | "skip";
   feeling?: Feeling;
+  /** When this pass of the questionnaire started. */
+  since?: string;
+  reminded?: boolean;
 };
 
 export type OnboardButton = { text: string; data: string };
@@ -58,7 +61,15 @@ export function freshOnboarding(): OnboardState {
 
 export function parseOnboarding(raw: unknown): OnboardState | null {
   if (!raw || typeof raw !== "object") return null;
-  const row = raw as { step?: unknown; days?: unknown; time?: unknown; via?: unknown; feeling?: unknown };
+  const row = raw as {
+    step?: unknown;
+    days?: unknown;
+    time?: unknown;
+    via?: unknown;
+    feeling?: unknown;
+    since?: unknown;
+    reminded?: unknown;
+  };
   if (typeof row.step !== "string" || !STEPS.includes(row.step as OnboardStep)) return null;
   const days = Array.isArray(row.days)
     ? [...new Set(row.days.filter((day): day is number => Number.isInteger(day) && day >= 0 && day <= 6))].sort(
@@ -68,7 +79,8 @@ export function parseOnboarding(raw: unknown): OnboardState | null {
   const time = typeof row.time === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(row.time) ? row.time : undefined;
   const via = row.via === "plan" || row.via === "skip" ? row.via : undefined;
   const feeling = PICKER_FEELINGS.find((item) => item === row.feeling);
-  return { step: row.step as OnboardStep, days, time, via, feeling };
+  const since = typeof row.since === "string" && Number.isFinite(Date.parse(row.since)) ? row.since : undefined;
+  return { step: row.step as OnboardStep, days, time, via, feeling, since, reminded: row.reminded === true };
 }
 
 export function parseOnboardCallback(data: string): OnboardAction | null {

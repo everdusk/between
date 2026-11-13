@@ -46,7 +46,27 @@ export type WeekAccessRecord = {
   introSeen: boolean;
   /** First time a finite whitelist span was applied. Forever does not use it. */
   grantFrom: string | null;
+  /** Set while a paid period is frozen. The end date does not move until resume. */
+  pausedAt: string | null;
+  paywallAt: string | null;
+  nudge1At: string | null;
+  nudge2At: string | null;
+  day5At: string | null;
+  sliceAt: string | null;
+  renewSoonAt: string | null;
+  renewLastAt: string | null;
+  expiredNoticeAt: string | null;
 };
+
+export type CycleStamp =
+  | "paywallAt"
+  | "nudge1At"
+  | "nudge2At"
+  | "day5At"
+  | "sliceAt"
+  | "renewSoonAt"
+  | "renewLastAt"
+  | "expiredNoticeAt";
 
 export type WeekAccessStatus = "new" | "trial" | "paid" | "locked";
 export type PremiumKind = "none" | "timed" | "forever";
@@ -66,12 +86,28 @@ export type WeekAccessView = {
   /** Monthly price in rubles for the browser. Telegram keeps Stars. */
   rubPrice: number;
   prices: { month: number; quarter: number; year: number };
+  /** Paid time is frozen. Pings and reminders stay quiet until resume. */
+  paused: boolean;
   /** Forever grant for this account. The journal stays open, and settings can still show the paywall. */
   previewPaywall?: boolean;
 };
 
 export function emptyWeekAccess(): WeekAccessRecord {
-  return { openedAt: null, paidUntil: null, introSeen: false, grantFrom: null };
+  return {
+    openedAt: null,
+    paidUntil: null,
+    introSeen: false,
+    grantFrom: null,
+    pausedAt: null,
+    paywallAt: null,
+    nudge1At: null,
+    nudge2At: null,
+    day5At: null,
+    sliceAt: null,
+    renewSoonAt: null,
+    renewLastAt: null,
+    expiredNoticeAt: null,
+  };
 }
 
 function isoOrNull(value: unknown): string | null {
@@ -89,6 +125,15 @@ export function normalizeWeekAccess(raw: unknown): WeekAccessRecord {
     paidUntil: isoOrNull(record.paidUntil),
     introSeen: record.introSeen === true,
     grantFrom: isoOrNull(record.grantFrom),
+    pausedAt: isoOrNull(record.pausedAt),
+    paywallAt: isoOrNull(record.paywallAt),
+    nudge1At: isoOrNull(record.nudge1At),
+    nudge2At: isoOrNull(record.nudge2At),
+    day5At: isoOrNull(record.day5At),
+    sliceAt: isoOrNull(record.sliceAt),
+    renewSoonAt: isoOrNull(record.renewSoonAt),
+    renewLastAt: isoOrNull(record.renewLastAt),
+    expiredNoticeAt: isoOrNull(record.expiredNoticeAt),
   };
 }
 
@@ -234,7 +279,17 @@ export function accessForUser(
   };
 }
 
-/** Voice notes follow a paid «Неделя». The free trial does not open them. */
+function paidClock(record: WeekAccessRecord, nowMs: number): number {
+  const pausedMs = record.pausedAt ? Date.parse(record.pausedAt) : NaN;
+  return Number.isFinite(pausedMs) ? pausedMs : nowMs;
+}
+
+function paidActive(record: WeekAccessRecord, nowMs: number): boolean {
+  const paidMs = record.paidUntil ? Date.parse(record.paidUntil) : NaN;
+  return Number.isFinite(paidMs) && paidMs > paidClock(record, nowMs);
+}
+
+/** Voice notes are open during the trial and while the week is paid. */
 export function voiceNotesOpen(
   record: WeekAccessRecord,
   now: Date,
@@ -243,11 +298,66 @@ export function voiceNotesOpen(
   if (options?.exempt || options?.grant === "forever") return true;
   const grantEnd = grantEndMs(record, options?.grant ?? null);
   if (typeof grantEnd === "number" && grantEnd > now.getTime()) return true;
-  const paidMs = record.paidUntil ? Date.parse(record.paidUntil) : NaN;
-  return Number.isFinite(paidMs) && paidMs > now.getTime();
+  if (paidActive(record, now.getTime())) return true;
+  const openedMs = record.openedAt ? Date.parse(record.openedAt) : NaN;
+  return Number.isFinite(openedMs) && now.getTime() < openedMs + TRIAL_MS;
 }
 
-/** Starts the free week the first time «Неделя» is opened. */
+/** New notes and check-ins. A locked week keeps the old ones and accepts no more. */
+export function entriesOpen(status: WeekAccessStatus): boolean {
+  return status !== "locked";
+}
+
+/** Freezes a paid period. Trial and a locked week have no pause. */
+export function pauseWeek(record: WeekAccessRecord, now: Date): WeekAccessRecord | null {
+  if (record.pausedAt) return record;
+  if (!paidActive(record, now.getTime())) return null;
+  return { ...record, pausedAt: now.toISOString() };
+}
+
+/** Adds the frozen days back onto the end date. */
+export function resumeWeek(record: WeekAccessRecord, now: Date): WeekAccessRecord {
+  const pausedMs = record.pausedAt ? Date.parse(record.pausedAt) : NaN;
+  if (!Number.isFinite(pausedMs)) return { ...record, pausedAt: null };
+  const paidMs = record.paidUntil ? Date.parse(record.paidUntil) : NaN;
+  const remaining = Number.isFinite(paidMs) ? Math.max(0, paidMs - pausedMs) : 0;
+  return {
+    ...record,
+    pausedAt: null,
+    paidUntil: new Date(now.getTime() + remaining).toISOString(),
+  };
+}
+
+/** Adds a purchased period to whatever paid time is still ahead. */
+export function grantStackedPlan(
+  record: WeekAccessRecord,
+  plan: PremiumPlan,
+  now: Date,
+  subscriptionExpirationSec?: number,
+): WeekAccessRecord {
+  const added = planDays(plan) * DAY_MS;
+  const paidMs = record.paidUntil ? Date.parse(record.paidUntil) : NaN;
+  const paused = Number.isFinite(record.pausedAt ? Date.parse(record.pausedAt) : NaN);
+  const anchor = paused
+    ? Number.isFinite(paidMs)
+      ? paidMs
+      : now.getTime()
+    : Number.isFinite(paidMs) && paidMs > now.getTime()
+      ? paidMs
+      : now.getTime();
+  let until = anchor + added;
+  if (plan === "month" && typeof subscriptionExpirationSec === "number" && subscriptionExpirationSec > 0) {
+    until = Math.max(until, subscriptionExpirationSec * 1000);
+  }
+  return { ...record, paidUntil: new Date(until).toISOString() };
+}
+
+export function stampCycle(record: WeekAccessRecord, field: CycleStamp, now: Date): WeekAccessRecord {
+  if (record[field]) return record;
+  return { ...record, [field]: now.toISOString() };
+}
+
+/** Starts the free week at the first /start. Opening «Неделя» does not. */
 export function openWeekAccess(record: WeekAccessRecord, now: Date): WeekAccessRecord {
   if (record.openedAt) return record;
   return { ...record, openedAt: now.toISOString() };
@@ -276,7 +386,11 @@ function laterIso(left: string | null, right: string | null): string | null {
 function remainingPaidMs(record: WeekAccessRecord, nowMs: number): number {
   const paid = record.paidUntil ? Date.parse(record.paidUntil) : NaN;
   if (!Number.isFinite(paid)) return 0;
-  return Math.max(0, paid - nowMs);
+  return Math.max(0, paid - paidClock(record, nowMs));
+}
+
+function earlierStamp(left: WeekAccessRecord, right: WeekAccessRecord, field: CycleStamp): string | null {
+  return earlierIso(left[field], right[field]);
 }
 
 /**
@@ -292,15 +406,29 @@ export function mergeWeekAccess(
   const leftMs = remainingPaidMs(left, nowMs);
   const rightMs = remainingPaidMs(right, nowMs);
   let paidUntil: string | null;
+  let pausedAt: string | null = null;
   if (leftMs > 0 && rightMs > 0) paidUntil = new Date(nowMs + leftMs + rightMs).toISOString();
-  else if (leftMs > 0) paidUntil = new Date(Date.parse(left.paidUntil ?? "")).toISOString();
-  else if (rightMs > 0) paidUntil = new Date(Date.parse(right.paidUntil ?? "")).toISOString();
-  else paidUntil = laterIso(left.paidUntil, right.paidUntil);
+  else if (leftMs > 0) {
+    paidUntil = new Date(Date.parse(left.paidUntil ?? "")).toISOString();
+    pausedAt = left.pausedAt;
+  } else if (rightMs > 0) {
+    paidUntil = new Date(Date.parse(right.paidUntil ?? "")).toISOString();
+    pausedAt = right.pausedAt;
+  } else paidUntil = laterIso(left.paidUntil, right.paidUntil);
   return {
     openedAt: earlierIso(left.openedAt, right.openedAt),
     paidUntil,
     introSeen: left.introSeen || right.introSeen,
     grantFrom: earlierIso(left.grantFrom, right.grantFrom),
+    pausedAt,
+    paywallAt: earlierStamp(left, right, "paywallAt"),
+    nudge1At: earlierStamp(left, right, "nudge1At"),
+    nudge2At: earlierStamp(left, right, "nudge2At"),
+    day5At: earlierStamp(left, right, "day5At"),
+    sliceAt: earlierStamp(left, right, "sliceAt"),
+    renewSoonAt: earlierStamp(left, right, "renewSoonAt"),
+    renewLastAt: earlierStamp(left, right, "renewLastAt"),
+    expiredNoticeAt: earlierStamp(left, right, "expiredNoticeAt"),
   };
 }
 
@@ -364,7 +492,9 @@ export function describeWeekAccess(
   const openedMs = record.openedAt ? Date.parse(record.openedAt) : NaN;
   const paidMs = record.paidUntil ? Date.parse(record.paidUntil) : NaN;
   const nowMs = now.getTime();
-  const paid = Number.isFinite(paidMs) && paidMs > nowMs;
+  const paused = Number.isFinite(record.pausedAt ? Date.parse(record.pausedAt) : NaN);
+  const clock = paidClock(record, nowMs);
+  const paid = Number.isFinite(paidMs) && paidMs > clock;
   const trialEndsMs = Number.isFinite(openedMs) ? openedMs + TRIAL_MS : NaN;
   const inTrial = Number.isFinite(trialEndsMs) && nowMs < trialEndsMs;
   const grantEnd = options?.exempt ? "forever" : grantEndMs(record, options?.grant ?? null);
@@ -381,7 +511,7 @@ export function describeWeekAccess(
     if (paid) ends.push(paidMs);
     if (ends.length) {
       premium = "timed";
-      premiumDaysLeft = Math.max(1, Math.ceil((Math.max(...ends) - nowMs) / DAY_MS));
+      premiumDaysLeft = Math.max(1, Math.ceil((Math.max(...ends) - clock) / DAY_MS));
     }
   }
 
@@ -409,6 +539,7 @@ export function describeWeekAccess(
       quarter: planPrice(starPrice, "quarter"),
       year: planPrice(starPrice, "year"),
     },
+    paused: paused && paid,
   };
 }
 

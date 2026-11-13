@@ -1,5 +1,5 @@
 import type { LocaleId } from "./i18n";
-import { weekTabUrl } from "./launch-section";
+import { subscribeTabUrl, weekTabUrl } from "./launch-section";
 import { feelingLabel, translate } from "./messages";
 import { PICKER_FEELINGS, type CheckinSlot } from "./types";
 import { loadWelcomeImage } from "./welcome-photo";
@@ -56,6 +56,14 @@ export function weekOpenKeyboard(url: string, locale: LocaleId = "ru") {
   };
 }
 
+export function subscribeKeyboard(url: string, locale: LocaleId = "ru", later = false) {
+  const pay = { text: translate(locale, "botPayNow"), web_app: { url: subscribeTabUrl(url) } };
+  const row = later
+    ? [pay, { text: translate(locale, "botPayLater"), callback_data: "pay:later" }]
+    : [pay];
+  return { inline_keyboard: [row] };
+}
+
 export function onboardReplyMarkup(rows: { text: string; data: string }[][]) {
   return {
     inline_keyboard: rows.map((row) =>
@@ -73,12 +81,14 @@ export function isBotCommand(text: string, name: string): boolean {
 
 const COMMANDS_EN = [
   { command: "start", description: "Open Between" },
+  { command: "sessions", description: "Sessions and pause" },
   { command: "premium", description: "Premium time left" },
   { command: "paysupport", description: "Stars payment help" },
 ];
 
 const COMMANDS_RU = [
   { command: "start", description: "Открыть Between" },
+  { command: "sessions", description: "Сеансы и пауза" },
   { command: "premium", description: "Сколько премиума осталось" },
   { command: "paysupport", description: "Вопрос по оплате" },
 ];

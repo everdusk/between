@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
 import { actorFromRequest } from "@/lib/account-actor";
 import { trackServerEvent } from "@/lib/analytics";
-import { applyJournalWrite } from "@/lib/journal-api";
+import { applyJournalWrite, entriesHeld } from "@/lib/journal-api";
 import { normalizeStore } from "@/lib/migrate";
 import { sessionPlanStamp } from "@/lib/session-plan";
 import {
   getUserTimezone,
   loadUserStore,
+  loadWeekAccess,
   redisConfigured,
   rememberUser,
   saveUserStore,
   setUserTimezone,
 } from "@/lib/redis";
+import { accessForUser, entriesOpen } from "@/lib/week-access";
 import { emptyStore } from "@/lib/types";
 import { sessionSecret } from "@/lib/web-account";
 import { isValidTimeZone } from "@/lib/zoned";
@@ -70,6 +72,12 @@ export async function PUT(req: Request) {
   const dropIds = (value: unknown) =>
     Array.isArray(value) ? value.filter((id): id is string => typeof id === "string" && id.length > 0).slice(0, 40) : [];
   const previous = await loadUserStore(actor.id);
+  const access = accessForUser(
+    await loadWeekAccess(actor.id),
+    { id: actor.telegramUserId ?? 0, username: actor.telegramUsername ?? undefined },
+    process.env.WEEK_EXEMPT_USER_IDS,
+    new Date(),
+  );
   const next =
     payload.replace === true
       ? store
@@ -79,6 +87,9 @@ export async function PUT(req: Request) {
           dropIds(payload.dropEntryIds),
           dropIds(payload.dropSessionIds),
         );
+  if (!entriesOpen(access.view.status) && !entriesHeld(previous, next)) {
+    return NextResponse.json({ ok: false, error: "entries_closed" }, { status: 403 });
+  }
   await saveUserStore(actor.id, next);
   const savedPlan = sessionPlanStamp(next.sessionPlan);
   if (savedPlan && savedPlan !== sessionPlanStamp(previous?.sessionPlan)) {

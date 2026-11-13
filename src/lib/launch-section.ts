@@ -1,5 +1,5 @@
 /** Query and start-parameter values that open a journal tab. */
-export const LAUNCH_SECTIONS = ["journal", "week", "sessions"] as const;
+export const LAUNCH_SECTIONS = ["journal", "week", "sessions", "subscribe"] as const;
 
 export type LaunchSection = (typeof LAUNCH_SECTIONS)[number];
 
@@ -13,6 +13,11 @@ export function sessionTabUrl(base: string): string {
 /** Mini App URL that lands on the week. */
 export function weekTabUrl(base: string): string {
   return tabUrl(base, "week");
+}
+
+/** Mini App URL that opens the subscription sheet. */
+export function subscribeTabUrl(base: string): string {
+  return tabUrl(base, "subscribe");
 }
 
 function tabUrl(base: string, tab: LaunchSection): string {

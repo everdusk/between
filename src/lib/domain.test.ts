@@ -95,6 +95,7 @@ import {
   voiceNotesOpen,
   whitelistSpan,
 } from "./week-access";
+import { localWeekView } from "./week-access-client";
 
 function note(partial: Partial<JournalEntry> & Pick<JournalEntry, "id" | "body">): JournalEntry {
   return {
@@ -1320,7 +1321,7 @@ describe("week access", () => {
 
     const view = describeWeekAccess(opened, now, 150);
     assert.equal(view.status, "trial");
-    assert.equal(voiceNotesOpen(opened, now), false);
+    assert.equal(voiceNotesOpen(opened, now), true);
     assert.equal(voiceNotesOpen(opened, now, { exempt: true }), true);
     assert.equal(view.daysLeft, 7);
     assert.equal(view.starPrice, 150);
@@ -1376,11 +1377,11 @@ describe("week access", () => {
     assert.equal(formatPremiumStatus("ru", forever), "Премиум без срока.");
   });
 
-  it("starts a finite whitelist at first sight and keeps voice closed on trial", () => {
+  it("starts a finite whitelist at first sight and keeps voice open on trial", () => {
     const ancient = openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000));
     assert.equal(describeWeekAccess(ancient, now, 150, { grant: "month" }).status, "locked");
     assert.equal(voiceNotesOpen(ancient, now, { grant: "month" }), false);
-    assert.equal(voiceNotesOpen(openWeekAccess(emptyWeekAccess(), now), now), false);
+    assert.equal(voiceNotesOpen(openWeekAccess(emptyWeekAccess(), now), now), true);
 
     const stamped = applyWhitelistGrant(ancient, "month", now);
     assert.equal(stamped.changed, true);
@@ -1463,7 +1464,9 @@ describe("week access", () => {
     assert.equal(starPriceFromEnv("12.5"), 150);
     assert.equal(rubPriceFromEnv(undefined), 150);
     assert.equal(rubPriceFromEnv("299"), 299);
+    assert.equal(rubPriceFromEnv("350"), 350);
     assert.equal(rubPriceFromEnv("0"), 150);
+    assert.equal(localWeekView(emptyWeekAccess(), new Date(), { rubPrice: 350 }).rubPrice, 350);
   });
 
   it("adds paid time from both sides and keeps the earlier trial", () => {

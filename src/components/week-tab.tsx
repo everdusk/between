@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
-import { Lock, Star } from "lucide-react";
+import { Lock } from "lucide-react";
 import { WeekSkeleton } from "@/components/journal-skeleton";
 import { LegalLinks } from "@/components/legal-links";
 import { useI18n } from "@/components/locale-provider";
 import { trackAnalytics } from "@/lib/analytics-client";
 import { captureProduct } from "@/lib/product-analytics";
+import { SubscribeCheckout } from "@/components/subscribe-checkout";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   createWeekInvoice,
@@ -18,6 +19,7 @@ import {
   readLocalWeekAccess,
   writeLocalWeekAccess,
 } from "@/lib/week-access-client";
+import { useWeekPrices } from "@/components/week-prices";
 import {
   markWeekIntroSeen,
   openWeekAccess,
@@ -29,6 +31,7 @@ interface WeekTabProps {
   active: boolean;
   ready: boolean;
   inTelegram: boolean;
+  inMax?: boolean;
   initData: string;
   /** Site session or MAX. A logged-out browser has no SBP checkout. */
   canSubscribe: boolean;
@@ -37,12 +40,11 @@ interface WeekTabProps {
   children: ReactNode;
 }
 
-const PLANS = ["month", "quarter", "year"] as const satisfies readonly PremiumPlan[];
-
 export function WeekTab({
   active,
   ready,
   inTelegram,
+  inMax = false,
   initData,
   canSubscribe,
   reloadToken = 0,
@@ -50,6 +52,7 @@ export function WeekTab({
   children,
 }: WeekTabProps) {
   const { t, count } = useI18n();
+  const prices = useWeekPrices();
   const [access, setAccess] = useState<WeekAccessView | null>(null);
   const [failedOpen, setFailedOpen] = useState(false);
   const [payingPlan, setPayingPlan] = useState<PremiumPlan | null>(null);
@@ -83,7 +86,7 @@ export function WeekTab({
       if (!opened) {
         const next = openWeekAccess(readLocalWeekAccess(), new Date());
         writeLocalWeekAccess(next);
-        publish(localWeekView(next));
+        publish(localWeekView(next, new Date(), prices));
         return;
       }
       publish(opened);
@@ -93,7 +96,7 @@ export function WeekTab({
     return () => {
       cancelled = true;
     };
-  }, [ready, inTelegram, reloadToken]);
+  }, [ready, inTelegram, reloadToken, prices]);
 
   useEffect(() => {
     if (!ready || !inTelegram) return;
@@ -149,7 +152,7 @@ export function WeekTab({
       }
       const next = markWeekIntroSeen(readLocalWeekAccess());
       writeLocalWeekAccess(next);
-      publish(localWeekView(next));
+      publish(localWeekView(next, new Date(), prices));
       return;
     }
     const seen = await postWeekAccess(initData, "seen");
@@ -200,16 +203,22 @@ export function WeekTab({
     });
   }
 
-  function planLabel(plan: PremiumPlan, price: number) {
-    if (payingPlan === plan) return t("paying");
-    if (plan === "quarter") return t("payQuarter", { price });
-    if (plan === "year") return t("payYear", { price });
-    return t("payStars", { price });
-  }
-
   if (!access) {
     if (failedOpen) return <>{children}</>;
     return <WeekSkeleton />;
+  }
+
+  if (access.status === "locked" && (inTelegram || inMax)) {
+    return (
+      <SubscribeCheckout
+        embed
+        monthly={access.rubPrice}
+        stars={inTelegram ? access.prices : null}
+        onStarsPay={(plan) => void pay(plan)}
+        starsBusy={payingPlan !== null}
+        starsError={payError}
+      />
+    );
   }
 
   if (access.status === "locked") {
@@ -228,44 +237,26 @@ export function WeekTab({
               <Lock aria-hidden className="size-5 text-ink-foreground" />
             </div>
             <p className="font-display text-[1.5rem] leading-snug tracking-tight text-ink-foreground">
-              {inTelegram
-                ? t("paywallBody", { price: access.starPrice })
-                : t("webWeekPaywall", { price: access.rubPrice })}
+              {t("webWeekPaywall", { price: access.rubPrice })}
             </p>
             <div className="space-y-3">
-              {inTelegram
-                ? PLANS.map((plan) => (
-                    <Button
-                      key={plan}
-                      type="button"
-                      size="lg"
-                      className="w-full bg-ink-foreground text-ink hover:bg-ink-foreground/90"
-                      disabled={payingPlan !== null}
-                      onClick={() => void pay(plan)}
-                    >
-                      <Star aria-hidden />
-                      {planLabel(plan, access.prices[plan])}
-                    </Button>
-                  ))
-                : canSubscribe ? (
-                    <a
-                      href="/subscribe"
-                      className={buttonVariants({
-                        size: "lg",
-                        className: "w-full bg-ink-foreground text-ink hover:bg-ink-foreground/90",
-                      })}
-                    >
-                      {t("sbpBuy")}
-                    </a>
-                  ) : null}
+              {canSubscribe ? (
+                <a
+                  href="/subscribe"
+                  className={buttonVariants({
+                    size: "lg",
+                    className: "w-full bg-ink-foreground text-ink hover:bg-ink-foreground/90",
+                  })}
+                >
+                  {t("sbpBuy")}
+                </a>
+              ) : null}
               {payError && (
                 <p className="text-sm text-ink-muted" role="alert">
                   {payError}
                 </p>
               )}
-              {inTelegram ? null : (
-                <LegalLinks className="text-center text-xs leading-relaxed text-ink-foreground/80" />
-              )}
+              <LegalLinks className="text-center text-xs leading-relaxed text-ink-foreground/80" />
             </div>
           </div>
         </section>
@@ -289,6 +280,9 @@ export function WeekTab({
             {t("introOk")}
           </Button>
         </section>
+      )}
+      {access.paused && (
+        <p className="px-2 text-xs text-muted-foreground">{t("pausedLine")}</p>
       )}
       {access.status === "trial" && access.introSeen && (
         <p className="px-2 text-xs text-muted-foreground">
