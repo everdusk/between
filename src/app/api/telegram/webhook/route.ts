@@ -34,9 +34,6 @@ import {
 } from "@/lib/onboarding-flow";
 import {
   isLandingStart,
-  LANDING_COUNT_KEY,
-  landingCount,
-  landingStatsLine,
   rememberLandingSource,
   startPayload,
 } from "@/lib/landing";
@@ -605,18 +602,9 @@ export async function POST(req: Request) {
       ? formatAnalyticsReport(await loadAnalyticsReport(redis))
       : "Счётчики ещё не пишутся.";
     const funnel = await botFunnelBlock();
-    let landing = "";
-    const sourceRedis = getRedis();
-    if (sourceRedis) {
-      try {
-        landing = landingStatsLine(landingCount(await sourceRedis.get(LANDING_COUNT_KEY)));
-      } catch {
-        landing = "";
-      }
-    }
     await telegramRequest("sendMessage", {
       chat_id: chatId,
-      text: funnel ? `${stats}${landing}\n\n${funnel}` : `${stats}${landing}`,
+      text: funnel ? `${stats}\n\n${funnel}` : stats,
       reply_markup: keyboard,
     });
     return NextResponse.json({ ok: true });

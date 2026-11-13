@@ -19,6 +19,8 @@ const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_OFFSET = 400;
 const REPORT_DAYS = 7;
 const COHORT_DAYS = 14;
+/** /stats starts here. Earlier Moscow days stay in Redis and stay out of the report. */
+export const STATS_VISIBLE_FROM = "2026-11-13";
 
 const MONTHS = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 
@@ -341,6 +343,16 @@ export function reportDaySpan(): { reportDays: number; cohortDays: number } {
   return { reportDays: REPORT_DAYS, cohortDays: COHORT_DAYS };
 }
 
+/** Days inside the report span that are on or after the clean start. */
+export function statsWindow(today: string, span: number): string[] {
+  const days: string[] = [];
+  for (let ago = span - 1; ago >= 0; ago -= 1) {
+    const day = shiftDay(today, -ago);
+    if (day && day >= STATS_VISIBLE_FROM) days.push(day);
+  }
+  return days;
+}
+
 export type ProductEvent = {
   event: string;
   properties?: Record<string, unknown> | null;
@@ -431,11 +443,12 @@ function ruDay(iso: string): string {
   return `${Number(day)} ${MONTHS[Number(month) - 1] ?? ""}`.trim();
 }
 
-const MESSENGER_TITLE: Record<AnalyticsMessenger, string> = {
+const MESSENGER_TITLE: Record<Exclude<AnalyticsMessenger, "web">, string> = {
   telegram: "Telegram",
   max: "MAX",
-  web: "Сайт",
 };
+
+const STATS_MESSENGERS = ["telegram", "max"] as const;
 
 function formatMessengerBlock(title: string, part: MessengerReport): string[] {
   const lines = [title];
@@ -457,7 +470,7 @@ function formatMessengerBlock(title: string, part: MessengerReport): string[] {
 }
 
 export function formatAnalyticsReport(report: AnalyticsSnapshot): string {
-  const any = ANALYTICS_MESSENGERS.some(
+  const any = STATS_MESSENGERS.some(
     (messenger) =>
       ANALYTICS_EVENTS.some((event) => report.messengers[messenger].totals[event] > 0) ||
       report.messengers[messenger].cohorts.length > 0,
@@ -465,7 +478,7 @@ export function formatAnalyticsReport(report: AnalyticsSnapshot): string {
   if (!any) return "Пока никто не открывал Between.";
 
   const lines = [`Between за ${report.windowDays} дн., по Москве`, ""];
-  for (const messenger of ANALYTICS_MESSENGERS) {
+  for (const messenger of STATS_MESSENGERS) {
     lines.push(...formatMessengerBlock(MESSENGER_TITLE[messenger], report.messengers[messenger]));
     lines.push("");
   }

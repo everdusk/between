@@ -4,7 +4,7 @@ import {
   analyticsDedupKey,
   analyticsQuiet,
   reportDaySpan,
-  shiftDay,
+  statsWindow,
 } from "./analytics-model";
 import { weekdayShort } from "./dates";
 import { ONBOARD_HOURS } from "./onboarding";
@@ -161,11 +161,7 @@ export async function recordBotFunnel(
 export async function loadBotFunnel(redis: CounterRedis, now = new Date()): Promise<BotFunnelReport> {
   const today = todayInTimeZone(DEFAULT_TIME_ZONE, now);
   const { reportDays } = reportDaySpan();
-  const days: string[] = [];
-  for (let ago = reportDays - 1; ago >= 0; ago -= 1) {
-    const day = shiftDay(today, -ago);
-    if (day) days.push(day);
-  }
+  const days = statsWindow(today, reportDays);
   const keys: string[] = [];
   for (const messenger of ["telegram", "max"] as const) {
     for (const day of days) {

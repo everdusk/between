@@ -73,20 +73,23 @@ describe("bot funnel", () => {
     const input = {
       userId: 424242,
       messenger: "telegram" as const,
-      day: "2026-11-11",
+      day: "2026-11-13",
       pepper: "pepper",
       choice: { step: "days" as const, days: [0, 3] },
     };
     await recordBotFunnel(redis, input);
     await recordBotFunnel(redis, input);
     await recordBotFunnel(redis, { ...input, userId: 7, choice: { step: "no" } });
-    assert.equal(redis.keys.get(funnelCounterKey("2026-11-11", "telegram", "days")), 1);
-    assert.equal(redis.keys.get(funnelCounterKey("2026-11-11", "telegram", "wd0")), 1);
-    assert.equal(redis.keys.get(funnelCounterKey("2026-11-11", "telegram", "wd3")), 1);
-    assert.equal(redis.keys.get(funnelCounterKey("2026-11-11", "telegram", "no")), 1);
+    assert.equal(redis.keys.get(funnelCounterKey("2026-11-13", "telegram", "days")), 1);
+    assert.equal(redis.keys.get(funnelCounterKey("2026-11-13", "telegram", "wd0")), 1);
+    assert.equal(redis.keys.get(funnelCounterKey("2026-11-13", "telegram", "wd3")), 1);
+    assert.equal(redis.keys.get(funnelCounterKey("2026-11-13", "telegram", "no")), 1);
     assert.equal([...redis.keys.keys()].some((key) => key.includes("424242")), false);
+    await recordBotFunnel(redis, { ...input, userId: 9, day: "2026-11-12", choice: { step: "yes" } });
 
-    const report = await loadBotFunnel(redis, new Date("2026-11-11T12:00:00.000Z"));
+    const report = await loadBotFunnel(redis, new Date("2026-11-13T12:00:00.000Z"));
+    assert.equal(report.windowDays, 1);
+    assert.equal(report.totals.yes, 0);
     assert.equal(report.totals.days, 1);
     assert.equal(report.totals.weekdays[0], 1);
     assert.equal(report.totals.weekdays[3], 1);

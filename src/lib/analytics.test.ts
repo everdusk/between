@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { analyticsDedupToken, recordAnalytics, type AnalyticsRedis } from "./analytics";
+import { analyticsDedupToken, loadAnalyticsReport, recordAnalytics, type AnalyticsRedis } from "./analytics";
 import { captureServerProduct, productDistinctId } from "./product-analytics-server";
 import {
   acceptClientEvent,
@@ -11,6 +11,7 @@ import {
   formatAnalyticsReport,
   analyticsQuiet,
   isAnalyticsOwner,
+  statsWindow,
   quietClientLaunch,
   messengerEventName,
   parseMessengerEvent,
@@ -42,8 +43,8 @@ function memoryRedis(): AnalyticsRedis & { keys: Map<string, number>; sets: Map<
       keys.set(key, next);
       return next;
     },
-    async mget() {
-      return [];
+    async mget(...names: string[]) {
+      return names.map((name) => keys.get(name) ?? null);
     },
   };
 }
@@ -218,10 +219,9 @@ describe("analytics", () => {
     });
     assert.match(text, /Telegram[\s\S]*Визит 4[\s\S]*Заметка 2[\s\S]*Настроение 3[\s\S]*Блокировка 1[\s\S]*График 2/);
     assert.match(text, /MAX[\s\S]*Настроение 1/);
-    assert.match(text, /Сайт[\s\S]*Настроение 0/);
     assert.match(text, /MAX[\s\S]*Визит 1/);
-    assert.match(text, /Сайт[\s\S]*Визит 9/);
-    assert.doesNotMatch(text.slice(0, text.indexOf("Сайт")), /Визит 9/);
+    assert.doesNotMatch(text, /Сайт/);
+    assert.doesNotMatch(text, /Визит 9/);
     assert.match(text, /Пейволл 1/);
     assert.match(text, /1 ноя — 4 новых, за неделю ещё нет/);
     assert.match(text, /20 окт — 8 новых, за неделю 3 из 8/);
@@ -234,6 +234,71 @@ describe("analytics", () => {
       [{ day: "2026-11-01", counts: { visit: 3, note: 0, mood: 0, block: 0, plan: 0, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
     );
     assert.equal(merged[0].counts.visit, 7);
+  });
+
+  it("starts the report on 13 Nov and prints only Telegram and MAX", async () => {
+    assert.deepEqual(statsWindow("2026-11-13", 7), ["2026-11-13"]);
+    assert.deepEqual(statsWindow("2026-11-12", 7), []);
+    assert.equal(statsWindow("2026-11-20", 7).length, 7);
+    assert.equal(statsWindow("2026-11-20", 7)[0], "2026-11-14");
+
+    const redis = memoryRedis();
+    const pepper = "pepper";
+    await recordAnalytics(redis, {
+      userId: 1,
+      event: "visit",
+      messenger: "telegram",
+      day: "2026-11-12",
+      pepper,
+    });
+    await recordAnalytics(redis, {
+      userId: 2,
+      event: "note",
+      messenger: "telegram",
+      day: "2026-11-13",
+      pepper,
+    });
+    await recordAnalytics(redis, {
+      userId: 3,
+      event: "mood",
+      messenger: "max",
+      day: "2026-11-13",
+      pepper,
+    });
+    await recordAnalytics(redis, {
+      userId: "web:device",
+      event: "visit",
+      messenger: "web",
+      day: "2026-11-13",
+      pepper,
+    });
+    const report = await loadAnalyticsReport(redis, new Date("2026-11-13T12:00:00.000Z"));
+    assert.equal(report.today, "2026-11-13");
+    assert.equal(report.windowDays, 1);
+    assert.equal(report.messengers.telegram.totals.visit, 0);
+    assert.equal(report.messengers.telegram.totals.note, 1);
+    assert.equal(report.messengers.max.totals.mood, 1);
+    const text = formatAnalyticsReport(report);
+    assert.match(text, /Between за 1 дн\., по Москве/);
+    assert.match(text, /Telegram[\s\S]*Заметка 1/);
+    assert.match(text, /MAX[\s\S]*Настроение 1/);
+    assert.doesNotMatch(text, /Сайт/);
+    assert.doesNotMatch(text, /Визит [1-9]/);
+
+    const empty = snapshotFromReads("2026-11-13", [], []);
+    const siteOnly = snapshotFromReads(
+      "2026-11-13",
+      [{ day: "2026-11-13", counts: { visit: 9, note: 0, mood: 0, block: 0, plan: 0, week: 0, paywall: 0, checkout: 0, paid: 0 } }],
+      [],
+    );
+    assert.equal(
+      formatAnalyticsReport({
+        today: "2026-11-13",
+        windowDays: 1,
+        messengers: { telegram: empty, max: empty, web: siteOnly },
+      }),
+      "Пока никто не открывал Between.",
+    );
   });
 
   it("sends a funnel step to PostHog without a person, an ip, or the launch hash", () => {
