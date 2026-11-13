@@ -104,6 +104,68 @@ export function duePoll(input: {
   return due;
 }
 
+export const MOOD_SLOTS = ["morning", "day", "evening"] as const;
+
+/** Same gate the hourly run uses after it opens a trial that has not started. */
+export function moodPollsOpen(input: {
+  onboardingOpen: boolean;
+  paused: boolean;
+  status: string;
+}): boolean {
+  return !input.onboardingOpen && !input.paused && input.status !== "locked" && input.status !== "new";
+}
+
+export type PollSlotState = {
+  slot: CheckinSlot;
+  sent: boolean;
+  answered: boolean;
+};
+
+/** One messenger chat, judged in that person's local hour. Slots are morning, then day, then evening. */
+export type PollPerson = {
+  blocked: boolean;
+  moodPolls: boolean;
+  pollsOpen: boolean;
+  reduced: boolean;
+  hour: number;
+  slots: PollSlotState[];
+};
+
+/**
+ * Polls this person should already have today.
+ * A missed earlier question is not still owed: the run sends the latest unanswered one.
+ * A question that already went out stays owed, so the answer is still counted.
+ */
+export function pollsOwed(person: PollPerson): PollSlotState[] {
+  if (person.blocked || !person.moodPolls || !person.pollsOpen || person.reduced) return [];
+  const passed = person.slots.filter((slot) => person.hour >= POLL_HOURS[slot.slot]);
+  const sent = passed.filter((slot) => slot.sent);
+  const unanswered = passed.filter((slot) => !slot.answered);
+  const latest = unanswered[unanswered.length - 1];
+  if (latest && !sent.some((slot) => slot.slot === latest.slot)) return [...sent, latest];
+  return sent;
+}
+
+export type PollDayCounts = {
+  expected: number;
+  received: number;
+  replied: number;
+};
+
+/** People, not messages. Someone counts once even when morning and day are both due. */
+export function tallyPollDay(people: PollPerson[]): PollDayCounts {
+  const counts: PollDayCounts = { expected: 0, received: 0, replied: 0 };
+  for (const person of people) {
+    const owed = pollsOwed(person);
+    if (owed.length === 0) continue;
+    counts.expected += 1;
+    if (!owed.every((slot) => slot.sent)) continue;
+    counts.received += 1;
+    if (owed.every((slot) => slot.answered)) counts.replied += 1;
+  }
+  return counts;
+}
+
 export function pollText(slot: CheckinSlot, locale: LocaleId = "ru"): string {
   return translate(locale, POLL_KEY[slot]);
 }
@@ -148,34 +210,22 @@ export function parseDigestRun(value: unknown): DigestRun | null {
   };
 }
 
-const MONTHS = ["янв", "фев", "мар", "апр", "мая", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
-
-function moscowClock(iso: string): string {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Europe/Moscow",
-    day: "numeric",
-    month: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date(iso));
-  const read = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
-  const month = MONTHS[Number(read("month")) - 1] ?? "";
-  return `${Number(read("day"))} ${month} ${read("hour")}:${read("minute")}`;
-}
-
-/** One block for `/stats`. Says when polls last went out, or that they stopped. */
-export function formatDigestRun(run: DigestRun | null, now = new Date()): string {
-  if (!run) return "Опросы\nЕщё ни одного прогона. Проверьте расписание QStash.";
-  const age = now.getTime() - Date.parse(run.at);
-  const lines = ["Опросы", `Последний прогон ${moscowClock(run.at)} по Москве`];
-  if (age > DIGEST_STALE_MS) {
-    const hours = Math.floor(age / 3_600_000);
+/**
+ * Today's polls for `/stats`. Each person is counted in their own timezone.
+ * Telegram and MAX do not tell a bot that a private message was opened, so there is no "saw it" count.
+ */
+export function formatPollDay(counts: PollDayCounts, run: DigestRun | null, now = new Date()): string {
+  const lines = ["Опросы сегодня, по их времени"];
+  if (!run) {
+    lines.push("Расписание ещё не запускалось. Проверьте QStash.");
+  } else if (now.getTime() - Date.parse(run.at) > DIGEST_STALE_MS) {
+    const hours = Math.floor((now.getTime() - Date.parse(run.at)) / 3_600_000);
     lines.push(`Расписание молчит ${hours} ч. Проверьте QStash.`);
   }
-  lines.push(`Людей ${run.users}, отправлено ${run.sent}, не в срок ${run.skipped}`);
-  if (run.failed > 0) lines.push(`Не доставлено ${run.failed}`);
-  if (run.errors > 0) lines.push(`Ошибок ${run.errors}`);
-  lines.push(`Заняло ${(run.ms / 1000).toFixed(1)} с`);
+  lines.push(
+    `Должны были получить ${counts.expected} человек`,
+    `Получили все положенные ${counts.received}`,
+    `Ответили на все ${counts.replied}`,
+  );
   return lines.join("\n");
 }

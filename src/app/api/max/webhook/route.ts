@@ -5,11 +5,12 @@ import { feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
 import {
   claimDigestSlot,
   getUserTimezone,
-  loadDigestRun,
+  forgetBotBlocked,
   loadUserStore,
   loadWeekAccess,
   redisConfigured,
   releaseDigestSlot,
+  rememberBotBlocked,
   rememberUser,
   saveWeekAccess,
   takeBriefAttempt,
@@ -21,7 +22,8 @@ import {
   loadAnalyticsReport,
   trackServerEvent,
 } from "@/lib/analytics";
-import { duePoll, formatDigestRun, pollText } from "@/lib/digest";
+import { duePoll, pollText } from "@/lib/digest";
+import { loadPollDay } from "@/lib/poll-day";
 import { linkCodeFromStart, loginTokenFromStart, maxStorageId } from "@/lib/web-account";
 import { zonedParts } from "@/lib/zoned";
 import { claimMaxLink, finishMaxLogin, resolveMaxJournalId } from "@/lib/web-account-store";
@@ -315,9 +317,11 @@ export async function POST(req: Request) {
     if (redisConfigured()) await rememberUser(maxStorageId(userId));
 
     if (update.update_type === "bot_stopped") {
+      await rememberBotBlocked(maxStorageId(userId));
       await trackServerEvent({ userId, event: "block", messenger: "max", username: maxUsername(update) });
       return NextResponse.json({ ok: true });
     }
+    await forgetBotBlocked(maxStorageId(userId));
 
     if (update.update_type === "message_callback") {
       await handleCallback(update, userId);
@@ -417,7 +421,7 @@ export async function POST(req: Request) {
       const funnel = await botFunnelBlock();
       let digest = "";
       try {
-        digest = `\n\n${formatDigestRun(await loadDigestRun())}`;
+        digest = `\n\n${await loadPollDay()}`;
       } catch {
         digest = "";
       }

@@ -12,6 +12,7 @@ import {
 let client: Redis | null = null;
 
 const USERS_KEY = "between:users";
+const BLOCKED_KEY = "between:bots:blocked";
 
 export function redisConfigured(): boolean {
   return Boolean(
@@ -146,6 +147,38 @@ export async function releaseDigestSlot(
   const redis = getRedis();
   if (!redis) return;
   await redis.del(digestKey(userId, dateKey, slot));
+}
+
+/** True when this slot's message was accepted and the claim was kept. */
+export async function digestSlotHeld(
+  userId: number | string,
+  dateKey: string,
+  slot: string,
+): Promise<boolean> {
+  const redis = getRedis();
+  if (!redis) return false;
+  const value = await redis.get(digestKey(userId, dateKey, slot));
+  return value != null && value !== "";
+}
+
+/** A person who blocked or stopped the bot. They are not part of today's poll audience. */
+export async function rememberBotBlocked(userId: number | string): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.sadd(BLOCKED_KEY, String(userId));
+}
+
+export async function forgetBotBlocked(userId: number | string): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.srem(BLOCKED_KEY, String(userId));
+}
+
+export async function listBlockedBots(): Promise<Set<string>> {
+  const redis = getRedis();
+  if (!redis) return new Set();
+  const ids = await redis.smembers(BLOCKED_KEY);
+  return new Set(ids.map((id) => String(id)));
 }
 
 const DIGEST_RUN_KEY = "between:digest:last-run";

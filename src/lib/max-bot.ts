@@ -264,6 +264,25 @@ async function accepted(res: MaxResponse | null): Promise<boolean> {
   return true;
 }
 
+/** MAX says this when the person stopped the bot and a message cannot land. */
+export function maxDeliveryBlocked(data: unknown): boolean {
+  if (!data || typeof data !== "object") return false;
+  const row = data as { code?: unknown; message?: unknown };
+  const text = `${typeof row.code === "string" ? row.code : ""} ${typeof row.message === "string" ? row.message : ""}`.toLowerCase();
+  return text.includes("chat.denied") || text.includes("dialog.suspended") || text.includes("dialog.removed");
+}
+
+type MaxPost = { ok: boolean; blocked: boolean };
+
+async function maxPost(path: string, body: unknown): Promise<MaxPost> {
+  const res = await maxFetch(path, body);
+  if (!res) return { ok: false, blocked: false };
+  const data = await res.json().catch(() => null);
+  const rejected = Boolean(data && typeof data === "object" && (data as { success?: unknown }).success === false);
+  if (res.ok && !rejected) return { ok: true, blocked: false };
+  return { ok: false, blocked: maxDeliveryBlocked(data) };
+}
+
 /** MAX only accepts this alphabet. A secret with other characters is hashed into it. */
 export function maxWebhookSecretValue(configured: string | undefined): string {
   const raw = configured?.trim() ?? "";
@@ -416,21 +435,36 @@ export async function sendMaxWelcome(
   return sendMaxMessage(userId, text, keyboard, chatId);
 }
 
+export async function sendMaxMessageDetail(
+  userId: number,
+  text: string,
+  keyboard?: MaxKeyboard,
+  chatId?: number,
+): Promise<MaxPost> {
+  const textOnly = { text: text.slice(0, 4000) };
+  const withKeys = keyboard ? { ...textOnly, attachments: [keyboard] } : textOnly;
+  const paths = [`/messages?user_id=${userId}`];
+  if (chatId && chatId !== userId) paths.push(`/messages?chat_id=${chatId}`);
+  let blocked = false;
+  for (const path of paths) {
+    const keyed = await maxPost(path, withKeys);
+    if (keyed.ok) return { ok: true, blocked: false };
+    blocked = blocked || keyed.blocked;
+    if (!keyboard) continue;
+    const plain = await maxPost(path, textOnly);
+    if (plain.ok) return { ok: true, blocked: false };
+    blocked = blocked || plain.blocked;
+  }
+  return { ok: false, blocked };
+}
+
 export async function sendMaxMessage(
   userId: number,
   text: string,
   keyboard?: MaxKeyboard,
   chatId?: number,
 ): Promise<boolean> {
-  const textOnly = { text: text.slice(0, 4000) };
-  const withKeys = keyboard ? { ...textOnly, attachments: [keyboard] } : textOnly;
-  const paths = [`/messages?user_id=${userId}`];
-  if (chatId && chatId !== userId) paths.push(`/messages?chat_id=${chatId}`);
-  for (const path of paths) {
-    if (await accepted(await maxFetch(path, withKeys))) return true;
-    if (keyboard && (await accepted(await maxFetch(path, textOnly)))) return true;
-  }
-  return false;
+  return (await sendMaxMessageDetail(userId, text, keyboard, chatId)).ok;
 }
 
 /** Replaces the message that held the mood buttons. */
