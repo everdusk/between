@@ -360,7 +360,7 @@ export const uz: Catalog = {
   botWeekOpen: "Haftani ochish",
   botPickButton: "Pastdagi tugmani bosing.",
   botHelp:
-    "Men Between — seansga bo'sh bosh bilan kelmaydigan kundalik.\n\nFikr va hislaringizni shu yerga yozing — hammasi saqlanadi.\nKuniga bir-ikki marta kayfiyatni so'rayman — bir bosishda belgilang.\nHafta rasmga aylanadi: nima takrorlanayotgani ko'rinadi.\n\nBirinchi 7 kun bepul, keyin oyiga {price} ₽.\n\nSeansgacha buni jamlab beraman — nima bo'lganini eslash shart emas. Boshlash uchun bir-ikki savol beraman.",
+    "Men Between — seansga bo'sh bosh bilan kelmaydigan kundalik.\n\nFikr va hislaringizni shu yerga yozing — hammasi saqlanadi.\nKuniga bir-ikki marta kayfiyatni so'rayman — bir bosishda belgilang.\nHafta rasmga aylanadi: nima takrorlanayotgani ko'rinadi.\n\nBirinchi 7 kun bepul, keyin oyiga {price} ⭐.\n\nSeansgacha buni jamlab beraman — nima bo'lganini eslash shart emas. Boshlash uchun bir-ikki savol beraman.",
   botHelpMax:
     "Men Between — seansga bo'sh bosh bilan kelmaydigan kundalik.\n\nFikr va hislaringizni shu yerga yozing — hammasi saqlanadi.\nKuniga bir-ikki marta kayfiyatni so'rayman — bir bosishda belgilang.\nHafta rasmga aylanadi: nima takrorlanayotgani ko'rinadi.\n\nBirinchi 7 kun bepul, keyin oyiga {price} ₽.\n\nSeansgacha buni jamlab beraman — nima bo'lganini eslash shart emas. Boshlash uchun bir-ikki savol beraman.",
   botUnknown: "Matn yozing, yozuv qilib saqlayman.",

@@ -360,7 +360,7 @@ export const tr: Catalog = {
   botWeekOpen: "Haftayı aç",
   botPickButton: "Aşağıdaki düğmeye basın.",
   botHelp:
-    "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nDüşüncelerini ve hislerini bu sohbete yaz — hepsi saklanır.\nGünde bir iki kez ruh halini sorarım — bir dokunuşla işaretle.\nHafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nİlk 7 gün ücretsiz, sonrası ayda {price} ₽.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Başlangıç için birkaç soru soracağım.",
+    "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nDüşüncelerini ve hislerini bu sohbete yaz — hepsi saklanır.\nGünde bir iki kez ruh halini sorarım — bir dokunuşla işaretle.\nHafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nİlk 7 gün ücretsiz, sonrası ayda {price} ⭐.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Başlangıç için birkaç soru soracağım.",
   botHelpMax:
     "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nDüşüncelerini ve hislerini bu sohbete yaz — hepsi saklanır.\nGünde bir iki kez ruh halini sorarım — bir dokunuşla işaretle.\nHafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nİlk 7 gün ücretsiz, sonrası ayda {price} ₽.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Başlangıç için birkaç soru soracağım.",
   botUnknown:

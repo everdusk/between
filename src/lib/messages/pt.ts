@@ -360,7 +360,7 @@ export const pt: Catalog = {
   botWeekOpen: "Abrir a semana",
   botPickButton: "Toque num botão abaixo.",
   botHelp:
-    "Sou o Between — um diário com o qual você não chega à sessão de cabeça vazia.\n\nEscreva pensamentos e sentimentos aqui neste chat — tudo fica salvo.\nAlgumas vezes por dia vou perguntar o humor — marque num toque.\nA semana vira um quadro: dá para ver o que se repete.\n\nOs primeiros 7 dias são grátis; depois, {price} ₽ por mês.\n\nAntes da sessão eu junto isso num resumo — sem precisar lembrar o que aconteceu. Para começar, faço algumas perguntas.",
+    "Sou o Between — um diário com o qual você não chega à sessão de cabeça vazia.\n\nEscreva pensamentos e sentimentos aqui neste chat — tudo fica salvo.\nAlgumas vezes por dia vou perguntar o humor — marque num toque.\nA semana vira um quadro: dá para ver o que se repete.\n\nOs primeiros 7 dias são grátis; depois, {price} ⭐ por mês.\n\nAntes da sessão eu junto isso num resumo — sem precisar lembrar o que aconteceu. Para começar, faço algumas perguntas.",
   botHelpMax:
     "Sou o Between — um diário com o qual você não chega à sessão de cabeça vazia.\n\nEscreva pensamentos e sentimentos aqui neste chat — tudo fica salvo.\nAlgumas vezes por dia vou perguntar o humor — marque num toque.\nA semana vira um quadro: dá para ver o que se repete.\n\nOs primeiros 7 dias são grátis; depois, {price} ₽ por mês.\n\nAntes da sessão eu junto isso num resumo — sem precisar lembrar o que aconteceu. Para começar, faço algumas perguntas.",
   botUnknown:

@@ -130,7 +130,23 @@ describe("bot funnel", () => {
       assert.ok(translate(locale.id, "botHelp").length <= 1024, locale.id);
       assert.ok(translate(locale.id, "botHelpMax").length <= 1024, locale.id);
       assert.ok(welcomeCaption(locale.id).length <= 1024, locale.id);
-      assert.match(welcomeCaption(locale.id), /150 ₽/);
+      assert.match(welcomeCaption(locale.id), /150 ⭐/);
+      assert.match(welcomeCaption(locale.id, "max"), /150 ₽/);
+    }
+    const previousStars = process.env.WEEK_STAR_PRICE;
+    const previousRub = process.env.WEEK_RUB_PRICE;
+    process.env.WEEK_STAR_PRICE = "300";
+    process.env.WEEK_RUB_PRICE = "350";
+    try {
+      assert.match(welcomeCaption("ru"), /300 ⭐/);
+      assert.doesNotMatch(welcomeCaption("ru"), /₽/);
+      assert.match(welcomeCaption("ru", "max"), /350 ₽/);
+      assert.doesNotMatch(welcomeCaption("ru", "max"), /⭐/);
+    } finally {
+      if (previousStars === undefined) delete process.env.WEEK_STAR_PRICE;
+      else process.env.WEEK_STAR_PRICE = previousStars;
+      if (previousRub === undefined) delete process.env.WEEK_RUB_PRICE;
+      else process.env.WEEK_RUB_PRICE = previousRub;
     }
     const bytes = await loadWelcomeImage();
     assert.ok(bytes);
