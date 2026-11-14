@@ -328,14 +328,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    if (redisConfigured()) {
-      try {
-        await sendDueMaxPoll({ userId, username, locale: reply, chatId: update.chat_id });
-      } catch {
-        // The note still saves when the catch-up question cannot go out.
-      }
-    }
-
     if (audio && !isBotCommand(text, "start") && !isBotCommand(text, "help")) {
       const intent = await onboardingNoteIntent(owner);
       if (intent === "block") {

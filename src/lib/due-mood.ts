@@ -12,10 +12,9 @@ import {
   releaseDigestSlot,
   rememberMessengerName,
 } from "./redis";
-import { feelingKeyboard, telegramRequest } from "./telegram-bot";
 import { pingsReduced, quietHour } from "./trial-cycle";
 import { maxStorageId } from "./web-account";
-import { accountIdForMax, accountIdForTelegram, loadAccount, resolveJournalId, resolveMaxJournalId } from "./web-account-store";
+import { accountIdForMax, accountIdForTelegram, loadAccount, resolveMaxJournalId } from "./web-account-store";
 import { accessForUser, maxAccessIdentity, type WeekAccessIdentity } from "./week-access";
 import { zonedParts } from "./zoned";
 
@@ -62,33 +61,7 @@ async function openDueSlot(
   return { slot, dateKey: clock.dateKey };
 }
 
-/**
- * The mood question that is already due today.
- * The hourly run used to see a MAX chat as id 0, so a forever grant looked locked and the question never left.
- * Writing to the bot sends the missed one, the same way Telegram does.
- */
-export async function sendDueTelegramPoll(input: {
-  chatId: number;
-  userId: number;
-  username?: string;
-  locale: LocaleId;
-}): Promise<void> {
-  const spoken = input.username?.trim().replace(/^@/, "");
-  if (spoken) await rememberMessengerName(input.userId, spoken);
-  const owner = await resolveJournalId(input.userId);
-  const username = spoken || (await loadMessengerName(input.userId));
-  const due = await openDueSlot(owner, { id: input.userId, username });
-  if (!due) return;
-  if (!(await claimDigestSlot(input.userId, due.dateKey, due.slot))) return;
-  const ok = await telegramRequest("sendMessage", {
-    chat_id: input.chatId,
-    text: pollText(due.slot, input.locale),
-    reply_markup: feelingKeyboard(due.slot, input.locale),
-  });
-  if (!ok) await releaseDigestSlot(input.userId, due.dateKey, due.slot);
-}
-
-/** Same catch-up for a MAX dialog. The claim key matches the hourly run (`max:<id>`). */
+/** Today's unanswered mood question, when the MAX chat is opened. A note does not ask again. */
 export async function sendDueMaxPoll(input: {
   userId: number;
   username?: string;
