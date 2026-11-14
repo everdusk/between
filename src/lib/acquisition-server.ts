@@ -21,7 +21,8 @@ export async function trackMessengerStart(input: { payload: string | null; messe
     const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
     if (!redis || !pepper) return;
     // Persist before acknowledging the messenger webhook; upload after its reply.
-    await queueMessengerConversion(redis, { ...input, pepper, owners: process.env.ANALYTICS_OWNERS });
+    const ownerTestUntil = Date.parse(process.env.METRIKA_OWNER_TEST_UNTIL ?? "") / 1000;
+    await queueMessengerConversion(redis, { ...input, pepper, owners: process.env.ANALYTICS_OWNERS, ownerTestUntil });
     scheduleAcquisitionSync();
   } catch {
     console.warn("messenger acquisition could not be recorded");

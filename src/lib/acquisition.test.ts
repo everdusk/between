@@ -122,6 +122,23 @@ describe("attributed messenger starts", () => {
     assert.equal("pepper" in conversion, false);
   });
 
+  it("temporarily counts owner starts only before the explicit test deadline", async () => {
+    const store = new MemoryStore();
+    const ref = await createAcquisition(store.redis, { clientId: "123" }, NOW);
+    const testOwner = { ...actor, username: "aliatorovskaia", payload: `ad_${ref}`, ownerTestUntil: NOW + 3600 };
+    assert.equal(await queueMessengerConversion(store.redis, testOwner, NOW), true);
+    assert.equal(await queueMessengerConversion(store.redis, testOwner, NOW), false);
+    assert.equal(await queueMessengerConversion(store.redis, { ...testOwner, messenger: "max", userId: 1062664437 }, NOW), true);
+    for (const ownerTestUntil of [NOW, NOW - 1, NaN, Infinity]) {
+      const expiredStore = new MemoryStore();
+      const nextRef = await createAcquisition(expiredStore.redis, { clientId: "123" }, NOW);
+      const expiredOwner = { ...testOwner, payload: `ad_${nextRef}`, ownerTestUntil };
+      assert.equal(await queueMessengerConversion(expiredStore.redis, expiredOwner, NOW), false);
+      assert.equal(await queueMessengerConversion(expiredStore.redis, { ...expiredOwner, messenger: "max", userId: 1062664437 }, NOW), false);
+    }
+    assert.equal(store.pending.size, 2);
+  });
+
   it("allows another day's confirmed visit and keeps messengers separate", async () => {
     const store = await queued();
     const ref = await createAcquisition(store.redis, { yclid: "555" }, NOW + 86400);

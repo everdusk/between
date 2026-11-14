@@ -57,12 +57,13 @@ export async function createAcquisition(
 /** An authenticated messenger update is required; a website button can never call this endpoint. */
 export async function queueMessengerConversion(
   redis: AcquisitionStore,
-  input: { payload: string | null; messenger: AcquisitionMessenger; userId: number; username?: string | null; pepper: string; owners?: string },
+  input: { payload: string | null; messenger: AcquisitionMessenger; userId: number; username?: string | null; pepper: string; owners?: string; ownerTestUntil?: number },
   now = Math.floor(Date.now() / 1000),
 ): Promise<boolean> {
   const ref = acquisitionPayload(input.payload);
   if (!ref || !input.pepper || !Number.isSafeInteger(input.userId) || input.userId <= 0) return false;
-  if (analyticsQuiet({ ...input, owners: input.owners })) return false;
+  const ownerTestActive = typeof input.ownerTestUntil === "number" && Number.isSafeInteger(input.ownerTestUntil) && now < input.ownerTestUntil;
+  if (analyticsQuiet({ ...input, owners: input.owners }) && !ownerTestActive) return false;
   const record = await redis.get<Acquisition>(`between:acquisition:ref:${ref}`);
   if (!record || !acquisitionFresh(record, now)) return false;
   const actor = createHmac("sha256", input.pepper).update(`${input.messenger}:${input.userId}`).digest("hex");
