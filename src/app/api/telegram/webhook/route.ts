@@ -14,6 +14,7 @@ import {
   releasePaymentCharge,
   rememberBotBlocked,
   rememberDeviceLocale,
+  rememberMessengerName,
   rememberUser,
   saveWeekAccess,
   takeBriefAttempt,
@@ -41,7 +42,6 @@ import {
   startPayload,
 } from "@/lib/landing";
 import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
-import { sendDueTelegramPoll } from "@/lib/due-mood";
 import { loadPollDay, rememberQuietChat } from "@/lib/poll-day";
 import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { appUrl } from "@/lib/telegram-auth";
@@ -520,6 +520,7 @@ export async function POST(req: Request) {
   if (message.from?.id) {
     await forgetBotBlocked(message.from.id);
     await rememberQuietChat(message.from.id, message.from.username, "telegram");
+    await rememberMessengerName(message.from.id, message.from.username);
   }
 
   const text = (message.text ?? "").trim();
@@ -527,13 +528,6 @@ export async function POST(req: Request) {
   const userId = message.from?.id;
   const { reply, greeting } = await localesFor(message.from);
   const keyboard = miniAppKeyboard(appUrl(), reply);
-  if (userId && redisConfigured()) {
-    try {
-      await sendDueTelegramPoll({ chatId, userId, username: message.from?.username, locale: reply });
-    } catch {
-      // The note still saves when the catch-up question cannot go out.
-    }
-  }
   const media = message.voice ?? message.audio;
 
   if (media) {
