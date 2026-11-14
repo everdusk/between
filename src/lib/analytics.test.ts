@@ -11,6 +11,7 @@ import {
   formatAnalyticsReport,
   analyticsQuiet,
   isAnalyticsOwner,
+  pollChatQuiet,
   statsWindow,
   quietClientLaunch,
   messengerEventName,
@@ -387,6 +388,11 @@ describe("analytics", () => {
     assert.equal(analyticsQuiet({ userId: 1062664437, messenger: "max" }), true);
     assert.equal(analyticsQuiet({ userId: 1062664437, messenger: "telegram" }), false);
     assert.equal(analyticsQuiet({ username: "someone", userId: 5, messenger: "telegram" }), false);
+    assert.equal(pollChatQuiet("max:1062664437"), true);
+    assert.equal(pollChatQuiet("42", "aliatorovskaia"), true);
+    assert.equal(pollChatQuiet("42"), false);
+    assert.equal(pollChatQuiet("42", "ada"), false);
+    assert.equal(pollChatQuiet("max:5"), false);
     assert.equal(
       quietClientLaunch({
         telegramInit: "user=" + encodeURIComponent(JSON.stringify({ id: 7, username: "aliatorovskaia" })),

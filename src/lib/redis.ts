@@ -13,6 +13,7 @@ let client: Redis | null = null;
 
 const USERS_KEY = "between:users";
 const BLOCKED_KEY = "between:bots:blocked";
+const QUIET_KEY = "between:stats:quiet";
 
 export function redisConfigured(): boolean {
   return Boolean(
@@ -198,6 +199,20 @@ export async function listBlockedBots(): Promise<Set<string>> {
   const redis = getRedis();
   if (!redis) return new Set();
   const ids = await redis.smembers(BLOCKED_KEY);
+  return new Set(ids.map((id) => String(id)));
+}
+
+/** Chats of the person who reads /stats. They stay out of the poll block. */
+export async function rememberStatsQuiet(userId: number | string): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.sadd(QUIET_KEY, String(userId));
+}
+
+export async function listStatsQuiet(): Promise<Set<string>> {
+  const redis = getRedis();
+  if (!redis) return new Set();
+  const ids = await redis.smembers(QUIET_KEY);
   return new Set(ids.map((id) => String(id)));
 }
 

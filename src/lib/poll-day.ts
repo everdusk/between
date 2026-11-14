@@ -1,3 +1,4 @@
+import { pollChatQuiet, analyticsQuiet } from "./analytics-model";
 import {
   DIGEST_BATCH,
   MOOD_SLOTS,
@@ -14,14 +15,16 @@ import {
   digestSlotHeld,
   getUserTimezone,
   listBlockedBots,
+  listStatsQuiet,
   listUserIds,
   loadDigestRun,
   loadUserStore,
   loadWeekAccess,
+  rememberStatsQuiet,
 } from "./redis";
 import { pingsReduced } from "./trial-cycle";
 import { messengerUsername } from "./due-mood";
-import { resolveJournalId, resolveMaxJournalId } from "./web-account-store";
+import { accountIdForTelegram, loadAccount, resolveJournalId, resolveMaxJournalId } from "./web-account-store";
 import { accessForUser, maxAccessIdentity } from "./week-access";
 import { zonedParts } from "./zoned";
 
@@ -30,9 +33,28 @@ function statusAfterOpen(openedAt: string | null, status: string): string {
   return !openedAt && status === "new" ? "trial" : status;
 }
 
-async function readPerson(userId: string, now: Date, blocked: Set<string>): Promise<PollPerson | null> {
+/** The stats owner is one person in two chats. Remember the chat so the next report can drop it. */
+export async function rememberQuietChat(
+  userId: number,
+  username: string | undefined,
+  messenger: "telegram" | "max",
+): Promise<void> {
+  if (!analyticsQuiet({ userId, username, messenger, owners: process.env.ANALYTICS_OWNERS })) return;
+  await rememberStatsQuiet(messenger === "max" ? `max:${userId}` : String(userId));
+}
+
+async function quietChat(userId: string, quiet: Set<string>): Promise<boolean> {
+  if (quiet.has(userId) || pollChatQuiet(userId)) return true;
+  if (!/^\d+$/.test(userId)) return false;
+  const accountId = await accountIdForTelegram(Number(userId));
+  if (!accountId) return false;
+  const account = await loadAccount(accountId);
+  return pollChatQuiet(userId, account?.telegramUsername);
+}
+
+async function readPerson(userId: string, now: Date, blocked: Set<string>, quiet: Set<string>): Promise<PollPerson | null> {
   const channel = digestChannel(userId);
-  if (!channel || blocked.has(userId)) return null;
+  if (!channel || blocked.has(userId) || (await quietChat(userId, quiet))) return null;
   const maxId = channel === "max" ? maxUserIdFromDigest(userId) : null;
   if (channel === "max" && !maxId) return null;
   const owner =
@@ -72,12 +94,17 @@ async function readPerson(userId: string, now: Date, blocked: Set<string>): Prom
 
 /** Who should have today's poll, who has it, and who answered. Each chat uses its own clock. */
 export async function loadPollDay(now = new Date()): Promise<string> {
-  const [userIds, blocked, run] = await Promise.all([listUserIds(), listBlockedBots(), loadDigestRun()]);
+  const [userIds, blocked, quiet, run] = await Promise.all([
+    listUserIds(),
+    listBlockedBots(),
+    listStatsQuiet(),
+    loadDigestRun(),
+  ]);
   const people: PollPerson[] = [];
   for (let index = 0; index < userIds.length; index += DIGEST_BATCH) {
     const batch = userIds.slice(index, index + DIGEST_BATCH);
     const rows = await Promise.all(
-      batch.map((userId) => readPerson(userId, now, blocked).catch(() => null)),
+      batch.map((userId) => readPerson(userId, now, blocked, quiet).catch(() => null)),
     );
     for (const row of rows) {
       if (row) people.push(row);

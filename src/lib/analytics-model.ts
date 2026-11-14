@@ -262,6 +262,14 @@ export function analyticsQuiet(input: {
   return Number.isSafeInteger(id) && ANALYTICS_QUIET_MAX_IDS.includes(id);
 }
 
+/** A poll-stats chat that belongs to the person who reads /stats. Telegram needs the username. MAX matches the known id. */
+export function pollChatQuiet(userId: string, username?: string | null, owners?: string | null): boolean {
+  const max = /^max:(\d+)$/.exec(userId);
+  if (max) return analyticsQuiet({ userId: max[1], username, messenger: "max", owners });
+  if (/^\d+$/.test(userId)) return analyticsQuiet({ username, messenger: "telegram", owners });
+  return false;
+}
+
 /** User object inside a Telegram or MAX launch string. The signature is not checked. */
 export function launchUser(initData: string | null | undefined): { id?: number; username?: string } | null {
   if (!initData) return null;

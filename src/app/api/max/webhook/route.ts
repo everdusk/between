@@ -21,7 +21,7 @@ import {
   trackServerEvent,
 } from "@/lib/analytics";
 import { sendDueMaxPoll } from "@/lib/due-mood";
-import { loadPollDay } from "@/lib/poll-day";
+import { loadPollDay, rememberQuietChat } from "@/lib/poll-day";
 import { linkCodeFromStart, loginTokenFromStart, maxStorageId } from "@/lib/web-account";
 import { claimMaxLink, finishMaxLogin, resolveMaxJournalId } from "@/lib/web-account-store";
 import {
@@ -310,6 +310,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
     await forgetBotBlocked(maxStorageId(userId));
+    await rememberQuietChat(userId, maxUsername(update), "max");
 
     if (update.update_type === "message_callback") {
       await handleCallback(update, userId);
