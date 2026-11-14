@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { trackMessengerStart } from "@/lib/acquisition-server";
 import { type LocaleId } from "@/lib/i18n";
 import { addCheckinForOwner, appendBotMessageForOwner } from "@/lib/journal-server";
 import { feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
@@ -266,7 +267,8 @@ async function handleStart(
   keyboard?: MaxKeyboard,
   chatId?: number,
 ) {
-  await trackServerEvent({ userId, event: "visit", messenger: "max" });
+  await trackServerEvent({ userId, event: "visit", messenger: "max", username });
+  await trackMessengerStart({ payload, messenger: "max", userId, username });
   const loginToken = loginTokenFromStart(payload);
   if (loginToken) {
     await say(userId, translate(reply, "botLoginAsk"), maxLoginKeyboard(loginToken, reply), chatId);
@@ -355,7 +357,7 @@ export async function POST(req: Request) {
     if (!text) return NextResponse.json({ ok: true });
 
     if (isBotCommand(text, "start") || isBotCommand(text, "help")) {
-      await handleStart(userId, startPayload(text) ?? "", username, greeting, reply, keyboard, update.chat_id);
+      await handleStart(userId, isBotCommand(text, "start") ? startPayload(text) ?? "" : "", username, greeting, reply, keyboard, update.chat_id);
       return NextResponse.json({ ok: true });
     }
 

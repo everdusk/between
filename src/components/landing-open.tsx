@@ -1,5 +1,7 @@
+"use client";
+
 import { MESSENGER_CSS, MessengerButtons } from "@/components/landing-messengers";
-import { LANDING_MAX_URL } from "@/lib/landing";
+import { AcquisitionLink } from "@/components/acquisition-link";
 
 const CSS = `
 ${MESSENGER_CSS}
@@ -19,13 +21,13 @@ export function OpenFork() {
           Один дневник. Telegram или MAX. MAX открывается без VPN.
         </p>
         <div className="mt-8">
-          <MessengerButtons maxHref={LANDING_MAX_URL} />
+          <MessengerButtons />
         </div>
         <p className="mt-5 text-sm text-[#74827b]">
           Если приложение не открылось,{" "}
-          <a href={LANDING_MAX_URL} className="underline underline-offset-4">
+          <AcquisitionLink messenger="max" className="underline underline-offset-4">
             откройте бота ещё раз
-          </a>
+          </AcquisitionLink>
           .
         </p>
       </div>

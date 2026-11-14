@@ -1,5 +1,6 @@
 import { type LocaleId } from "./i18n";
 import { WEB_PRIVACY, WEB_TERMS } from "./legal-web";
+import { ATTRIBUTION_PRIVACY } from "./legal-attribution";
 
 export const LEGAL_INN = "770507475005";
 export const LEGAL_NAME = "Ляторовская Анастасия Борисовна";
@@ -15,7 +16,16 @@ export type LegalDoc = { title: string; updated: string; preface?: string[]; sec
 /** Site and MAX share this edition. Telegram builds its own documents inside the client. */
 export function legalDocument(kind: LegalKind, locale: LocaleId): LegalDoc {
   const book = kind === "terms" ? WEB_TERMS : WEB_PRIVACY;
-  return book[locale] ?? book.ru;
+  const doc = book[locale] ?? book.ru;
+  if (kind !== "privacy") return doc;
+  const attribution = ATTRIBUTION_PRIVACY[locale] ?? ATTRIBUTION_PRIVACY.ru;
+  return {
+    ...doc,
+    updated: attribution.updated,
+    sections: doc.sections.map((section) => section.heading.startsWith("8.")
+      ? { ...section, paragraphs: [...section.paragraphs, attribution.paragraph] }
+      : section),
+  };
 }
 
 export function legalLocales(): LocaleId[] {
