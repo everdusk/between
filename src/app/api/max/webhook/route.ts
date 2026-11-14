@@ -1,3 +1,4 @@
+import { notificationChoice, setNotificationChoice } from "@/lib/notification-preferences";
 import { NextResponse } from "next/server";
 import { trackMessengerStart } from "@/lib/acquisition-server";
 import { type LocaleId } from "@/lib/i18n";
@@ -111,6 +112,11 @@ async function handleCallback(update: MaxUpdate, userId: number) {
   if (!callbackId) return;
   const payload = update.callback?.payload ?? "";
   const { reply, owner } = await localesFor(userId);
+  if (notificationChoice(payload)) {
+    const text = await setNotificationChoice(owner, payload, reply);
+    await answerMaxCallback(callbackId, text);
+    return;
+  }
   if (payload.startsWith("ob:")) {
     const result = await answerOnboarding(owner, reply, payload, { userId, messenger: "max" });
     if (result.type !== "update") {

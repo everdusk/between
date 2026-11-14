@@ -77,6 +77,9 @@ export function digestAction(input: {
   if (!input.store.notify.moodPolls) {
     return { type: "skip", reason: "polls_off" };
   }
+  if (input.store.notify.moodFrequency === "evening" && slot !== "evening") {
+    return { type: "skip", reason: "evening_only" };
+  }
   if (hasCheckin(input.store, input.dateKey, slot)) {
     return { type: "skip", reason: "has_checkin" };
   }
@@ -98,6 +101,7 @@ export function duePoll(input: {
   if (!input.store.notify.moodPolls) return null;
   let due: CheckinSlot | null = null;
   for (const slot of ["morning", "day", "evening"] as const) {
+    if (input.store.notify.moodFrequency === "evening" && slot !== "evening") continue;
     if (input.hour < POLL_HOURS[slot]) break;
     if (!hasCheckin(input.store, input.dateKey, slot)) due = slot;
   }
@@ -125,6 +129,7 @@ export type PollSlotState = {
 export type PollPerson = {
   blocked: boolean;
   moodPolls: boolean;
+  moodFrequency?: "three" | "evening";
   pollsOpen: boolean;
   reduced: boolean;
   hour: number;
@@ -138,7 +143,7 @@ export type PollPerson = {
  */
 export function pollsOwed(person: PollPerson): PollSlotState[] {
   if (person.blocked || !person.moodPolls || !person.pollsOpen || person.reduced) return [];
-  const passed = person.slots.filter((slot) => person.hour >= POLL_HOURS[slot.slot]);
+  const passed = person.slots.filter((slot) => person.hour >= POLL_HOURS[slot.slot] && (person.moodFrequency !== "evening" || slot.slot === "evening"));
   const sent = passed.filter((slot) => slot.sent);
   const unanswered = passed.filter((slot) => !slot.answered);
   const latest = unanswered[unanswered.length - 1];

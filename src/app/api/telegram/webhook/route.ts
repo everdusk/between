@@ -1,3 +1,4 @@
+import { notificationChoice, setNotificationChoice } from "@/lib/notification-preferences";
 import { NextResponse } from "next/server";
 import { trackMessengerStart } from "@/lib/acquisition-server";
 import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale, type LocaleId } from "@/lib/i18n";
@@ -201,6 +202,17 @@ export async function GET() {
 }
 
 async function handleCallback(callback: TelegramCallback) {
+  if (callback.from?.id && notificationChoice(callback.data ?? "")) {
+    const { reply } = await localesFor(callback.from);
+    const owner = await resolveJournalId(callback.from.id);
+    const text = await setNotificationChoice(owner, callback.data!, reply);
+    await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
+    if (text && callback.message) await telegramRequest("editMessageText", {
+      chat_id: callback.message.chat.id, message_id: callback.message.message_id, text,
+      reply_markup: { inline_keyboard: [] },
+    });
+    return;
+  }
   if (callback.data?.startsWith("ob:") && callback.from?.id) {
     const { reply } = await localesFor(callback.from);
     const owner = await resolveJournalId(callback.from.id);

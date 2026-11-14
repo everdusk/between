@@ -474,11 +474,11 @@ export function useTherapyStore(options?: {
   );
 
   const saveNotify = useCallback(
-    (input: Pick<NotifyPrefs, "moodPolls" | "eveningNudge">) => {
+    (input: Omit<NotifyPrefs, "updatedAt">) => {
       const current = storeRef.current;
       return persist({
         ...current,
-        notify: { ...input, updatedAt: new Date().toISOString() },
+        notify: { ...current.notify, ...input, updatedAt: new Date().toISOString() },
       });
     },
     [persist],

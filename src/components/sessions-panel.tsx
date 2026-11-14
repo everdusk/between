@@ -27,7 +27,7 @@ interface SessionsPanelProps {
   }) => boolean;
   onDelete: (id: string) => boolean;
   onSavePlan: (plan: Omit<SessionPlan, "updatedAt">) => boolean;
-  onSaveNotify: (prefs: Pick<NotifyPrefs, "moodPolls" | "eveningNudge">) => boolean;
+  onSaveNotify: (prefs: Omit<NotifyPrefs, "updatedAt">) => boolean;
   disabled?: boolean;
 }
 

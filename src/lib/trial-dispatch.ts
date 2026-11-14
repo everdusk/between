@@ -3,14 +3,17 @@ import type { LocaleId } from "./i18n";
 import { translate } from "./messages";
 import { subscribeOpenKeyboard, sendMaxDocument, sendMaxMessage, weekOpenKeyboard as maxWeekKeyboard } from "./max-bot";
 import { periodBrief } from "./period-brief";
-import { claimDigestSlot, releaseDigestSlot, saveWeekAccess } from "./redis";
+import { claimDigestSlot, releaseDigestSlot, stampWeekAccess } from "./redis";
+import { notificationChoiceRows } from "./notification-preferences";
+import { maxOnboardKeyboard } from "./max-bot";
+import { onboardReplyMarkup } from "./telegram-bot";
 import { renderSessionPdf } from "./session-pdf";
 import { prepareSessionSheet, rememberSessionSheet } from "./session-sheet";
 import { appUrl } from "./telegram-auth";
 import { sendTelegramDocument, subscribeKeyboard, telegramRequest, weekOpenKeyboard } from "./telegram-bot";
-import { dueCycle, type CycleItem } from "./trial-cycle";
+import { dueCycle, pingsReduced, type CycleItem } from "./trial-cycle";
 import type { SessionPlan, TherapyStore } from "./types";
-import { planPrice, rubPriceFromEnv, stampCycle, starPriceFromEnv, type CycleStamp, type WeekAccessRecord, type WeekAccessStatus } from "./week-access";
+import { planPrice, rubPriceFromEnv, starPriceFromEnv, type CycleStamp, type WeekAccessRecord, type WeekAccessStatus } from "./week-access";
 
 const STAMP: Partial<Record<CycleItem["kind"], CycleStamp>> = {
   slice: "sliceAt",
@@ -44,17 +47,18 @@ export function cycleText(
   const brief = () => periodBrief(store, locale, dateKey, now);
   const price = monthPrice();
   if (item.kind === "digest-full") {
-    const lead = translate(locale, "botDigestFull", { time: item.time ?? "" });
+    const lead = translate(locale, "botDigestFull", { time: item.time ?? "", date: dated(locale, item.when ?? dateKey) });
     return trialHint ? `${lead}\n${translate(locale, "botDigestHint")}` : lead;
   }
   if (item.kind === "digest-mini") {
     const snap = brief();
-    const lead = translate(locale, "botDigestMini", { time: item.time ?? "", ...snap });
+    const lead = translate(locale, "botDigestMini", { time: item.time ?? "", date: dated(locale, item.when ?? dateKey), ...snap });
     return trialHint ? `${lead}\n${translate(locale, "botDigestHint")}` : lead;
   }
   if (item.kind === "slice") {
     const snap = brief();
-    return translate(locale, "botSlice", snap);
+    const slice = translate(locale, "botSlice", snap);
+    return item.includePaywall ? `${slice}\n\n${cycleText({ ...item, kind: "paywall" }, locale, store, dateKey, now, trialHint)}` : slice;
   }
   if (item.kind === "day5") return translate(locale, "botDay5", { date: dated(locale, item.when), price });
   if (item.kind === "paywall") {
@@ -71,6 +75,7 @@ export function cycleText(
   if (item.kind === "renew-last") return translate(locale, "botRenewLast", { date: dated(locale, item.when) });
   if (item.kind === "expired") return translate(locale, "botExpired");
   if (item.kind === "session-ask") return translate(locale, "botSessionAsk", { days: item.days ?? "" });
+  if (item.kind === "quiet-offer") return translate(locale, "botQuietOffer");
   return translate(locale, "botMidpoint");
 }
 
@@ -92,9 +97,10 @@ async function deliverText(input: {
 }
 
 function markupFor(item: CycleItem, channel: "telegram" | "max", locale: LocaleId): unknown {
+  if (item.kind === "quiet-offer") return channel === "max" ? maxOnboardKeyboard(notificationChoiceRows(locale)) : onboardReplyMarkup(notificationChoiceRows(locale));
   const url = appUrl();
   const later = item.kind === "paywall" || item.kind === "nudge1";
-  const pay = item.kind === "paywall" || item.kind === "nudge1" || item.kind === "nudge2" || item.kind.startsWith("renew") || item.kind === "expired" || item.kind === "day5";
+  const pay = item.includePaywall || item.kind === "paywall" || item.kind === "nudge1" || item.kind === "nudge2" || item.kind.startsWith("renew") || item.kind === "expired" || item.kind === "day5";
   if (channel === "max") {
     if (pay) return subscribeOpenKeyboard(locale, later) ?? undefined;
     if (item.kind === "digest-full" || item.kind === "digest-mini" || item.kind === "slice") return maxWeekKeyboard(locale) ?? undefined;
@@ -143,7 +149,8 @@ export async function deliverCycle(input: {
   locale: LocaleId;
   onboardingOpen: boolean;
 }): Promise<number> {
-  const items = dueCycle({
+  const reduced = pingsReduced(input.record.openedAt, input.store.entries, input.now, input.store.notify.updatedAt);
+  const items = input.store.notify.serviceReminders === false ? [] : dueCycle({
     record: input.record,
     status: input.status,
     plan: input.plan,
@@ -152,14 +159,17 @@ export async function deliverCycle(input: {
     now: input.now,
     timeZone: input.timeZone,
     onboardingOpen: input.onboardingOpen,
-  });
+    engaged: input.store.entries.length > 0,
+  }).filter((item) => !reduced || (item.kind !== "session-ask" && item.kind !== "midpoint"));
+  if (!items.length && !input.onboardingOpen && reduced && input.hour === 18 && (input.store.notify.moodPolls || input.store.notify.eveningNudge)) {
+    const latest = input.store.entries.map((entry) => entry.createdAt).sort().at(-1) ?? input.record.openedAt;
+    items.push({ kind: "quiet-offer", slot: `inactive:${latest}:${input.store.notify.updatedAt ?? ""}` });
+  }
   let sent = 0;
-  let record = input.record;
   for (const item of items) {
-    if (item.slot) {
-      const claimed = await claimDigestSlot(input.userId, input.dateKey, item.slot);
-      if (!claimed) continue;
-    }
+    const slot = item.slot ?? `cycle:${item.kind}:${item.kind.startsWith("renew") || item.kind === "expired" ? input.record.paidUntil : input.record.openedAt}`;
+    const claimDay = item.slot?.startsWith("session:") ? "session" : item.kind === "quiet-offer" || !item.slot ? "cycle" : input.dateKey;
+    if (!await claimDigestSlot(input.owner, claimDay, slot, 365 * 86400)) continue;
     const text = cycleText(item, input.locale, input.store, input.dateKey, input.now, input.status === "trial");
     const markup = markupFor(item, input.channel, input.locale);
     let ok = false;
@@ -174,14 +184,13 @@ export async function deliverCycle(input: {
       ok = false;
     }
     if (!ok) {
-      if (item.slot) await releaseDigestSlot(input.userId, input.dateKey, item.slot);
+      await releaseDigestSlot(input.owner, claimDay, slot);
       continue;
     }
     sent += 1;
     const field = STAMP[item.kind];
     if (field) {
-      record = stampCycle(record, field, input.now);
-      await saveWeekAccess(input.owner, record);
+      await stampWeekAccess(input.owner, item.includePaywall ? [field, "paywallAt"] : [field], input.now, input.record);
     }
   }
   return sent;

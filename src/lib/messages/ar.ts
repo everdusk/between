@@ -1,6 +1,15 @@
 import type { Catalog } from "./ru";
 
 export const ar: Catalog = {
+  pollFrequency: "تكرار الأسئلة",
+  pollEveningOnly: "في المساء فقط",
+  pollThreeTimes: "ثلاث مرات يوميًا",
+  serviceRemindersToggle: "ملخصات الجلسات وتذكيرات الاشتراك",
+  botQuietOffer: "يمكنك اختيار إيقاع أهدأ: أسئلة في المساء فقط أو إيقاف الرسائل التلقائية. يمكنك تغيير ذلك في التطبيق.",
+  botQuietOff: "إيقاف الرسائل",
+  botQuietOffSaved: "تم إيقاف الرسائل التلقائية. يمكنك تفعيلها من إعدادات التطبيق.",
+  botQuietEveningSaved: "ستصلك الأسئلة في المساء فقط. تم إيقاف تذكيرات الملاحظات.",
+
   guest: "ضيف",
   hello: "مرحبًا، {name}",
   helloDev: "مرحبًا، {name} · وضع التطوير",
@@ -383,8 +392,8 @@ export const ar: Catalog = {
   botWeekPaid: "Done. The subscription is active until {date}.",
   botHelpPrice:
     "The first 7 days are free. Then {monthStars} Stars or {monthRub} ₽ a month, {quarterStars} Stars or {quarterRub} ₽ for 3 months, {yearStars} Stars or {yearRub} ₽ for a year. A month of Stars can be cancelled in Telegram.",
-  botDigestFull: "Session today at {time}. I gathered what happened between sessions.",
-  botDigestMini: "Session today at {time}. In short:\n• notes: {notes}\n• mood: {mood}\n• from notes: {themes}",
+  botDigestFull: "الجلسة يوم {date} الساعة {time}. جمعت ما حدث بين الجلسات.",
+  botDigestMini: "الجلسة يوم {date} الساعة {time}. ملخص:\n• ملاحظات: {notes}\n• المزاج: {mood}\n• من الملاحظات: {themes}",
   botDigestHint: "I put together a brief like this before each of your sessions.",
   botSlice: "Your slice of the first days:\n• notes: {notes}\n• mood: {mood}\n• themes: {themes}",
   botDay5: "A small reminder: the free days end on {date}, in 2 days. Then {price}. Nothing to do now — keep the journal.",
@@ -423,7 +432,7 @@ export const ar: Catalog = {
   botPollMorning: "صباح. كيف الحال؟",
   botPollDay: "نهار. كيف الحال؟",
   botPollEvening: "مساء. كيف الحال؟",
-  botNudge: "هل هناك ملاحظة لليوم؟",
+  botNudge: "هل ترغب في حفظ شيء من يومك؟ جملة واحدة تكفي.",
   todayTitle: "اليوم",
   nextSession: "الجلسة القادمة",
   inDays: "بعد {days}",

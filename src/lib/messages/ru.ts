@@ -1,4 +1,13 @@
 export const ru = {
+  pollFrequency: "Частота вопросов",
+  pollEveningOnly: "Только вечером",
+  pollThreeTimes: "Три раза в день",
+  serviceRemindersToggle: "Сводки к сеансу и напоминания о подписке",
+  botQuietOffer: "Можно выбрать более спокойный ритм: оставить вопросы только вечером или отключить автоматические сообщения. Настройки всегда можно изменить в приложении.",
+  botQuietOff: "Отключить сообщения",
+  botQuietOffSaved: "Автоматические сообщения отключены. Вернуть их можно в настройках приложения.",
+  botQuietEveningSaved: "Оставили вопросы только вечером. Напоминания о заметках отключены.",
+
   guest: "Гость",
   hello: "Привет, {name}",
   helloDev: "Привет, {name} · режим разработки",
@@ -390,9 +399,8 @@ export const ru = {
   botWeekPaid: "Готово. Подписка активна до {date}.",
   botHelpPrice:
     "Первые 7 дней бесплатно. Дальше — {monthStars} Stars или {monthRub} ₽ в месяц, {quarterStars} Stars или {quarterRub} ₽ за 3 месяца, {yearStars} Stars или {yearRub} ₽ за год. Месяц в Stars можно отменить в Telegram.",
-  botDigestFull: "Сегодня сеанс в {time}. Собрал всё, что было между сеансами.",
-  botDigestMini:
-    "Сегодня сеанс в {time}. Коротко о периоде:\n• записей: {notes}\n• настроение: {mood}\n• из заметок: {themes}",
+  botDigestFull: "Сеанс {date} в {time}. Собрал всё, что было между сеансами.",
+  botDigestMini: "Сеанс {date} в {time}. Коротко о периоде:\n• записей: {notes}\n• настроение: {mood}\n• из заметок: {themes}",
   botDigestHint: "Такую выжимку я собираю к каждому вашему сеансу.",
   botSlice: "Ваш срез за первые дни:\n• записей: {notes}\n• настроение: {mood}\n• темы: {themes}",
   botDay5:
@@ -439,8 +447,7 @@ export const ru = {
   botPollMorning: "Утро. Как вы?",
   botPollDay: "День. Как вы?",
   botPollEvening: "Вечер. Как вы?",
-  botNudge:
-    "Есть заметка за сегодня?",
+  botNudge: "Хотите сохранить что-нибудь из сегодняшнего дня? Можно одной фразой.",
   todayTitle: "Сегодня",
   nextSession: "Ближайший сеанс",
   inDays: "через {days}",

@@ -1,3 +1,4 @@
+import { withNotificationRun } from "@/lib/notification-run";
 import { NextResponse } from "next/server";
 import { scheduleAcquisitionSync } from "@/lib/acquisition-server";
 import {
@@ -103,98 +104,106 @@ async function digestUser(
   await ensureTrial(owner, now);
   const timeZone = await getUserTimezone(owner);
   const clock = zonedParts(now, timeZone);
-  const store = await loadUserStore(owner);
-  const locale =
-    channel === "max"
-      ? "ru"
-      : resolveBotLocale(await loadUserLocale(owner), await loadDeviceLocale(owner), null);
-  const username = await messengerUsername(userId, channel);
-  const access = accessForUser(
-    await loadWeekAccess(owner),
-    channel === "max" && maxId
-      ? maxAccessIdentity(maxId, username)
-      : { id: Number(userId), username },
-    process.env.WEEK_EXEMPT_USER_IDS,
-    now,
-  );
-  const onboarding = await loadOnboarding(owner);
-  const onboardingOpen = Boolean(onboarding && onboarding.step !== "done");
-  let cycleSent = 0;
   if (quietHour(clock.hour)) return { ...EMPTY_TALLY, skipped: 1 };
-  if (quizReminderDue(onboarding, now, clock.hour)) {
-    const reminder = await remindOnboarding(owner, locale);
-    if (reminder) {
-      const text = `${translate(locale, "botQuizRemind")}\n\n${reminder.text}`;
-      const asked =
-        channel === "max" && maxId
-          ? await sendMaxMessage(maxId, text, maxOnboardKeyboard(reminder.rows))
-          : await telegramRequest("sendMessage", {
-              chat_id: Number(userId),
-              text,
-              reply_markup: onboardReplyMarkup(reminder.rows),
-            });
-      if (asked) {
-        await markQuizReminded(owner);
-        cycleSent += 1;
+  const result = await withNotificationRun(owner, clock.dateKey, clock.hour, async (): Promise<Tally> => {
+    const store = await loadUserStore(owner);
+    const locale =
+      channel === "max"
+        ? "ru"
+        : resolveBotLocale(await loadUserLocale(owner), await loadDeviceLocale(owner), null);
+    const username = await messengerUsername(userId, channel);
+    const access = accessForUser(
+      await loadWeekAccess(owner),
+      channel === "max" && maxId
+        ? maxAccessIdentity(maxId, username)
+        : { id: Number(userId), username },
+      process.env.WEEK_EXEMPT_USER_IDS,
+      now,
+    );
+    const onboarding = await loadOnboarding(owner);
+    const onboardingOpen = Boolean(onboarding && onboarding.step !== "done");
+    let cycleSent = 0;
+    const quizSlot = `quiz:${onboarding?.since}`;
+    if (!access.view.paused && store.notify.serviceReminders !== false && quizReminderDue(onboarding, now, clock.hour) && await claimDigestSlot(owner, "cycle", quizSlot, 365 * 86400)) {
+      const reminder = await remindOnboarding(owner, locale);
+      if (reminder) {
+        const text = `${translate(locale, "botQuizRemind")}\n\n${reminder.text}`;
+        const asked =
+          channel === "max" && maxId
+            ? await sendMaxMessage(maxId, text, maxOnboardKeyboard(reminder.rows))
+            : await telegramRequest("sendMessage", {
+                chat_id: Number(userId),
+                text,
+                reply_markup: onboardReplyMarkup(reminder.rows),
+              });
+        if (asked) {
+          await markQuizReminded(owner);
+          return { ...EMPTY_TALLY, sent: 1 };
+        }
+        await releaseDigestSlot(owner, "cycle", quizSlot);
+      } else {
+        await releaseDigestSlot(owner, "cycle", quizSlot);
       }
     }
-  }
-  if (!access.view.paused) {
-    cycleSent += await deliverCycle({
-      channel,
-      userId,
-      owner,
-      maxId,
-      record: access.record,
-      status: access.view.status,
-      store,
-      plan: store.sessionPlan,
-      dateKey: clock.dateKey,
-      hour: clock.hour,
-      now,
-      timeZone: timeZone ?? "Europe/Moscow",
-      locale,
-      onboardingOpen,
-    });
-  }
-  const reduced = pingsReduced(access.record.openedAt, store.entries, now);
-  const pollsOpen = moodPollsOpen({
-    onboardingOpen,
-    paused: access.view.paused,
-    status: access.view.status,
-  });
-  const exact = !pollsOpen || (reduced && slotForHour(clock.hour) !== "nudge") ? null : slotForHour(clock.hour);
-  const due = pollsOpen && !reduced && !exact ? duePoll({ store, dateKey: clock.dateKey, hour: clock.hour }) : null;
-  const slotName = exact ?? due;
-  if (!slotName) return cycleSent ? { ...EMPTY_TALLY, sent: cycleSent } : { ...EMPTY_TALLY, skipped: 1 };
-
-  const claimed = await claimDigestSlot(userId, clock.dateKey, slotName);
-  const action = exact
-    ? digestAction({
-        localHour: clock.hour,
-        dateKey: clock.dateKey,
+    if (!access.view.paused) {
+      cycleSent += await deliverCycle({
+        channel,
+        userId,
+        owner,
+        maxId,
+        record: access.record,
+        status: access.view.status,
         store,
-        alreadySent: !claimed,
-      })
-    : claimed && due
-      ? { type: "poll" as const, slot: due }
-      : { type: "skip" as const };
-  if (action.type === "skip") return cycleSent ? { ...EMPTY_TALLY, sent: cycleSent } : { ...EMPTY_TALLY, skipped: 1 };
+        plan: store.sessionPlan,
+        dateKey: clock.dateKey,
+        hour: clock.hour,
+        now,
+        timeZone: timeZone ?? "Europe/Moscow",
+        locale,
+        onboardingOpen,
+      });
+    }
+    if (cycleSent) return { ...EMPTY_TALLY, sent: cycleSent };
+    const reduced = pingsReduced(access.record.openedAt, store.entries, now, store.notify.updatedAt);
+    const pollsOpen = moodPollsOpen({
+      onboardingOpen,
+      paused: access.view.paused,
+      status: access.view.status,
+    });
+    const exact = !pollsOpen || reduced ? null : slotForHour(clock.hour);
+    const due = pollsOpen && !reduced && !exact ? duePoll({ store, dateKey: clock.dateKey, hour: clock.hour }) : null;
+    const slotName = exact ?? due;
+    if (!slotName) return { ...EMPTY_TALLY, skipped: 1 };
 
-  const delivery =
-    action.type === "poll"
-      ? await deliverText(channel, userId, maxId, pollText(action.slot, locale), {
-          max: maxFeelingKeyboard(action.slot, locale),
-          telegram: feelingKeyboard(action.slot, locale),
+    const action = exact
+      ? digestAction({
+          localHour: clock.hour,
+          dateKey: clock.dateKey,
+          store,
+          alreadySent: false,
         })
-      : await deliverText(channel, userId, maxId, nudgeText(locale), {});
+      : due
+        ? { type: "poll" as const, slot: due }
+        : { type: "skip" as const };
+    if (action.type === "skip") return { ...EMPTY_TALLY, skipped: 1 };
 
-  if (delivery !== "ok") {
-    await releaseDigestSlot(userId, clock.dateKey, slotName);
-    if (delivery === "blocked") await rememberBotBlocked(userId);
-    return cycleSent ? { ...EMPTY_TALLY, sent: cycleSent } : { ...EMPTY_TALLY, failed: 1 };
-  }
-  return { ...EMPTY_TALLY, sent: cycleSent + 1 };
+    if (!await claimDigestSlot(userId, clock.dateKey, slotName)) return { ...EMPTY_TALLY, skipped: 1 };
+    const delivery =
+      action.type === "poll"
+        ? await deliverText(channel, userId, maxId, pollText(action.slot, locale), {
+            max: maxFeelingKeyboard(action.slot, locale),
+            telegram: feelingKeyboard(action.slot, locale),
+          })
+        : await deliverText(channel, userId, maxId, nudgeText(locale), {});
+
+    if (delivery !== "ok") {
+      await releaseDigestSlot(userId, clock.dateKey, slotName);
+      if (delivery === "blocked") await rememberBotBlocked(userId);
+      return { ...EMPTY_TALLY, failed: 1 };
+    }
+    return { ...EMPTY_TALLY, sent: 1 };
+  });
+  return result ?? { ...EMPTY_TALLY, skipped: 1 };
 }
 
 async function runDigest() {

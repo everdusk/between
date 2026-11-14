@@ -12,7 +12,7 @@ import { WebAccountCard } from "@/components/web-account-card";
 import { PremiumPaywall } from "@/components/premium-paywall";
 import { SubscribeCheckout } from "@/components/subscribe-checkout";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { NotificationSettings } from "@/components/notification-settings";
 import { useI18n } from "@/components/locale-provider";
 import type { WebAccount } from "@/hooks/use-web-account";
 import { trackAnalytics } from "@/lib/analytics-client";
@@ -76,7 +76,7 @@ export function AccountSheet({
   initData: string;
   maxInitData: string;
   notify: NotifyPrefs;
-  onSaveNotify: (prefs: Pick<NotifyPrefs, "moodPolls" | "eveningNudge">) => boolean;
+  onSaveNotify: (prefs: Omit<NotifyPrefs, "updatedAt">) => boolean;
   disabled?: boolean;
   account: WebAccount | null;
   onRefreshAccount: () => void;
@@ -198,32 +198,7 @@ export function AccountSheet({
 
           <section>
             <h3 className="font-display text-lg tracking-tight text-foreground">{t("botReminders")}</h3>
-            <div className="mt-1 divide-y divide-[color:var(--glass-border)]">
-              <Switch
-                className="py-3.5"
-                label={t("pollToggle")}
-                checked={notify.moodPolls}
-                disabled={disabled}
-                onChange={(event) =>
-                  onSaveNotify({
-                    moodPolls: event.target.checked,
-                    eveningNudge: notify.eveningNudge,
-                  })
-                }
-              />
-              <Switch
-                className="py-3.5"
-                label={t("nudgeToggle")}
-                checked={notify.eveningNudge}
-                disabled={disabled}
-                onChange={(event) =>
-                  onSaveNotify({
-                    moodPolls: notify.moodPolls,
-                    eveningNudge: event.target.checked,
-                  })
-                }
-              />
-            </div>
+            <NotificationSettings notify={notify} disabled={disabled} onSave={onSaveNotify} />
           </section>
 
           <section className="space-y-3">

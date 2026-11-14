@@ -262,6 +262,8 @@ function normalizeNotify(raw: unknown): NotifyPrefs {
   if (!notify) return emptyNotify();
   return {
     moodPolls: typeof notify.moodPolls === "boolean" ? notify.moodPolls : true,
+    moodFrequency: notify.moodFrequency === "evening" ? "evening" : "three",
+    serviceReminders: typeof notify.serviceReminders === "boolean" ? notify.serviceReminders : true,
     eveningNudge:
       typeof notify.eveningNudge === "boolean" ? notify.eveningNudge : true,
     updatedAt: typeof notify.updatedAt === "string" ? notify.updatedAt : "",

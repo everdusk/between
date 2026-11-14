@@ -24,14 +24,14 @@ function access(openedAt: string) {
 describe("trial cycle", () => {
   const start = "2026-11-02T12:00:00.000Z";
 
-  it("sends a full sheet at 09:00 on a weekly session and a short one inside three days", () => {
+  it("sends a full sheet two hours before on a weekly session and a short one inside three days", () => {
     const full = dueCycle({
       record: access(start),
       status: "trial",
       plan: weekly(3),
       dateKey: "2026-11-05",
-      hour: 9,
-      now: new Date("2026-11-05T06:00:00.000Z"),
+      hour: 16,
+      now: new Date("2026-11-05T13:00:00.000Z"),
       timeZone: TZ,
       onboardingOpen: false,
     });
@@ -48,8 +48,8 @@ describe("trial cycle", () => {
         ],
       },
       dateKey: "2026-11-04",
-      hour: 9,
-      now: new Date("2026-11-04T06:00:00.000Z"),
+      hour: 16,
+      now: new Date("2026-11-04T13:00:00.000Z"),
       timeZone: TZ,
       onboardingOpen: false,
     });
@@ -64,8 +64,8 @@ describe("trial cycle", () => {
       status: "trial",
       plan: weekly(3),
       dateKey: "2026-11-07",
-      hour: 21,
-      now: new Date("2026-11-07T18:00:00.000Z"),
+      hour: 12,
+      now: new Date("2026-11-07T09:00:00.000Z"),
       timeZone: TZ,
       onboardingOpen: false,
     });
@@ -82,7 +82,9 @@ describe("trial cycle", () => {
       onboardingOpen: false,
     });
     assert.equal(day7.some((item) => item.kind === "slice"), true);
-    assert.equal(day7.find((item) => item.kind === "paywall")?.variant, "ahead");
+    assert.equal(day7.length, 1);
+    assert.equal(day7[0].includePaywall, true);
+    assert.equal(day7[0].variant, "ahead");
   });
 
   it("nudges twice after the paywall and then stays quiet", () => {
@@ -93,21 +95,22 @@ describe("trial cycle", () => {
     const first = dueCycle({
       record,
       status: "locked",
-      plan: weekly(3),
+      plan: weekly(4),
       dateKey: "2026-11-11",
       hour: 12,
       now: new Date("2026-11-11T09:00:00.000Z"),
       timeZone: TZ,
       onboardingOpen: false,
     });
-    assert.equal(first.some((item) => item.kind === "nudge1"), true);
+    assert.equal(first.length, 1);
+    assert.equal(first[0].kind, "nudge1");
     const second = dueCycle({
-      record: { ...record, nudge1At: "2026-11-11T09:00:00.000Z" },
+      record: { ...record, nudge1At: "2026-11-10T09:00:00.000Z" },
       status: "locked",
       plan: weekly(3),
       dateKey: "2026-11-11",
-      hour: 21,
-      now: new Date("2026-11-11T18:00:00.000Z"),
+      hour: 12,
+      now: new Date("2026-11-11T09:00:00.000Z"),
       timeZone: TZ,
       onboardingOpen: false,
     });
@@ -124,8 +127,8 @@ describe("trial cycle", () => {
       status: "paid",
       plan: weekly(3),
       dateKey: "2026-11-12",
-      hour: 9,
-      now: new Date("2026-11-12T06:00:00.000Z"),
+      hour: 16,
+      now: new Date("2026-11-12T13:00:00.000Z"),
       timeZone: TZ,
       onboardingOpen: false,
     });

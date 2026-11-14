@@ -6,7 +6,7 @@ import { useI18n } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import { ThemeDateInput } from "@/components/theme-date-input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { NotificationSettings } from "@/components/notification-settings";
 import { formatLongDate, toDateKey, weekdayLong, weekdayName, weekdayShort } from "@/lib/dates";
 import {
   clockLabel,
@@ -22,7 +22,7 @@ interface SessionRhythmProps {
   plan: SessionPlan | null;
   notify: NotifyPrefs;
   onSavePlan: (plan: Omit<SessionPlan, "updatedAt">) => boolean;
-  onSaveNotify: (prefs: Pick<NotifyPrefs, "moodPolls" | "eveningNudge">) => boolean;
+  onSaveNotify: (prefs: Omit<NotifyPrefs, "updatedAt">) => boolean;
   disabled?: boolean;
 }
 
@@ -242,32 +242,7 @@ function SessionRhythmForm({
 
       <section className="glass rounded-3xl p-5 sm:p-6">
         <h3 className="font-display text-xl tracking-tight text-foreground">{t("botReminders")}</h3>
-        <div className="mt-3 divide-y divide-[color:var(--glass-border)]">
-          <Switch
-            className="py-3.5"
-            label={t("pollToggle")}
-            checked={notify.moodPolls}
-            disabled={disabled}
-            onChange={(event) =>
-              onSaveNotify({
-                moodPolls: event.target.checked,
-                eveningNudge: notify.eveningNudge,
-              })
-            }
-          />
-          <Switch
-            className="py-3.5"
-            label={t("nudgeToggle")}
-            checked={notify.eveningNudge}
-            disabled={disabled}
-            onChange={(event) =>
-              onSaveNotify({
-                moodPolls: notify.moodPolls,
-                eveningNudge: event.target.checked,
-              })
-            }
-          />
-        </div>
+        <NotificationSettings notify={notify} disabled={disabled} onSave={onSaveNotify} />
       </section>
     </>
   );

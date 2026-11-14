@@ -1,3 +1,4 @@
+import { withNotificationRun } from "./notification-run";
 import type { CheckinSlot } from "./types";
 import type { LocaleId } from "./i18n";
 import { duePoll, moodPollsOpen, pollText } from "./digest";
@@ -38,7 +39,7 @@ export async function messengerUsername(userId: string, channel: "telegram" | "m
 async function openDueSlot(
   owner: string,
   identity: WeekAccessIdentity,
-): Promise<{ slot: CheckinSlot; dateKey: string } | null> {
+): Promise<{ slot: CheckinSlot; dateKey: string; hour: number } | null> {
   const now = new Date();
   const timeZone = await getUserTimezone(owner);
   const clock = zonedParts(now, timeZone);
@@ -56,10 +57,10 @@ async function openDueSlot(
     paused: access.view.paused,
     status: access.view.status,
   });
-  if (!pollsOpen || pingsReduced(access.record.openedAt, store.entries, now)) return null;
+  if (!pollsOpen || pingsReduced(access.record.openedAt, store.entries, now, store.notify.updatedAt)) return null;
   const slot = duePoll({ store, dateKey: clock.dateKey, hour: clock.hour });
   if (!slot) return null;
-  return { slot, dateKey: clock.dateKey };
+  return { slot, dateKey: clock.dateKey, hour: clock.hour };
 }
 
 /**
@@ -79,13 +80,16 @@ export async function sendDueTelegramPoll(input: {
   const username = spoken || (await loadMessengerName(input.userId));
   const due = await openDueSlot(owner, { id: input.userId, username });
   if (!due) return;
-  if (!(await claimDigestSlot(input.userId, due.dateKey, due.slot))) return;
-  const ok = await telegramRequest("sendMessage", {
-    chat_id: input.chatId,
-    text: pollText(due.slot, input.locale),
-    reply_markup: feelingKeyboard(due.slot, input.locale),
+  await withNotificationRun(owner, due.dateKey, due.hour, async () => {
+    if (!(await claimDigestSlot(input.userId, due.dateKey, due.slot))) return { sent: 0 };
+    const ok = await telegramRequest("sendMessage", {
+      chat_id: input.chatId,
+      text: pollText(due.slot, input.locale),
+      reply_markup: feelingKeyboard(due.slot, input.locale),
   });
   if (!ok) await releaseDigestSlot(input.userId, due.dateKey, due.slot);
+  return { sent: ok ? 1 : 0 };
+  });
 }
 
 /** Same catch-up for a MAX dialog. The claim key matches the hourly run (`max:<id>`). */
@@ -102,12 +106,15 @@ export async function sendDueMaxPoll(input: {
   const username = spoken || (await messengerUsername(storageId, "max"));
   const due = await openDueSlot(owner, maxAccessIdentity(input.userId, username));
   if (!due) return;
-  if (!(await claimDigestSlot(storageId, due.dateKey, due.slot))) return;
-  const ok = await sendMaxMessage(
-    input.userId,
-    pollText(due.slot, input.locale),
-    maxFeelingKeyboard(due.slot, input.locale),
-    input.chatId,
-  );
-  if (!ok) await releaseDigestSlot(storageId, due.dateKey, due.slot);
+  await withNotificationRun(owner, due.dateKey, due.hour, async () => {
+    if (!(await claimDigestSlot(storageId, due.dateKey, due.slot))) return { sent: 0 };
+    const ok = await sendMaxMessage(
+      input.userId,
+      pollText(due.slot, input.locale),
+      maxFeelingKeyboard(due.slot, input.locale),
+      input.chatId,
+    );
+    if (!ok) await releaseDigestSlot(storageId, due.dateKey, due.slot);
+    return { sent: ok ? 1 : 0 };
+  });
 }
