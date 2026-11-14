@@ -1,15 +1,11 @@
 import { LANDING_ORIGIN } from "./landing-seo";
 
-/**
- * The bot only receives the `start` payload. `app_landing` is the open-the-app
- * handoff plus the mark that this person came from the landing page.
- */
+/** Older landing links still arrive as `/start app_landing`. New buttons do not send it. */
 export const LANDING_START_PARAM = "app_landing";
-export const LANDING_BOT_URL = "https://t.me/BetweenJournalBot?start=app_landing";
-/** Public MAX bot. `max.ru` opens the app from a phone; the web client works in a desktop browser. */
+export const LANDING_BOT_URL = "https://t.me/BetweenJournalBot";
+/** Public MAX bot. The landing opens this chat, without a start payload. */
 export const LANDING_MAX_BOT = "se14938561_bot";
-export const LANDING_MAX_URL = `https://max.ru/${LANDING_MAX_BOT}?start=${LANDING_START_PARAM}`;
-export const LANDING_MAX_WEB_URL = `https://web.max.ru/${LANDING_MAX_BOT}?start=${LANDING_START_PARAM}`;
+export const LANDING_MAX_URL = `https://max.ru/${LANDING_MAX_BOT}`;
 /** Phone cameras land here and choose Telegram or MAX. */
 export const LANDING_OPEN_URL = `${LANDING_ORIGIN}/open`;
 export const LANDING_SOURCE = "landing";

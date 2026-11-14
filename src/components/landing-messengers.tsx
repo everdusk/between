@@ -1,4 +1,4 @@
-import { LANDING_BOT_URL, LANDING_MAX_WEB_URL, LANDING_START_PARAM } from "@/lib/landing";
+import { LANDING_BOT_URL, LANDING_MAX_URL, LANDING_START_PARAM } from "@/lib/landing";
 
 export const MESSENGER_CSS = `
 .bl-pair{display:flex;flex-wrap:wrap;align-items:center;gap:.65rem}
@@ -37,10 +37,9 @@ function PlayIcon() {
 
 export function MessengerButtons({
   compact = false,
-  maxHref = LANDING_MAX_WEB_URL,
+  maxHref = LANDING_MAX_URL,
 }: {
   compact?: boolean;
-  /** Phones that scanned the code open the MAX app. A click in the browser uses the web client. */
   maxHref?: string;
 }) {
   const size = compact ? "bl-msg bl-msg-sm" : "bl-msg";

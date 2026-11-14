@@ -1,7 +1,7 @@
 "use client";
 
 import { MESSENGER_CSS, MessengerButtons, QrCard } from "@/components/landing-messengers";
-import { LANDING_BOT_URL, LANDING_MAX_WEB_URL, LANDING_START_PARAM } from "@/lib/landing";
+import { LANDING_BOT_URL, LANDING_MAX_URL, LANDING_START_PARAM } from "@/lib/landing";
 import { LEGAL_INN } from "@/lib/legal";
 import { feelingFill } from "@/lib/spectrum";
 import type { Feeling } from "@/lib/types";
@@ -339,7 +339,7 @@ export function LandingPage({ qr }: { qr: string }) {
               @BetweenJournalBot
             </a>
             {" · "}
-            <a href={LANDING_MAX_WEB_URL} data-start={LANDING_START_PARAM}>
+            <a href={LANDING_MAX_URL} data-start={LANDING_START_PARAM}>
               MAX
             </a>
           </p>
