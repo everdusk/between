@@ -1,7 +1,8 @@
 "use client";
 
 import { MESSENGER_CSS, MessengerButtons, QrCard } from "@/components/landing-messengers";
-import { LANDING_BOT_URL, LANDING_MAX_URL, LANDING_START_PARAM } from "@/lib/landing";
+import { LANDING_START_PARAM } from "@/lib/landing";
+import { AcquisitionLink } from "@/components/acquisition-link";
 import { LEGAL_INN } from "@/lib/legal";
 import { feelingFill } from "@/lib/spectrum";
 import type { Feeling } from "@/lib/types";
@@ -335,13 +336,13 @@ export function LandingPage({ qr }: { qr: string }) {
             </p>
           </div>
           <p className="text-sm" style={{ color: "var(--bl-muted)" }}>
-            <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM}>
+            <AcquisitionLink messenger="telegram" data-start={LANDING_START_PARAM}>
               @BetweenJournalBot
-            </a>
+            </AcquisitionLink>
             {" · "}
-            <a href={LANDING_MAX_URL} data-start={LANDING_START_PARAM}>
+            <AcquisitionLink messenger="max" data-start={LANDING_START_PARAM}>
               MAX
-            </a>
+            </AcquisitionLink>
           </p>
         </footer>
       </div>

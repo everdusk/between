@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { trackMessengerStart } from "@/lib/acquisition-server";
 import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale, type LocaleId } from "@/lib/i18n";
 import { addCheckin, appendBotMessageToToday } from "@/lib/journal-server";
 import { feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
@@ -596,6 +597,9 @@ export async function POST(req: Request) {
         username: message.from?.username,
       });
       return NextResponse.json({ ok: true });
+    }
+    if (userId && isBotCommand(text, "start")) {
+      await trackMessengerStart({ payload: startPayload(text), messenger: "telegram", userId, username: message.from?.username });
     }
     if (userId && isLandingStart(text)) {
       const redis = getRedis();

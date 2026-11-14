@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { scheduleAcquisitionSync } from "@/lib/acquisition-server";
 import {
   DIGEST_BATCH,
   digestAction,
@@ -258,6 +259,7 @@ export async function GET(req: Request) {
   if (!authorized(req)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
+  scheduleAcquisitionSync();
   return runDigest();
 }
 
@@ -265,5 +267,6 @@ export async function POST(req: Request) {
   if (!authorized(req)) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
+  scheduleAcquisitionSync();
   return runDigest();
 }

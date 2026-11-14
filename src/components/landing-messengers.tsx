@@ -1,4 +1,7 @@
-import { LANDING_BOT_URL, LANDING_MAX_URL, LANDING_START_PARAM } from "@/lib/landing";
+"use client";
+
+import { LANDING_START_PARAM } from "@/lib/landing";
+import { AcquisitionLink, useAcquisition } from "@/components/acquisition-link";
 
 export const MESSENGER_CSS = `
 .bl-pair{display:flex;flex-wrap:wrap;align-items:center;gap:.65rem}
@@ -37,30 +40,29 @@ function PlayIcon() {
 
 export function MessengerButtons({
   compact = false,
-  maxHref = LANDING_MAX_URL,
 }: {
   compact?: boolean;
-  maxHref?: string;
 }) {
   const size = compact ? "bl-msg bl-msg-sm" : "bl-msg";
   return (
     <div className={compact ? "bl-pair bl-pair-bar" : "bl-pair"}>
-      <a href={LANDING_BOT_URL} data-start={LANDING_START_PARAM} className={`${size} bl-tg`}>
+      <AcquisitionLink messenger="telegram" data-start={LANDING_START_PARAM} className={`${size} bl-tg`}>
         <PlayIcon />
         <span>{compact ? "Telegram" : "Открыть в Telegram"}</span>
-      </a>
-      <a href={maxHref} data-start={LANDING_START_PARAM} className={`${size} bl-max`}>
+      </AcquisitionLink>
+      <AcquisitionLink messenger="max" data-start={LANDING_START_PARAM} className={`${size} bl-max`}>
         <span>{compact ? "MAX" : "Открыть в MAX"}</span>
         <span className="bl-vpn">без VPN</span>
-      </a>
+      </AcquisitionLink>
     </div>
   );
 }
 
 export function QrCard({ svg }: { svg: string }) {
+  const { qr } = useAcquisition();
   return (
     <div className="bl-qrcard">
-      <span className="bl-qr" aria-hidden dangerouslySetInnerHTML={{ __html: svg }} />
+      <span className="bl-qr" aria-hidden dangerouslySetInnerHTML={{ __html: qr ?? svg }} />
       <span>
         <b>Наведите камеру</b>
         выберите, где открыть
