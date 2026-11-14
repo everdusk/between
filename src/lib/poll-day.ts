@@ -23,8 +23,9 @@ import {
   rememberStatsQuiet,
 } from "./redis";
 import { pingsReduced } from "./trial-cycle";
+import { messengerUsername } from "./due-mood";
 import { accountIdForTelegram, loadAccount, resolveJournalId, resolveMaxJournalId } from "./web-account-store";
-import { accessForUser } from "./week-access";
+import { accessForUser, maxAccessIdentity } from "./week-access";
 import { zonedParts } from "./zoned";
 
 /** The digest opens a trial the first time it sees the account. The report counts that person too. */
@@ -65,8 +66,13 @@ async function readPerson(userId: string, now: Date, blocked: Set<string>, quiet
     loadOnboarding(owner),
   ]);
   const clock = zonedParts(now, timeZone);
-  const actorId = channel === "max" ? 0 : Number(userId);
-  const access = accessForUser(record, { id: actorId }, process.env.WEEK_EXEMPT_USER_IDS, now);
+  const username = await messengerUsername(userId, channel);
+  const access = accessForUser(
+    record,
+    channel === "max" && maxId ? maxAccessIdentity(maxId, username) : { id: Number(userId), username },
+    process.env.WEEK_EXEMPT_USER_IDS,
+    now,
+  );
   const sent = await Promise.all(MOOD_SLOTS.map((slot) => digestSlotHeld(userId, clock.dateKey, slot)));
   return {
     blocked: false,

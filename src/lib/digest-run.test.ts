@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { formatPollDay, parseDigestRun, tallyPollDay, type PollPerson, type PollSlotState } from "./digest";
+import { formatPollDay, moodPollsOpen, parseDigestRun, tallyPollDay, type PollPerson, type PollSlotState } from "./digest";
 import { maxDeliveryBlocked } from "./max-bot";
 import { returnedTelegramUser, telegramDeliveryBlocked } from "./telegram-bot";
+import { accessForUser, emptyWeekAccess, openWeekAccess, TRIAL_MS } from "./week-access";
 
 const RUN = { at: "2026-11-13T08:00:03.000Z", users: 12, sent: 3, skipped: 9, failed: 1, errors: 0, ms: 2400 };
 
@@ -116,5 +117,26 @@ describe("blocked delivery", () => {
       }),
       null,
     );
+  });
+});
+
+describe("owner polls after the trial", () => {
+  it("stays open in telegram by name and in max by name or max id", () => {
+    const now = new Date("2026-11-14T12:00:00.000Z");
+    const record = openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - TRIAL_MS - 60_000));
+    const open = (status: string, paused: boolean) =>
+      moodPollsOpen({ onboardingOpen: false, paused, status });
+    const hidden = accessForUser(record, { id: 7 }, undefined, now);
+    const named = accessForUser(record, { id: 7, username: "aliatorovskaia" }, undefined, now);
+    const maxNamed = accessForUser(record, { id: 0, username: "aliatorovskaia" }, undefined, now);
+    const maxOwner = accessForUser(record, { id: 0, maxId: 1062664437 }, undefined, now);
+    const maxOther = accessForUser(record, { id: 0, maxId: 42 }, undefined, now);
+    const telegramWithMaxNumber = accessForUser(record, { id: 1062664437 }, undefined, now);
+    assert.equal(open(hidden.view.status, hidden.view.paused), false);
+    assert.equal(open(named.view.status, named.view.paused), true);
+    assert.equal(open(maxNamed.view.status, maxNamed.view.paused), true);
+    assert.equal(open(maxOwner.view.status, maxOwner.view.paused), true);
+    assert.equal(open(maxOther.view.status, maxOther.view.paused), false);
+    assert.equal(open(telegramWithMaxNumber.view.status, telegramWithMaxNumber.view.paused), false);
   });
 });

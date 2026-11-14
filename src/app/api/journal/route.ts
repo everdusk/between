@@ -13,7 +13,7 @@ import {
   saveUserStore,
   setUserTimezone,
 } from "@/lib/redis";
-import { accessForUser, entriesOpen } from "@/lib/week-access";
+import { accessForUser, entriesOpen, messengerAccessIdentity } from "@/lib/week-access";
 import { emptyStore } from "@/lib/types";
 import { sessionSecret } from "@/lib/web-account";
 import { isValidTimeZone } from "@/lib/zoned";
@@ -74,7 +74,11 @@ export async function PUT(req: Request) {
   const previous = await loadUserStore(actor.id);
   const access = accessForUser(
     await loadWeekAccess(actor.id),
-    { id: actor.telegramUserId ?? 0, username: actor.telegramUsername ?? undefined },
+    messengerAccessIdentity({
+      telegramUserId: actor.telegramUserId,
+      username: actor.telegramUsername,
+      maxUserId: actor.messenger === "max" && typeof actor.analyticsId === "number" ? actor.analyticsId : null,
+    }),
     process.env.WEEK_EXEMPT_USER_IDS,
     new Date(),
   );

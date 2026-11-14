@@ -37,7 +37,8 @@ import {
   type MaxKeyboard,
 } from "@/lib/max-bot";
 import { translate } from "@/lib/messages";
-import { accessForUser } from "@/lib/week-access";
+import { messengerUsername } from "@/lib/due-mood";
+import { accessForUser, maxAccessIdentity } from "@/lib/week-access";
 import { deliverCycle } from "@/lib/trial-dispatch";
 import { pingsReduced, quietHour } from "@/lib/trial-cycle";
 import { ensureTrial } from "@/lib/trial-bot";
@@ -106,10 +107,12 @@ async function digestUser(
     channel === "max"
       ? "ru"
       : resolveBotLocale(await loadUserLocale(owner), await loadDeviceLocale(owner), null);
-  const actorId = channel === "max" && maxId ? maxId : Number(userId);
+  const username = await messengerUsername(userId, channel);
   const access = accessForUser(
     await loadWeekAccess(owner),
-    { id: channel === "max" ? 0 : actorId },
+    channel === "max" && maxId
+      ? maxAccessIdentity(maxId, username)
+      : { id: Number(userId), username },
     process.env.WEEK_EXEMPT_USER_IDS,
     now,
   );

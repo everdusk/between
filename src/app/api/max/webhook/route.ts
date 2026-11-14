@@ -3,14 +3,12 @@ import { type LocaleId } from "@/lib/i18n";
 import { addCheckinForOwner, appendBotMessageForOwner } from "@/lib/journal-server";
 import { feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
 import {
-  claimDigestSlot,
-  getUserTimezone,
   forgetBotBlocked,
-  loadUserStore,
+  getUserTimezone,
   loadWeekAccess,
   redisConfigured,
-  releaseDigestSlot,
   rememberBotBlocked,
+  rememberMessengerName,
   rememberUser,
   saveWeekAccess,
   takeBriefAttempt,
@@ -22,10 +20,9 @@ import {
   loadAnalyticsReport,
   trackServerEvent,
 } from "@/lib/analytics";
-import { duePoll, pollText } from "@/lib/digest";
+import { sendDueMaxPoll } from "@/lib/due-mood";
 import { loadPollDay, rememberQuietChat } from "@/lib/poll-day";
 import { linkCodeFromStart, loginTokenFromStart, maxStorageId } from "@/lib/web-account";
-import { zonedParts } from "@/lib/zoned";
 import { claimMaxLink, finishMaxLogin, resolveMaxJournalId } from "@/lib/web-account-store";
 import {
   answerOnboarding,
@@ -40,7 +37,7 @@ import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { isBotCommand } from "@/lib/telegram-bot";
 import { welcomeCaption } from "@/lib/welcome-text";
 import { applyPause, ensureTrial, sessionMenu } from "@/lib/trial-bot";
-import { accessForUser, entriesOpen } from "@/lib/week-access";
+import { accessForUser, entriesOpen, maxAccessIdentity } from "@/lib/week-access";
 import {
   answerMaxCallback,
   downloadMaxAudio,
@@ -49,7 +46,6 @@ import {
   isMaxPrivate,
   maxAudioName,
   maxAudioUrl,
-  maxFeelingKeyboard,
   maxLoginKeyboard,
   maxOpenKeyboard,
   maxOnboardKeyboard,
@@ -96,18 +92,6 @@ async function say(userId: number, text: string, keyboard?: MaxKeyboard, chatId?
   return sendMaxMessage(userId, text, keyboard, chatId);
 }
 
-/** The hour may already have passed, so a new chat still gets today's question. */
-async function sendDueMood(userId: number, owner: string, reply: LocaleId, chatId?: number) {
-  if (!redisConfigured()) return;
-  const clock = zonedParts(new Date(), await getUserTimezone(owner));
-  const slot = duePoll({ store: await loadUserStore(owner), dateKey: clock.dateKey, hour: clock.hour });
-  if (!slot) return;
-  const digestId = maxStorageId(userId);
-  if (!(await claimDigestSlot(digestId, clock.dateKey, slot))) return;
-  const ok = await sendMaxMessage(userId, pollText(slot, reply), maxFeelingKeyboard(slot, reply), chatId);
-  if (!ok) await releaseDigestSlot(digestId, clock.dateKey, slot);
-}
-
 export async function GET() {
   const subscription = maxToken() ? await ensureMaxSubscription() : { ok: false, reason: "no_token" };
   return NextResponse.json({
@@ -140,7 +124,7 @@ async function handleCallback(update: MaxUpdate, userId: number) {
       await answerMaxCallback(callbackId, null);
       return;
     }
-    const text = await applyPause(owner, { id: 0, username: maxUsername(update) }, payload === "ps:1", reply);
+    const text = await applyPause(owner, maxAccessIdentity(userId, maxUsername(update)), payload === "ps:1", reply);
     await answerMaxCallback(callbackId, text);
     return;
   }
@@ -158,7 +142,7 @@ async function handleCallback(update: MaxUpdate, userId: number) {
   try {
     const access = accessForUser(
       await loadWeekAccess(owner),
-      { id: 0, username: maxUsername(update) },
+      maxAccessIdentity(userId, maxUsername(update)),
       process.env.WEEK_EXEMPT_USER_IDS,
       new Date(),
     );
@@ -191,10 +175,10 @@ async function handleVoice(
     return false;
   }
   const loaded = await loadWeekAccess(owner);
-  // Numeric exemptions are Telegram ids. A MAX id can share a number, so only a username grant applies.
+  // Numeric exemptions are Telegram ids. The MAX id is passed separately so it cannot collide.
   const resolved = accessForUser(
     loaded,
-    { id: 0, username },
+    maxAccessIdentity(userId, username),
     process.env.WEEK_EXEMPT_USER_IDS,
     new Date(),
   );
@@ -254,6 +238,7 @@ async function greet(
   userId: number,
   greeting: LocaleId,
   reply: LocaleId,
+  username: string | undefined,
   chatId?: number,
 ) {
   await sendMaxWelcome(userId, welcomeCaption(greeting, "max"), undefined, chatId);
@@ -265,7 +250,7 @@ async function greet(
     if (asked) await trackBotFunnel({ userId, messenger: "max", choice: { step: "start" } });
     return;
   }
-  await sendDueMood(userId, owner, reply, chatId);
+  await sendDueMaxPoll({ userId, username, locale: reply, chatId });
 }
 
 async function sendWeekFollow(userId: number, reply: LocaleId, chatId?: number) {
@@ -292,10 +277,10 @@ async function handleStart(
     const linked = await claimMaxLink(linkCode, userId, username);
     const key = linked === "ok" ? "botLinkOk" : linked === "taken" ? "botLinkTakenMax" : "botLinkBad";
     await say(userId, translate(reply, key), keyboard, chatId);
-    if (linked === "ok") await greet(userId, greeting, reply, chatId);
+    if (linked === "ok") await greet(userId, greeting, reply, username, chatId);
     return;
   }
-  await greet(userId, greeting, reply, chatId);
+  await greet(userId, greeting, reply, username, chatId);
 }
 
 export async function POST(req: Request) {
@@ -314,7 +299,10 @@ export async function POST(req: Request) {
     if (!isMaxPrivate(update)) return NextResponse.json({ ok: true });
     const userId = maxUserId(update);
     if (!userId) return NextResponse.json({ ok: true });
-    if (redisConfigured()) await rememberUser(maxStorageId(userId));
+    if (redisConfigured()) {
+      await rememberUser(maxStorageId(userId));
+      await rememberMessengerName(maxStorageId(userId), maxUsername(update));
+    }
 
     if (update.update_type === "bot_stopped") {
       await rememberBotBlocked(maxStorageId(userId));
@@ -338,6 +326,14 @@ export async function POST(req: Request) {
     if (update.update_type === "bot_started") {
       await handleStart(userId, update.payload ?? "", username, greeting, reply, keyboard, update.chat_id);
       return NextResponse.json({ ok: true });
+    }
+
+    if (redisConfigured()) {
+      try {
+        await sendDueMaxPoll({ userId, username, locale: reply, chatId: update.chat_id });
+      } catch {
+        // The note still saves when the catch-up question cannot go out.
+      }
     }
 
     if (audio && !isBotCommand(text, "start") && !isBotCommand(text, "help")) {
@@ -364,7 +360,7 @@ export async function POST(req: Request) {
     }
 
     if (isBotCommand(text, "sessions")) {
-      const menu = await sessionMenu(owner, { id: 0, username }, reply);
+      const menu = await sessionMenu(owner, maxAccessIdentity(userId, username), reply);
       const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
       const app = /^[A-Za-z0-9_]{3,64}$/.test(name);
       await say(
@@ -395,7 +391,7 @@ export async function POST(req: Request) {
       const loaded = await loadWeekAccess(owner);
       const resolved = accessForUser(
         loaded,
-        { id: 0, username },
+        maxAccessIdentity(userId, username),
         process.env.WEEK_EXEMPT_USER_IDS,
         new Date(),
       );
@@ -448,7 +444,7 @@ export async function POST(req: Request) {
 
     const noteAccess = accessForUser(
       await loadWeekAccess(owner),
-      { id: 0, username },
+      maxAccessIdentity(userId, username),
       process.env.WEEK_EXEMPT_USER_IDS,
       new Date(),
     );

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { actorFromRequest, type Actor } from "@/lib/account-actor";
-import { loadWeekAccess, redisConfigured, saveWeekAccess } from "@/lib/redis";
+import { loadWeekAccess, redisConfigured, rememberMessengerName, saveWeekAccess } from "@/lib/redis";
 import { claimPendingSbp } from "@/lib/sbp-live";
 import { loadAccount } from "@/lib/web-account-store";
 import {
@@ -8,6 +8,7 @@ import {
   canPreviewPaywall,
   adoptClientTrial,
   markWeekIntroSeen,
+  messengerAccessIdentity,
   normalizeWeekAccess,
   openWeekAccess,
   rubPriceFromEnv,
@@ -25,10 +26,11 @@ function misconfigured() {
 }
 
 function identityOf(actor: Actor): WeekAccessIdentity {
-  return {
-    id: actor.telegramUserId ?? 0,
-    username: actor.telegramUsername ?? undefined,
-  };
+  return messengerAccessIdentity({
+    telegramUserId: actor.telegramUserId,
+    username: actor.telegramUsername,
+    maxUserId: actor.messenger === "max" && typeof actor.analyticsId === "number" ? actor.analyticsId : null,
+  });
 }
 
 async function granted(record: WeekAccessRecord, actor: Actor) {
@@ -40,6 +42,9 @@ async function granted(record: WeekAccessRecord, actor: Actor) {
     starPriceFromEnv(process.env.WEEK_STAR_PRICE),
     rubPriceFromEnv(process.env.WEEK_RUB_PRICE),
   );
+  if (actor.telegramUserId && actor.telegramUsername) {
+    await rememberMessengerName(actor.telegramUserId, actor.telegramUsername);
+  }
   if (resolved.changed) await saveWeekAccess(actor.id, resolved.record);
   if (canPreviewPaywall(identityOf(actor), process.env.WEEK_EXEMPT_USER_IDS)) {
     resolved.view = { ...resolved.view, previewPaywall: true };
