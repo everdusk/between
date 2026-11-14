@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { actorFromRequest, type Actor } from "@/lib/account-actor";
-import { loadWeekAccess, redisConfigured, saveWeekAccess } from "@/lib/redis";
+import { loadWeekAccess, redisConfigured, rememberMessengerName, saveWeekAccess } from "@/lib/redis";
 import { claimPendingSbp } from "@/lib/sbp-live";
 import { loadAccount } from "@/lib/web-account-store";
 import {
@@ -40,6 +40,9 @@ async function granted(record: WeekAccessRecord, actor: Actor) {
     starPriceFromEnv(process.env.WEEK_STAR_PRICE),
     rubPriceFromEnv(process.env.WEEK_RUB_PRICE),
   );
+  if (actor.telegramUserId && actor.telegramUsername) {
+    await rememberMessengerName(actor.telegramUserId, actor.telegramUsername);
+  }
   if (resolved.changed) await saveWeekAccess(actor.id, resolved.record);
   if (canPreviewPaywall(identityOf(actor), process.env.WEEK_EXEMPT_USER_IDS)) {
     resolved.view = { ...resolved.view, previewPaywall: true };

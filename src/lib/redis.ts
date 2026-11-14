@@ -36,6 +36,10 @@ function tzKey(userId: number | string): string {
   return `between:user:${userId}:tz`;
 }
 
+function nameKey(userId: number | string): string {
+  return `between:user:${userId}:name`;
+}
+
 function digestKey(userId: number | string, dateKey: string, slot: string): string {
   return `between:digest:${userId}:${dateKey}:${slot}`;
 }
@@ -122,6 +126,22 @@ export async function setUserTimezone(
   if (!redis) return;
   await redis.set(tzKey(userId), timeZone);
   await rememberUser(userId);
+}
+
+/** Telegram name for the hourly poll. The forever grant is matched by name, and the digest does not see the chat. */
+export async function rememberMessengerName(userId: number | string, username: string | undefined): Promise<void> {
+  const name = username?.trim().replace(/^@/, "");
+  if (!name || name.length > 32) return;
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.set(nameKey(userId), name);
+}
+
+export async function loadMessengerName(userId: number | string): Promise<string | undefined> {
+  const redis = getRedis();
+  if (!redis) return undefined;
+  const value = await redis.get<string>(nameKey(userId));
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
 /** True when this process claimed the slot and should send. */
