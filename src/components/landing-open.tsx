@@ -1,5 +1,5 @@
 import { MESSENGER_CSS, MessengerButtons } from "@/components/landing-messengers";
-import { LANDING_MAX_URL, LANDING_MAX_WEB_URL } from "@/lib/landing";
+import { LANDING_MAX_URL } from "@/lib/landing";
 
 const CSS = `
 ${MESSENGER_CSS}
@@ -23,8 +23,8 @@ export function OpenFork() {
         </div>
         <p className="mt-5 text-sm text-[#74827b]">
           Если приложение не открылось,{" "}
-          <a href={LANDING_MAX_WEB_URL} className="underline underline-offset-4">
-            запустите MAX в браузере
+          <a href={LANDING_MAX_URL} className="underline underline-offset-4">
+            откройте бота ещё раз
           </a>
           .
         </p>
