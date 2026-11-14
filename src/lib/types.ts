@@ -155,6 +155,8 @@ export interface SessionPlan {
 export interface NotifyPrefs {
   moodPolls: boolean;
   eveningNudge: boolean;
+  moodFrequency?: "three" | "evening";
+  serviceReminders?: boolean;
   updatedAt: string;
 }
 

@@ -1,6 +1,15 @@
 import type { Catalog } from "./ru";
 
 export const uz: Catalog = {
+  pollFrequency: "Savollar tezligi",
+  pollEveningOnly: "Faqat kechqurun",
+  pollThreeTimes: "Kuniga uch marta",
+  serviceRemindersToggle: "Seans xulosalari va obuna eslatmalari",
+  botQuietOffer: "Sokinroq ritm tanlashingiz mumkin: savollar faqat kechqurun yoki avtomatik xabarlarni o‘chirish. Buni ilovada o‘zgartirishingiz mumkin.",
+  botQuietOff: "Xabarlarni o‘chirish",
+  botQuietOffSaved: "Avtomatik xabarlar o‘chirildi. Ilova sozlamalarida qayta yoqishingiz mumkin.",
+  botQuietEveningSaved: "Savollar faqat kechqurun keladi. Qayd eslatmalari o‘chirildi.",
+
   guest: "Mehmon",
   hello: "Salom, {name}",
   helloDev: "Salom, {name} · ishlab chiqish rejimi",
@@ -383,8 +392,8 @@ export const uz: Catalog = {
   botWeekPaid: "Done. The subscription is active until {date}.",
   botHelpPrice:
     "The first 7 days are free. Then {monthStars} Stars or {monthRub} ₽ a month, {quarterStars} Stars or {quarterRub} ₽ for 3 months, {yearStars} Stars or {yearRub} ₽ for a year. A month of Stars can be cancelled in Telegram.",
-  botDigestFull: "Session today at {time}. I gathered what happened between sessions.",
-  botDigestMini: "Session today at {time}. In short:\n• notes: {notes}\n• mood: {mood}\n• from notes: {themes}",
+  botDigestFull: "Seans {date}, soat {time}. Seanslar orasidagi voqealarni jamladim.",
+  botDigestMini: "Seans {date}, soat {time}. Qisqacha:\n• qaydlar: {notes}\n• kayfiyat: {mood}\n• qaydlardan: {themes}",
   botDigestHint: "I put together a brief like this before each of your sessions.",
   botSlice: "Your slice of the first days:\n• notes: {notes}\n• mood: {mood}\n• themes: {themes}",
   botDay5: "A small reminder: the free days end on {date}, in 2 days. Then {price}. Nothing to do now — keep the journal.",
@@ -423,7 +432,7 @@ export const uz: Catalog = {
   botPollMorning: "Ertalab. Qandaysiz?",
   botPollDay: "Kun. Qandaysiz?",
   botPollEvening: "Kechqurun. Qandaysiz?",
-  botNudge: "Bugun uchun yozuv bormi?",
+  botNudge: "Bugundan biror narsani saqlamoqchimisiz? Bitta jumla yetarli.",
   todayTitle: "Bugun",
   nextSession: "Keyingi seans",
   inDays: "{days} ichida",

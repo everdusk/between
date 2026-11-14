@@ -1,6 +1,15 @@
 import type { Catalog } from "./ru";
 
 export const uk: Catalog = {
+  pollFrequency: "Частота запитань",
+  pollEveningOnly: "Лише ввечері",
+  pollThreeTimes: "Тричі на день",
+  serviceRemindersToggle: "Підсумки до сеансу й нагадування про підписку",
+  botQuietOffer: "Можна обрати спокійніший ритм: залишити запитання лише на вечір або вимкнути автоматичні повідомлення. Це можна змінити в застосунку.",
+  botQuietOff: "Вимкнути повідомлення",
+  botQuietOffSaved: "Автоматичні повідомлення вимкнено. Увімкнути їх можна в налаштуваннях застосунку.",
+  botQuietEveningSaved: "Запитання надходитимуть лише ввечері. Нагадування про нотатки вимкнено.",
+
   guest: "Гість",
   hello: "Вітаю, {name}",
   helloDev: "Вітаю, {name} · режим розробки",
@@ -384,8 +393,8 @@ export const uk: Catalog = {
   botWeekPaid: "Done. The subscription is active until {date}.",
   botHelpPrice:
     "The first 7 days are free. Then {monthStars} Stars or {monthRub} ₽ a month, {quarterStars} Stars or {quarterRub} ₽ for 3 months, {yearStars} Stars or {yearRub} ₽ for a year. A month of Stars can be cancelled in Telegram.",
-  botDigestFull: "Session today at {time}. I gathered what happened between sessions.",
-  botDigestMini: "Session today at {time}. In short:\n• notes: {notes}\n• mood: {mood}\n• from notes: {themes}",
+  botDigestFull: "Сеанс {date} о {time}. Зібрано все, що було між сеансами.",
+  botDigestMini: "Сеанс {date} о {time}. Коротко:\n• нотаток: {notes}\n• настрій: {mood}\n• з нотаток: {themes}",
   botDigestHint: "I put together a brief like this before each of your sessions.",
   botSlice: "Your slice of the first days:\n• notes: {notes}\n• mood: {mood}\n• themes: {themes}",
   botDay5: "A small reminder: the free days end on {date}, in 2 days. Then {price}. Nothing to do now — keep the journal.",
@@ -424,8 +433,7 @@ export const uk: Catalog = {
   botPollMorning: "Ранок. Як ви?",
   botPollDay: "День. Як ви?",
   botPollEvening: "Вечір. Як ви?",
-  botNudge:
-    "Є нотатка за сьогодні?",
+  botNudge: "Хочете зберегти щось із сьогоднішнього дня? Можна одним реченням.",
   todayTitle: "Сьогодні",
   nextSession: "Найближчий сеанс",
   inDays: "через {days}",

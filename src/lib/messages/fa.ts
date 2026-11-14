@@ -1,6 +1,15 @@
 import type { Catalog } from "./ru";
 
 export const fa: Catalog = {
+  pollFrequency: "تعداد پرسش‌ها",
+  pollEveningOnly: "فقط عصرها",
+  pollThreeTimes: "سه بار در روز",
+  serviceRemindersToggle: "خلاصهٔ جلسه و یادآوری اشتراک",
+  botQuietOffer: "می‌توانید آهنگ آرام‌تری انتخاب کنید: پرسش‌ها فقط عصر یا خاموش کردن پیام‌های خودکار. این تنظیم در برنامه قابل تغییر است.",
+  botQuietOff: "خاموش کردن پیام‌ها",
+  botQuietOffSaved: "پیام‌های خودکار خاموش شدند. می‌توانید در تنظیمات برنامه دوباره روشن کنید.",
+  botQuietEveningSaved: "پرسش‌ها فقط عصر می‌آیند. یادآوری یادداشت خاموش شد.",
+
   guest: "مهمان",
   hello: "سلام، {name}",
   helloDev: "سلام، {name} · حالت توسعه",
@@ -383,8 +392,8 @@ export const fa: Catalog = {
   botWeekPaid: "Done. The subscription is active until {date}.",
   botHelpPrice:
     "The first 7 days are free. Then {monthStars} Stars or {monthRub} ₽ a month, {quarterStars} Stars or {quarterRub} ₽ for 3 months, {yearStars} Stars or {yearRub} ₽ for a year. A month of Stars can be cancelled in Telegram.",
-  botDigestFull: "Session today at {time}. I gathered what happened between sessions.",
-  botDigestMini: "Session today at {time}. In short:\n• notes: {notes}\n• mood: {mood}\n• from notes: {themes}",
+  botDigestFull: "جلسه در {date} ساعت {time}. اتفاقات بین جلسه‌ها را گردآوری کردم.",
+  botDigestMini: "جلسه در {date} ساعت {time}. خلاصه:\n• یادداشت‌ها: {notes}\n• حال: {mood}\n• از یادداشت‌ها: {themes}",
   botDigestHint: "I put together a brief like this before each of your sessions.",
   botSlice: "Your slice of the first days:\n• notes: {notes}\n• mood: {mood}\n• themes: {themes}",
   botDay5: "A small reminder: the free days end on {date}, in 2 days. Then {price}. Nothing to do now — keep the journal.",
@@ -423,7 +432,7 @@ export const fa: Catalog = {
   botPollMorning: "صبح. حالتان چطور است؟",
   botPollDay: "روز. حالتان چطور است؟",
   botPollEvening: "شب. حالتان چطور است؟",
-  botNudge: "برای امروز یادداشتی هست؟",
+  botNudge: "می‌خواهید چیزی از امروز ثبت کنید؟ یک جمله کافی است.",
   todayTitle: "امروز",
   nextSession: "جلسه بعدی",
   inDays: "تا {days} دیگر",

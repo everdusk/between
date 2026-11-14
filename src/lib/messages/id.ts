@@ -1,6 +1,15 @@
 import type { Catalog } from "./ru";
 
 export const id: Catalog = {
+  pollFrequency: "Frekuensi pertanyaan",
+  pollEveningOnly: "Hanya malam hari",
+  pollThreeTimes: "Tiga kali sehari",
+  serviceRemindersToggle: "Ringkasan sesi dan pengingat langganan",
+  botQuietOffer: "Anda bisa memilih ritme yang lebih tenang: pertanyaan hanya malam hari atau matikan pesan otomatis. Ubah kapan saja di aplikasi.",
+  botQuietOff: "Matikan pesan",
+  botQuietOffSaved: "Pesan otomatis dimatikan. Anda bisa mengaktifkannya di pengaturan aplikasi.",
+  botQuietEveningSaved: "Pertanyaan hanya akan datang malam hari. Pengingat catatan dimatikan.",
+
   guest: "Tamu",
   hello: "Halo, {name}",
   helloDev: "Halo, {name} · mode pengembangan",
@@ -384,8 +393,8 @@ export const id: Catalog = {
   botWeekPaid: "Done. The subscription is active until {date}.",
   botHelpPrice:
     "The first 7 days are free. Then {monthStars} Stars or {monthRub} ₽ a month, {quarterStars} Stars or {quarterRub} ₽ for 3 months, {yearStars} Stars or {yearRub} ₽ for a year. A month of Stars can be cancelled in Telegram.",
-  botDigestFull: "Session today at {time}. I gathered what happened between sessions.",
-  botDigestMini: "Session today at {time}. In short:\n• notes: {notes}\n• mood: {mood}\n• from notes: {themes}",
+  botDigestFull: "Sesi pada {date} pukul {time}. Saya merangkum hal-hal di antara sesi.",
+  botDigestMini: "Sesi pada {date} pukul {time}. Ringkasan:\n• catatan: {notes}\n• suasana hati: {mood}\n• dari catatan: {themes}",
   botDigestHint: "I put together a brief like this before each of your sessions.",
   botSlice: "Your slice of the first days:\n• notes: {notes}\n• mood: {mood}\n• themes: {themes}",
   botDay5: "A small reminder: the free days end on {date}, in 2 days. Then {price}. Nothing to do now — keep the journal.",
@@ -424,7 +433,7 @@ export const id: Catalog = {
   botPollMorning: "Pagi. Bagaimana Anda?",
   botPollDay: "Siang. Bagaimana Anda?",
   botPollEvening: "Sore. Bagaimana Anda?",
-  botNudge: "Ada catatan untuk hari ini?",
+  botNudge: "Ingin menyimpan sesuatu dari hari ini? Satu kalimat saja cukup.",
   todayTitle: "Hari ini",
   nextSession: "Sesi berikutnya",
   inDays: "dalam {days}",

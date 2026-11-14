@@ -1,6 +1,15 @@
 import type { Catalog } from "./ru";
 
 export const vi: Catalog = {
+  pollFrequency: "Tần suất câu hỏi",
+  pollEveningOnly: "Chỉ buổi tối",
+  pollThreeTimes: "Ba lần mỗi ngày",
+  serviceRemindersToggle: "Tóm tắt buổi trị liệu và nhắc gia hạn",
+  botQuietOffer: "Bạn có thể chọn nhịp nhẹ nhàng hơn: chỉ nhận câu hỏi buổi tối hoặc tắt tin nhắn tự động. Có thể đổi trong ứng dụng.",
+  botQuietOff: "Tắt tin nhắn",
+  botQuietOffSaved: "Đã tắt tin nhắn tự động. Bạn có thể bật lại trong cài đặt.",
+  botQuietEveningSaved: "Câu hỏi sẽ chỉ đến vào buổi tối. Đã tắt nhắc ghi chép.",
+
   guest: "Khách",
   hello: "Xin chào, {name}",
   helloDev: "Xin chào, {name} · chế độ phát triển",
@@ -383,8 +392,8 @@ export const vi: Catalog = {
   botWeekPaid: "Done. The subscription is active until {date}.",
   botHelpPrice:
     "The first 7 days are free. Then {monthStars} Stars or {monthRub} ₽ a month, {quarterStars} Stars or {quarterRub} ₽ for 3 months, {yearStars} Stars or {yearRub} ₽ for a year. A month of Stars can be cancelled in Telegram.",
-  botDigestFull: "Session today at {time}. I gathered what happened between sessions.",
-  botDigestMini: "Session today at {time}. In short:\n• notes: {notes}\n• mood: {mood}\n• from notes: {themes}",
+  botDigestFull: "Buổi trị liệu ngày {date} lúc {time}. Đây là tổng hợp giữa các buổi.",
+  botDigestMini: "Buổi trị liệu ngày {date} lúc {time}. Tóm tắt:\n• ghi chép: {notes}\n• tâm trạng: {mood}\n• từ ghi chép: {themes}",
   botDigestHint: "I put together a brief like this before each of your sessions.",
   botSlice: "Your slice of the first days:\n• notes: {notes}\n• mood: {mood}\n• themes: {themes}",
   botDay5: "A small reminder: the free days end on {date}, in 2 days. Then {price}. Nothing to do now — keep the journal.",
@@ -423,7 +432,7 @@ export const vi: Catalog = {
   botPollMorning: "Sáng. Bạn thế nào?",
   botPollDay: "Trưa. Bạn thế nào?",
   botPollEvening: "Tối. Bạn thế nào?",
-  botNudge: "Hôm nay có ghi chép chưa?",
+  botNudge: "Bạn muốn lưu điều gì của hôm nay không? Một câu cũng đủ.",
   todayTitle: "Hôm nay",
   nextSession: "Buổi tiếp theo",
   inDays: "sau {days}",

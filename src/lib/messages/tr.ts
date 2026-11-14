@@ -1,6 +1,15 @@
 import type { Catalog } from "./ru";
 
 export const tr: Catalog = {
+  pollFrequency: "Soru sıklığı",
+  pollEveningOnly: "Yalnızca akşam",
+  pollThreeTimes: "Günde üç kez",
+  serviceRemindersToggle: "Seans özetleri ve abonelik hatırlatmaları",
+  botQuietOffer: "Daha sakin bir ritim seçebilirsiniz: sorular yalnızca akşam gelsin veya otomatik mesajları kapatın. Bunu uygulamadan değiştirebilirsiniz.",
+  botQuietOff: "Mesajları kapat",
+  botQuietOffSaved: "Otomatik mesajlar kapatıldı. Uygulama ayarlarından açabilirsiniz.",
+  botQuietEveningSaved: "Sorular yalnızca akşam gelecek. Not hatırlatmaları kapatıldı.",
+
   guest: "Konuk",
   hello: "Merhaba, {name}",
   helloDev: "Merhaba, {name} · geliştirme modu",
@@ -384,8 +393,8 @@ export const tr: Catalog = {
   botWeekPaid: "Done. The subscription is active until {date}.",
   botHelpPrice:
     "The first 7 days are free. Then {monthStars} Stars or {monthRub} ₽ a month, {quarterStars} Stars or {quarterRub} ₽ for 3 months, {yearStars} Stars or {yearRub} ₽ for a year. A month of Stars can be cancelled in Telegram.",
-  botDigestFull: "Session today at {time}. I gathered what happened between sessions.",
-  botDigestMini: "Session today at {time}. In short:\n• notes: {notes}\n• mood: {mood}\n• from notes: {themes}",
+  botDigestFull: "Seans {date}, saat {time}. Seanslar arasında olanları derledim.",
+  botDigestMini: "Seans {date}, saat {time}. Kısaca:\n• not: {notes}\n• ruh hali: {mood}\n• notlardan: {themes}",
   botDigestHint: "I put together a brief like this before each of your sessions.",
   botSlice: "Your slice of the first days:\n• notes: {notes}\n• mood: {mood}\n• themes: {themes}",
   botDay5: "A small reminder: the free days end on {date}, in 2 days. Then {price}. Nothing to do now — keep the journal.",
@@ -424,7 +433,7 @@ export const tr: Catalog = {
   botPollMorning: "Sabah. Nasılsınız?",
   botPollDay: "Gün. Nasılsınız?",
   botPollEvening: "Akşam. Nasılsınız?",
-  botNudge: "Bugün için not var mı?",
+  botNudge: "Bugünden bir şey kaydetmek ister misiniz? Tek cümle yeter.",
   todayTitle: "Bugün",
   nextSession: "Sıradaki seans",
   inDays: "{days} sonra",

@@ -77,12 +77,13 @@ async function readPerson(userId: string, now: Date, blocked: Set<string>, quiet
   return {
     blocked: false,
     moodPolls: store.notify.moodPolls,
+    moodFrequency: store.notify.moodFrequency,
     pollsOpen: moodPollsOpen({
       onboardingOpen: Boolean(onboarding && onboarding.step !== "done"),
       paused: access.view.paused,
       status: statusAfterOpen(access.record.openedAt, access.view.status),
     }),
-    reduced: pingsReduced(access.record.openedAt, store.entries, now),
+    reduced: pingsReduced(access.record.openedAt, store.entries, now, store.notify.updatedAt),
     hour: clock.hour,
     slots: MOOD_SLOTS.map((slot, index) => ({
       slot,

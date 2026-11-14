@@ -5,7 +5,7 @@ import type { WeekAccessRecord, WeekAccessStatus } from "./week-access";
 import { TRIAL_MS } from "./week-access";
 import { zonedParts } from "./zoned";
 
-/** The hourly job has no :30 tick. 09:00 is the session-morning send. */
+/** Earliest daytime delivery; early sessions are prepared the evening before. */
 export const SESSION_DIGEST_HOUR = 9;
 export const SLICE_HOUR = 12;
 export const EVENING_HOUR = 21;
@@ -30,18 +30,20 @@ export type CycleKind =
   | "renew-last"
   | "expired"
   | "session-ask"
-  | "midpoint";
+  | "midpoint"
+  | "quiet-offer";
 
 export type PaywallVariant = "ahead" | "had" | "none";
 
 export type CycleItem = {
   kind: CycleKind;
-  /** Claimed per day. One-time items are stamped on the access record instead. */
+  /** Session and inactivity slots are stable across days; other prompts use the local day. */
   slot?: string;
   time?: string;
   days?: number;
   when?: string;
   variant?: PaywallVariant;
+  includePaywall?: boolean;
 };
 
 export function quietHour(hour: number): boolean {
@@ -52,7 +54,10 @@ export function pingsReduced(
   openedAt: string | null,
   entries: { createdAt: string }[],
   now: Date,
+  preferencesUpdatedAt?: string | null,
 ): boolean {
+  const updated = preferencesUpdatedAt ? Date.parse(preferencesUpdatedAt) : NaN;
+  if (Number.isFinite(updated) && now.getTime() - updated < 3 * DAY_MS) return false;
   const start = openedAt ? Date.parse(openedAt) : NaN;
   if (!Number.isFinite(start) || now.getTime() - start < 3 * DAY_MS) return false;
   const cutoff = now.getTime() - 3 * DAY_MS;
@@ -134,8 +139,9 @@ export function dueCycle(input: {
   now: Date;
   timeZone: string;
   onboardingOpen: boolean;
+  engaged?: boolean;
 }): CycleItem[] {
-  if (input.record.pausedAt || quietHour(input.hour)) return [];
+  if (input.record.pausedAt || quietHour(input.hour) || input.onboardingOpen) return [];
   const items: CycleItem[] = [];
   const trial = input.status === "trial";
   const paid = input.status === "paid";
@@ -148,11 +154,11 @@ export function dueCycle(input: {
   const trialDay = startKey ? daysBetween(startKey, input.dateKey) : null;
 
   if (live && !input.onboardingOpen) {
-    const time = sessionTimeOnDay(input.plan, input.dateKey);
-    if (time && input.hour === SESSION_DIGEST_HOUR) {
-      const gap = previousGap(input.plan, input.dateKey);
+    const session = sessionDigestDue(input.plan, input.dateKey, input.hour);
+    if (session) {
+      const gap = previousGap(input.plan, session.date);
       const full = gap === null || gap >= FULL_DIGEST_MIN_DAYS;
-      items.push({ kind: full ? "digest-full" : "digest-mini", slot: full ? "digest-full" : "digest-mini", time });
+      items.push({ kind: full ? "digest-full" : "digest-mini", slot: `session:${session.date}:${session.time}`, time: session.time, when: session.date });
     }
     const upcoming = nextSession(input.plan, input.dateKey, input.hour);
     if (upcoming && input.hour === EVENING_HOUR) {
@@ -160,23 +166,23 @@ export function dueCycle(input: {
       if (days === 2 || days === 3) items.push({ kind: "session-ask", slot: "session-ask", days });
     }
     const gap = previousGap(input.plan, input.dateKey);
-    if (gap !== null && gap >= 7 && input.hour === SLICE_HOUR) {
-      const previous = addDays(input.dateKey, -gap);
-      const mid = addDays(previous, Math.round(gap / 2));
-      if (mid === input.dateKey) items.push({ kind: "midpoint", slot: "midpoint" });
+    if (gap !== null && upcoming && input.hour === SLICE_HOUR) {
+      const interval = gap + daysBetween(input.dateKey, upcoming.date);
+      if (interval >= 7 && gap === Math.round(interval / 2)) items.push({ kind: "midpoint", slot: "midpoint" });
     }
   }
 
-  if (trial && trialDay === 5 && input.hour === EVENING_HOUR && !input.record.day5At && startKey) {
+  if (input.engaged !== false && trial && trialDay === 5 && input.hour >= RENEWAL_HOUR && input.hour < EVENING_HOUR && !input.record.day5At && startKey) {
     items.push({ kind: "day5", when: addDays(startKey, 7) });
   }
 
   const trialEnd = Number.isFinite(openedMs) ? openedMs + TRIAL_MS : NaN;
   const sliceWindow =
     Number.isFinite(trialEnd) && input.now.getTime() < trialEnd + DAY_MS && (trial || locked);
-  if (sliceWindow && trialDay === 7 && input.hour === SLICE_HOUR && startKey) {
-    if (!input.record.sliceAt) items.push({ kind: "slice" });
-    if (!input.record.paywallAt && !input.record.paidUntil) {
+  if (input.engaged !== false && sliceWindow && trialDay === 7 && input.hour >= SLICE_HOUR && input.hour < EVENING_HOUR && startKey) {
+    const includePaywall = !input.record.paywallAt && !input.record.paidUntil;
+    if (!input.record.sliceAt) items.push({ kind: "slice", includePaywall, variant: paywallVariant(input.plan, startKey, input.dateKey, input.hour), when: nextSession(input.plan, input.dateKey, input.hour)?.date });
+    else if (includePaywall) {
       items.push({
         kind: "paywall",
         variant: paywallVariant(input.plan, startKey, input.dateKey, input.hour),
@@ -186,8 +192,8 @@ export function dueCycle(input: {
   }
 
   const paywallMs = input.record.paywallAt ? Date.parse(input.record.paywallAt) : NaN;
-  if (locked && !input.record.paidUntil && Number.isFinite(paywallMs)) {
-    if (!input.record.nudge1At && input.now.getTime() >= paywallMs + NUDGE_DELAY_MS && input.hour >= QUIET_UNTIL && input.hour < QUIET_FROM) {
+  if (input.engaged !== false && locked && !input.record.paidUntil && Number.isFinite(paywallMs)) {
+    if (!input.record.nudge1At && !input.record.nudge2At && input.now.getTime() >= paywallMs + NUDGE_DELAY_MS && input.hour >= RENEWAL_HOUR && input.hour < EVENING_HOUR) {
       items.push({
         kind: "nudge1",
         when: nextSession(input.plan, input.dateKey, input.hour)?.date,
@@ -196,9 +202,10 @@ export function dueCycle(input: {
     const upcoming = nextSession(input.plan, input.dateKey, input.hour);
     if (
       !input.record.nudge2At &&
+      (!input.record.nudge1At || input.now.getTime() - Date.parse(input.record.nudge1At) >= DAY_MS) &&
       upcoming &&
       daysBetween(input.dateKey, upcoming.date) === 1 &&
-      input.hour === EVENING_HOUR
+      input.hour === RENEWAL_HOUR
     ) {
       items.push({ kind: "nudge2", when: upcoming.date });
     }
@@ -218,5 +225,19 @@ export function dueCycle(input: {
     }
   }
 
-  return items;
+  // A useful session summary wins over a billing reminder; never send a burst.
+  const priority: CycleKind[] = ["digest-full", "digest-mini", "slice", "expired", "renew-last", "renew-soon", "paywall", "day5", "nudge2", "nudge1", "session-ask", "midpoint"];
+  return items.sort((a, b) => priority.indexOf(a.kind) - priority.indexOf(b.kind)).slice(0, 1);
+}
+
+/** Early sessions get their summary the evening before; others about two hours ahead. */
+export function sessionDigestDue(plan: SessionPlan | null | undefined, dateKey: string, hour: number): { date: string; time: string } | null {
+  const tomorrow = addDays(dateKey, 1);
+  const early = sessionTimeOnDay(plan, tomorrow);
+  if (early && Number(early.slice(0, 2)) <= 9 && hour === EVENING_HOUR) return { date: tomorrow, time: early };
+  const time = sessionTimeOnDay(plan, dateKey);
+  if (!time) return null;
+  const sessionHour = Number(time.slice(0, 2));
+  const sendHour = Math.max(QUIET_UNTIL, sessionHour - 2);
+  return sessionHour > 9 && hour >= sendHour && hour < sessionHour ? { date: dateKey, time } : null;
 }

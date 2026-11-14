@@ -1,6 +1,15 @@
 import type { Catalog } from "./ru";
 
 export const pt: Catalog = {
+  pollFrequency: "Frequência das perguntas",
+  pollEveningOnly: "Só à noite",
+  pollThreeTimes: "Três vezes por dia",
+  serviceRemindersToggle: "Resumos das sessões e lembretes de assinatura",
+  botQuietOffer: "Você pode escolher um ritmo mais tranquilo: perguntas só à noite ou desativar mensagens automáticas. Altere isso no aplicativo quando quiser.",
+  botQuietOff: "Desativar mensagens",
+  botQuietOffSaved: "Mensagens automáticas desativadas. Você pode ativá-las nas configurações.",
+  botQuietEveningSaved: "As perguntas chegarão só à noite. Os lembretes de notas estão desativados.",
+
   guest: "Convidado",
   hello: "Olá, {name}",
   helloDev: "Olá, {name} · modo de desenvolvimento",
@@ -384,8 +393,8 @@ export const pt: Catalog = {
   botWeekPaid: "Done. The subscription is active until {date}.",
   botHelpPrice:
     "The first 7 days are free. Then {monthStars} Stars or {monthRub} ₽ a month, {quarterStars} Stars or {quarterRub} ₽ for 3 months, {yearStars} Stars or {yearRub} ₽ for a year. A month of Stars can be cancelled in Telegram.",
-  botDigestFull: "Session today at {time}. I gathered what happened between sessions.",
-  botDigestMini: "Session today at {time}. In short:\n• notes: {notes}\n• mood: {mood}\n• from notes: {themes}",
+  botDigestFull: "Sessão em {date} às {time}. Reuni o que aconteceu entre as sessões.",
+  botDigestMini: "Sessão em {date} às {time}. Resumo:\n• notas: {notes}\n• humor: {mood}\n• das notas: {themes}",
   botDigestHint: "I put together a brief like this before each of your sessions.",
   botSlice: "Your slice of the first days:\n• notes: {notes}\n• mood: {mood}\n• themes: {themes}",
   botDay5: "A small reminder: the free days end on {date}, in 2 days. Then {price}. Nothing to do now — keep the journal.",
@@ -424,7 +433,7 @@ export const pt: Catalog = {
   botPollMorning: "Manhã. Como você está?",
   botPollDay: "Tarde. Como você está?",
   botPollEvening: "Noite. Como você está?",
-  botNudge: "Tem uma nota de hoje?",
+  botNudge: "Quer guardar algo de hoje? Uma frase basta.",
   todayTitle: "Hoje",
   nextSession: "Próxima sessão",
   inDays: "em {days}",

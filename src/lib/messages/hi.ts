@@ -1,6 +1,15 @@
 import type { Catalog } from "./ru";
 
 export const hi: Catalog = {
+  pollFrequency: "सवालों की आवृत्ति",
+  pollEveningOnly: "केवल शाम को",
+  pollThreeTimes: "दिन में तीन बार",
+  serviceRemindersToggle: "सत्र के सारांश और सदस्यता की याद दिलाना",
+  botQuietOffer: "आप शांत लय चुन सकते हैं: सवाल केवल शाम को या स्वचालित संदेश बंद करें। इसे ऐप में कभी भी बदल सकते हैं।",
+  botQuietOff: "संदेश बंद करें",
+  botQuietOffSaved: "स्वचालित संदेश बंद हैं। ऐप की सेटिंग में फिर चालू कर सकते हैं।",
+  botQuietEveningSaved: "सवाल केवल शाम को आएँगे। नोट की याद दिलाना बंद है।",
+
   guest: "अतिथि",
   hello: "नमस्ते, {name}",
   helloDev: "नमस्ते, {name} · विकास मोड",
@@ -384,8 +393,8 @@ export const hi: Catalog = {
   botWeekPaid: "Done. The subscription is active until {date}.",
   botHelpPrice:
     "The first 7 days are free. Then {monthStars} Stars or {monthRub} ₽ a month, {quarterStars} Stars or {quarterRub} ₽ for 3 months, {yearStars} Stars or {yearRub} ₽ for a year. A month of Stars can be cancelled in Telegram.",
-  botDigestFull: "Session today at {time}. I gathered what happened between sessions.",
-  botDigestMini: "Session today at {time}. In short:\n• notes: {notes}\n• mood: {mood}\n• from notes: {themes}",
+  botDigestFull: "सत्र {date} को {time} बजे। सत्रों के बीच की बातें संकलित की हैं।",
+  botDigestMini: "सत्र {date} को {time} बजे। सारांश:\n• नोट: {notes}\n• मनोदशा: {mood}\n• नोट से: {themes}",
   botDigestHint: "I put together a brief like this before each of your sessions.",
   botSlice: "Your slice of the first days:\n• notes: {notes}\n• mood: {mood}\n• themes: {themes}",
   botDay5: "A small reminder: the free days end on {date}, in 2 days. Then {price}. Nothing to do now — keep the journal.",
@@ -424,7 +433,7 @@ export const hi: Catalog = {
   botPollMorning: "सुबह. आप कैसे हैं?",
   botPollDay: "दिन. आप कैसे हैं?",
   botPollEvening: "शाम. आप कैसे हैं?",
-  botNudge: "आज का नोट है?",
+  botNudge: "क्या आज की कोई बात सहेजना चाहेंगे? एक वाक्य भी काफी है।",
   todayTitle: "आज",
   nextSession: "अगला सेशन",
   inDays: "{days} में",

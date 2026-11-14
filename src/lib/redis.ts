@@ -7,6 +7,7 @@ import {
   emptyWeekAccess,
   normalizeWeekAccess,
   type WeekAccessRecord,
+  type CycleStamp,
 } from "./week-access";
 
 let client: Redis | null = null;
@@ -150,12 +151,13 @@ export async function claimDigestSlot(
   userId: number | string,
   dateKey: string,
   slot: string,
+  ttlSeconds = 60 * 60 * 36,
 ): Promise<boolean> {
   const redis = getRedis();
   if (!redis) return false;
   const result = await redis.set(digestKey(userId, dateKey, slot), "1", {
     nx: true,
-    ex: 60 * 60 * 36,
+    ex: ttlSeconds,
   });
   return result === "OK";
 }
@@ -280,6 +282,21 @@ export async function saveWeekAccess(
   const redis = getRedis();
   if (!redis) return;
   await redis.set(weekAccessKey(userId), normalizeWeekAccess(record));
+}
+
+/** Delivery must not overwrite a payment or pause that happened while a file was being generated. */
+export async function stampWeekAccess(userId: string, fields: CycleStamp[], now: Date, expected: Pick<WeekAccessRecord, "openedAt" | "paidUntil">): Promise<void> {
+  const redis = getRedis();
+  if (!redis) return;
+  await redis.eval(`
+local raw = redis.call('GET', KEYS[1])
+if not raw then return 0 end
+local record = cjson.decode(raw)
+local expected = cjson.decode(ARGV[2])
+if record.openedAt ~= expected.openedAt or record.paidUntil ~= expected.paidUntil then return 0 end
+for i = 3, #ARGV do record[ARGV[i]] = ARGV[1] end
+redis.call('SET', KEYS[1], cjson.encode(record))
+return 1`, [weekAccessKey(userId)], [now.toISOString(), JSON.stringify({ openedAt: expected.openedAt, paidUntil: expected.paidUntil }), ...fields]);
 }
 
 function briefCountRedisKey(userId: number | string, dateKey: string, bucket = ""): string {
