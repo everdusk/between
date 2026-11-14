@@ -8,6 +8,7 @@ import {
   canPreviewPaywall,
   adoptClientTrial,
   markWeekIntroSeen,
+  messengerAccessIdentity,
   normalizeWeekAccess,
   openWeekAccess,
   rubPriceFromEnv,
@@ -25,10 +26,11 @@ function misconfigured() {
 }
 
 function identityOf(actor: Actor): WeekAccessIdentity {
-  return {
-    id: actor.telegramUserId ?? 0,
-    username: actor.telegramUsername ?? undefined,
-  };
+  return messengerAccessIdentity({
+    telegramUserId: actor.telegramUserId,
+    username: actor.telegramUsername,
+    maxUserId: actor.messenger === "max" && typeof actor.analyticsId === "number" ? actor.analyticsId : null,
+  });
 }
 
 async function granted(record: WeekAccessRecord, actor: Actor) {

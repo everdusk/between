@@ -30,13 +30,41 @@ export const PREMIUM_WHITELIST: Readonly<Record<string, PremiumSpan>> = {
   aliatorovskaia: "forever",
 };
 
+/**
+ * MAX user ids with a forever grant.
+ * A Telegram id is not in this list: the same number can belong to someone else there.
+ * 1062664437 is the owner's MAX account, the same person as `aliatorovskaia`.
+ */
+export const PREMIUM_MAX_FOREVER_IDS: readonly number[] = [1062664437];
+
 /** Telegram accounts that keep «Неделя» open after the trial, without Stars. */
 export const WEEK_ACCESS_EXEMPT_USER_IDS: readonly number[] = [];
 
 export type WeekAccessIdentity = {
   id: number;
   username?: string;
+  /** Set only for a MAX chat. Never a Telegram id. */
+  maxId?: number;
 };
+
+/** MAX has no Telegram id. The numeric exemption list must not see the MAX id. */
+export function maxAccessIdentity(userId: number, username?: string): WeekAccessIdentity {
+  return { id: 0, maxId: userId, username };
+}
+
+/** A linked MAX chat keeps its Telegram id so a numeric exemption still applies, and adds the MAX id beside it. */
+export function messengerAccessIdentity(input: {
+  telegramUserId?: number | null;
+  username?: string | null;
+  maxUserId?: number | null;
+}): WeekAccessIdentity {
+  const maxId = input.maxUserId && input.maxUserId > 0 ? input.maxUserId : undefined;
+  return {
+    id: input.telegramUserId && input.telegramUserId > 0 ? input.telegramUserId : 0,
+    username: input.username ?? undefined,
+    ...(maxId ? { maxId } : {}),
+  };
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -189,9 +217,18 @@ export function whitelistSpan(
   user: WeekAccessIdentity,
   extraIdsRaw?: string,
 ): PremiumSpan | null {
-  if (!Number.isInteger(user.id) || user.id <= 0) return null;
-  if (WEEK_ACCESS_EXEMPT_USER_IDS.includes(user.id)) return "forever";
-  if (exemptUserIdsFromEnv(extraIdsRaw).includes(user.id)) return "forever";
+  if (!Number.isInteger(user.id) || user.id < 0) return null;
+  if (user.id > 0) {
+    if (WEEK_ACCESS_EXEMPT_USER_IDS.includes(user.id)) return "forever";
+    if (exemptUserIdsFromEnv(extraIdsRaw).includes(user.id)) return "forever";
+  }
+  if (
+    typeof user.maxId === "number" &&
+    Number.isSafeInteger(user.maxId) &&
+    PREMIUM_MAX_FOREVER_IDS.includes(user.maxId)
+  ) {
+    return "forever";
+  }
   const username = usernameKey(user.username);
   if (!username) return null;
   return PREMIUM_WHITELIST[username] ?? null;
