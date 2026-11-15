@@ -103,6 +103,7 @@ describe("session sheet without a week visit", () => {
         talkNotes: "",
         updatedAt: "2026-01-07T00:00:00.000Z",
         patternText: "Уже сохранённый паттерн недели.",
+        patternStamp: patternKey([], "ru"),
       },
     ];
     let called = false;
@@ -112,6 +113,38 @@ describe("session sheet without a week visit", () => {
     });
     assert.equal(called, false);
     assert.equal(sheet.patternText, "Уже сохранённый паттерн недели.");
+  });
+
+  it("refreshes the old voice without rejudging notes and saves it for the next PDF", async () => {
+    const store = emptyStore();
+    store.sessionPlan = weekly();
+    store.entries = [note("e1", "Перед встречей снова тревожно и не могу собраться.")];
+    const initial = await prepareSessionSheet(store, "ru", THURSDAY, NOW, "owner", async () => ({ text: null }));
+    const saved = applySessionSheet(store, initial, NOW);
+    saved.weekPreps[0].patternText = "В словах человека повторяется тревога перед встречей.";
+    saved.weekPreps[0].patternStamp = "p:old:ru";
+    const failed = await prepareSessionSheet(saved, "ru", THURSDAY, NOW, "owner", async () => ({ text: null }));
+    assert.equal(failed.patternText, saved.weekPreps[0].patternText);
+    assert.equal(failed.freshPattern, false);
+    assert.equal(applySessionSheet(saved, failed, NOW).weekPreps[0].patternStamp, "p:old:ru");
+    const calls: string[] = [];
+    const text = "Перед встречами возвращается тревога. Возможно, ожидание разговора даётся сложнее самой встречи.";
+    const refreshed = await prepareSessionSheet(saved, "ru", THURSDAY, NOW, "owner", async (input) => {
+      calls.push(input.kind);
+      return { text };
+    });
+    assert.deepEqual(calls, ["pattern"]);
+    assert.equal(refreshed.patternText, text);
+    const updated = applySessionSheet(saved, refreshed, new Date(NOW.getTime() + 1000));
+    assert.equal(updated.weekPreps[0].patternText, text);
+    assert.equal(updated.weekPreps[0].patternStamp, refreshed.patternStamp);
+    const reused = await prepareSessionSheet(updated, "ru", THURSDAY, NOW, "owner", async () => {
+      assert.fail("the refreshed pattern should be reused");
+    });
+    assert.equal(reused.patternText, text);
+    // A concurrently saved paragraph from the new prompt wins over an older PDF job.
+    updated.weekPreps[0].patternText = "Более свежий вывод, сохранённый на вкладке недели.";
+    assert.equal(applySessionSheet(updated, refreshed, NOW).weekPreps[0].patternText, updated.weekPreps[0].patternText);
   });
 
   it("still names a theme when the model is silent", async () => {

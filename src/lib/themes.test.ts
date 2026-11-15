@@ -570,6 +570,7 @@ describe("session brief", () => {
       status: "active",
     } as SessionTheme;
     const stamp = patternKey([theme], "ru");
+    assert.equal(patternAlreadyCurrent(stamp.replace(/^p2:/, "p:"), stamp, "Старый вывод."), false);
     assert.equal(patternKey([theme], "ru"), stamp);
     assert.equal(patternAlreadyCurrent(stamp, stamp, "Тревога перед звонком."), true);
     assert.equal(patternAlreadyCurrent(stamp, stamp, ""), false);

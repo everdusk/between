@@ -867,6 +867,12 @@ export function dedupFacts(theme: SessionTheme, others: SessionTheme[]): string 
   return [`Тема:\n${themeLine(theme)}`, `Другие:\n${others.map(themeLine).join("\n")}`].join("\n\n");
 }
 
+const PATTERN_VERSION = "p2";
+
+export function patternVersionCurrent(stamp: string | undefined): boolean {
+  return Boolean(stamp?.startsWith(`${PATTERN_VERSION}:`));
+}
+
 export function patternKey(themes: SessionTheme[], locale: string): string {
   const body = themes
     .map((theme) => `${theme.id}:${theme.updatedAt}:${theme.count}:${theme.status}`)
@@ -877,7 +883,7 @@ export function patternKey(themes: SessionTheme[], locale: string): string {
   for (let index = 0; index < source.length; index += 1) {
     hash = (hash * 33) ^ source.charCodeAt(index);
   }
-  return `p:${(hash >>> 0).toString(36)}:${locale}`;
+  return `${PATTERN_VERSION}:${(hash >>> 0).toString(36)}:${locale}`;
 }
 
 /** The saved brief already matches these themes, so the model must not be called. */

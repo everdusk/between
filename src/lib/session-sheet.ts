@@ -18,6 +18,7 @@ import {
   patternFromThemes,
   patternKey,
   patternReplyUsable,
+  patternVersionCurrent,
   pendingJudgeEntries,
   rankedThemes,
   themesForJudge,
@@ -152,7 +153,7 @@ export async function prepareSessionSheet(
     patternStamp,
     weekKey: period.weekKey,
   };
-  if (pending.length === 0 && patternReplyUsable(stored)) {
+  if (pending.length === 0 && patternVersionCurrent(prep?.patternStamp) && patternReplyUsable(stored)) {
     return { ...carried, patternText: stored, freshPattern: false };
   }
 
@@ -173,8 +174,9 @@ export async function prepareSessionSheet(
   }
   return {
     ...carried,
-    patternText: pattern || patternFromThemes(agenda),
-    freshPattern: true,
+    patternText: pattern || stored || patternFromThemes(agenda),
+    // A failed refresh can show the previous paragraph, but must not mark it as upgraded.
+    freshPattern: Boolean(pattern) || !stored,
   };
 }
 
@@ -196,7 +198,11 @@ export function applySessionSheet(store: TherapyStore, sheet: SessionSheet, now:
   patch.judgeSettled = sheet.judged.filter((_, index) => freshIds.has(sheet.judgedEntryIds[index] ?? ""));
   const prep = store.weekPreps.find((item) => item.weekKey === sheet.weekKey);
   const existing = prep?.patternText ? clipPattern(0, prep.patternText) : "";
-  if (sheet.freshPattern && patternReplyUsable(sheet.patternText) && !patternReplyUsable(existing)) {
+  if (
+    sheet.freshPattern &&
+    patternReplyUsable(sheet.patternText) &&
+    (!patternReplyUsable(existing) || !patternVersionCurrent(prep?.patternStamp))
+  ) {
     patch.weekPreps = [
       {
         ...(prep ?? { weekKey: sheet.weekKey, talkNotes: "" }),
