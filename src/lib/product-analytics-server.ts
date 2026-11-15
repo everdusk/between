@@ -1,6 +1,7 @@
 import { createHmac } from "node:crypto";
 import {
   PRODUCT_PLANS,
+  analyticsQuiet,
   SUBSCRIBE_FAILS,
   SUBSCRIBE_STEPS,
   messengerEventName,
@@ -12,6 +13,43 @@ import {
   type SubscribeStep,
 } from "./analytics-model";
 import { posthogBrowserConfig } from "./posthog-env";
+import { telegramCampaignSource } from "./campaign-source";
+
+/** A tagged bot start, separate from daily visits and Yandex offline conversions. */
+export async function captureServerCampaignStart(input: {
+  payload: string | null;
+  messenger: AnalyticsMessenger;
+  userId: number | string;
+  username?: string | null;
+}): Promise<void> {
+  if (input.messenger !== "telegram") return;
+  const campaign = telegramCampaignSource(input.payload);
+  if (!campaign || analyticsQuiet({ ...input, owners: process.env.ANALYTICS_OWNERS })) return;
+  const cfg = posthogBrowserConfig({ key: process.env.POSTHOG_KEY, host: process.env.POSTHOG_HOST });
+  const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
+  if (!cfg || !pepper) return;
+  try {
+    await fetch(`${cfg.host}/capture/`, {
+      method: "POST",
+      signal: AbortSignal.timeout(3000),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        api_key: cfg.token,
+        event: "telegram_campaign_start",
+        distinct_id: productDistinctId(pepper, input.messenger, input.userId),
+        properties: {
+          messenger: input.messenger,
+          ...campaign,
+          $geoip_disable: true,
+          // Keep the first tagged campaign; later starts cannot overwrite it.
+          $set_once: { first_tagged_campaign: campaign.campaign_tag },
+        },
+      }),
+    });
+  } catch {
+    // Analytics must never prevent the welcome message.
+  }
+}
 
 /**
  * PostHog person for a messenger user.

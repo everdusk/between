@@ -3,6 +3,7 @@ import { getRedis } from "./redis";
 import { queueMessengerConversion } from "./acquisition-store";
 import { syncAcquisition } from "./acquisition-sync";
 import type { AcquisitionMessenger } from "./acquisition";
+import { captureServerCampaignStart } from "./product-analytics-server";
 
 export function scheduleAcquisitionSync() {
   after(async () => {
@@ -16,6 +17,7 @@ export function scheduleAcquisitionSync() {
 }
 
 export async function trackMessengerStart(input: { payload: string | null; messenger: AcquisitionMessenger; userId: number; username?: string | null }) {
+  await captureServerCampaignStart(input);
   try {
     const redis = getRedis();
     const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();

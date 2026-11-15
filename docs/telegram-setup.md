@@ -2,6 +2,21 @@
 
 **Репозиторий (source of truth):** [github.com/everdusk/between](https://github.com/everdusk/between)  
 **Бот:** [@BetweenJournalBot](https://t.me/BetweenJournalBot)  
+
+### Метки рекламных постов
+
+Для размещения у Полины: `https://t.me/BetweenJournalBot?start=tg_telegain_to4nopsy`.
+Запуск бота по ссылке отправляет в PostHog событие `telegram_campaign_start`:
+`campaign_tag=tg_telegain_to4nopsy`, `campaign_source=telegram`,
+`campaign_medium=paid_post`, `campaign_platform=telegain`, `campaign_name=to4nopsy`.
+Событие относится к тому же человеку, что `telegram_visit`, заметки и оплаты.
+В профиле `first_tagged_campaign` хранит первую такую метку и не перезаписывается.
+Это первый запуск из отмеченной кампании, а не обязательно первое знакомство с продуктом.
+Для количества пришедших людей используйте уникальных пользователей события;
+повторное нажатие Start может отправить событие ещё раз. Открытие чата без Start не считается.
+Метки `tg_telegain_<канал>` принимают только латинские строчные буквы, цифры и `_`,
+общая длина до 64 символов. Служебные `login_`, `link_` и `ad_` в это событие не попадают.
+Исключение владельца действует и здесь. Метки постов не создают конверсий Директа.
 **Production:** [https://between-rouge.vercel.app/](https://between-rouge.vercel.app/)
 
 Токен бота и ключи Redis **никогда** не коммитим и **не вставляем в чат** — только в Vercel Environment Variables (или `.env.local` у себя).
