@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { timePattern } from "./spectrum";
+import { spectrumTimeSummary, timePattern } from "./spectrum";
 import type { CheckinSlot, Feeling, JournalEntry } from "./types";
 
 function check(day: number, slot: CheckinSlot, feeling: Feeling): JournalEntry {
@@ -21,6 +21,8 @@ it("finds a repeated within-day change, with one vote per day", () => {
 it("does not infer a rhythm from only evening answers, extra notes, or one difficult day", () => {
   const eveningOnly = [11, 12, 13, 14].map((day) => check(day, "evening", "тревожно"));
   assert.equal(timePattern(eveningOnly).key, "spectrumTimeFew");
+  assert.equal(spectrumTimeSummary(eveningOnly, (key) => key), "");
+  assert.equal(spectrumTimeSummary([], (key) => key), "");
   const oneDay = Array.from({ length: 20 }, () => [check(11, "morning", "спокойно"), check(11, "evening", "тревожно")]).flat();
   assert.equal(timePattern(oneDay).key, "spectrumTimeFew");
   const notes = [11, 12, 13].flatMap((day) => [check(day, "morning", "спокойно"), { ...check(day, "evening", "тревожно"), source: "bot" as const }]);
