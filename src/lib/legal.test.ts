@@ -39,6 +39,9 @@ describe("legal documents", () => {
     }
     const terms = textOf("terms", "ru");
     assert.ok(terms.includes("Условия являются публичной офертой"));
+    assert.ok(terms.includes("Пробный доступ ко всему приложению"));
+    assert.ok(terms.includes("не возобновляет пробный период"));
+    assert.equal(terms.includes("Ведение Дневника бесплатно и не ограничено"), false);
     assert.ok(terms.includes("Оплата в Веб-версии выполняется через платёжный сервис ЮKassa."));
     assert.ok(terms.includes("Настоящие Условия не распространяются на Telegram-версию."));
     assert.ok(terms.includes("номер 112"));

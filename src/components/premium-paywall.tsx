@@ -11,6 +11,7 @@ const PLANS = ["month", "quarter", "year"] as const satisfies readonly PremiumPl
 /** The premium block from the account sheet. Telegram pays in Stars, MAX and the site in rubles. */
 export function PremiumPaywall({
   access,
+  unavailable = false,
   inTelegram,
   inMax,
   canSubscribe = false,
@@ -19,6 +20,7 @@ export function PremiumPaywall({
   onPay,
 }: {
   access: WeekAccessView | null;
+  unavailable?: boolean;
   inTelegram: boolean;
   inMax: boolean;
   canSubscribe?: boolean;
@@ -27,7 +29,7 @@ export function PremiumPaywall({
   onPay: (plan: PremiumPlan) => void;
 }) {
   const { t, locale } = useI18n();
-  const premiumText = access ? formatPremiumStatus(locale, access) : t("loading");
+  const premiumText = access ? formatPremiumStatus(locale, access) : t(unavailable ? "accessUnavailable" : "loading");
 
   function planLabel(plan: PremiumPlan, price: number) {
     if (payingPlan === plan) return t("paying");

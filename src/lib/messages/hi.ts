@@ -431,7 +431,9 @@ export const hi: Catalog = {
   botPremiumForever: "प्रीमियम की कोई समय-सीमा नहीं.",
   botPremiumDays: "प्रीमियम {days} और.",
   botPremiumNone: "प्रीमियम नहीं है.",
-  botPremiumTrial: "«हफ़्ता» अभी {days} मुफ़्त है.",
+  accessUnavailable: "पहुँच की पुष्टि नहीं हो सकी। फिर से कोशिश करें।",
+  accessRetry: "फिर कोशिश करें",
+  botPremiumTrial: "पूरा ऐप अभी {days} और मुफ़्त है।",
   botPaySupport:
     "«हफ़्ता» का भुगतान Telegram Stars से होता है.\n\n30 दिन सदस्यता है: Telegram में रद्द करें, पहुँच भुगतान अवधि के अंत तक रहती है. 3 महीने और एक साल एक बार का भुगतान है.\n\nअगर Stars कट गए और «हफ़्ता» नहीं खुला, या धनवापसी चाहिए, इसी चैट में लिखें क्या हुआ और कब. यहीं सुलझाएँगे.",
   botPaySupportMax:

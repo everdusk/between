@@ -72,9 +72,9 @@ export function formatPremiumStatus(
           })
         : translate(locale, "botPremiumNone");
   if (view.premium === "none" && view.status === "trial" && view.daysLeft > 0) {
-    return `${text}\n${translate(locale, "botPremiumTrial", {
+    return translate(locale, "botPremiumTrial", {
       days: countPhrase(locale, view.daysLeft, "day"),
-    })}`;
+    });
   }
   return text;
 }

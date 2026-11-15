@@ -431,7 +431,9 @@ export const es: Catalog = {
   botPremiumForever: "Premium no caduca.",
   botPremiumDays: "Quedan {days} de premium.",
   botPremiumNone: "No hay premium.",
-  botPremiumTrial: "Semana sigue gratis {days}.",
+  accessUnavailable: "No se pudo comprobar el acceso. Inténtalo de nuevo.",
+  accessRetry: "Reintentar",
+  botPremiumTrial: "Toda la aplicación es gratis durante {days} más.",
   botPaySupport:
     "Semana se paga con Telegram Stars.\n\n30 días es una suscripción: se cancela en Telegram y el acceso sigue hasta el fin del periodo pagado. 3 meses y un año son un pago único.\n\nSi se cobraron Stars y Semana no se abrió, o necesitas un reembolso, escribe aquí qué pasó y cuándo. Lo vemos en este chat.",
   botPaySupportMax:
