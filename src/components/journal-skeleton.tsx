@@ -11,19 +11,20 @@ export function JournalSkeleton() {
   const { t } = useI18n();
   return (
     <div className="space-y-4" role="status" aria-label={t("loading")}>
-      <Bar className="h-4 w-24 rounded-full" />
-      <Bar className="h-10 w-2/3 rounded-2xl" />
-      <div className="glass space-y-4 rounded-3xl p-5">
-        <Bar className="h-3 w-28 rounded-full" />
-        <Bar className="h-8 w-1/2 rounded-2xl" />
-        <Bar className="h-16 w-full rounded-2xl" />
-        <Bar className="h-16 w-full rounded-2xl" />
+      <div className="glass-strong space-y-4 rounded-3xl p-4">
+        <Bar className="h-3 w-20 rounded-full" />
+        <div className="flex h-11 items-center justify-between gap-4">
+          <Bar className="size-8 rounded-full" />
+          <Bar className="h-5 w-40 rounded-full" />
+          <Bar className="size-8 rounded-full" />
+        </div>
+        <div className="flex items-center justify-between">
+          <Bar className="h-3 w-16 rounded-full" />
+          <Bar className="h-8 w-32 rounded-full" />
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Bar className="h-24 rounded-3xl" />
-        <Bar className="h-24 rounded-3xl" />
-      </div>
-      <Bar className="h-28 rounded-3xl" />
+      <Bar className="h-5 w-32 rounded-full" />
+      <Bar className="h-40 rounded-3xl" />
     </div>
   );
 }
