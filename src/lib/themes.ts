@@ -867,19 +867,20 @@ export function dedupFacts(theme: SessionTheme, others: SessionTheme[]): string 
   return [`Тема:\n${themeLine(theme)}`, `Другие:\n${others.map(themeLine).join("\n")}`].join("\n\n");
 }
 
-const PATTERN_VERSION = "p2";
+const PATTERN_VERSION = "p3";
+export const PATTERN_FACTS_LIMIT = 12_000;
 
 export function patternVersionCurrent(stamp: string | undefined): boolean {
   return Boolean(stamp?.startsWith(`${PATTERN_VERSION}:`));
 }
 
-export function patternKey(themes: SessionTheme[], locale: string): string {
+export function patternKey(themes: SessionTheme[], locale: string, facts = ""): string {
   const body = themes
     .map((theme) => `${theme.id}:${theme.updatedAt}:${theme.count}:${theme.status}`)
     .sort()
     .join("|");
   let hash = 5381;
-  const source = `${body}\n${locale}`;
+  const source = `${body}\n${locale}\n${facts}`;
   for (let index = 0; index < source.length; index += 1) {
     hash = (hash * 33) ^ source.charCodeAt(index);
   }
@@ -940,23 +941,42 @@ export function patternReplyUsable(text: string): boolean {
   return true;
 }
 
-export function patternFacts(themes: SessionTheme[]): string {
-  return themes
-    .slice(0, 4)
-    .map((theme) => {
-      const quotes = theme.quotes
-        .slice(0, 2)
-        .map((quote) => quote.text.replace(/\s+/g, " ").trim())
-        .filter((quote) => quote.length > 0);
-      return [
-        `Тема: ${theme.title.replace(/\s+/g, " ").trim()}`,
-        `Сколько раз за период: ${theme.count}`,
-        theme.peakFeeling ? `Самая сильная отметка: ${theme.peakFeeling}` : "",
-        quotes.length > 0 ? `Слова человека: ${quotes.join(" | ")}` : "",
-      ]
-        .filter(Boolean)
-        .join("\n");
-    })
-    .filter(Boolean)
-    .join("\n\n");
+export function patternFacts(themes: SessionTheme[], context?: {
+  entries: JournalEntry[];
+  links: ThemeLink[];
+  dayKeys: string[];
+}): string {
+  const selected = themes.filter((theme) => !theme.dismissed && theme.status !== "archived").slice(0, 12);
+  if (!selected.length) return "";
+  const days = new Set(context?.dayKeys ?? []);
+  const header = "Темы — вспомогательные названия. Повтор подтверждают разные записи, а не счётчик. Даты указаны у каждой записи.";
+  const budget = Math.floor((PATTERN_FACTS_LIMIT - header.length - 4) / selected.length) - 2;
+  const blocks = selected.map((theme) => {
+    const linked = new Set(context?.links.filter((link) => link.themeId === theme.id).map((link) => link.entryId));
+    const quoteIds = new Set(theme.quotes.map((quote) => quote.entryId));
+    const records = new Map<string, { date: string; text: string; quote: boolean }>();
+    for (const entry of context?.entries ?? []) {
+      if ((linked.has(entry.id) || quoteIds.has(entry.id)) && entry.body.trim()) {
+        records.set(entry.id, { date: entry.date, text: entry.body.trim(), quote: false });
+      }
+    }
+    for (const quote of theme.quotes) {
+      if (!records.has(quote.entryId) && quote.text.trim()) {
+        records.set(quote.entryId, { date: quote.date, text: quote.text.trim(), quote: true });
+      }
+    }
+    const heading = `Тема: ${theme.title.replace(/\s+/g, " ").trim().slice(0, 180)}`;
+    // Share the budget across topics and records so a long entry cannot hide every other topic.
+    const sorted = [...records.values()].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
+    const perRecord = Math.floor((budget - heading.length - 2) / Math.max(1, sorted.length));
+    const lines = sorted.map((record) => {
+      const period = days.has(record.date) ? "текущий период" : "история";
+      const prefix = `${record.date} (${period}${record.quote ? ", цитата" : ""}): `;
+      const text = record.text.replace(/\s+/g, " ");
+      const room = Math.max(0, perRecord - prefix.length - 16);
+      return prefix + (text.length > room ? `${text.slice(0, room)} [сокращено]` : text);
+    });
+    return [heading, ...lines].join("\n").slice(0, budget);
+  });
+  return `${header}\n\n${blocks.join("\n\n")}`;
 }
