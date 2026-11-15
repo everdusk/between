@@ -303,7 +303,7 @@ function drawSpectrum(
 ) {
   const pad = 16;
   const inner = CONTENT_W - pad * 2;
-  const title = wrap(model.spectrumTitle, 18, inner, faces.display, order);
+  const title = model.spectrumTitle ? wrap(model.spectrumTitle, 18, inner, faces.display, order) : [];
   const lead =
     model.spectrumLead && model.spectrumLead !== model.spectrumTitle
       ? wrap(model.spectrumLead, 10, inner, faces.text, order)
@@ -314,14 +314,14 @@ function drawSpectrum(
     : 0;
   const dayDelta = model.days.length ? 12 + 108 : 0;
   const nestH = 12 + 14 + 2 + pattern.length * 15 + 10;
-  const height = 16 + 14 + 4 + title.length * 22 + (lead.length ? 4 + lead.length * 14 : 0) + shareDelta + dayDelta + 12 + nestH + 16;
+  const height = 16 + 14 + (title.length ? 4 + title.length * 22 : 0) + (lead.length ? 4 + lead.length * 14 : 0) + shareDelta + dayDelta + 12 + nestH + 16;
   sheet.ensure(Math.min(height, PAGE_H - MARGIN - BOTTOM));
   const top = sheet.top;
   const x = MARGIN + pad;
   roundRect(sheet.page, MARGIN, sheet.y(top + height), CONTENT_W, height, 22, PDF_NIGHT.strong, HAIRLINE);
   sheet.top = top + 16;
   drawEyebrow(sheet, model.spectrumLabel, x, faces.display, order);
-  sheet.top += 4;
+  if (title.length) sheet.top += 4;
   drawLines(sheet, title, x, 18, 22, faces.display, order, PDF_NIGHT.ink);
   if (lead.length) {
     sheet.top += 4;

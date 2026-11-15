@@ -41,7 +41,8 @@ export function timePattern(entries: JournalEntry[]): TimePattern {
 }
 
 export function spectrumTimeSummary(entries: JournalEntry[], t: (key: MessageKey) => string): string {
-  return t(timePattern(entries).key);
+  const pattern = timePattern(entries);
+  return pattern.matches > 0 ? t(pattern.key) : "";
 }
 
 /** Lighter, more open states sit on the left. Heavier ones sit on the right. */

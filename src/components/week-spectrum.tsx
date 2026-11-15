@@ -25,8 +25,7 @@ export function WeekSpectrum({
 }: WeekSpectrumProps) {
   const { t, locale, feeling } = useI18n();
   const spectrum = buildWeekSpectrum(dayKeys, entries);
-  const noteCount = spectrum.noteCount;
-  const title = spectrum.feelingTotal ? spectrumTimeSummary(entries.filter((entry) => dayKeys.includes(entry.date)), t) : t(noteCount ? "spectrumNoFeelings" : "spectrumEmpty");
+  const title = spectrumTimeSummary(entries.filter((entry) => dayKeys.includes(entry.date)), t);
   const lead = spectrum.top[0];
 
   return (
@@ -47,9 +46,11 @@ export function WeekSpectrum({
           <p id="week-spectrum-title" className="eyebrow text-section-header">
             {t("spectrumLabel")}
           </p>
-          <p className="font-display text-2xl leading-tight tracking-tight text-foreground sm:text-[1.75rem]">
-            {title}
-          </p>
+          {title && (
+            <p className="font-display text-2xl leading-tight tracking-tight text-foreground sm:text-[1.75rem]">
+              {title}
+            </p>
+          )}
         </div>
 
         {spectrum.shares.length > 0 && (
