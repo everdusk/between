@@ -4,7 +4,7 @@ import { formatDateSpan, formatDayLabel, formatLongDate, weekKey, weekdayShort }
 import type { LocaleId } from "./i18n";
 import { countPhrase, feelingLabel, translate } from "./messages";
 import { entryInWindow, therapyWindow } from "./session-summary";
-import { buildWeekSpectrum } from "./spectrum";
+import { spectrumTimeSummary } from "./spectrum";
 import { clipPattern, patternReplyUsable, rankedThemes } from "./themes";
 import type { SessionSheet } from "./session-sheet";
 import type { TherapyStore } from "./types";
@@ -76,7 +76,6 @@ export function buildSessionPdfModel(
   const t = (key: Parameters<typeof translate>[1], vars?: Record<string, string | number | undefined>) =>
     translate(locale, key, vars);
   const feeling = (value: Parameters<typeof feelingLabel>[1]) => feelingLabel(locale, value);
-  const spectrum = buildWeekSpectrum(days, weekEntries);
   return buildWeekPdfModel({
     todayKey,
     dayKeys: days,
@@ -91,9 +90,9 @@ export function buildSessionPdfModel(
             range: formatDateSpan(days[0] ?? todayKey, days[days.length - 1] ?? todayKey, locale),
           }),
     spectrumLabel: t("spectrumLabel"),
-    spectrumTitle: spectrumTitle(spectrum, t, feeling),
-    spectrumLead: spectrumLead(spectrum, weekEntries.length, t, feeling),
-    axis: t("spectrumAxis"),
+    spectrumTitle: spectrumTimeSummary(weekEntries, t),
+    spectrumLead: "",
+    axis: "",
     patternTitle: t("briefPatternTitle"),
     patternText: pattern || t("patternThin"),
     backlogTitle: t("backlogTitle"),
@@ -107,32 +106,6 @@ export function buildSessionPdfModel(
     feeling,
     noteCount: (amount) => countPhrase(locale, amount, "note"),
   });
-}
-
-function spectrumTitle(
-  spectrum: ReturnType<typeof buildWeekSpectrum>,
-  t: (key: Parameters<typeof translate>[1], vars?: Record<string, string | number | undefined>) => string,
-  feeling: (value: Parameters<typeof feelingLabel>[1]) => string,
-): string {
-  if (spectrum.feelingTotal === 0) return t("spectrumQuiet");
-  if (spectrum.top.length === 1) return feeling(spectrum.top[0]);
-  if (spectrum.top.length === 2) return t("spectrumPair", { a: feeling(spectrum.top[0]), b: feeling(spectrum.top[1]) });
-  return t("spectrumSeveral");
-}
-
-function spectrumLead(
-  spectrum: ReturnType<typeof buildWeekSpectrum>,
-  noteCount: number,
-  t: (key: Parameters<typeof translate>[1], vars?: Record<string, string | number | undefined>) => string,
-  feeling: (value: Parameters<typeof feelingLabel>[1]) => string,
-): string {
-  if (spectrum.feelingTotal === 0 && noteCount === 0) return t("spectrumEmpty");
-  if (spectrum.feelingTotal === 0) return t("spectrumNoFeelings");
-  if (spectrum.top.length === 1) return t("spectrumTopOne", { feeling: feeling(spectrum.top[0]) });
-  if (spectrum.top.length === 2) {
-    return t("spectrumTopTwo", { a: feeling(spectrum.top[0]), b: feeling(spectrum.top[1]) });
-  }
-  return t("spectrumTopMany");
 }
 
 export async function renderSessionPdf(

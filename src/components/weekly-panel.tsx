@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Share } from "lucide-react";
+import { Share, LoaderCircle, RotateCcw } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
 import { badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SessionBacklog } from "@/components/session-backlog";
-import { spectrumLead, spectrumTitle, WeekSpectrum } from "@/components/week-spectrum";
+import { WeekSpectrum } from "@/components/week-spectrum";
 import {
   formatDateSpan,
   formatDayLabel,
@@ -19,7 +19,7 @@ import {
 import { entryInWindow, therapyWindow } from "@/lib/session-summary";
 import { briefStamp, tagCounts } from "@/lib/brief";
 import { parseModelThemes, shownEntryTags, themeContextChunks } from "@/lib/tags";
-import { buildWeekSpectrum, feelingFill } from "@/lib/spectrum";
+import { feelingFill, spectrumTimeSummary } from "@/lib/spectrum";
 import { buildWeekPdfModel } from "@/lib/week-pdf-model";
 import { requestBrief } from "@/lib/journal-api";
 import {
@@ -296,7 +296,6 @@ export function WeeklyPanel({
   useEffect(() => {
     let cancelled = false;
     fileRef.current = null;
-    const spectrum = buildWeekSpectrum(days, weekEntries);
     const model = buildWeekPdfModel({
       todayKey,
       dayKeys: days,
@@ -311,9 +310,9 @@ export function WeeklyPanel({
               range: formatDateSpan(days[0] ?? todayKey, days[days.length - 1] ?? todayKey, locale),
             }),
       spectrumLabel: t("spectrumLabel"),
-      spectrumTitle: spectrumTitle(spectrum, t, feeling),
-      spectrumLead: spectrumLead(spectrum, weekEntries.length, t, feeling),
-      axis: t("spectrumAxis"),
+      spectrumTitle: spectrumTimeSummary(weekEntries, t),
+      spectrumLead: "",
+      axis: "",
       patternTitle: t("briefPatternTitle"),
       patternText: shownPattern || t("patternThin"),
       backlogTitle: t("backlogTitle"),
@@ -354,8 +353,8 @@ export function WeeklyPanel({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col items-start gap-3 px-2 pt-1 pb-1 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0 space-y-2">
+      <div className="relative px-2 pt-1 pb-1">
+        <div className="min-w-0 space-y-2 pe-12">
           <p className="eyebrow text-section-header">{t("weekTitle")}</p>
           <h2 className="font-display text-[2.125rem] leading-[1.05] tracking-tight text-foreground sm:text-[2.5rem]">
             {period.last && days.length === 0
@@ -365,11 +364,13 @@ export function WeeklyPanel({
                 })}
           </h2>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1">
+        <div className="absolute end-1 top-7">
           <Button
             type="button"
-            variant="secondary"
-            size="sm"
+            variant="ghost"
+            size="icon"
+            aria-label={pdfState === "busy" ? t("weekPdfBusy") : pdfState === "fail" ? t("weekPdfFail") : t("weekPdf")}
+            title={pdfState === "busy" ? t("weekPdfBusy") : pdfState === "fail" ? t("weekPdfFail") : t("weekPdf")}
             disabled={pdfState === "busy"}
             onClick={() => {
               if (pdfState === "fail") {
@@ -379,10 +380,8 @@ export function WeeklyPanel({
               savePdf();
             }}
           >
-            <Share aria-hidden />
-            {pdfState === "busy" ? t("weekPdfBusy") : t("weekPdf")}
+            {pdfState === "busy" ? <LoaderCircle aria-hidden className="animate-spin" /> : pdfState === "fail" ? <RotateCcw aria-hidden /> : <Share aria-hidden />}
           </Button>
-          {pdfState === "fail" && <p className="text-xs text-muted-foreground">{t("weekPdfFail")}</p>}
         </div>
       </div>
 

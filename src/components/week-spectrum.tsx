@@ -2,10 +2,9 @@
 
 import { useI18n } from "@/components/locale-provider";
 import { formatDayLabel, weekdayShort } from "@/lib/dates";
-import { buildWeekSpectrum, feelingFill } from "@/lib/spectrum";
-import type { Feeling, JournalEntry } from "@/lib/types";
+import { buildWeekSpectrum, feelingFill, spectrumTimeSummary } from "@/lib/spectrum";
+import type { JournalEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import type { MessageKey } from "@/lib/messages";
 
 interface WeekSpectrumProps {
   dayKeys: string[];
@@ -14,34 +13,6 @@ interface WeekSpectrumProps {
   patternTitle: string;
   patternText: string;
   patternPending: string;
-}
-
-export function spectrumTitle(
-  spectrum: ReturnType<typeof buildWeekSpectrum>,
-  t: (key: MessageKey, vars?: Record<string, string | number | undefined>) => string,
-  feeling: (value: Feeling) => string,
-): string {
-  if (spectrum.feelingTotal === 0) return t("spectrumQuiet");
-  if (spectrum.top.length === 1) return feeling(spectrum.top[0]);
-  if (spectrum.top.length === 2) {
-    return t("spectrumPair", { a: feeling(spectrum.top[0]), b: feeling(spectrum.top[1]) });
-  }
-  return t("spectrumSeveral");
-}
-
-export function spectrumLead(
-  spectrum: ReturnType<typeof buildWeekSpectrum>,
-  noteCount: number,
-  t: (key: MessageKey, vars?: Record<string, string | number | undefined>) => string,
-  feeling: (value: Feeling) => string,
-): string {
-  if (spectrum.feelingTotal === 0 && noteCount === 0) return t("spectrumEmpty");
-  if (spectrum.feelingTotal === 0) return t("spectrumNoFeelings");
-  if (spectrum.top.length === 1) return t("spectrumTopOne", { feeling: feeling(spectrum.top[0]) });
-  if (spectrum.top.length === 2) {
-    return t("spectrumTopTwo", { a: feeling(spectrum.top[0]), b: feeling(spectrum.top[1]) });
-  }
-  return t("spectrumTopMany");
 }
 
 export function WeekSpectrum({
@@ -55,8 +26,7 @@ export function WeekSpectrum({
   const { t, locale, feeling } = useI18n();
   const spectrum = buildWeekSpectrum(dayKeys, entries);
   const noteCount = spectrum.noteCount;
-  const headline = spectrumLead(spectrum, noteCount, t, feeling);
-  const title = spectrumTitle(spectrum, t, feeling);
+  const title = spectrum.feelingTotal ? spectrumTimeSummary(entries.filter((entry) => dayKeys.includes(entry.date)), t) : t(noteCount ? "spectrumNoFeelings" : "spectrumEmpty");
   const lead = spectrum.top[0];
 
   return (
@@ -77,12 +47,9 @@ export function WeekSpectrum({
           <p id="week-spectrum-title" className="eyebrow text-section-header">
             {t("spectrumLabel")}
           </p>
-          <p className="font-display text-[2.125rem] leading-[1.05] tracking-tight text-foreground sm:text-[2.5rem]">
+          <p className="font-display text-2xl leading-tight tracking-tight text-foreground sm:text-[1.75rem]">
             {title}
           </p>
-          {title !== headline && (
-            <p className="text-sm leading-relaxed text-muted-foreground">{headline}</p>
-          )}
         </div>
 
         {spectrum.shares.length > 0 && (
@@ -123,9 +90,6 @@ export function WeekSpectrum({
                   </li>
                 ))}
               </ul>
-              {spectrum.shares.length > 1 && (
-                <p className="text-[0.6875rem] text-muted-foreground/80">{t("spectrumAxis")}</p>
-              )}
             </div>
           </div>
         )}
