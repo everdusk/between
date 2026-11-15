@@ -36,6 +36,7 @@ interface EntryCalendarProps {
   /** Date key → first feeling that day, or null when the note has no feeling. */
   marks: Map<string, Feeling | null>;
   disabled?: boolean;
+  compact?: boolean;
   onChange: (value: string) => void;
 }
 
@@ -65,6 +66,7 @@ export function EntryCalendar({
   max,
   marks,
   disabled,
+  compact = false,
   onChange,
 }: EntryCalendarProps) {
   const { t, locale } = useI18n();
@@ -305,7 +307,7 @@ export function EntryCalendar({
     );
 
   return (
-    <div className="relative">
+    <div className={cn("relative", compact && "min-w-0 flex-1")}>
       <button
         ref={triggerRef}
         id={id}
@@ -313,20 +315,25 @@ export function EntryCalendar({
         disabled={disabled}
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={t("date")}
+        aria-label={`${t("date")}: ${formatLongDate(value, locale)}`}
         onClick={() => {
           setVisible(value);
           setOpen((current) => !current);
         }}
         className={cn(
-          "inline-flex h-11 items-center gap-2.5 rounded-full border border-[color:var(--glass-border)] bg-background/55 pr-3.5 pl-4 text-sm text-foreground transition-[box-shadow,background-color] duration-200",
+          "inline-flex h-11 items-center gap-2.5 rounded-full text-foreground transition-[box-shadow,background-color] duration-200",
+          compact
+            ? "w-full justify-center px-1 text-base hover:bg-foreground/[0.04]"
+            : "border border-[color:var(--glass-border)] bg-background/55 pr-3.5 pl-4 text-sm",
           "focus-visible:border-primary/40 focus-visible:ring-4 focus-visible:ring-primary/12 focus-visible:outline-none",
           "disabled:opacity-50",
           open && "border-primary/40 bg-background/80",
         )}
       >
-        <CalendarDays aria-hidden className="size-4 shrink-0 opacity-70" />
-        <span className="tabular font-medium whitespace-nowrap">{formatLongDate(value, locale)}</span>
+        {!compact && <CalendarDays aria-hidden className="size-4 shrink-0 opacity-70" />}
+        <span className={cn("tabular min-w-0 truncate", compact ? "font-semibold" : "font-medium")}>
+          {compact ? formatDayLabel(value, locale) : formatLongDate(value, locale)}
+        </span>
         <ChevronDown
           aria-hidden
           className={cn("size-3.5 shrink-0 opacity-50 transition-transform duration-200", open && "rotate-180")}
