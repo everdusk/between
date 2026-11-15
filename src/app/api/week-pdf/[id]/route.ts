@@ -18,6 +18,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${file.filename}"`,
+      // Telegram requires this origin for consistent downloads across its clients.
+      "Access-Control-Allow-Origin": "https://web.telegram.org",
+      "Content-Length": String(file.bytes.byteLength),
       "Cache-Control": "private, no-store",
     },
   });
