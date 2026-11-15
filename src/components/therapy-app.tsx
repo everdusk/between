@@ -32,7 +32,7 @@ import { fetchWeekAccess, localWeekView, readLocalWeekAccess } from "@/lib/week-
 import { useWeekPrices } from "@/components/week-prices";
 import type { WeekAccessStatus, WeekAccessView } from "@/lib/week-access";
 
-const SECTIONS = ["journal", "week", "sessions"] as const;
+const SECTIONS = ["week", "journal", "sessions"] as const;
 
 type SectionId = (typeof SECTIONS)[number];
 
@@ -184,7 +184,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   const requested = useSyncExternalStore(subscribeLaunch, readLaunch, () => null);
   const fromMax = launchSection({ initData: maxLaunch });
   const [picked, setPicked] = useState<SectionId | null>(null);
-  const section: SectionId = picked ?? tabOf(requested) ?? tabOf(fromMax) ?? "journal";
+  const section: SectionId = picked ?? tabOf(requested) ?? tabOf(fromMax) ?? SECTIONS[0];
   const scrollerRef = useRef<HTMLDivElement>(null);
   const scrollTops = useRef<Partial<Record<SectionId, number>>>({});
 

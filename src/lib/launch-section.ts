@@ -28,7 +28,7 @@ function tabUrl(base: string, tab: LaunchSection): string {
 
 /**
  * Tab requested by `?tab=`, a Telegram/MAX start parameter, or `start_param`
- * inside a launch string. Anything else stays on the journal.
+ * inside a launch string. No explicit section leaves the app's default tab in control.
  */
 export function launchSection(input: {
   search?: string;
