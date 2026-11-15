@@ -431,7 +431,9 @@ export const id: Catalog = {
   botPremiumForever: "Premium tidak berakhir.",
   botPremiumDays: "Premium tersisa {days}.",
   botPremiumNone: "Tidak ada premium.",
-  botPremiumTrial: "Minggu masih gratis {days}.",
+  accessUnavailable: "Akses belum dapat diverifikasi. Coba lagi.",
+  accessRetry: "Coba lagi",
+  botPremiumTrial: "Seluruh aplikasi gratis selama {days} lagi.",
   botPaySupport:
     "Minggu dibayar dengan Telegram Stars.\n\n30 hari adalah langganan: batalkan di Telegram, akses tetap sampai akhir masa yang dibayar. 3 bulan dan setahun adalah pembayaran sekali.\n\nJika Stars terpotong dan Minggu tidak terbuka, atau Anda perlu pengembalian, tulis di chat ini apa yang terjadi dan kapan. Kami urus di sini.",
   botPaySupportMax:

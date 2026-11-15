@@ -21,10 +21,7 @@ import type { NotifyPrefs } from "@/lib/types";
 import {
   createWeekInvoice,
   fetchWeekAccess,
-  localWeekView,
-  readLocalWeekAccess,
 } from "@/lib/week-access-client";
-import { useWeekPrices } from "@/components/week-prices";
 import { type PremiumPlan, type WeekAccessView } from "@/lib/week-access";
 
 export function AccountButton({
@@ -84,12 +81,13 @@ export function AccountSheet({
   onPremium: () => void;
 }) {
   const { t } = useI18n();
-  const prices = useWeekPrices();
   const titleId = useId();
   const [access, setAccess] = useState<WeekAccessView | null>(null);
   const [payingPlan, setPayingPlan] = useState<PremiumPlan | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
+  const [accessFailed, setAccessFailed] = useState(false);
+  const [accessRetry, setAccessRetry] = useState(0);
 
   useEffect(() => {
     if (!open) return;
@@ -104,16 +102,16 @@ export function AccountSheet({
     if (!open) return;
     let cancelled = false;
     void (async () => {
-      const view =
-        inTelegram && initData
-          ? await fetchWeekAccess(initData)
-          : await fetchSessionAccess(prices);
-      if (!cancelled) setAccess(view);
+      const view = await fetchWeekAccess(inTelegram ? initData : "", inMax ? maxInitData : "");
+      if (!cancelled) {
+        setAccess(view);
+        setAccessFailed(!view);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, inTelegram, initData, prices]);
+  }, [open, inTelegram, inMax, initData, maxInitData, accessRetry]);
 
   async function refreshAfterPay() {
     const first = await fetchWeekAccess(initData);
@@ -230,6 +228,7 @@ export function AccountSheet({
 
           <PremiumPaywall
             access={access}
+            unavailable={accessFailed}
             inTelegram={inTelegram}
             inMax={inMax}
             canSubscribe={Boolean(account) || inMax}
@@ -237,6 +236,9 @@ export function AccountSheet({
             payError={payError}
             onPay={(plan) => void pay(plan)}
           />
+          {accessFailed ? (
+            <Button variant="secondary" onClick={() => setAccessRetry((value) => value + 1)}>{t("accessRetry")}</Button>
+          ) : null}
           {access?.previewPaywall ? (
             <Button type="button" className="w-full" onClick={() => setPreview(true)}>
               Посмотреть пейвол
@@ -322,17 +324,4 @@ function PasswordSettings({
       {kind === "form" ? <PasswordChange /> : <p className="text-sm leading-relaxed text-foreground">{note}</p>}
     </section>
   );
-}
-
-async function fetchSessionAccess(prices: { starPrice: number; rubPrice: number }): Promise<WeekAccessView> {
-  try {
-    const res = await fetch("/api/week-access", { cache: "no-store" });
-    if (res.ok) {
-      const data = (await res.json()) as { ok?: boolean; access?: WeekAccessView };
-      if (data.ok && data.access && typeof data.access.status === "string") return data.access;
-    }
-  } catch {
-    /* The local stamp still describes the trial. */
-  }
-  return localWeekView(readLocalWeekAccess(), new Date(), prices);
 }

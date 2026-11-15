@@ -430,7 +430,9 @@ export const vi: Catalog = {
   botPremiumForever: "Premium không hết hạn.",
   botPremiumDays: "Còn {days} premium.",
   botPremiumNone: "Chưa có premium.",
-  botPremiumTrial: "Tuần vẫn miễn phí {days}.",
+  accessUnavailable: "Không thể xác minh quyền truy cập. Vui lòng thử lại.",
+  accessRetry: "Thử lại",
+  botPremiumTrial: "Toàn bộ ứng dụng miễn phí thêm {days}.",
   botPaySupport:
     "Tuần được trả bằng Telegram Stars.\n\n30 ngày là đăng ký: hủy trong Telegram, quyền truy cập giữ đến hết kỳ đã trả. 3 tháng và một năm là trả một lần.\n\nNếu Stars đã bị trừ mà Tuần không mở, hoặc bạn cần hoàn tiền, hãy viết vào cuộc trò chuyện này chuyện gì đã xảy ra và khi nào. Chúng tôi xử lý tại đây.",
   botPaySupportMax:

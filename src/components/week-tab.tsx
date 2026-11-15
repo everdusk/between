@@ -12,16 +12,11 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import {
   createWeekInvoice,
   fetchWeekAccess,
-  localWeekView,
   postSessionWeekAccess,
   postWeekAccess,
   readLocalWeekAccess,
-  writeLocalWeekAccess,
 } from "@/lib/week-access-client";
-import { useWeekPrices } from "@/components/week-prices";
 import {
-  markWeekIntroSeen,
-  openWeekAccess,
   type PremiumPlan,
   type WeekAccessView,
 } from "@/lib/week-access";
@@ -32,6 +27,7 @@ interface WeekTabProps {
   inTelegram: boolean;
   inMax?: boolean;
   initData: string;
+  maxInitData?: string;
   /** Site session or MAX. A logged-out browser has no SBP checkout. */
   canSubscribe: boolean;
   reloadToken?: number;
@@ -45,15 +41,16 @@ export function WeekTab({
   inTelegram,
   inMax = false,
   initData,
+  maxInitData = "",
   canSubscribe,
   reloadToken = 0,
   onAccess,
   children,
 }: WeekTabProps) {
   const { t, count } = useI18n();
-  const prices = useWeekPrices();
   const [access, setAccess] = useState<WeekAccessView | null>(null);
   const [failedOpen, setFailedOpen] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [payingPlan, setPayingPlan] = useState<PremiumPlan | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
   const onAccessRef = useRef(onAccess);
@@ -76,51 +73,19 @@ export function WeekTab({
   }
 
   useEffect(() => {
-    if (!ready || inTelegram) return;
+    if (!ready || (inMax && !maxInitData)) return;
     let cancelled = false;
-
     async function start() {
-      const opened = await postSessionWeekAccess("open", readLocalWeekAccess());
+      const opened = inTelegram
+        ? (initData ? await postWeekAccess(initData, "open") : null)
+        : await postSessionWeekAccess("open", inMax ? undefined : readLocalWeekAccess(), maxInitData);
       if (cancelled) return;
-      if (!opened) {
-        const next = openWeekAccess(readLocalWeekAccess(), new Date());
-        writeLocalWeekAccess(next);
-        publish(localWeekView(next, new Date(), prices));
-        return;
-      }
-      publish(opened);
+      setFailedOpen(!opened);
+      if (opened) publish(opened);
     }
-
     void start();
-    return () => {
-      cancelled = true;
-    };
-  }, [ready, inTelegram, reloadToken, prices]);
-
-  useEffect(() => {
-    if (!ready || !inTelegram) return;
-    let cancelled = false;
-
-    async function start() {
-      if (!initData) {
-        if (!cancelled) setFailedOpen(true);
-        return;
-      }
-      const opened = await postWeekAccess(initData, "open");
-      if (cancelled) return;
-      if (!opened) {
-        setFailedOpen(true);
-        return;
-      }
-      publish(opened);
-      setFailedOpen(false);
-    }
-
-    void start();
-    return () => {
-      cancelled = true;
-    };
-  }, [ready, inTelegram, initData, reloadToken]);
+    return () => { cancelled = true; };
+  }, [ready, inTelegram, inMax, initData, maxInitData, reloadToken, retry]);
 
   useEffect(() => {
     if (!active || !access || access.status === "locked") return;
@@ -142,20 +107,11 @@ export function WeekTab({
 
   async function dismissIntro() {
     if (!access) return;
-    if (!inTelegram) {
-      const seen = await postSessionWeekAccess("seen");
-      if (!alive.current) return;
-      if (seen) {
-        publish(seen);
-        return;
-      }
-      const next = markWeekIntroSeen(readLocalWeekAccess());
-      writeLocalWeekAccess(next);
-      publish(localWeekView(next, new Date(), prices));
-      return;
-    }
-    const seen = await postWeekAccess(initData, "seen");
+    const seen = inTelegram
+      ? await postWeekAccess(initData, "seen")
+      : await postSessionWeekAccess("seen", undefined, maxInitData);
     if (!alive.current) return;
+    // Hiding the introduction may be local; granting access may not.
     publish(seen ?? { ...access, introSeen: true });
   }
 
@@ -202,7 +158,12 @@ export function WeekTab({
   }
 
   if (!access) {
-    if (failedOpen) return <>{children}</>;
+    if (failedOpen) return (
+      <section className="glass space-y-3 rounded-3xl p-6" role="alert">
+        <p className="text-sm text-muted-foreground">{t("accessUnavailable")}</p>
+        <Button variant="secondary" onClick={() => setRetry((value) => value + 1)}>{t("accessRetry")}</Button>
+      </section>
+    );
     return <WeekSkeleton />;
   }
 

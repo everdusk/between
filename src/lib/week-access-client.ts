@@ -1,3 +1,4 @@
+import { journalAuthHeaders } from "./journal-api";
 import {
   DEFAULT_RUB_PRICE,
   describeWeekAccess,
@@ -46,11 +47,11 @@ async function readAccess(res: Response): Promise<WeekAccessView | null> {
   return data.access;
 }
 
-export async function fetchWeekAccess(initData: string): Promise<WeekAccessView | null> {
+export async function fetchWeekAccess(initData: string, maxInitData = ""): Promise<WeekAccessView | null> {
   try {
     const res = await fetch("/api/week-access", {
       method: "GET",
-      headers: { "X-Telegram-Init-Data": initData },
+      headers: journalAuthHeaders(initData, maxInitData),
       cache: "no-store",
     });
     return await readAccess(res);
@@ -78,16 +79,17 @@ export async function postWeekAccess(
   }
 }
 
-/** Browser session. The cookie is the login; no Telegram init data. */
+/** Browser session or signed MAX launch. MAX never adopts another browser's trial. */
 export async function postSessionWeekAccess(
   action: "open" | "seen",
   local?: WeekAccessRecord,
+  maxInitData = "",
 ): Promise<WeekAccessView | null> {
   try {
     const res = await fetch("/api/week-access", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, local }),
+      headers: journalAuthHeaders("", maxInitData, true),
+      body: JSON.stringify({ action, ...(maxInitData ? {} : { local }) }),
     });
     return await readAccess(res);
   } catch {

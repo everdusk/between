@@ -430,7 +430,9 @@ export const fa: Catalog = {
   botPremiumForever: "پریمیوم بدون پایان.",
   botPremiumDays: "پریمیوم {days} مانده.",
   botPremiumNone: "پریمیوم نیست.",
-  botPremiumTrial: "«هفته» هنوز {days} رایگان است.",
+  accessUnavailable: "دسترسی بررسی نشد. دوباره تلاش کنید.",
+  accessRetry: "تلاش دوباره",
+  botPremiumTrial: "تمام برنامه تا {days} دیگر رایگان است.",
   botPaySupport:
     "پرداخت «هفته» با Telegram Stars است.\n\n۳۰ روز اشتراک است: در تلگرام لغو می‌شود و دسترسی تا پایان دورهٔ پرداخت‌شده می‌ماند. ۳ ماه و یک سال پرداخت یک‌باره است.\n\nاگر Stars کم شد و «هفته» باز نشد، یا بازپرداخت لازم است، همین‌جا بنویسید چه شد و کی. همین‌جا رسیدگی می‌کنیم.",
   botPaySupportMax:

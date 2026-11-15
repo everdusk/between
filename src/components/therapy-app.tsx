@@ -28,8 +28,7 @@ import { earlyMaxLogin, inMaxClient, readMaxInitData, signalMaxReady, waitForMax
 import { clearStore, WEB_STORAGE_KEY } from "@/lib/storage";
 import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
 import { trackAnalytics } from "@/lib/analytics-client";
-import { fetchWeekAccess, localWeekView, readLocalWeekAccess } from "@/lib/week-access-client";
-import { useWeekPrices } from "@/components/week-prices";
+import { fetchWeekAccess } from "@/lib/week-access-client";
 import type { WeekAccessStatus, WeekAccessView } from "@/lib/week-access";
 
 const SECTIONS = ["week", "journal", "sessions"] as const;
@@ -112,7 +111,6 @@ function localizeStorageError(
 
 function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: boolean }) {
   const { t, locale, greetingLocale } = useI18n();
-  const prices = useWeekPrices();
   const pathname = usePathname();
   const webEntry = pathname === "/journal" || pathname.startsWith("/journal/");
   const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
@@ -257,16 +255,10 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   const disabled = status !== "ready";
   useEffect(() => {
     if (!telegram.ready) return;
-    if (!telegram.inTelegram) {
-      if (tabOwnsAccess.current) return;
-      const local = localWeekView(readLocalWeekAccess(), new Date(), prices);
-      setPremium(local.status === "paid");
-      setAccessStatus(local.status);
-      return;
-    }
-    if (!telegram.initData) return;
+    if (inMax && !maxLaunch) return;
+    if (telegram.inTelegram && !telegram.initData) return;
     let cancelled = false;
-    void fetchWeekAccess(telegram.initData).then((view) => {
+    void fetchWeekAccess(telegram.initData, inMax ? maxLaunch ?? "" : "").then((view) => {
       if (cancelled || tabOwnsAccess.current || !view) return;
       setPremium(view.status === "paid");
       setAccessStatus(view.status);
@@ -274,7 +266,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     return () => {
       cancelled = true;
     };
-  }, [telegram.ready, telegram.inTelegram, telegram.initData, prices]);
+  }, [telegram.ready, telegram.inTelegram, telegram.initData, inMax, maxLaunch]);
 
   function onWeekAccess(view: WeekAccessView) {
     tabOwnsAccess.current = true;
@@ -430,6 +422,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                   inTelegram={telegram.inTelegram}
                   inMax={inMax}
                   initData={telegram.initData}
+                  maxInitData={inMax ? maxLaunch ?? "" : ""}
                   canSubscribe={Boolean(web.account) || inMax}
                   reloadToken={accessNonce}
                   onAccess={onWeekAccess}
@@ -484,6 +477,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
                   inTelegram={telegram.inTelegram}
                   inMax={inMax}
                   initData={telegram.initData}
+                  maxInitData={inMax ? maxLaunch ?? "" : ""}
                   canSubscribe={Boolean(web.account) || inMax}
                   reloadToken={accessNonce}
                   onAccess={onWeekAccess}

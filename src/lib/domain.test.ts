@@ -1412,7 +1412,7 @@ describe("week access", () => {
 
     const trial = describeWeekAccess(openWeekAccess(emptyWeekAccess(), now), now, 150);
     assert.equal(trial.premium, "none");
-    assert.equal(formatPremiumStatus("ru", trial), "Премиума нет.\n«Неделя» ещё бесплатна 7 дней.");
+    assert.equal(formatPremiumStatus("ru", trial), "Всё приложение бесплатно ещё 7 дней.");
   });
 
   it("prices three months at 20% off and a year at 50% off", () => {
