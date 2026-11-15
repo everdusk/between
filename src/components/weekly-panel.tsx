@@ -130,8 +130,8 @@ export function WeeklyPanel({
   const said = themes
     .filter((theme) => theme.status === "discussed" && !theme.dismissed)
     .sort((a, b) => b.lastSeen.localeCompare(a.lastSeen) || a.title.localeCompare(b.title));
-  const patternStamp = patternKey(agenda, locale);
-  const patternFactText = patternFacts(agenda);
+  const patternFactText = patternFacts(agenda, { entries, links: themeLinks, dayKeys: days });
+  const patternStamp = patternKey(agenda, locale, patternFactText);
   const patternRaw = prep?.patternText ? clipPattern(0, prep.patternText) : "";
   const patternBody = patternReplyUsable(patternRaw) ? patternRaw : "";
   const patternWords = patternHasWords(agenda);

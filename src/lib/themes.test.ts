@@ -570,7 +570,8 @@ describe("session brief", () => {
       status: "active",
     } as SessionTheme;
     const stamp = patternKey([theme], "ru");
-    assert.equal(patternAlreadyCurrent(stamp.replace(/^p2:/, "p:"), stamp, "Старый вывод."), false);
+    assert.equal(patternAlreadyCurrent(stamp.replace(/^p3:/, "p2:"), stamp, "Старый вывод."), false);
+    assert.notEqual(patternKey([theme], "ru", "Запись до правки"), patternKey([theme], "ru", "Запись после правки"));
     assert.equal(patternKey([theme], "ru"), stamp);
     assert.equal(patternAlreadyCurrent(stamp, stamp, "Тревога перед звонком."), true);
     assert.equal(patternAlreadyCurrent(stamp, stamp, ""), false);
@@ -683,6 +684,30 @@ describe("session brief", () => {
     );
     assert.equal(patternFacts([bare]).includes("\"peak\""), false);
     assert.match(patternFacts([bare]), /Тема: тест/);
+  });
+
+  it("uses dated full entries beyond the fourth topic and labels history separately", () => {
+    const themes = Array.from({ length: 7 }, (_, index) => ({
+      id: `t${index}`, title: `Тема ${index}`, status: "active", dismissed: false,
+      quotes: [{ entryId: `e${index}`, text: "Короткая старая цитата", date: "2026-10-01" }],
+    } as SessionTheme));
+    const entries = themes.map((_, index) => ({
+      id: `e${index}`, date: index === 0 ? "2026-11-15" : "2026-10-01",
+      body: `Полная запись ${index}. Важное продолжение, которого нет в сохранённой цитате.`,
+    } as JournalEntry));
+    const links = themes.map((theme, index) => ({ themeId: theme.id, entryId: `e${index}`, confidence: 1 }));
+    const facts = patternFacts(themes, { entries, links, dayKeys: ["2026-11-15"] });
+    assert.match(facts, /Тема: Тема 6/);
+    assert.match(facts, /Важное продолжение/);
+    assert.match(facts, /2026-11-15 \(текущий период\)/);
+    assert.match(facts, /2026-10-01 \(история\)/);
+    assert.equal(facts.includes("Короткая старая цитата"), false);
+    assert.equal(facts.includes("Сколько раз за период"), false);
+    assert.equal((facts.match(/Полная запись 0/g) ?? []).length, 1);
+    const large = patternFacts(themes, { entries: entries.map((entry) => ({ ...entry, body: "Очень длинная запись. ".repeat(2000) })), links, dayKeys: [] });
+    assert.ok(large.length <= 12_000);
+    assert.match(large, /Тема: Тема 6/);
+    assert.match(large, /\[сокращено\]/);
   });
 
   it("keeps a checked theme in the list for a week, then archives it", () => {

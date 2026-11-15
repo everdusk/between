@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { buildSessionPdfModel } from "./session-pdf";
 import { applySessionSheet, prepareSessionSheet, type SessionSheetAsk } from "./session-sheet";
 import { therapyWindow } from "./session-summary";
-import { judgeStamp, patternKey, patternShouldRequest, pendingJudgeEntries, rankedThemes } from "./themes";
+import { judgeStamp, patternFacts, patternKey, patternShouldRequest, pendingJudgeEntries, rankedThemes } from "./themes";
 import { emptyStore, type JournalEntry, type SessionPlan } from "./types";
 
 const THURSDAY = "2026-01-08";
@@ -78,7 +78,10 @@ describe("session sheet without a week visit", () => {
         themeCount: agenda.length,
         hasWords: true,
         savedStamp: saved.weekPreps[0]?.patternStamp,
-        stamp: patternKey(agenda, "ru"),
+        stamp: patternKey(agenda, "ru", patternFacts(agenda, {
+          entries: saved.entries, links: saved.themeLinks,
+          dayKeys: therapyWindow(saved.sessions, saved.entries, THURSDAY, NOW, saved.sessionPlan).days,
+        })),
         savedText: saved.weekPreps[0]?.patternText ?? "",
         gaveUp: false,
         inFlight: false,
@@ -142,6 +145,12 @@ describe("session sheet without a week visit", () => {
       assert.fail("the refreshed pattern should be reused");
     });
     assert.equal(reused.patternText, text);
+    // Even with unchanged theme metadata, edits to a source entry invalidate the paragraph.
+    updated.entries[0].body += " Дополнительная важная деталь.";
+    const newText = "Новый вывод учитывает дополненную запись перед встречей.";
+    const changed = await prepareSessionSheet(updated, "ru", THURSDAY, NOW, "owner", async () => ({ text: newText }));
+    assert.notEqual(changed.patternStamp, refreshed.patternStamp);
+    assert.equal(applySessionSheet(updated, changed, new Date(NOW.getTime() + 2000)).weekPreps[0].patternText, newText);
     // A concurrently saved paragraph from the new prompt wins over an older PDF job.
     updated.weekPreps[0].patternText = "Более свежий вывод, сохранённый на вкладке недели.";
     assert.equal(applySessionSheet(updated, refreshed, NOW).weekPreps[0].patternText, updated.weekPreps[0].patternText);

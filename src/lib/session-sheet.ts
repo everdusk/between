@@ -37,6 +37,8 @@ export type SessionSheet = {
   judged: string[];
   judgedEntryIds: string[];
   patternStamp: string;
+  /** Compare before saving so a completed PDF job cannot replace a newer week paragraph. */
+  patternBase?: { stamp?: string; text: string };
   weekKey: string;
   /** False when the paragraph was already on the week. */
   freshPattern: boolean;
@@ -144,26 +146,27 @@ export async function prepareSessionSheet(
     store.weekPreps.find((item) => item.weekKey === period.weekKey) ??
     store.weekPreps.find((item) => item.weekKey === weekKey(now));
   const stored = prep?.patternText ? clipPattern(0, prep.patternText) : "";
-  const patternStamp = patternKey(agenda, locale);
+  const facts = patternFacts(agenda, { entries: store.entries, links: state.links, dayKeys: period.days });
+  const patternStamp = patternKey(agenda, locale, facts);
   const carried = {
     themes: state.themes,
     links: state.links,
     judged,
     judgedEntryIds,
     patternStamp,
+    patternBase: { stamp: prep?.patternStamp, text: stored },
     weekKey: period.weekKey,
   };
-  if (pending.length === 0 && patternVersionCurrent(prep?.patternStamp) && patternReplyUsable(stored)) {
+  if (pending.length === 0 && prep?.patternStamp === patternStamp && patternReplyUsable(stored)) {
     return { ...carried, patternText: stored, freshPattern: false };
   }
 
-  const facts = patternFacts(agenda);
   let pattern = "";
   if (facts.trim()) {
     try {
       const text = (await run({
         facts,
-        stamp: patternKey(agenda, locale),
+        stamp: patternStamp,
         kind: "pattern",
       })).text;
       const clipped = text ? clipPattern(0, text) : "";
@@ -201,7 +204,8 @@ export function applySessionSheet(store: TherapyStore, sheet: SessionSheet, now:
   if (
     sheet.freshPattern &&
     patternReplyUsable(sheet.patternText) &&
-    (!patternReplyUsable(existing) || !patternVersionCurrent(prep?.patternStamp))
+    (!patternReplyUsable(existing) || !patternVersionCurrent(prep?.patternStamp) ||
+      (Boolean(sheet.patternBase) && prep?.patternStamp === sheet.patternBase?.stamp && existing === sheet.patternBase?.text))
   ) {
     patch.weekPreps = [
       {
