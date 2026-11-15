@@ -1,4 +1,48 @@
 import type { Feeling, JournalEntry } from "./types";
+import { feelingValence } from "./feelings";
+import type { MessageKey } from "./messages";
+
+export type TimePattern = { key: MessageKey; matches: number; days: number };
+
+/** Compare scheduled answers within the same day, once per slot, never raw counts across slots. */
+export function timePattern(entries: JournalEntry[]): TimePattern {
+  const byDay = new Map<string, Map<string, JournalEntry>>();
+  for (const entry of entries) {
+    if (entry.source !== "checkin" || !entry.slot || feelingValence(entry.feelings) === null) continue;
+    const slots = byDay.get(entry.date) ?? new Map<string, JournalEntry>();
+    const previous = slots.get(entry.slot);
+    if (!previous || entry.updatedAt > previous.updatedAt) slots.set(entry.slot, entry);
+    byDay.set(entry.date, slots);
+  }
+  const candidates: TimePattern[] = [];
+  let mostPairs = 0;
+  for (const [early, late] of [["morning", "evening"], ["day", "evening"], ["morning", "day"]] as const) {
+    let days = 0;
+    let heavier = 0;
+    let lighter = 0;
+    for (const slots of byDay.values()) {
+      const a = slots.get(early);
+      const b = slots.get(late);
+      if (!a || !b) continue;
+      const change = feelingValence(b.feelings)! - feelingValence(a.feelings)!;
+      days += 1;
+      if (change < -0.25) heavier += 1;
+      if (change > 0.25) lighter += 1;
+    }
+    mostPairs = Math.max(mostPairs, days);
+    for (const [direction, matches] of [["Heavy", heavier], ["Light", lighter]] as const) {
+      if (matches < 3 || matches / days < 0.75) continue;
+      const key = `spectrumTime${late === "evening" ? "Evening" : "Day"}${direction}` as MessageKey;
+      candidates.push({ key, matches, days });
+    }
+  }
+  candidates.sort((a, b) => b.matches - a.matches || b.matches / b.days - a.matches / a.days);
+  return candidates[0] ?? { key: mostPairs >= 3 ? "spectrumTimeUnclear" : "spectrumTimeFew", matches: 0, days: mostPairs };
+}
+
+export function spectrumTimeSummary(entries: JournalEntry[], t: (key: MessageKey) => string): string {
+  return t(timePattern(entries).key);
+}
 
 /** Lighter, more open states sit on the left. Heavier ones sit on the right. */
 export const SPECTRUM_ORDER: readonly Feeling[] = [
