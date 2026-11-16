@@ -358,6 +358,8 @@ export const es: Catalog = {
     "Por la mañana, por la tarde y por la noche el bot pregunta cómo está. Si no quiere, desactívelo en la pestaña Sesiones.",
   botChatAllow: "Permitir mensajes",
   botOpen: "Abrir Between",
+  botSessionInvite: "¿Quieres añadir tu horario de terapia? Así podré reunir tus notas para cada sesión. Puedes configurarlo en la aplicación cuando te venga bien.",
+  botSessionSetup: "Configurar sesiones",
   botSessionOpen: "Poner la fecha",
   botAskTherapist: "¿Trabaja con un terapeuta?",
   botTherapistYes: "Sí",
@@ -370,14 +372,12 @@ export const es: Catalog = {
   botNoTherapist:
     "Llevar un diario sin terapeuta es menos útil: no hay quien revise lo que nota. Aun así puede dejar notas, para seguir su estado y ver patrones.\n\n¿Cómo está ahora?",
   botAskNote: "{feeling}. Escriba la primera nota aquí mismo — un par de líneas sobre ahora.",
-  botFirstNote: "Guardado.\n\nEn la pestaña Semana ya se ve cómo queda una nota en la semana.",
+  botFirstNote: "Guardado para hoy.",
   botSessionBriefLead: "Sesión a las {time}.",
   botWeekOpen: "Abrir la semana",
   botPickButton: "Pulse un botón de abajo.",
-  botHelp:
-    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nEscriba aquí sus pensamientos y lo que siente: todo se guarda.\nUn par de veces al día preguntaré el ánimo: márquelo de un toque.\nLa semana se arma en una imagen: se ve qué se repite.\n\nLos primeros 7 días son gratis; después, {price} ⭐ al mes.\n\nAntes de la sesión lo reúno en un resumen: no hará falta recordar qué pasó. Para empezar, haré un par de preguntas.",
-  botHelpMax:
-    "Soy Between — un diario con el que no llegas a la sesión con la cabeza vacía.\n\nEscriba aquí sus pensamientos y lo que siente: todo se guarda.\nUn par de veces al día preguntaré el ánimo: márquelo de un toque.\nLa semana se arma en una imagen: se ve qué se repite.\n\nLos primeros 7 días son gratis; después, {price} ₽ al mes.\n\nAntes de la sesión lo reúno en un resumen: no hará falta recordar qué pasó. Para empezar, haré un par de preguntas.",
+  botHelp: "Soy Between, un diario para recordar lo importante entre sesiones de terapia.\n\nDeja tu primera nota aquí: ¿qué pasó hoy o qué tienes en mente? Basta una frase o un mensaje de voz. Lo guardaré en tu diario.\n\nTe preguntaré por tu ánimo según un horario. Puedes cambiar la frecuencia en los ajustes.\n\nLos primeros 7 días son gratis; después, {price} ⭐ al mes.",
+  botHelpMax: "Soy Between, un diario para recordar lo importante entre sesiones de terapia.\n\nDeja tu primera nota aquí: ¿qué pasó hoy o qué tienes en mente? Basta una frase o un mensaje de voz. Lo guardaré en tu diario.\n\nTe preguntaré por tu ánimo según un horario. Puedes cambiar la frecuencia en los ajustes.\n\nLos primeros 7 días son gratis; después, {price} ₽ al mes.",
   botUnknown:
     "Escribe un texto y lo guardo como nota.",
   botNotReady:

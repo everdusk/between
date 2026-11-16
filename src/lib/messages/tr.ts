@@ -358,6 +358,8 @@ export const tr: Catalog = {
     "Sabah, öğlen ve akşam bot halinizi sorar. İstemezseniz Seanslar sekmesinden kapatın.",
   botChatAllow: "Mesajlara izin ver",
   botOpen: "Between’i aç",
+  botSessionInvite: "Terapi seanslarınızın takvimini eklemek ister misiniz? Böylece notlarınızı seans için bir araya getirebilirim. Uygun olduğunuzda uygulamadan ayarlayabilirsiniz.",
+  botSessionSetup: "Seansları ayarla",
   botSessionOpen: "Tarihi koy",
   botAskTherapist: "Bir terapistle çalışıyor musunuz?",
   botTherapistYes: "Evet",
@@ -370,14 +372,12 @@ export const tr: Catalog = {
   botNoTherapist:
     "Terapistsiz günlük daha az işe yarar: fark ettiklerinizi açacak kimse yoktur. Yine de not bırakabilirsiniz — durumunuzu izlemek ve örüntüleri görmek için.\n\nŞu an nasılsınız?",
   botAskNote: "{feeling}. İlk notu buraya yazın — şu an hakkında birkaç satır.",
-  botFirstNote: "Yazıldı.\n\nHafta sekmesinde notun haftaya nasıl oturduğu görünüyor.",
+  botFirstNote: "Bugün için kaydedildi.",
   botSessionBriefLead: "Seans {time}.",
   botWeekOpen: "Haftayı aç",
   botPickButton: "Aşağıdaki düğmeye basın.",
-  botHelp:
-    "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nDüşüncelerini ve hislerini bu sohbete yaz — hepsi saklanır.\nGünde bir iki kez ruh halini sorarım — bir dokunuşla işaretle.\nHafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nİlk 7 gün ücretsiz, sonrası ayda {price} ⭐.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Başlangıç için birkaç soru soracağım.",
-  botHelpMax:
-    "Ben Between — seansa boş kafayla gelmediğin bir günlük.\n\nDüşüncelerini ve hislerini bu sohbete yaz — hepsi saklanır.\nGünde bir iki kez ruh halini sorarım — bir dokunuşla işaretle.\nHafta bir resme dönüşür: neyin tekrar ettiği görünür.\n\nİlk 7 gün ücretsiz, sonrası ayda {price} ₽.\n\nSeansa kadar bunu bir özete toplarım — ne olduğunu hatırlamana gerek kalmaz. Başlangıç için birkaç soru soracağım.",
+  botHelp: "Ben Between, terapi seansları arasında önemli şeyleri hatırlamanıza yardımcı olan bir günlüğüm.\n\nİlk notunuzu buraya yazın: bugün ne oldu veya aklınızdan ne geçiyor? Bir cümle ya da sesli mesaj yeterli. Günlüğe kaydederim.\n\nBelirli saatlerde ruh halinizi sorarım. Sıklığı uygulama ayarlarından değiştirebilirsiniz.\n\nİlk 7 gün ücretsiz, sonra ayda {price} ⭐.",
+  botHelpMax: "Ben Between, terapi seansları arasında önemli şeyleri hatırlamanıza yardımcı olan bir günlüğüm.\n\nİlk notunuzu buraya yazın: bugün ne oldu veya aklınızdan ne geçiyor? Bir cümle ya da sesli mesaj yeterli. Günlüğe kaydederim.\n\nBelirli saatlerde ruh halinizi sorarım. Sıklığı uygulama ayarlarından değiştirebilirsiniz.\n\nİlk 7 gün ücretsiz, sonra ayda {price} ₽.",
   botUnknown:
     "Metin yazın, not olarak kaydederim.",
   botNotReady:

@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { resolveBotLocale, resolveGreetingLocale } from "@/lib/i18n";
-import { openOnboarding } from "@/lib/onboarding-flow";
-import { claimBotIntro, loadDeviceLocale, loadUserLocale, redisConfigured, releaseBotIntro, rememberUser } from "@/lib/redis";
+import { resolveGreetingLocale } from "@/lib/i18n";
+import { claimBotIntro, loadDeviceLocale, redisConfigured, releaseBotIntro, rememberUser } from "@/lib/redis";
 import { welcomeCaption } from "@/lib/welcome-text";
 import { ensureTrial } from "@/lib/trial-bot";
 import { validateInitData } from "@/lib/telegram-auth";
 import { trackBotFunnel } from "@/lib/bot-funnel";
-import { onboardReplyMarkup, sendTelegramWelcome, telegramRequest } from "@/lib/telegram-bot";
+import { sendTelegramWelcome } from "@/lib/telegram-bot";
 import { resolveJournalId } from "@/lib/web-account-store";
 
 /** One hello in the bot chat, so a direct Mini App open still creates the dialog. */
@@ -27,9 +26,7 @@ export async function POST(req: Request) {
   if (!claimed) return NextResponse.json({ ok: true, sent: false });
 
   const device = redisConfigured() ? await loadDeviceLocale(validated.user.id) : null;
-  const selected = redisConfigured() ? await loadUserLocale(validated.user.id) : null;
   const greeting = resolveGreetingLocale(null, device, validated.user.language_code);
-  const reply = resolveBotLocale(selected, device, validated.user.language_code);
   const sent = await sendTelegramWelcome(validated.user.id, welcomeCaption(greeting));
   if (!sent) {
     await releaseBotIntro(validated.user.id);
@@ -38,25 +35,6 @@ export async function POST(req: Request) {
   const owner = await resolveJournalId(validated.user.id);
   await rememberUser(validated.user.id);
   await ensureTrial(owner);
-  try {
-    const quiz = await openOnboarding(owner, reply);
-    if (quiz) {
-      const asked = await telegramRequest("sendMessage", {
-        chat_id: validated.user.id,
-        text: quiz.text,
-        reply_markup: onboardReplyMarkup(quiz.rows),
-      });
-      if (asked) {
-        await trackBotFunnel({
-          userId: validated.user.id,
-          messenger: "telegram",
-          username: validated.user.username,
-          choice: { step: "start" },
-        });
-      }
-    }
-  } catch {
-    // The welcome already went out.
-  }
+  await trackBotFunnel({ userId: validated.user.id, messenger: "telegram", username: validated.user.username, choice: { step: "start" } });
   return NextResponse.json({ ok: true, sent: true });
 }

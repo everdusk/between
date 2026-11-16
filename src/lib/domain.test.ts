@@ -1563,9 +1563,10 @@ describe("languages", () => {
     const help = translate("ru", "botHelp");
     assert.equal(
       help.split("\n")[0],
-      "Я Between — дневник, с которым на сессию не приходишь с пустой головой.",
+      "Я Between — дневник, чтобы не забывать важное между сеансами.",
     );
-    assert.match(help, /Для начала задам пару вопросов\.$/);
+    assert.match(help, /Оставьте первую заметку прямо здесь/);
+    assert.doesNotMatch(help, /задам пару вопросов/);
     assert.doesNotMatch(help, /Stars/);
     assert.match(help, /\{price\} ⭐ в месяц/);
     assert.match(translate("ru", "botHelpMax"), /\{price\} ₽ в месяц/);

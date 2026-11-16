@@ -358,6 +358,8 @@ export const id: Catalog = {
     "Pagi, siang, dan sore bot menanyakan kabar Anda. Jika tidak ingin, matikan di tab Sesi.",
   botChatAllow: "Izinkan pesan",
   botOpen: "Buka Between",
+  botSessionInvite: "Ingin menambahkan jadwal terapi? Saya bisa mengumpulkan catatan untuk sesi Anda. Atur di aplikasi kapan saja saat Anda siap.",
+  botSessionSetup: "Atur sesi",
   botSessionOpen: "Pasang tanggal",
   botAskTherapist: "Apakah Anda bekerja dengan terapis?",
   botTherapistYes: "Ya",
@@ -370,14 +372,12 @@ export const id: Catalog = {
   botNoTherapist:
     "Jurnal tanpa terapis kurang efektif: tidak ada yang mengurai yang Anda perhatikan. Catatan tetap bisa ditinggal — untuk memantau keadaan dan melihat pola.\n\nBagaimana perasaan Anda sekarang?",
   botAskNote: "{feeling}. Tulis catatan pertama di sini — beberapa baris tentang saat ini.",
-  botFirstNote: "Tersimpan.\n\nDi tab Minggu sudah terlihat bagaimana catatan masuk ke minggu.",
+  botFirstNote: "Disimpan untuk hari ini.",
   botSessionBriefLead: "Sesi pukul {time}.",
   botWeekOpen: "Buka minggu",
   botPickButton: "Tekan tombol di bawah.",
-  botHelp:
-    "Saya Between — jurnal yang membuat Anda tidak datang ke sesi dengan kepala kosong.\n\nTulis pikiran dan perasaan di chat ini — semuanya tersimpan.\nBeberapa kali sehari saya tanya suasana hati — tandai dengan satu ketukan.\nMinggu tersusun jadi gambaran: terlihat apa yang berulang.\n\n7 hari pertama gratis, selanjutnya {price} ⭐ sebulan.\n\nMenjelang sesi saya kumpulkan ini jadi ringkasan — tidak perlu mengingat apa yang terjadi. Untuk mulai, saya ajukan beberapa pertanyaan.",
-  botHelpMax:
-    "Saya Between — jurnal yang membuat Anda tidak datang ke sesi dengan kepala kosong.\n\nTulis pikiran dan perasaan di chat ini — semuanya tersimpan.\nBeberapa kali sehari saya tanya suasana hati — tandai dengan satu ketukan.\nMinggu tersusun jadi gambaran: terlihat apa yang berulang.\n\n7 hari pertama gratis, selanjutnya {price} ₽ sebulan.\n\nMenjelang sesi saya kumpulkan ini jadi ringkasan — tidak perlu mengingat apa yang terjadi. Untuk mulai, saya ajukan beberapa pertanyaan.",
+  botHelp: "Saya Between, jurnal untuk mengingat hal penting di antara sesi terapi.\n\nTulis catatan pertama di sini: apa yang terjadi hari ini atau apa yang sedang dipikirkan? Satu kalimat atau pesan suara cukup. Saya simpan di jurnal.\n\nSaya akan menanyakan suasana hati sesuai jadwal. Frekuensinya dapat diubah di pengaturan aplikasi.\n\n7 hari pertama gratis, lalu {price} ⭐ per bulan.",
+  botHelpMax: "Saya Between, jurnal untuk mengingat hal penting di antara sesi terapi.\n\nTulis catatan pertama di sini: apa yang terjadi hari ini atau apa yang sedang dipikirkan? Satu kalimat atau pesan suara cukup. Saya simpan di jurnal.\n\nSaya akan menanyakan suasana hati sesuai jadwal. Frekuensinya dapat diubah di pengaturan aplikasi.\n\n7 hari pertama gratis, lalu {price} ₽ per bulan.",
   botUnknown:
     "Kirim teks, saya simpan sebagai catatan.",
   botNotReady:

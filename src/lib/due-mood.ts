@@ -3,7 +3,6 @@ import type { CheckinSlot } from "./types";
 import type { LocaleId } from "./i18n";
 import { duePoll, moodPollsOpen, pollText } from "./digest";
 import { maxFeelingKeyboard, sendMaxMessage } from "./max-bot";
-import { loadOnboarding } from "./onboarding-flow";
 import {
   claimDigestSlot,
   getUserTimezone,
@@ -51,9 +50,8 @@ async function openDueSlot(
     process.env.WEEK_EXEMPT_USER_IDS,
     now,
   );
-  const onboarding = await loadOnboarding(owner);
   const pollsOpen = moodPollsOpen({
-    onboardingOpen: Boolean(onboarding && onboarding.step !== "done"),
+    onboardingOpen: false,
     paused: access.view.paused,
     status: access.view.status,
   });

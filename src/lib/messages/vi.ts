@@ -358,6 +358,8 @@ export const vi: Catalog = {
     "Sáng, trưa và tối bot sẽ hỏi bạn thế nào. Không muốn thì tắt ở tab Buổi trị liệu.",
   botChatAllow: "Cho phép tin nhắn",
   botOpen: "Mở Between",
+  botSessionInvite: "Bạn muốn thêm lịch trị liệu không? Tôi có thể tập hợp ghi chép cho buổi trị liệu của bạn. Bạn có thể thiết lập trong ứng dụng khi thuận tiện.",
+  botSessionSetup: "Thiết lập lịch",
   botSessionOpen: "Đặt ngày",
   botAskTherapist: "Bạn có làm việc với nhà trị liệu không?",
   botTherapistYes: "Có",
@@ -370,14 +372,12 @@ export const vi: Catalog = {
   botNoTherapist:
     "Nhật ký không có nhà trị liệu kém hiệu quả hơn: không có ai cùng xem điều bạn nhận ra. Vẫn nên ghi chú — để theo dõi trạng thái và thấy những gì lặp lại.\n\nBây giờ bạn thấy thế nào?",
   botAskNote: "{feeling}. Viết ghi chú đầu tiên ngay tại đây — vài dòng về lúc này.",
-  botFirstNote: "Đã ghi.\n\nTab Tuần đã cho thấy ghi chú nằm trong tuần thế nào.",
+  botFirstNote: "Đã lưu cho hôm nay.",
   botSessionBriefLead: "Buổi trị liệu lúc {time}.",
   botWeekOpen: "Mở tuần",
   botPickButton: "Bấm nút bên dưới.",
-  botHelp:
-    "Tôi là Between — nhật ký để bạn không đến buổi trị liệu với đầu trống rỗng.\n\nViết suy nghĩ và cảm xúc ngay trong chat này — mọi thứ được lưu.\nMỗi ngày vài lần tôi hỏi tâm trạng — đánh dấu bằng một lần chạm.\nTuần xếp thành một bức tranh: thấy điều gì lặp lại.\n\n7 ngày đầu miễn phí, sau đó {price} ⭐ một tháng.\n\nĐến buổi trị liệu tôi gom lại thành bản tóm tắt — không phải nhớ chuyện gì đã xảy ra. Để bắt đầu, tôi hỏi vài câu.",
-  botHelpMax:
-    "Tôi là Between — nhật ký để bạn không đến buổi trị liệu với đầu trống rỗng.\n\nViết suy nghĩ và cảm xúc ngay trong chat này — mọi thứ được lưu.\nMỗi ngày vài lần tôi hỏi tâm trạng — đánh dấu bằng một lần chạm.\nTuần xếp thành một bức tranh: thấy điều gì lặp lại.\n\n7 ngày đầu miễn phí, sau đó {price} ₽ một tháng.\n\nĐến buổi trị liệu tôi gom lại thành bản tóm tắt — không phải nhớ chuyện gì đã xảy ra. Để bắt đầu, tôi hỏi vài câu.",
+  botHelp: "Tôi là Between, nhật ký giúp bạn nhớ điều quan trọng giữa các buổi trị liệu.\n\nHãy viết ghi chép đầu tiên ở đây: hôm nay có chuyện gì, hoặc bạn đang nghĩ gì? Một câu hay tin nhắn thoại đều được. Tôi sẽ lưu vào nhật ký.\n\nTôi sẽ hỏi tâm trạng theo lịch. Bạn có thể đổi tần suất trong cài đặt ứng dụng.\n\n7 ngày đầu miễn phí, sau đó {price} ⭐ mỗi tháng.",
+  botHelpMax: "Tôi là Between, nhật ký giúp bạn nhớ điều quan trọng giữa các buổi trị liệu.\n\nHãy viết ghi chép đầu tiên ở đây: hôm nay có chuyện gì, hoặc bạn đang nghĩ gì? Một câu hay tin nhắn thoại đều được. Tôi sẽ lưu vào nhật ký.\n\nTôi sẽ hỏi tâm trạng theo lịch. Bạn có thể đổi tần suất trong cài đặt ứng dụng.\n\n7 ngày đầu miễn phí, sau đó {price} ₽ mỗi tháng.",
   botUnknown: "Gửi chữ, tôi lưu thành ghi chép.",
   botNotReady:
     "Lúc này không lưu được.",

@@ -1,8 +1,7 @@
 import type { LocaleId } from "./i18n";
-import { subscribeTabUrl, weekTabUrl } from "./launch-section";
+import { sessionTabUrl, subscribeTabUrl, weekTabUrl } from "./launch-section";
 import { feelingLabel, translate } from "./messages";
 import { PICKER_FEELINGS, type CheckinSlot } from "./types";
-import { loadWelcomeImage } from "./welcome-photo";
 
 const SLOT_CODE: Record<CheckinSlot, string> = {
   morning: "m",
@@ -54,6 +53,12 @@ export function weekOpenKeyboard(url: string, locale: LocaleId = "ru") {
       { text: translate(locale, "botWeekOpen"), web_app: { url: weekTabUrl(url) } },
     ]],
   };
+}
+
+export function sessionOpenKeyboard(url: string, locale: LocaleId = "ru") {
+  return { inline_keyboard: [[{
+    text: translate(locale, "botSessionSetup"), web_app: { url: sessionTabUrl(url) },
+  }]] };
 }
 
 export function subscribeKeyboard(url: string, locale: LocaleId = "ru", later = false) {
@@ -206,25 +211,6 @@ export async function sendTelegramWelcome(
   replyMarkup?: unknown,
 ): Promise<boolean> {
   const text = caption.slice(0, 1024);
-  const bytes = await loadWelcomeImage();
-  const token = process.env.BOT_TOKEN?.trim();
-  if (bytes && token) {
-    const form = new FormData();
-    form.set("chat_id", String(chatId));
-    form.set("caption", text);
-    if (replyMarkup) form.set("reply_markup", JSON.stringify(replyMarkup));
-    form.set("photo", new File([Buffer.from(bytes)], "welcome.png", { type: "image/png" }));
-    try {
-      const res = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-        method: "POST",
-        body: form,
-      });
-      const data = (await res.json()) as { ok?: boolean };
-      if (data.ok) return true;
-    } catch {
-      // The text welcome still goes out.
-    }
-  }
   return telegramRequest("sendMessage", {
     chat_id: chatId,
     text,
