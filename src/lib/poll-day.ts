@@ -10,7 +10,6 @@ import {
   tallyPollDay,
   type PollPerson,
 } from "./digest";
-import { loadOnboarding } from "./onboarding-flow";
 import {
   digestSlotHeld,
   getUserTimezone,
@@ -59,11 +58,10 @@ async function readPerson(userId: string, now: Date, blocked: Set<string>, quiet
   if (channel === "max" && !maxId) return null;
   const owner =
     channel === "max" && maxId ? await resolveMaxJournalId(maxId) : await resolveJournalId(Number(userId));
-  const [timeZone, store, record, onboarding] = await Promise.all([
+  const [timeZone, store, record] = await Promise.all([
     getUserTimezone(owner),
     loadUserStore(owner),
     loadWeekAccess(owner),
-    loadOnboarding(owner),
   ]);
   const clock = zonedParts(now, timeZone);
   const username = await messengerUsername(userId, channel);
@@ -79,7 +77,7 @@ async function readPerson(userId: string, now: Date, blocked: Set<string>, quiet
     moodPolls: store.notify.moodPolls,
     moodFrequency: store.notify.moodFrequency,
     pollsOpen: moodPollsOpen({
-      onboardingOpen: Boolean(onboarding && onboarding.step !== "done"),
+      onboardingOpen: false,
       paused: access.view.paused,
       status: statusAfterOpen(access.record.openedAt, access.view.status),
     }),

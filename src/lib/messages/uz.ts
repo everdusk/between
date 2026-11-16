@@ -358,6 +358,8 @@ export const uz: Catalog = {
     "Ertalab, kunduzi va kechqurun bot holingizni so‘raydi. Istamasangiz, «Seanslar» bo‘limida o‘chiring.",
   botChatAllow: "Xabarlarga ruxsat",
   botOpen: "Between’ni ochish",
+  botSessionInvite: "Psixoterapiya seanslari jadvalini qo‘shmoqchimisiz? Shunda yozuvlarni seansingizga yig‘ib beraman. Qulay vaqtda ilovada sozlashingiz mumkin.",
+  botSessionSetup: "Seanslarni sozlash",
   botSessionOpen: "Sanani qo'yish",
   botAskTherapist: "Terapevt bilan ishlaysizmi?",
   botTherapistYes: "Ha",
@@ -370,14 +372,12 @@ export const uz: Catalog = {
   botNoTherapist:
     "Terapevtsiz kundalik kamroq foyda beradi: sezganingizni birga ko'radigan odam yo'q. Qaydlarni baribir qoldirish mumkin — holatni kuzatish va takrorlanishni ko'rish uchun.\n\nHozir qandaysiz?",
   botAskNote: "{feeling}. Birinchi qaydni shu yerga yozing — hozirgi hol haqida bir necha qator.",
-  botFirstNote: "Yozildi.\n\nHafta varag'ida qayd haftaga qanday tushishi ko'rinadi.",
+  botFirstNote: "Bugun uchun saqlandi.",
   botSessionBriefLead: "Seans soat {time}.",
   botWeekOpen: "Haftani ochish",
   botPickButton: "Pastdagi tugmani bosing.",
-  botHelp:
-    "Men Between — seansga bo'sh bosh bilan kelmaydigan kundalik.\n\nFikr va hislaringizni shu yerga yozing — hammasi saqlanadi.\nKuniga bir-ikki marta kayfiyatni so'rayman — bir bosishda belgilang.\nHafta rasmga aylanadi: nima takrorlanayotgani ko'rinadi.\n\nBirinchi 7 kun bepul, keyin oyiga {price} ⭐.\n\nSeansgacha buni jamlab beraman — nima bo'lganini eslash shart emas. Boshlash uchun bir-ikki savol beraman.",
-  botHelpMax:
-    "Men Between — seansga bo'sh bosh bilan kelmaydigan kundalik.\n\nFikr va hislaringizni shu yerga yozing — hammasi saqlanadi.\nKuniga bir-ikki marta kayfiyatni so'rayman — bir bosishda belgilang.\nHafta rasmga aylanadi: nima takrorlanayotgani ko'rinadi.\n\nBirinchi 7 kun bepul, keyin oyiga {price} ₽.\n\nSeansgacha buni jamlab beraman — nima bo'lganini eslash shart emas. Boshlash uchun bir-ikki savol beraman.",
+  botHelp: "Men Between — terapiya seanslari orasidagi muhim narsalarni eslab qolish uchun kundalikman.\n\nBirinchi yozuvni shu yerga yuboring: bugun nima bo‘ldi yoki qanday fikr xayolingizda? Bir jumla yoki ovozli xabar yetarli. Kundalikka saqlayman.\n\nJadval bo‘yicha kayfiyatingizni so‘rayman. Tezligini ilova sozlamalarida o‘zgartirish mumkin.\n\nDastlabki 7 kun bepul, keyin oyiga {price} ⭐.",
+  botHelpMax: "Men Between — terapiya seanslari orasidagi muhim narsalarni eslab qolish uchun kundalikman.\n\nBirinchi yozuvni shu yerga yuboring: bugun nima bo‘ldi yoki qanday fikr xayolingizda? Bir jumla yoki ovozli xabar yetarli. Kundalikka saqlayman.\n\nJadval bo‘yicha kayfiyatingizni so‘rayman. Tezligini ilova sozlamalarida o‘zgartirish mumkin.\n\nDastlabki 7 kun bepul, keyin oyiga {price} ₽.",
   botUnknown: "Matn yozing, yozuv qilib saqlayman.",
   botNotReady:
     "Hozir saqlay olmayman.",

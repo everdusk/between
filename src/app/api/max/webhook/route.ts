@@ -22,16 +22,11 @@ import {
   loadAnalyticsReport,
   trackServerEvent,
 } from "@/lib/analytics";
-import { sendDueMaxPoll } from "@/lib/due-mood";
 import { loadPollDay, rememberQuietChat } from "@/lib/poll-day";
 import { linkCodeFromStart, loginTokenFromStart, maxStorageId } from "@/lib/web-account";
 import { claimMaxLink, finishMaxLogin, resolveMaxJournalId } from "@/lib/web-account-store";
 import {
-  answerOnboarding,
   finishOnboarding,
-  onboardingNoteIntent,
-  openOnboarding,
-  remindOnboarding,
 } from "@/lib/onboarding-flow";
 import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
 import { startPayload } from "@/lib/landing";
@@ -50,8 +45,6 @@ import {
   maxAudioUrl,
   maxLoginKeyboard,
   maxOpenKeyboard,
-  maxOnboardKeyboard,
-  weekOpenKeyboard,
   maxText,
   maxToken,
   maxUserId,
@@ -118,12 +111,8 @@ async function handleCallback(update: MaxUpdate, userId: number) {
     return;
   }
   if (payload.startsWith("ob:")) {
-    const result = await answerOnboarding(owner, reply, payload, { userId, messenger: "max" });
-    if (result.type !== "update") {
-      await answerMaxCallback(callbackId, null);
-      return;
-    }
-    await answerMaxCallback(callbackId, result.text, maxOnboardKeyboard(result.rows));
+    await finishOnboarding(owner);
+    await answerMaxCallback(callbackId, welcomeCaption(reply, "max"));
     return;
   }
   if (payload === "ps:1" || payload === "ps:0" || payload === "pay:later") {
@@ -251,18 +240,9 @@ async function greet(
   await sendMaxWelcome(userId, welcomeCaption(greeting, "max"), undefined, chatId);
   const owner = await resolveMaxJournalId(userId);
   await ensureTrial(owner);
-  const quiz = await openOnboarding(owner, reply);
-  if (quiz) {
-    const asked = await say(userId, quiz.text, maxOnboardKeyboard(quiz.rows), chatId);
-    if (asked) await trackBotFunnel({ userId, messenger: "max", choice: { step: "start" } });
-    return;
-  }
-  await sendDueMaxPoll({ userId, username, locale: reply, chatId });
+  await trackBotFunnel({ userId, messenger: "max", username, choice: { step: "start" } });
 }
 
-async function sendWeekFollow(userId: number, reply: LocaleId, chatId?: number) {
-  await say(userId, translate(reply, "botFirstNote"), weekOpenKeyboard(reply) ?? undefined, chatId);
-}
 
 async function handleStart(
   userId: number,
@@ -336,27 +316,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
 
-    if (redisConfigured()) {
-      try {
-        await sendDueMaxPoll({ userId, username, locale: reply, chatId: update.chat_id });
-      } catch {
-        // The note still saves when the catch-up question cannot go out.
-      }
-    }
 
     if (audio && !isBotCommand(text, "start") && !isBotCommand(text, "help")) {
-      const intent = await onboardingNoteIntent(owner);
-      if (intent === "block") {
-        const reminder = await remindOnboarding(owner, reply);
-        if (reminder) await say(userId, reminder.text, maxOnboardKeyboard(reminder.rows), update.chat_id);
-        return NextResponse.json({ ok: true });
-      }
       const saved = await handleVoice(userId, owner, audio, text, reply, username, keyboard);
-      if (saved && intent === "finish") {
-        await sendWeekFollow(userId, reply, update.chat_id);
-        await finishOnboarding(owner);
-        await trackBotFunnel({ userId, messenger: "max", choice: { step: "note" } });
-      }
+      if (saved) await trackBotFunnel({ userId, messenger: "max", username, choice: { step: "note" } });
       return NextResponse.json({ ok: true });
     }
 
@@ -460,23 +423,12 @@ export async function POST(req: Request) {
       await say(userId, translate(reply, "botEntryClosed"), keyboard, update.chat_id);
       return NextResponse.json({ ok: true });
     }
-    const intent = await onboardingNoteIntent(owner);
-    if (intent === "block") {
-      const reminder = await remindOnboarding(owner, reply);
-      if (reminder) await say(userId, reminder.text, maxOnboardKeyboard(reminder.rows), update.chat_id);
-      return NextResponse.json({ ok: true });
-    }
 
     try {
       await appendBotMessageForOwner(owner, text);
       await trackServerEvent({ userId, event: "note", messenger: "max" });
-      if (intent === "finish") {
-        await sendWeekFollow(userId, reply, update.chat_id);
-        await finishOnboarding(owner);
-        await trackBotFunnel({ userId, messenger: "max", choice: { step: "note" } });
-      } else {
-        await say(userId, translate(reply, "botSaved"), keyboard);
-      }
+      await say(userId, translate(reply, "botSaved"), keyboard);
+      await trackBotFunnel({ userId, messenger: "max", username, choice: { step: "note" } });
     } catch {
       await say(userId, translate(reply, "botSaveFail"), keyboard);
     }

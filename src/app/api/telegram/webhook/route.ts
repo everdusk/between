@@ -31,11 +31,7 @@ import {
 import { linkCodeFromStart, loginTokenFromStart } from "@/lib/web-account";
 import { claimTelegramLink, finishTelegramLogin, resolveJournalId } from "@/lib/web-account-store";
 import {
-  answerOnboarding,
   finishOnboarding,
-  onboardingNoteIntent,
-  openOnboarding,
-  remindOnboarding,
 } from "@/lib/onboarding-flow";
 import {
   isLandingStart,
@@ -43,7 +39,6 @@ import {
   startPayload,
 } from "@/lib/landing";
 import { botFunnelBlock, trackBotFunnel } from "@/lib/bot-funnel";
-import { sendDueTelegramPoll } from "@/lib/due-mood";
 import { loadPollDay, rememberQuietChat } from "@/lib/poll-day";
 import { reconcileSbpPayments } from "@/lib/sbp-live";
 import { appUrl } from "@/lib/telegram-auth";
@@ -56,9 +51,7 @@ import {
   downloadTelegramFile,
   isBotCommand,
   miniAppKeyboard,
-  onboardReplyMarkup,
   sendTelegramWelcome,
-  weekOpenKeyboard,
   parseFeelingCallback,
   blockedTelegramUser,
   returnedTelegramUser,
@@ -166,31 +159,7 @@ async function localesFor(user: TelegramUser | undefined): Promise<{
   };
 }
 
-async function sendQuiz(chatId: number, userId: number, locale: LocaleId, username?: string) {
-  if (!redisConfigured()) return;
-  try {
-    const quiz = await openOnboarding(await resolveJournalId(userId), locale);
-    if (!quiz) return;
-    const sent = await telegramRequest("sendMessage", {
-      chat_id: chatId,
-      text: quiz.text,
-      reply_markup: onboardReplyMarkup(quiz.rows),
-    });
-    if (sent) {
-      await trackBotFunnel({ userId, messenger: "telegram", username, choice: { step: "start" } });
-    }
-  } catch {
-    // The welcome already went out.
-  }
-}
 
-async function sendWeekFollow(chatId: number, locale: LocaleId) {
-  await telegramRequest("sendMessage", {
-    chat_id: chatId,
-    text: translate(locale, "botFirstNote"),
-    reply_markup: weekOpenKeyboard(appUrl(), locale),
-  });
-}
 
 export async function GET() {
   return NextResponse.json({
@@ -216,27 +185,13 @@ async function handleCallback(callback: TelegramCallback) {
   if (callback.data?.startsWith("ob:") && callback.from?.id) {
     const { reply } = await localesFor(callback.from);
     const owner = await resolveJournalId(callback.from.id);
-    const result = await answerOnboarding(owner, reply, callback.data, {
-      userId: callback.from.id,
-      messenger: "telegram",
-      username: callback.from.username,
-    });
+    await finishOnboarding(owner);
     await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
-    if (result.type !== "update" || !callback.message) return;
-    const markup = onboardReplyMarkup(result.rows);
-    if (result.markupOnly) {
-      await telegramRequest("editMessageReplyMarkup", {
-        chat_id: callback.message.chat.id,
-        message_id: callback.message.message_id,
-        reply_markup: markup,
-      });
-      return;
-    }
-    await telegramRequest("editMessageText", {
+    if (callback.message) await telegramRequest("editMessageText", {
       chat_id: callback.message.chat.id,
       message_id: callback.message.message_id,
-      text: result.text,
-      reply_markup: markup,
+      text: welcomeCaption(reply),
+      reply_markup: miniAppKeyboard(appUrl(), reply),
     });
     return;
   }
@@ -540,40 +495,11 @@ export async function POST(req: Request) {
   const userId = message.from?.id;
   const { reply, greeting } = await localesFor(message.from);
   const keyboard = miniAppKeyboard(appUrl(), reply);
-  if (userId && redisConfigured()) {
-    try {
-      await sendDueTelegramPoll({ chatId, userId, username: message.from?.username, locale: reply });
-    } catch {
-      // The note still saves when the catch-up question cannot go out.
-    }
-  }
   const media = message.voice ?? message.audio;
 
   if (media) {
-    const owner = userId && redisConfigured() ? await resolveJournalId(userId) : null;
-    const intent = owner ? await onboardingNoteIntent(owner) : "free";
-    if (intent === "block" && owner) {
-      const reminder = await remindOnboarding(owner, reply);
-      if (reminder) {
-        await telegramRequest("sendMessage", {
-          chat_id: chatId,
-          text: reminder.text,
-          reply_markup: onboardReplyMarkup(reminder.rows),
-        });
-      }
-      return NextResponse.json({ ok: true });
-    }
     const saved = await handleVoice(message, media, reply, keyboard);
-    if (saved && intent === "finish" && owner && userId) {
-      await sendWeekFollow(chatId, reply);
-      await finishOnboarding(owner);
-      await trackBotFunnel({
-        userId,
-        messenger: "telegram",
-        username: message.from?.username,
-        choice: { step: "note" },
-      });
-    }
+    if (saved && userId) await trackBotFunnel({ userId, messenger: "telegram", username: message.from?.username, choice: { step: "note" } });
     return NextResponse.json({ ok: true });
   }
 
@@ -633,7 +559,7 @@ export async function POST(req: Request) {
         messenger: "telegram",
         username: message.from?.username,
       });
-      await sendQuiz(chatId, userId, reply, message.from?.username);
+      await trackBotFunnel({ userId, messenger: "telegram", username: message.from?.username, choice: { step: "start" } });
     }
     return NextResponse.json({ ok: true });
   }
@@ -773,18 +699,6 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ ok: true });
   }
-  const intent = await onboardingNoteIntent(owner);
-  if (intent === "block") {
-    const reminder = await remindOnboarding(owner, reply);
-    if (reminder) {
-      await telegramRequest("sendMessage", {
-        chat_id: chatId,
-        text: reminder.text,
-        reply_markup: onboardReplyMarkup(reminder.rows),
-      });
-    }
-    return NextResponse.json({ ok: true });
-  }
 
   try {
     await appendBotMessageToToday(userId, text);
@@ -794,22 +708,12 @@ export async function POST(req: Request) {
       messenger: "telegram",
       username: message.from?.username,
     });
-    if (intent === "finish") {
-      await sendWeekFollow(chatId, reply);
-      await finishOnboarding(owner);
-      await trackBotFunnel({
-        userId,
-        messenger: "telegram",
-        username: message.from?.username,
-        choice: { step: "note" },
-      });
-    } else {
-      await telegramRequest("sendMessage", {
-        chat_id: chatId,
-        text: translate(reply, "botSaved"),
-        reply_markup: keyboard,
-      });
-    }
+    await telegramRequest("sendMessage", {
+      chat_id: chatId,
+      text: translate(reply, "botSaved"),
+      reply_markup: keyboard,
+    });
+    await trackBotFunnel({ userId, messenger: "telegram", username: message.from?.username, choice: { step: "note" } });
   } catch {
     await telegramRequest("sendMessage", {
       chat_id: chatId,

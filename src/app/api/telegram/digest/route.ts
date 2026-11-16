@@ -32,9 +32,8 @@ import { resolveJournalId, resolveMaxJournalId } from "@/lib/web-account-store";
 import {
   ensureMaxSubscription,
   maxFeelingKeyboard,
-  maxOnboardKeyboard,
+  sessionOpenKeyboard as maxSessionKeyboard,
   maxToken,
-  sendMaxMessage,
   sendMaxMessageDetail,
   type MaxKeyboard,
 } from "@/lib/max-bot";
@@ -44,8 +43,9 @@ import { accessForUser, maxAccessIdentity } from "@/lib/week-access";
 import { deliverCycle } from "@/lib/trial-dispatch";
 import { pingsReduced, quietHour } from "@/lib/trial-cycle";
 import { ensureTrial } from "@/lib/trial-bot";
-import { loadOnboarding, markQuizReminded, quizReminderDue, remindOnboarding } from "@/lib/onboarding-flow";
-import { ensureTelegramBlocks, feelingKeyboard, onboardReplyMarkup, telegramCall, telegramDeliveryBlocked, telegramRequest } from "@/lib/telegram-bot";
+import { sessionInviteDue, SESSION_INVITE_DAY, SESSION_INVITE_SLOT } from "@/lib/session-invite";
+import { appUrl } from "@/lib/telegram-auth";
+import { ensureTelegramBlocks, feelingKeyboard, sessionOpenKeyboard, telegramCall, telegramDeliveryBlocked } from "@/lib/telegram-bot";
 import { zonedParts } from "@/lib/zoned";
 
 /** The hourly run walks every user. The default function limit cut the tail of the list off. */
@@ -120,30 +120,21 @@ async function digestUser(
       process.env.WEEK_EXEMPT_USER_IDS,
       now,
     );
-    const onboarding = await loadOnboarding(owner);
-    const onboardingOpen = Boolean(onboarding && onboarding.step !== "done");
+    const onboardingOpen = false;
     let cycleSent = 0;
-    const quizSlot = `quiz:${onboarding?.since}`;
-    if (!access.view.paused && store.notify.serviceReminders !== false && quizReminderDue(onboarding, now, clock.hour) && await claimDigestSlot(owner, "cycle", quizSlot, 365 * 86400)) {
-      const reminder = await remindOnboarding(owner, locale);
-      if (reminder) {
-        const text = `${translate(locale, "botQuizRemind")}\n\n${reminder.text}`;
-        const asked =
-          channel === "max" && maxId
-            ? await sendMaxMessage(maxId, text, maxOnboardKeyboard(reminder.rows))
-            : await telegramRequest("sendMessage", {
-                chat_id: Number(userId),
-                text,
-                reply_markup: onboardReplyMarkup(reminder.rows),
-              });
-        if (asked) {
-          await markQuizReminded(owner);
-          return { ...EMPTY_TALLY, sent: 1 };
-        }
-        await releaseDigestSlot(owner, "cycle", quizSlot);
-      } else {
-        await releaseDigestSlot(owner, "cycle", quizSlot);
+    const sessionKeys = channel === "max" ? maxSessionKeyboard(locale) : null;
+    if ((channel !== "max" || sessionKeys) && sessionInviteDue({ store, now, hour: clock.hour, status: access.view.status, paused: access.view.paused }) &&
+        await claimDigestSlot(owner, SESSION_INVITE_DAY, SESSION_INVITE_SLOT, 365 * 86400)) {
+      const delivery = await deliverText(channel, userId, maxId, translate(locale, "botSessionInvite"), {
+        max: sessionKeys ?? undefined,
+        telegram: sessionOpenKeyboard(appUrl(), locale),
+      });
+      if (delivery !== "ok") {
+        await releaseDigestSlot(owner, SESSION_INVITE_DAY, SESSION_INVITE_SLOT);
+        if (delivery === "blocked") await rememberBotBlocked(userId);
+        return { ...EMPTY_TALLY, failed: 1 };
       }
+      return { ...EMPTY_TALLY, sent: 1 };
     }
     if (!access.view.paused) {
       cycleSent += await deliverCycle({

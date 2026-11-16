@@ -8,7 +8,6 @@ import { LANDING_ORIGIN } from "./landing-seo";
 import { appUrl } from "./telegram-auth";
 import { feelingKeyboard, parseFeelingCallback } from "./telegram-bot";
 import type { CheckinSlot } from "./types";
-import { loadWelcomeImage } from "./welcome-photo";
 
 /** MAX presents a certificate the public trust store rejects. Trust only this connection. */
 const maxDispatcher = new Agent({
@@ -220,6 +219,15 @@ export function weekOpenKeyboard(locale: LocaleId = "ru"): MaxKeyboard | null {
   };
 }
 
+/** Opens session settings in the MAX Mini App, preserving the messenger identity. */
+export function sessionOpenKeyboard(locale: LocaleId = "ru"): MaxKeyboard | null {
+  const name = process.env.MAX_BOT_USERNAME?.trim().replace(/^@/, "") ?? "";
+  if (!/^[A-Za-z0-9_]{3,64}$/.test(name)) return null;
+  return { type: "inline_keyboard", payload: { buttons: [[{
+    type: "open_app", text: translate(locale, "botSessionSetup"), web_app: name, payload: "sessions",
+  }]] } };
+}
+
 export function maxOnboardKeyboard(rows: { text: string; data: string }[][]): MaxKeyboard | undefined {
   if (rows.length === 0) return undefined;
   return {
@@ -321,7 +329,6 @@ export async function ensureMaxSubscription(): Promise<MaxSubscription> {
   return { ok: true, reason: "ok" };
 }
 
-let welcomeImageToken = "";
 
 function maxImageToken(body: unknown): string {
   if (!body || typeof body !== "object") return "";
@@ -331,33 +338,6 @@ function maxImageToken(body: unknown): string {
     if (typeof photo?.token === "string" && photo.token.trim()) return photo.token.trim();
   }
   return "";
-}
-
-async function ensureMaxImageToken(bytes: Uint8Array): Promise<string> {
-  if (welcomeImageToken) return welcomeImageToken;
-  const token = maxToken();
-  if (!token) return "";
-  const slot = await maxHttps(`${API}/uploads?type=image`, {
-    method: "POST",
-    dispatcher: maxDispatcher,
-    headers: { Authorization: token },
-  });
-  if (!slot.ok) return "";
-  const meta = (await slot.json().catch(() => null)) as { url?: unknown } | null;
-  const uploadUrl = typeof meta?.url === "string" ? meta.url : "";
-  if (!uploadUrl.startsWith("https://")) return "";
-  const form = new MaxFormData();
-  form.append("data", new Blob([Buffer.from(bytes)], { type: "image/png" }), "welcome.png");
-  const uploaded = await maxHttps(uploadUrl, {
-    method: "POST",
-    dispatcher: maxDispatcher,
-    headers: { Authorization: token },
-    body: form,
-  });
-  if (!uploaded.ok) return "";
-  const image = maxImageToken(await uploaded.json().catch(() => null));
-  if (image) welcomeImageToken = image;
-  return image;
 }
 
 async function deliverMax(userId: number, body: unknown, chatId?: number): Promise<boolean> {
@@ -419,19 +399,6 @@ export async function sendMaxWelcome(
   keyboard?: MaxKeyboard,
   chatId?: number,
 ): Promise<boolean> {
-  const caption = text.slice(0, 4000);
-  const bytes = await loadWelcomeImage();
-  const image = bytes ? await ensureMaxImageToken(bytes) : "";
-  if (image) {
-    const attachments = [
-      { type: "image", payload: { token: image } },
-      ...(keyboard ? [keyboard] : []),
-    ];
-    const sent = await deliverMax(userId, { text: caption, attachments }, chatId);
-    if (sent) return true;
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    if (await deliverMax(userId, { text: caption, attachments }, chatId)) return true;
-  }
   return sendMaxMessage(userId, text, keyboard, chatId);
 }
 
