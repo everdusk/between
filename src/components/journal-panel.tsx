@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bot, Check, Pencil, Trash2, X, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { EntryCalendar } from "@/components/entry-calendar";
 import { FeelingPicker } from "@/components/feeling-picker";
@@ -29,6 +29,8 @@ interface JournalPanelProps {
   onDelete: (id: string) => boolean;
   disabled?: boolean;
   initData?: string;
+  webFirst?: boolean;
+  composeRequest?: number;
 }
 
 /** The stored day, plus the local day the note was actually written. */
@@ -63,6 +65,8 @@ export function JournalPanel({
   onDelete,
   disabled,
   initData = "",
+  webFirst = false,
+  composeRequest = 0,
 }: JournalPanelProps) {
   const { t, locale, count, feeling: feelingLabel, slot } = useI18n();
   const today = toDateKey();
@@ -71,10 +75,20 @@ export function JournalPanel({
   const [feelings, setFeelings] = useState<Feeling[]>([]);
   const [body, setBody] = useState("");
   const [manual, setManual] = useState<string[]>([]);
-  const [composerOpen, setComposerOpen] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(webFirst);
   const [hidden, setHidden] = useState<string[]>([]);
   const [savedFlash, setSavedFlash] = useState(false);
   const composerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!composeRequest) return;
+    // Keep any draft intact when the global action brings the editor back.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setComposerOpen(true);
+    requestAnimationFrame(() => {
+      composerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      composerRef.current?.querySelector("textarea")?.focus({ preventScroll: true });
+    });
+  }, [composeRequest]);
 
   const dayEntries = useMemo(
     () =>
@@ -90,7 +104,7 @@ export function JournalPanel({
     setFeelings([]);
     setBody("");
     setManual([]);
-    setComposerOpen(false);
+    setComposerOpen(webFirst);
     setHidden([]);
   }
 
@@ -174,7 +188,7 @@ export function JournalPanel({
             <Label htmlFor="journal-body">{t("note")}</Label>
             <Textarea
               id="journal-body"
-              autoFocus
+              autoFocus={!webFirst}
               value={body}
               disabled={disabled}
               onChange={(event) => setBody(event.target.value)}

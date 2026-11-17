@@ -1,6 +1,8 @@
 import type { Catalog } from "./ru";
 
 export const uz: Catalog = {
+  webWorkspaceTitle: "Kundaligim",
+  webAbout: "Haqida",
   pollFrequency: "Savollar tezligi",
   pollEveningOnly: "Faqat kechqurun",
   pollThreeTimes: "Kuniga uch marta",

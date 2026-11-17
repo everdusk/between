@@ -1,0 +1,239 @@
+/* Browser entry theme. Kept separate from the messenger /journal stylesheet. */
+.web-workspace {
+  --font-display: var(--font-unbounded), sans-serif;
+}
+
+.web-workspace .font-display {
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+html[data-journal="web"]:not([data-telegram-theme]) {
+  color-scheme: only dark;
+  --background: #060b09;
+  --foreground: #f2f7f4;
+  --card: rgba(255, 255, 255, 0.09);
+  --card-foreground: #f2f7f4;
+  --popover: #10201a;
+  --popover-foreground: #f2f7f4;
+  --primary: #8ff0bc;
+  --primary-foreground: #04130c;
+  --secondary: rgba(255, 255, 255, 0.09);
+  --secondary-foreground: #f2f7f4;
+  --muted: rgba(255, 255, 255, 0.06);
+  --muted-foreground: rgba(222, 238, 230, 0.64);
+  --accent: rgba(143, 240, 188, 0.16);
+  --accent-foreground: #8ff0bc;
+  --destructive: #f9a8d4;
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #8ff0bc;
+  --ink: #04130c;
+  --ink-foreground: #f2f7f4;
+  --ink-muted: rgba(222, 238, 230, 0.64);
+  --glass-fill: rgba(255, 255, 255, 0.09);
+  --glass-fill-strong: rgba(255, 255, 255, 0.14);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-highlight: rgba(255, 255, 255, 0.22);
+  --glass-shadow: rgba(0, 0, 0, 0.45);
+  --section-header: rgba(222, 238, 230, 0.64);
+  --subtitle: rgba(222, 238, 230, 0.64);
+  --accent-text: #8ff0bc;
+  --link: #8ff0bc;
+  --radius: 0.72rem;
+}
+
+html[data-journal="web"]:not([data-telegram-theme]),
+html[data-journal="web"]:not([data-telegram-theme]) body {
+  background-color: #060b09 !important;
+  background-image:
+    radial-gradient(closest-side at 12% 0%, rgba(52, 211, 153, 0.3), transparent 74%),
+    radial-gradient(closest-side at 100% 18%, rgba(167, 139, 250, 0.2), transparent 70%) !important;
+  color: #f2f7f4;
+}
+
+html[data-journal="web"]:not([data-telegram-theme]) .atmosphere-blob-a {
+  background: rgba(52, 211, 153, 0.3);
+}
+
+html[data-journal="web"]:not([data-telegram-theme]) .atmosphere-blob-b {
+  background: rgba(167, 139, 250, 0.22);
+}
+
+html[data-journal="web"]:not([data-telegram-theme]) [data-slot="button"].bg-primary,
+html[data-journal="web"]:not([data-telegram-theme]) [data-slot="tabs-trigger"][data-active] {
+  background-image: linear-gradient(100deg, #8ff0bc 0%, #34d399 42%, #5eead4 72%, #8b7cf6 110%);
+  color: #04130c;
+  font-weight: 800;
+  box-shadow: 0 12px 28px -12px rgba(52, 211, 153, 0.35);
+}
+
+.brand-words {
+  background-image: linear-gradient(94deg, #8ff0bc, #34d399 30%, #5eead4 52%, #a78bfa 80%, #f9a8d4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Day palette. Coral is the only standalone accent. No mint. */
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) {
+  color-scheme: only light;
+  --background: #f4ede8;
+  --foreground: #1c242f;
+  --card: #ede2dc;
+  --card-foreground: #1c242f;
+  --popover: #faf6f3;
+  --popover-foreground: #1c242f;
+  --primary: #f3544e;
+  --primary-foreground: #faf6f3;
+  --secondary: #e7dbd4;
+  --secondary-foreground: #1c242f;
+  --muted: rgba(28, 36, 47, 0.06);
+  --muted-foreground: rgba(28, 36, 47, 0.62);
+  --accent: rgba(86, 136, 151, 0.16);
+  --accent-foreground: #568897;
+  --destructive: #f3544e;
+  --border: #c9bbb7;
+  --input: rgba(28, 36, 47, 0.06);
+  --ring: #f3544e;
+  --ink: #1c242f;
+  --ink-foreground: #faf6f3;
+  --ink-muted: rgba(250, 246, 243, 0.72);
+  --glass-fill: #ede2dc;
+  --glass-fill-strong: #faf6f3;
+  --glass-border: #c9bbb7;
+  --glass-highlight: rgba(255, 255, 255, 0.7);
+  --glass-shadow: rgba(28, 36, 47, 0.12);
+  --section-header: #568897;
+  --subtitle: rgba(28, 36, 47, 0.62);
+  --accent-text: #568897;
+  --link: #f3544e;
+}
+
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]),
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) body {
+  background-color: #f4ede8 !important;
+  background-image:
+    radial-gradient(closest-side at 8% 0%, rgba(243, 84, 78, 0.22), transparent 74%),
+    radial-gradient(closest-side at 100% 12%, rgba(86, 136, 151, 0.2), transparent 70%) !important;
+  color: #1c242f;
+}
+
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) .atmosphere-blob-a {
+  background: rgba(243, 84, 78, 0.22);
+}
+
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) .atmosphere-blob-b {
+  background: rgba(86, 136, 151, 0.2);
+}
+
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) [data-slot="button"].bg-primary,
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) [data-slot="tabs-trigger"][data-active] {
+  background-image: none;
+  background-color: #f3544e;
+  color: #faf6f3;
+  box-shadow: 0 12px 28px -12px rgba(243, 84, 78, 0.4);
+}
+
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) .brand-words {
+  background-image: none;
+  color: #f3544e;
+  -webkit-text-fill-color: #f3544e;
+}
+
+/* Phone shell stays until the website is wide. Telegram never gets this frame. */
+.journal-side {
+  display: none;
+}
+
+@media (min-width: 960px) {
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-frame {
+    flex-direction: row;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-side {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 18.5rem;
+    flex-shrink: 0;
+    min-height: 0;
+    padding: 1.5rem 1.15rem 1.25rem;
+    border-inline-end: 1px solid var(--border);
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-side-scroll {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-side-account {
+    margin-top: auto;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-shell header,
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-phone-brand,
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-mobile-tools,
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-dock,
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-account-inline {
+    display: none;
+  }
+
+  /* The scrollport fills the stage, so the wheel works in the gutters beside the column. */
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-column {
+    max-width: none;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-scroll-inner {
+    width: 100%;
+    max-width: 72rem;
+    margin-inline: auto;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-stage {
+    padding-top: 0.5rem;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-board {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-board > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-gate {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+    column-gap: 2.5rem;
+    align-items: start;
+    max-width: 72rem;
+    margin-inline: auto;
+    padding-top: 1.5rem;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-gate-form {
+    position: sticky;
+    top: 0;
+    margin-top: 0;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-gate-jump {
+    display: none;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-preview {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    align-items: start;
+  }
+
+  html[data-journal="web"]:not([data-telegram-theme]) .journal-preview > p {
+    grid-column: 1 / -1;
+  }
+}

@@ -13,6 +13,7 @@ import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import { SchemeSwitch, paintPickedScheme, readScheme, schemeWasPicked } from "@/components/scheme-switch";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WebAccountGate } from "@/components/web-account-gate";
+import { WebWorkspace } from "@/components/web-workspace";
 import { WeekTab } from "@/components/week-tab";
 import { WeeklyPanel } from "@/components/weekly-panel";
 import { Button } from "@/components/ui/button";
@@ -68,7 +69,7 @@ const SECTION_ICON = {
   sessions: CalendarDays,
 } as const;
 
-export function TherapyApp() {
+export function TherapyApp({ webFirst = false }: { webFirst?: boolean }) {
   const telegram = useTelegram();
   const inMax = useInMax();
   return (
@@ -77,7 +78,7 @@ export function TherapyApp() {
       initData={telegram.inTelegram ? telegram.initData : ""}
       lockLocale={null}
     >
-      <TherapyShell telegram={telegram} inMax={inMax} />
+      <TherapyShell telegram={telegram} inMax={inMax} webFirst={webFirst && !telegram.inTelegram && !inMax} />
     </LocaleProvider>
   );
 }
@@ -109,10 +110,11 @@ function localizeStorageError(
   return error ?? "";
 }
 
-function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: boolean }) {
+function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession; inMax: boolean; webFirst: boolean }) {
   const { t, locale, greetingLocale } = useI18n();
   const pathname = usePathname();
-  const webEntry = pathname === "/journal" || pathname.startsWith("/journal/");
+  const webEntry = pathname === "/" || pathname === "/journal" || pathname.startsWith("/journal/");
+  const [composeRequest, setComposeRequest] = useState(0);
   const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
   // null while MAX may still hand over the launch string. "" means it never arrived.
   const [maxLaunch, setMaxLaunch] = useState<string | null>(null);
@@ -204,6 +206,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
   const [accessStatus, setAccessStatus] = useState<WeekAccessStatus | null>(null);
   const locked = accessStatus === "locked";
   const wantsSubscribe = requested === "subscribe" || fromMax === "subscribe";
+  /* eslint-disable react-hooks/set-state-in-effect -- reconcile an incoming subscription deep link with server access */
   useEffect(() => {
     if (accessStatus === "locked") {
       if (wantsSubscribe) setAccountOpen(false);
@@ -211,6 +214,7 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
     }
     if (wantsSubscribe) setAccountOpen(true);
   }, [wantsSubscribe, accessStatus]);
+  /* eslint-enable react-hooks/set-state-in-effect */
   const [passwordSeen, setPasswordSeen] = useState(false);
   const passwordHash = useSyncExternalStore(
     (onStoreChange) => {
@@ -320,6 +324,35 @@ function TherapyShell({ telegram, inMax }: { telegram: TelegramSession; inMax: b
       {telegram.inTelegram ? null : <LegalLinks className="mt-2" />}
     </footer>
   );
+
+  if (webFirst) {
+    const accountSheet = <AccountSheet open={showAccount} onClose={closeAccount} inTelegram={false} inMax={false}
+      initData="" maxInitData="" notify={store.notify} onSaveNotify={saveNotify} disabled={disabled}
+      account={web.account} onRefreshAccount={() => void web.refresh()}
+      onLogout={() => { clearStore(WEB_STORAGE_KEY); web.setAccount(null); closeAccount(); }}
+      onPremium={() => setAccessNonce(value => value + 1)} />;
+    const access = (children: React.ReactNode) => <WeekTab active ready={telegram.ready} inTelegram={false}
+      initData="" canSubscribe={Boolean(web.account)} reloadToken={accessNonce} onAccess={onWeekAccess}>{children}</WeekTab>;
+    const problem = status === "error" ? <div role="alert"><p>{localizeStorageError(error, t)}</p><Button onClick={resetCorrupted}>{t("startOver")}</Button></div> : null;
+    return <>
+      <WebWorkspace tools={<><a href="/about" className="px-2 text-xs text-muted-foreground hover:text-foreground">{t("webAbout")}</a>{signedOutWeb ? null : corner}</>}
+        gate={showGate ? <><div className="mb-5 flex flex-wrap justify-end gap-2">{corner}</div><WebAccountGate compact onSignedIn={web.setAccount} /></> : undefined}
+        pending={accountPending || status === "loading" ? <JournalSkeleton /> : problem}
+        canCompose={!disabled && !locked} onCompose={() => setComposeRequest(value => value + 1)}
+        initialSessions={section === "sessions"} footer={footer}
+        journal={locked ? null : <JournalPanel entries={store.entries} onSave={upsertEntry} onDelete={deleteEntry}
+          disabled={disabled} webFirst composeRequest={composeRequest} />}
+        week={access(locked ? null : <WeeklyPanel entries={store.entries} sessions={store.sessions} plan={store.sessionPlan}
+          weekPreps={store.weekPreps} themes={store.themes ?? []} themeLinks={store.themeLinks ?? []}
+          judgeSettled={store.judgeSettled ?? []} judgeSkipped={judgeSkipped} onDiscussTheme={setThemeDiscussed}
+          onDismissTheme={dismissSessionTheme} onAddTheme={addSessionTheme} onSavePattern={savePattern}
+          onSaveThemes={saveThemes} initData="" cloud={Boolean(web.account)} disabled={disabled} />)}
+        sessions={locked ? null : <SessionsPanel sessions={store.sessions} plan={store.sessionPlan} notify={store.notify}
+          onSave={upsertSession} onDelete={deleteSession} onSavePlan={saveSessionPlan} onSaveNotify={saveNotify} disabled={disabled} />}
+      />
+      {accountSheet}
+    </>;
+  }
 
   return (
     <BotChatPermission

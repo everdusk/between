@@ -1,6 +1,8 @@
 import type { Catalog } from "./ru";
 
 export const hi: Catalog = {
+  webWorkspaceTitle: "मेरी डायरी",
+  webAbout: "परिचय",
   pollFrequency: "सवालों की आवृत्ति",
   pollEveningOnly: "केवल शाम को",
   pollThreeTimes: "दिन में तीन बार",

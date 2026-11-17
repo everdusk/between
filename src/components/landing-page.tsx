@@ -1,5 +1,8 @@
 "use client";
 
+/* Full navigation resets the public/app surface scripts in the shared root layout. */
+/* eslint-disable @next/next/no-html-link-for-pages */
+
 import { MESSENGER_CSS, MessengerButtons, QrCard } from "@/components/landing-messengers";
 import { LANDING_START_PARAM } from "@/lib/landing";
 import { AcquisitionLink } from "@/components/acquisition-link";
@@ -47,15 +50,15 @@ const STEPS = [
   },
   {
     n: "02",
-    title: "Картина собирается сама",
-    body: "Вы ничего не сортируете. Эмоции, повторы и недосказанное Between складывает в наглядную картину: что происходило и как вы на это реагировали.",
+    title: "Вернитесь к своей неделе",
+    body: "Записи и отметки настроения собраны по дням. Когда материала достаточно, Between выделяет повторяющиеся темы — чтобы вы могли взглянуть на них ещё раз.",
     image: "/landing/step-2.webp",
     alt: "Спектр недели: спокойно, 22–28 октября",
   },
   {
     n: "03",
-    title: "Приходите подготовленным",
-    body: "Ко встрече с терапевтом уже ждёт выкладка: что обсудить, что повторялось, о чём спросить. Никаких «я хз, я норм».",
+    title: "Выберите, что обсудить",
+    body: "Перед сеансом просмотрите записи и темы к встрече. Выберите то, что важно именно сейчас. При желании сохраните в PDF.",
     image: "/landing/step-3.webp",
     alt: "Темы к сессии: граница с работой, звонок мамы",
   },
@@ -191,6 +194,7 @@ export function LandingPage({ qr }: { qr: string }) {
               </a>
             </nav>
             <MessengerButtons compact />
+            <a href="/" className="bl-meta">Открыть дневник</a>
           </div>
         </header>
 
@@ -199,27 +203,27 @@ export function LandingPage({ qr }: { qr: string }) {
             <div className="max-w-xl">
               <Kicker>Дневник для тех, кто в терапии</Kicker>
               <h1 className="mt-5 font-display text-[2.35rem] leading-[1.02] tracking-tight min-[380px]:text-[2.7rem] sm:text-6xl lg:text-[4.15rem]">
-                Терапевт попросил вести дневник.
+                Всю неделю было что обсудить.
                 <br />
                 <span className="bl-shift">
-                  Вы честно
+                  На терапии —
                   <br />
-                  пытались.
+                  «вроде нормально».
                 </span>
               </h1>
               <p className="mt-6 max-w-md text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
-                Between — дневник в Telegram или MAX, который ведёт себя сам: сам спрашивает, как прошёл день, сам
-                складывает записи в понятную картину. Вам — только отвечать. К следующей сессии всё, что стоит
-                рассказать, уже собрано.
+                Between — дневник в браузере, Telegram и MAX. Сохраняйте мысли, пока помните.
+                Записи останутся под рукой, а перед сессией Between поможет собрать то, что хочется обсудить.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                <a href="/" className="bl-meta !h-12 !bg-[var(--bl-teal)] !text-[#07090d] !font-semibold">Начать в браузере</a>
                 <MessengerButtons />
               </div>
               <div className="mt-5 hidden sm:block">
                 <QrCard svg={qr} />
               </div>
               <ul className="mt-6 flex flex-wrap gap-2">
-                {["Без установки приложений", "Старт за минуту", "Записи — только ваши"].map((item) => (
+                {["7 дней бесплатно", "Без установки приложений", "Записи — только ваши"].map((item) => (
                   <li key={item} className="bl-meta">
                     <b>+</b>
                     {item}
@@ -254,10 +258,10 @@ export function LandingPage({ qr }: { qr: string }) {
           <section id="dnevnik" className="mt-16 sm:mt-28">
             <Kicker>Знакомо?</Kicker>
             <h2 className="mt-4 max-w-xl font-display text-[2.15rem] leading-[1.05] tracking-tight sm:text-5xl">
-              Почему «просто вести дневник» не работает
+              Записать бы. Но не сейчас.
             </h2>
             <p className="mt-4 max-w-xl text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
-              Терапевты почти всегда просят записи между сессиями — это правда помогает. Вот только мешают три вещи:
+              Иногда мысль появляется по дороге, после разговора или перед сном. А к вечеру уже сложно вспомнить, что именно задело.
             </p>
             <ul className="mt-8 grid gap-4 md:grid-cols-3">
               {REASONS.map((reason) => (
@@ -271,18 +275,17 @@ export function LandingPage({ qr }: { qr: string }) {
               ))}
             </ul>
             <p className="bl-quote mt-5 text-[0.98rem]">
-              Дело не в силе воли. Обычный дневник — это работа, за которую никто не берётся ещё и вечером.{" "}
-              <b>Between</b> встраивается в переписку и берёт рутину на себя.
+              В <b>Between</b> можно написать как есть. Одну фразу или длинную заметку — оформлять её не нужно. В боте можно отправить и голосовое.
             </p>
           </section>
 
           <section id="kak" className="mt-16 sm:mt-32">
             <Kicker>Как это работает</Kicker>
             <h2 className="mt-4 max-w-2xl font-display text-[2.15rem] leading-[1.05] tracking-tight sm:text-5xl">
-              Стартанули бота — и к сессии всё готово
+              От мысли в моменте — к разговору на сессии
             </h2>
             <p className="mt-4 max-w-md text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
-              Три шага. Ваше участие — только в первом, остальное Between делает сам.
+              Вы пишете как получается, Between помогает сохранить и собрать.
             </p>
             <ol className="mt-12 flex flex-col gap-14 sm:mt-20 sm:gap-28">
               {STEPS.map((step, index) => (
@@ -306,12 +309,13 @@ export function LandingPage({ qr }: { qr: string }) {
 
           <section className="bl-close mt-16 px-6 py-12 text-center sm:mt-32 sm:px-12 sm:py-20">
             <h2 className="mx-auto max-w-3xl font-display text-[2.15rem] leading-[1.05] tracking-tight sm:text-6xl">
-              Между сессиями <span className="bl-shift">всё и происходит</span>
+              Есть мысль, которую <span className="bl-shift">не хочется потерять?</span>
             </h2>
             <p className="mx-auto mt-5 max-w-md text-[1.02rem] leading-relaxed" style={{ color: "var(--bl-muted)" }}>
-              Именно там Between и живёт. Откройте бота и напишите первую запись — она займёт минуту. Дальше он сам.
+              Сохраните её в Between. С неё можно начать.
             </p>
             <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center sm:gap-5">
+              <a href="/" className="bl-meta !h-12 !bg-[var(--bl-teal)] !text-[#07090d] !font-semibold">Открыть дневник</a>
               <MessengerButtons />
               <QrCard svg={qr} />
             </div>

@@ -1,4 +1,6 @@
 export const ru = {
+  webWorkspaceTitle: "Мой дневник",
+  webAbout: "О Between",
   pollFrequency: "Частота вопросов",
   pollEveningOnly: "Только вечером",
   pollThreeTimes: "Три раза в день",
