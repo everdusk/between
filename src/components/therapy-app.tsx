@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
-import { CalendarDays, PenLine, Waves } from "lucide-react";
+import { CalendarDays, Info, PenLine, Waves } from "lucide-react";
 import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
 import { JournalPanel } from "@/components/journal-panel";
 import { JournalSkeleton } from "@/components/journal-skeleton";
@@ -320,7 +320,7 @@ function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession
         : syncLabel === "offline-cloud"
           ? ` · ${t("syncOffline")}`
           : ` · ${t("syncDevice")}`}
-      {!telegram.inTelegram && telegram.ready ? ` · ${t("outsideTelegram")}` : null}
+      {!webFirst && !telegram.inTelegram && telegram.ready ? ` · ${t("outsideTelegram")}` : null}
       {telegram.inTelegram ? null : <LegalLinks className="mt-2" />}
     </footer>
   );
@@ -335,7 +335,7 @@ function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession
       initData="" canSubscribe={Boolean(web.account)} reloadToken={accessNonce} onAccess={onWeekAccess}>{children}</WeekTab>;
     const problem = status === "error" ? <div role="alert"><p>{localizeStorageError(error, t)}</p><Button onClick={resetCorrupted}>{t("startOver")}</Button></div> : null;
     return <>
-      <WebWorkspace tools={<><a href="/about" className="px-2 text-xs text-muted-foreground hover:text-foreground">{t("webAbout")}</a>{signedOutWeb ? null : corner}</>}
+      <WebWorkspace tools={<><a href="/about" aria-label={t("webAbout")} className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-xs text-muted-foreground hover:text-foreground sm:w-auto sm:px-2"><Info aria-hidden className="size-4 sm:hidden" /><span className="hidden sm:inline">{t("webAbout")}</span></a>{signedOutWeb ? null : corner}</>}
         gate={showGate ? <><div className="mb-5 flex flex-wrap justify-end gap-2">{corner}</div><WebAccountGate compact onSignedIn={web.setAccount} /></> : undefined}
         pending={accountPending || status === "loading" ? <JournalSkeleton /> : problem}
         canCompose={!disabled && !locked} onCompose={() => setComposeRequest(value => value + 1)}
