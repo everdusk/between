@@ -1,6 +1,8 @@
 import type { Catalog } from "./ru";
 
 export const pt: Catalog = {
+  webWorkspaceTitle: "Meu diário",
+  webAbout: "Sobre",
   pollFrequency: "Frequência das perguntas",
   pollEveningOnly: "Só à noite",
   pollThreeTimes: "Três vezes por dia",

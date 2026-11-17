@@ -6,7 +6,7 @@ export const LANDING_ORIGIN = "https://www.between-journal.ru";
 export const LANDING_TITLE = "Between: дневник между сессиями терапии";
 
 export const LANDING_DESCRIPTION =
-  "Дневник в Telegram или MAX для тех, кто в терапии. Between сам спрашивает, как прошёл день, и к сессии собирает, что стоит рассказать.";
+  "Дневник мыслей и настроения в браузере, Telegram и MAX. Сохраняйте важное между сессиями терапии, возвращайтесь к своей неделе и выбирайте, что обсудить.";
 
 export const LANDING_OG_IMAGE = "/landing/og.png";
 

@@ -1,6 +1,8 @@
 import type { Catalog } from "./ru";
 
 export const id: Catalog = {
+  webWorkspaceTitle: "Jurnal saya",
+  webAbout: "Tentang",
   pollFrequency: "Frekuensi pertanyaan",
   pollEveningOnly: "Hanya malam hari",
   pollThreeTimes: "Tiga kali sehari",

@@ -118,9 +118,10 @@ function JournalPreview() {
 
 type GateMode = "login" | "forgot" | "code";
 
-export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccount) => void }) {
+export function WebAccountGate({ onSignedIn, compact = false }: { onSignedIn: (account: WebAccount) => void; compact?: boolean }) {
   const { t } = useI18n();
   const [mode, setMode] = useState<GateMode>("login");
+  const [creating, setCreating] = useState(compact);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordAgain, setPasswordAgain] = useState("");
@@ -439,7 +440,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
   return (
     <main className="journal-scroll">
       <div className="journal-gate pt-3 pr-[max(1rem,var(--safe-right))] pb-10 pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]">
-      <section className="journal-gate-pitch">
+      {!compact && <section className="journal-gate-pitch">
         <p className="eyebrow text-[color:var(--accent-text)]">{t("webKicker")}</p>
         <h1 className="mt-3 font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
           {t("webHeadline")}{" "}
@@ -458,11 +459,15 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
           {t("webCreate")}
         </Button>
         <JournalPreview />
-      </section>
+      </section>}
 
       <section ref={formRef} className="journal-gate-form glass mt-6 scroll-mt-4 rounded-[22px] px-5 py-6 sm:px-6">
-        <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{title}</h2>
-        {lead ? <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{lead}</p> : null}
+        <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{compact && mode === "login" && creating ? t("webCreate") : title}</h2>
+        {compact && mode === "login" && <div className="mt-4 flex gap-2" role="group">
+          <Button type="button" size="sm" variant={creating ? "secondary" : "ghost"} aria-pressed={creating} onClick={() => { setCreating(true); setError(null); }}>{t("webCreate")}</Button>
+          <Button type="button" size="sm" variant={!creating ? "secondary" : "ghost"} aria-pressed={!creating} onClick={() => { setCreating(false); setError(null); }}>{t("webEnter")}</Button>
+        </div>}
+        {lead ? <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{compact && mode === "login" && creating ? t("webFormLead") : lead}</p> : null}
 
         {mode === "login" ? (
           <>
@@ -513,7 +518,7 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
           </>
         ) : null}
 
-        {mode === "login" ? (
+        {mode === "login" && (!compact || !creating) ? (
           <form className="space-y-4" onSubmit={passwordLogin}>
             <div className="space-y-2">
               <Label htmlFor="web-email">{t("webEmail")}</Label>
@@ -551,9 +556,9 @@ export function WebAccountGate({ onSignedIn }: { onSignedIn: (account: WebAccoun
           </form>
         ) : null}
 
-        {mode === "login" ? (
-          <details className="mt-5 border-t border-[color:var(--glass-border)] pt-4">
-            <summary className="cursor-pointer text-sm text-muted-foreground">{t("webRegisterFold")}</summary>
+        {mode === "login" && (!compact || creating) ? (
+          <details open={compact || undefined} className="mt-5 border-t border-[color:var(--glass-border)] pt-4">
+            <summary hidden={compact} className="cursor-pointer text-sm text-muted-foreground">{t("webRegisterFold")}</summary>
             <form className="mt-4 space-y-4" onSubmit={register}>
               <div className="space-y-2">
                 <Label htmlFor="web-register-email">{t("webEmail")}</Label>

@@ -1,6 +1,8 @@
 import type { Catalog } from "./ru";
 
 export const tr: Catalog = {
+  webWorkspaceTitle: "Günlüğüm",
+  webAbout: "Hakkında",
   pollFrequency: "Soru sıklığı",
   pollEveningOnly: "Yalnızca akşam",
   pollThreeTimes: "Günde üç kez",

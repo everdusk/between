@@ -1,6 +1,8 @@
 import type { Catalog } from "./ru";
 
 export const vi: Catalog = {
+  webWorkspaceTitle: "Nhật ký của tôi",
+  webAbout: "Giới thiệu",
   pollFrequency: "Tần suất câu hỏi",
   pollEveningOnly: "Chỉ buổi tối",
   pollThreeTimes: "Ba lần mỗi ngày",

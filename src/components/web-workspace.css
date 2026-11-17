@@ -1,0 +1,23 @@
+.web-workspace { --font-display: var(--font-unbounded), sans-serif; }
+html[data-web-first] .splash-screen { display: none !important; }
+.web-header { padding: max(.9rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) .9rem max(1rem, env(safe-area-inset-left)); }
+.web-header-inner, .web-content { width: 100%; max-width: 78rem; }
+.web-dashboard { display: grid; align-items: start; gap: 1.5rem; }
+.web-dashboard > section:empty { display: none; }
+.web-dashboard > section:empty + section { grid-column: 1 / -1; }
+.web-content { padding-bottom: max(2rem, env(safe-area-inset-bottom)); }
+.web-workspace .journal-board { display: flex !important; flex-direction: column; }
+.web-workspace .journal-board > section { width: 100%; }
+.web-workspace .journal-board textarea { min-height: 9rem; font-size: 1rem; }
+.web-auth { width: 100%; max-width: 30rem; padding: 1.5rem 1rem max(2rem, env(safe-area-inset-bottom)); }
+.web-workspace .journal-gate { display: block !important; padding: 0; }
+.web-workspace .journal-gate-form { position: static !important; margin-top: 0; }
+.web-workspace .journal-scroll { overflow: visible; }
+.web-workspace [hidden] { display: none !important; }
+@media(min-width: 1080px) {
+  .web-dashboard { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem; }
+}
+@media(max-width: 639px) {
+  .web-header-inner > a { font-size: 1.1rem; }
+  .web-dashboard { gap: 2rem; }
+}

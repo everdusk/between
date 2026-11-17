@@ -1,6 +1,8 @@
 import type { Catalog } from "./ru";
 
 export const fa: Catalog = {
+  webWorkspaceTitle: "دفتر من",
+  webAbout: "درباره Between",
   pollFrequency: "تعداد پرسش‌ها",
   pollEveningOnly: "فقط عصرها",
   pollThreeTimes: "سه بار در روز",
