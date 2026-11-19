@@ -50,7 +50,6 @@
   .chapter-hero {gap:32px;padding-bottom:48px;}
   .chapter-page h1 {font-size:clamp(32px,9.6vw,48px);max-width:11ch;margin:15px 0 24px;}
   .chapter-page h1[data-chapter=events] {max-width:9ch;}
-  .chapter-page h1[data-chapter=analysis] {font-size:clamp(23px,6.5vw,40px);max-width:none;}
   .chapter-copy p {min-height:0;margin-bottom:38px;}
   .chapter-cta {width:100%;}
   .chapter-story nav {max-width:none;flex-direction:row;justify-content:space-between;gap:0;padding-top:8px;}
