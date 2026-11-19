@@ -1,4 +1,5 @@
 import { analyticsStaysQuiet, deviceToken } from "./analytics-client";
+import { YANDEX_METRIKA_ID } from "./landing";
 
 export type SurveyAction = "view" | "advance" | "back" | "login" | "finish";
 export type RegistrationStep = "form_view" | "email_started" | "email_submitted" | "code_requested" | "code_submitted" | "email_registered" | "messenger_started" | "signed_in" | "error" | "result_view";
@@ -10,6 +11,12 @@ export type SurveyEvent =
 
 export function trackSurvey(detail: SurveyEvent, locale: string) {
   if (analyticsStaysQuiet()) return;
+  if (detail.event === "web_landing_start") {
+    const { ym } = window as Window & {
+      ym?: (id: number, method: "reachGoal", goal: string, params: { placement: string }) => void;
+    };
+    ym?.(YANDEX_METRIKA_ID, "reachGoal", "web_onboarding_start", { placement: detail.placement });
+  }
   const device = deviceToken();
   if (!device) return;
   void fetch("/api/analytics", {
