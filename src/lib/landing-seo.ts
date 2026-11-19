@@ -3,10 +3,10 @@ import type { Metadata } from "next";
 /** Public site. Apex redirects here, so search engines should keep a single address. */
 export const LANDING_ORIGIN = "https://www.between-journal.ru";
 
-export const LANDING_TITLE = "Between: дневник между сессиями терапии";
+export const LANDING_TITLE = "Дневник эмоций и настроения онлайн — Between";
 
 export const LANDING_DESCRIPTION =
-  "Дневник мыслей и настроения в браузере, Telegram и MAX. Сохраняйте важное между сессиями терапии, возвращайтесь к своей неделе и выбирайте, что обсудить.";
+  "Записывайте события и отмечайте настроение в браузере. В обзоре Between видно, как менялись чувства и какие темы повторялись. К ним можно вернуться самому или с терапевтом.";
 
 export const LANDING_OG_IMAGE = "/landing/og.png";
 
@@ -15,14 +15,6 @@ export const landingMetadata: Metadata = {
   title: { absolute: LANDING_TITLE },
   description: LANDING_DESCRIPTION,
   applicationName: "Between",
-  keywords: [
-    "дневник для терапии",
-    "дневник между сессиями",
-    "дневник в Telegram",
-    "дневник в MAX",
-    "психотерапия",
-    "Between",
-  ],
   alternates: { canonical: "/" },
   robots: {
     index: true,

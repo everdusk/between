@@ -107,14 +107,26 @@ function LandingContent() {
         </div>
         <section className="chapter-audience">
           {en ? <>
-            <h2>For yourself.<br />Or with your therapist.</h2>
+            <h2>A mood journal for reflection<br />and therapy.</h2>
             <article><h3>For personal reflection</h3><p>Group your notes by theme and explore how events and feelings show up together. Keep your insights and choose what you'd like to try next.</p></article>
             <article><h3>If you're in therapy</h3><p>Keep track of what matters between sessions. Add your session schedule and revisit your notes and questions before your next appointment.</p></article>
           </> : <>
-          <h2>Для себя.<br />Или вместе с терапевтом.</h2>
+          <h2>Дневник настроения для себя<br />и для терапии.</h2>
           <article><h3>Для самостоятельной рефлексии</h3><p>Собирайте записи по темам, замечайте повторения и исследуйте возможные связи между событиями и чувствами. Сохраняйте выводы и выбирайте, что попробовать дальше.</p></article>
           <article><h3>Для тех, кто в терапии</h3><p>Сохраните важное между встречами. Добавьте расписание сеансов — и возвращайтесь к записям и вопросам перед следующей встречей.</p></article>
           </>}
+          <details className="chapter-example">
+            <summary>{en ? "How do I start an emotion journal?" : "Как начать вести дневник эмоций?"}</summary>
+            {en ? <>
+              <p>Pick one moment from today. Write down what happened, then mark how you felt. One line is enough.</p>
+              <p>For example, “I closed my laptop after work and checked my email twice during dinner.” Feeling: anxious.</p>
+              <p>When you look back over the week, find another evening when you felt anxious. What was similar? What was different?</p>
+            </> : <>
+              <p>Вспомните один момент за день. Запишите, что произошло, и отметьте, что вы чувствовали. Для первой записи хватит одной строки.</p>
+              <p>Например, «После работы закрыла ноутбук, а за ужином ещё дважды проверила почту». Отметка настроения — «тревожно».</p>
+              <p>Когда будете смотреть обзор недели, найдите другой вечер с такой же отметкой. Что было похожего? А что в тот вечер было иначе?</p>
+            </>}
+          </details>
         </section>
         <footer>
           <a className="chapter-cta" onClick={() => trackSurvey({event: "web_landing_start", placement: "footer"}, locale)} href={`/?start=1&lang=${locale}`}>

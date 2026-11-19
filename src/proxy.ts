@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { requestsBrowserJournal } from "@/lib/landing";
 
 /** Marks the journal tab that MAX itself opened, so the page can stay in Russian. */
 export function proxy(request: NextRequest) {
   const response = NextResponse.next();
+  if (request.nextUrl.pathname === "/") {
+    if (requestsBrowserJournal(request.nextUrl.search)) {
+      response.headers.set("X-Robots-Tag", "noindex, follow");
+    }
+    return response;
+  }
   const requested = request.headers.get("x-requested-with") ?? "";
   const referer = request.headers.get("referer") ?? "";
   let fromMax = /oneme/i.test(requested);
@@ -26,5 +33,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: "/journal",
+  matcher: ["/", "/journal"],
 };
