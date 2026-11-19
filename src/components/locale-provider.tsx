@@ -29,6 +29,7 @@ import type { CheckinSlot, Feeling } from "@/lib/types";
 const STORAGE_KEY = "between:locale";
 
 type I18nValue = {
+  publicLanguages: boolean;
   locale: LocaleId;
   greetingLocale: LocaleId;
   setLocale: (locale: LocaleId) => void;
@@ -50,11 +51,15 @@ export function LocaleProvider({
   telegramLanguage,
   initData = "",
   lockLocale = null,
+  publicLanguages = false,
+  landing = false,
   children,
 }: {
   telegramLanguage?: string | null;
   initData?: string;
   lockLocale?: LocaleId | null;
+  publicLanguages?: boolean;
+  landing?: boolean;
   children: ReactNode;
 }) {
   const [locale, setLocaleState] = useState<LocaleId>("ru");
@@ -63,6 +68,7 @@ export function LocaleProvider({
   const [deviceLocale, setDeviceLocale] = useState<LocaleId>("ru");
 
   useLayoutEffect(() => {
+    if (landing && document.documentElement.dataset.between === "app") return;
     if (lockLocale) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- the locked language is applied before paint
       setLocaleState(lockLocale);
@@ -71,16 +77,20 @@ export function LocaleProvider({
       applyDocument(lockLocale);
       return;
     }
-    const device = localeFromTelegram(telegramLanguage) ?? deviceLocaleFromNavigator();
+    const preferred = navigator.languages?.length ? navigator.languages : [navigator.language];
+    const browserLanguage = preferred.map(localeFromTelegram).find(id => id === "en" || id === "ru") ?? "en";
+    const device = publicLanguages ? browserLanguage : localeFromTelegram(telegramLanguage) ?? deviceLocaleFromNavigator();
     let stored: string | null = null;
     let explicit: LocaleId | null = null;
-    let next: LocaleId = "ru";
+    const linkLanguage = publicLanguages && !landing ? new URLSearchParams(location.search).get("lang") : null;
+    const initial = linkLanguage === "ru" || linkLanguage === "en" ? linkLanguage : device;
+    let next: LocaleId = initial;
     try {
       stored = localStorage.getItem(storageKey);
-      if (isLocale(stored)) explicit = stored;
-      next = explicit ?? device;
+      if (isLocale(stored) && (!publicLanguages || stored === "ru" || stored === "en")) explicit = stored;
+      next = explicit ?? initial;
     } catch {
-      next = device;
+      next = initial;
     }
     // Stored choice and the device language are known only on the client.
     setLocaleState(next);
@@ -91,7 +101,7 @@ export function LocaleProvider({
       device,
       ...(isLocale(stored) ? { locale: stored } : {}),
     });
-  }, [telegramLanguage, initData, lockLocale, storageKey]);
+  }, [telegramLanguage, initData, lockLocale, storageKey, publicLanguages, landing]);
 
   const setLocale = useCallback((next: LocaleId) => {
     if (lockLocale) return;
@@ -114,6 +124,7 @@ export function LocaleProvider({
     } as const;
     const active = lockLocale ?? locale;
     return {
+      publicLanguages,
       locale: active,
       greetingLocale: lockLocale ?? resolveAppGreetingLocale(chosen, deviceLocale),
       setLocale,
@@ -122,7 +133,7 @@ export function LocaleProvider({
       feeling: (feeling) => feelingLabel(active, feeling),
       slot: (slot) => translate(active, slotKey[slot]),
     };
-  }, [locale, lockLocale, chosen, deviceLocale, setLocale]);
+  }, [locale, lockLocale, chosen, deviceLocale, setLocale, publicLanguages]);
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }

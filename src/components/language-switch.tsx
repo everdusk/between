@@ -7,7 +7,7 @@ import { LOCALES, type LocaleId } from "@/lib/i18n";
 import { telegramSelection } from "@/lib/telegram";
 
 export function LanguageSwitch({ inline = false }: { inline?: boolean }) {
-  const { t, locale, setLocale } = useI18n();
+  const { t, locale, setLocale, publicLanguages } = useI18n();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
@@ -71,7 +71,7 @@ export function LanguageSwitch({ inline = false }: { inline?: boolean }) {
               : "glass-strong absolute end-0 top-full z-20 mt-1.5 max-h-[min(18rem,calc(var(--vv-height,100dvh)-7.5rem))] w-max min-w-full overflow-y-auto overscroll-contain rounded-2xl p-1"
           }
         >
-          {LOCALES.map((item) => {
+          {LOCALES.filter(item => !publicLanguages || item.id === "ru" || item.id === "en").map((item) => {
             const selected = item.id === locale;
             return (
               <li key={item.id}>
