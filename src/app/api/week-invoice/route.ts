@@ -9,23 +9,10 @@ import {
   type PremiumPlan,
 } from "@/lib/week-access";
 
-const INVOICE: Record<PremiumPlan, { title: string; description: string; label: string }> = {
-  month: {
-    title: "Between · Неделя",
-    description: "Спектр недели и бриф к сеансу. Подписка на 30 дней, продлевается сама.",
-    label: "30 дней",
-  },
-  quarter: {
-    title: "Between · 3 месяца",
-    description: "Спектр недели и бриф к сеансу на 90 дней. Скидка 20%.",
-    label: "3 месяца",
-  },
-  year: {
-    title: "Between · Год",
-    description: "Спектр недели и бриф к сеансу на 365 дней. Скидка 50%.",
-    label: "Год",
-  },
-};
+import { resolveJournalId } from "@/lib/web-account-store";
+import { loadUserLocale } from "@/lib/redis";
+import { resolveBotLocale } from "@/lib/i18n";
+import { translate } from "@/lib/messages";
 
 function readPlan(raw: unknown): PremiumPlan {
   if (raw === "quarter" || raw === "year" || raw === "month") return raw;
@@ -56,14 +43,16 @@ export async function POST(req: Request) {
 
   const monthly = starPriceFromEnv(process.env.WEEK_STAR_PRICE);
   const amount = planPrice(monthly, plan);
-  const copy = INVOICE[plan];
+  const owner = await resolveJournalId(validated.user.id);
+  const locale = resolveBotLocale(await loadUserLocale(owner), null, validated.user.language_code);
+  const label = translate(locale, plan === "month" ? "payStars" : plan === "quarter" ? "payQuarter" : "payYear", { price: amount });
   const created = await telegramCall<string>("createInvoiceLink", {
-    title: copy.title,
-    description: copy.description,
+    title: "Between",
+    description: label + ". " + translate(locale, plan === "month" ? "starsRenewal" : "starsOnce"),
     payload: WEEK_PLAN_PAYLOAD[plan],
     provider_token: "",
     currency: "XTR",
-    prices: [{ label: copy.label, amount }],
+    prices: [{ label, amount }],
     ...(plan === "month" ? { subscription_period: SUBSCRIPTION_PERIOD_SEC } : {}),
   });
 

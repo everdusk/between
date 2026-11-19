@@ -41,6 +41,9 @@ export function erasurePlan(input: {
       `between:user:${id}:device-locale`,
       `between:user:${id}:bot-intro`,
       `between:user:${id}:source`,
+      `between:user:${id}:name`,
+      `between:user:${id}:cache-id`,
+      `between:onboard:${id}`,
     );
     patterns.push(
       `between:user:${id}:brief:*`,
@@ -72,12 +75,11 @@ export function erasurePlan(input: {
 
 async function deletePattern(redis: EraseRedis, pattern: string): Promise<void> {
   let cursor: string | number = 0;
-  for (let step = 0; step < 40; step += 1) {
+  do {
     const [next, found] = await redis.scan(cursor, { match: pattern, count: 200 });
     cursor = next;
     if (found.length) await redis.del(...found);
-    if (String(cursor) === "0") return;
-  }
+  } while (String(cursor) !== "0");
 }
 
 function asAccountView(account: AccountRecord, resetTokenHash: string | null): ErasureAccount {
@@ -122,8 +124,10 @@ export async function eraseActorData(actor: Actor, redis: EraseRedis | null = ge
     storageIds: [...storageIds],
     account: account ? asAccountView(account, resetTokenHash) : null,
   });
-  if (plan.keys.length) await redis.del(...plan.keys);
   for (const pattern of plan.patterns) await deletePattern(redis, pattern);
-  if (storageIds.size) await redis.srem(USERS_KEY, ...storageIds);
+  for (const set of [USERS_KEY, "between:bots:blocked", "between:stats:quiet"]) {
+    if (storageIds.size) await redis.srem(set, ...storageIds);
+  }
+  if (plan.keys.length) await redis.del(...plan.keys);
   return true;
 }

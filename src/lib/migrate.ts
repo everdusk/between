@@ -72,6 +72,10 @@ function normalizeEntry(raw: unknown): JournalEntry | null {
     source,
   };
   if (slot) next.slot = slot;
+  const reflection = asRecord(entry.reflection);
+  if (reflection && (isFeeling(reflection.feeling) || reflection.feeling === "unsure") && typeof reflection.answer === "string" && typeof reflection.insight === "string") {
+    next.reflection = { feeling: reflection.feeling, answer: reflection.answer, insight: reflection.insight };
+  }
   const autoThemes = tagList(entry.autoThemes);
   const userTags = tagList(entry.userTags);
   const themeHidden = tagList(entry.themeHidden);
@@ -328,9 +332,12 @@ function normalizeTheme(raw: unknown): SessionTheme | null {
         ? theme.summary.replace(/\s+/g, " ").trim().slice(0, 120)
         : theme.title.replace(/\s+/g, " ").trim().slice(0, 80),
     quotes,
+    outcome: typeof theme.outcome === "string" ? theme.outcome : undefined,
     updatedAt: typeof theme.updatedAt === "string" ? theme.updatedAt : new Date(0).toISOString(),
   };
   if (peakFeeling) next.peakFeeling = peakFeeling;
+  if (theme.list === "personal" || theme.list === "therapy") next.list = theme.list;
+  if (theme.observation === "familiar" || theme.observation === "hidden") next.observation = theme.observation;
   if (theme.manual === true) next.manual = true;
   if (typeof theme.discussedAt === "string" && Number.isFinite(Date.parse(theme.discussedAt))) {
     next.discussedAt = theme.discussedAt;
@@ -360,7 +367,10 @@ export function normalizeStore(value: unknown): TherapyStore | null {
     return null;
   }
 
+  const profile = asRecord(store.profile);
   const normalized: TherapyStore = {
+    ...(profile && typeof profile.name === "string" && typeof profile.therapy === "boolean" && typeof profile.updatedAt === "string"
+      ? {profile: { name: profile.name.slice(0, 60), therapy: profile.therapy, updatedAt: profile.updatedAt }} : {}),
     version: 2,
     entries: store.entries
       .map(normalizeEntry)

@@ -1,43 +1,58 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Info, PenLine, Waves } from "lucide-react";
+import { Smile, X } from "lucide-react";
 import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
-import { JournalPanel } from "@/components/journal-panel";
+import { JournalPanel, MoodDialog } from "@/components/journal-panel";
 import { JournalSkeleton } from "@/components/journal-skeleton";
 import { AccountButton, AccountSheet } from "@/components/account-sheet";
 import { LanguageSwitch } from "@/components/language-switch";
 import { LegalLinks } from "@/components/legal-links";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
-import { SchemeSwitch, paintPickedScheme, readScheme, schemeWasPicked } from "@/components/scheme-switch";
+import {
+  SchemeSwitch,
+  paintPickedScheme,
+  readScheme,
+  schemeWasPicked,
+} from "@/components/scheme-switch";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WebAccountGate } from "@/components/web-account-gate";
-import { WebWorkspace } from "@/components/web-workspace";
+import { Connections, ReflectionPanel } from "@/components/journal-explore";
+import {
+  JournalIntro,
+  IntroResult,
+  ProfileEditor,
+  type IntroAnswers,
+} from "./journal-intro";
+import { SessionBacklog } from "./session-backlog";
+import { WebWorkspace, type SectionId } from "@/components/web-workspace";
 import { WeekTab } from "@/components/week-tab";
 import { WeeklyPanel } from "@/components/weekly-panel";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTelegram } from "@/hooks/use-telegram";
 import { useTherapyStore } from "@/hooks/use-therapy-store";
 import { useWebAccount } from "@/hooks/use-web-account";
-import { translate } from "@/lib/messages";
 import { ru } from "@/lib/messages/ru";
 import { markSplashReady, SPLASH_READY_EVENT } from "@/lib/splash";
 import { launchSection, type LaunchSection } from "@/lib/launch-section";
-import { earlyMaxLogin, inMaxClient, readMaxInitData, signalMaxReady, waitForMaxInitData } from "@/lib/max-webapp";
+import {
+  earlyMaxLogin,
+  inMaxClient,
+  readMaxInitData,
+  signalMaxReady,
+  waitForMaxInitData,
+} from "@/lib/max-webapp";
 import { clearStore, WEB_STORAGE_KEY } from "@/lib/storage";
-import { DEV_DISPLAY_NAME, type TelegramSession } from "@/lib/telegram";
+import { type TelegramSession } from "@/lib/telegram";
 import { trackAnalytics } from "@/lib/analytics-client";
-import { fetchWeekAccess } from "@/lib/week-access-client";
 import type { WeekAccessStatus, WeekAccessView } from "@/lib/week-access";
 
 const SECTIONS = ["week", "journal", "sessions"] as const;
 
-type SectionId = (typeof SECTIONS)[number];
-
 function tabOf(value: LaunchSection | null): SectionId | null {
-  if (value === "journal" || value === "week" || value === "sessions") return value;
+  if (value === "journal" || value === "week" || value === "sessions")
+    return value;
   return null;
 }
 
@@ -57,28 +72,26 @@ function subscribeLaunch(onChange: () => void) {
   };
 }
 
-const SECTION_KEY = {
-  journal: "tabJournal",
-  week: "tabWeek",
-  sessions: "tabSessions",
-} as const;
-
-const SECTION_ICON = {
-  journal: PenLine,
-  week: Waves,
-  sessions: CalendarDays,
-} as const;
-
 export function TherapyApp({ webFirst = false }: { webFirst?: boolean }) {
   const telegram = useTelegram();
   const inMax = useInMax();
+  const [erased, setErased] = useState(false);
   return (
     <LocaleProvider
       telegramLanguage={telegram.user?.language_code}
       initData={telegram.inTelegram ? telegram.initData : ""}
       lockLocale={null}
     >
-      <TherapyShell telegram={telegram} inMax={inMax} webFirst={webFirst && !telegram.inTelegram && !inMax} />
+      {erased ? (
+        <ErasedJournal />
+      ) : (
+        <TherapyShell
+          onErased={() => setErased(true)}
+          telegram={telegram}
+          inMax={inMax}
+          webFirst={webFirst && !telegram.inTelegram && !inMax}
+        />
+      )}
     </LocaleProvider>
   );
 }
@@ -95,13 +108,11 @@ function useInMax(): boolean {
   return inside;
 }
 
-function shownName(displayName: string, guest: string): string {
-  return displayName === DEV_DISPLAY_NAME ? guest : displayName;
-}
-
 function localizeStorageError(
   error: string | null,
-  t: (key: "storageCorrupt" | "storageRead" | "storageWrite" | "storageClear") => string,
+  t: (
+    key: "storageCorrupt" | "storageRead" | "storageWrite" | "storageClear",
+  ) => string,
 ): string {
   if (error === ru.storageCorrupt) return t("storageCorrupt");
   if (error === ru.storageRead) return t("storageRead");
@@ -110,10 +121,33 @@ function localizeStorageError(
   return error ?? "";
 }
 
-function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession; inMax: boolean; webFirst: boolean }) {
-  const { t, locale, greetingLocale } = useI18n();
+function ErasedJournal() {
+  const { t } = useI18n();
+  return (
+    <main className="mx-auto max-w-md p-6" role="status">
+      <h1 className="font-display text-2xl">Between</h1>
+      <p className="mt-4">{t("deleteDone")}</p>
+    </main>
+  );
+}
+
+function TherapyShell({
+  telegram,
+  inMax,
+  webFirst,
+  onErased,
+}: {
+  telegram: TelegramSession;
+  inMax: boolean;
+  webFirst: boolean;
+  onErased: () => void;
+}) {
+  const { t, locale } = useI18n();
   const pathname = usePathname();
-  const webEntry = pathname === "/" || pathname === "/journal" || pathname.startsWith("/journal/");
+  const webEntry =
+    pathname === "/" ||
+    pathname === "/journal" ||
+    pathname.startsWith("/journal/");
   const [composeRequest, setComposeRequest] = useState(0);
   const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
   // null while MAX may still hand over the launch string. "" means it never arrived.
@@ -132,7 +166,9 @@ function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession
       if (cancelled) return;
       setMaxLaunch(initData ?? "");
       let account = early
-        ? ((await early.catch(() => null))?.account as Parameters<typeof signIn>[0] | undefined)
+        ? ((await early.catch(() => null))?.account as
+            | Parameters<typeof signIn>[0]
+            | undefined)
         : undefined;
       if (!account && initData && !early) {
         try {
@@ -141,7 +177,9 @@ function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ initData }),
           });
-          const data = (await res.json().catch(() => ({}))) as { account?: Parameters<typeof signIn>[0] };
+          const data = (await res.json().catch(() => ({}))) as {
+            account?: Parameters<typeof signIn>[0];
+          };
           if (res.ok) account = data.account;
         } catch {
           // The launch string still names the journal on the next read.
@@ -160,6 +198,8 @@ function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession
     error,
     syncLabel,
     resetCorrupted,
+    retryCloud,
+    clearCache,
     upsertEntry,
     deleteEntry,
     saveThemes,
@@ -171,6 +211,11 @@ function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession
     dismissSessionTheme,
     addSessionTheme,
     savePattern,
+    saveProfile,
+    saveReflection,
+    restoreTheme,
+    setObservation,
+    keepTopic,
     judgeSkipped,
   } = useTherapyStore({
     initData: telegram.initData,
@@ -181,29 +226,20 @@ function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession
     web: Boolean(web.account) && (!inMax || maxLaunch === ""),
   });
 
-  const requested = useSyncExternalStore(subscribeLaunch, readLaunch, () => null);
+  const requested = useSyncExternalStore(
+    subscribeLaunch,
+    readLaunch,
+    () => null,
+  );
   const fromMax = launchSection({ initData: maxLaunch });
   const [picked, setPicked] = useState<SectionId | null>(null);
-  const section: SectionId = picked ?? tabOf(requested) ?? tabOf(fromMax) ?? SECTIONS[0];
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const scrollTops = useRef<Partial<Record<SectionId, number>>>({});
-
-  function selectSection(next: string) {
-    const id = next as SectionId;
-    if (id === section) return;
-    const el = scrollerRef.current;
-    if (el) scrollTops.current[section] = el.scrollTop;
-    setPicked(id);
-  }
-
-  useLayoutEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.scrollTop = scrollTops.current[section] ?? 0;
-  }, [section]);
-  const [premium, setPremium] = useState(false);
+  const section: SectionId =
+    picked ?? tabOf(requested) ?? tabOf(fromMax) ?? SECTIONS[0];
+  const selectSection = setPicked;
   const [accountOpen, setAccountOpen] = useState(false);
-  const [accessStatus, setAccessStatus] = useState<WeekAccessStatus | null>(null);
+  const [accessStatus, setAccessStatus] = useState<WeekAccessStatus | null>(
+    null,
+  );
   const locked = accessStatus === "locked";
   const wantsSubscribe = requested === "subscribe" || fromMax === "subscribe";
   /* eslint-disable react-hooks/set-state-in-effect -- reconcile an incoming subscription deep link with server access */
@@ -224,7 +260,8 @@ function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession
     () => window.location.hash === "#password",
     () => false,
   );
-  const showAccount = accountOpen || (passwordHash && Boolean(web.account) && !passwordSeen);
+  const showAccount =
+    accountOpen || (passwordHash && Boolean(web.account) && !passwordSeen);
   function closeAccount() {
     setAccountOpen(false);
     setPasswordSeen(true);
@@ -255,32 +292,18 @@ function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession
     if (inMax && maxLaunch === null) return;
     trackAnalytics("visit", "");
   }, [telegram.ready, telegram.inTelegram, webEntry, inMax, maxLaunch]);
-  const tabOwnsAccess = useRef(false);
   const disabled = status !== "ready";
-  useEffect(() => {
-    if (!telegram.ready) return;
-    if (inMax && !maxLaunch) return;
-    if (telegram.inTelegram && !telegram.initData) return;
-    let cancelled = false;
-    void fetchWeekAccess(telegram.initData, inMax ? maxLaunch ?? "" : "").then((view) => {
-      if (cancelled || tabOwnsAccess.current || !view) return;
-      setPremium(view.status === "paid");
-      setAccessStatus(view.status);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [telegram.ready, telegram.inTelegram, telegram.initData, inMax, maxLaunch]);
-
   function onWeekAccess(view: WeekAccessView) {
-    tabOwnsAccess.current = true;
-    setPremium(view.status === "paid");
     setAccessStatus(view.status);
   }
 
-  const maxPending = inMax && webEntry && !telegram.inTelegram && maxLaunch === null;
+  const maxPending =
+    inMax && webEntry && !telegram.inTelegram && maxLaunch === null;
   const authSettled =
-    !webEntry || telegram.inTelegram || web.status === "ready" || web.status === "unavailable";
+    !webEntry ||
+    telegram.inTelegram ||
+    web.status === "ready" ||
+    web.status === "unavailable";
   const showGate =
     webEntry &&
     telegram.ready &&
@@ -290,70 +313,139 @@ function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession
     !maxLaunch &&
     !web.account;
   const accountPending =
-    maxPending || (webEntry && !telegram.inTelegram && !maxLaunch && !authSettled);
+    maxPending ||
+    (webEntry && !telegram.inTelegram && !maxLaunch && !authSettled);
   const shellReady = telegram.ready;
   useEffect(() => {
     if (shellReady) markSplashReady();
   }, [shellReady]);
 
-  const name = shownName(telegram.displayName, translate(greetingLocale, "guest"));
-  const greeting = !telegram.ready
-    ? translate(greetingLocale, "loading")
-    : translate(greetingLocale, telegram.inTelegram ? "hello" : "helloDev", { name });
-
-  const webSurface = webEntry && !telegram.inTelegram;
-  const signedOutWeb = webSurface && !inMax && !web.account && web.status !== "loading" && web.status !== "idle";
-  const corner = signedOutWeb ? (
+  const [entryId, setEntryId] = useState("");
+  const [topic, setTopic] = useState({ id: "", visit: 0 });
+  const [hideBot, setHideBot] = useState(false);
+  const [moodOpen, setMoodOpen] = useState(false);
+  const [moodSaved, setMoodSaved] = useState("");
+  const [intro, setIntro] = useState<IntroAnswers | null>(null);
+  useEffect(() => {
+    if (intro && web.account && status === "ready" && !store.profile) {
+      saveProfile(intro.name, intro.therapy);
+    }
+  }, [intro, web.account, status, store.profile, saveProfile]);
+  const [login, setLogin] = useState(false);
+  const loginRequested = useSyncExternalStore(
+    subscribeLaunch,
+    () => new URLSearchParams(location.search).has("login"),
+    () => false,
+  );
+  const personal = store.profile?.therapy === false;
+  const linked =
+    telegram.inTelegram ||
+    inMax ||
+    Boolean(web.account?.telegramLinked || web.account?.maxLinked);
+  function reflect(id: string) {
+    setEntryId(id);
+    selectSection("reflection");
+  }
+  const signedOutWeb = !inMax && !telegram.inTelegram && !web.account;
+  const accountButton = signedOutWeb ? (
     <>
       <SchemeSwitch />
       <LanguageSwitch />
     </>
-  ) : webSurface && !inMax && !web.account ? null : (
-    <AccountButton solid={webSurface} pressed={showAccount} onClick={() => setAccountOpen(true)} />
+  ) : (
+    <AccountButton
+      solid={!telegram.inTelegram}
+      pressed={showAccount}
+      onClick={() => setAccountOpen(true)}
+    />
   );
-
   const footer = (
-    <footer className="py-8 text-center text-[0.6875rem] leading-relaxed tracking-wide text-muted-foreground/80">
-      Between
-      {syncLabel === "cloud"
-        ? ` · ${t("syncCloud")}`
-        : syncLabel === "offline-cloud"
-          ? ` · ${t("syncOffline")}`
-          : ` · ${t("syncDevice")}`}
-      {!webFirst && !telegram.inTelegram && telegram.ready ? ` · ${t("outsideTelegram")}` : null}
-      {telegram.inTelegram ? null : <LegalLinks className="mt-2" />}
+    <footer className="mt-8 text-center text-xs text-muted-foreground">
+      <p>
+        Between ·{" "}
+        {t(
+          syncLabel === "cloud"
+            ? "syncCloud"
+            : syncLabel === "offline-cloud"
+              ? "syncOffline"
+              : "syncDevice",
+        )}
+      </p>
+      <LegalLinks telegram={telegram.inTelegram} className="mt-2" />
     </footer>
   );
-
-  if (webFirst) {
-    const accountSheet = <AccountSheet open={showAccount} onClose={closeAccount} inTelegram={false} inMax={false}
-      initData="" maxInitData="" notify={store.notify} onSaveNotify={saveNotify} disabled={disabled}
-      account={web.account} onRefreshAccount={() => void web.refresh()}
-      onLogout={() => { clearStore(WEB_STORAGE_KEY); web.setAccount(null); closeAccount(); }}
-      onPremium={() => setAccessNonce(value => value + 1)} />;
-    const access = (children: React.ReactNode) => <WeekTab active ready={telegram.ready} inTelegram={false}
-      initData="" canSubscribe={Boolean(web.account)} reloadToken={accessNonce} onAccess={onWeekAccess}>{children}</WeekTab>;
-    const problem = status === "error" ? <div role="alert"><p>{localizeStorageError(error, t)}</p><Button onClick={resetCorrupted}>{t("startOver")}</Button></div> : null;
-    return <>
-      <WebWorkspace tools={<><a href="/about" aria-label={t("webAbout")} className="inline-flex size-10 shrink-0 items-center justify-center rounded-full text-xs text-muted-foreground hover:text-foreground sm:w-auto sm:px-2"><Info aria-hidden className="size-4 sm:hidden" /><span className="hidden sm:inline">{t("webAbout")}</span></a>{signedOutWeb ? null : corner}</>}
-        gate={showGate ? <><div className="mb-5 flex flex-wrap justify-end gap-2">{corner}</div><WebAccountGate compact onSignedIn={web.setAccount} /></> : undefined}
-        pending={accountPending || status === "loading" ? <JournalSkeleton /> : problem}
-        canCompose={!disabled && !locked} onCompose={() => setComposeRequest(value => value + 1)}
-        initialSessions={section === "sessions"} footer={footer}
-        journal={locked ? null : <JournalPanel entries={store.entries} onSave={upsertEntry} onDelete={deleteEntry}
-          disabled={disabled} webFirst composeRequest={composeRequest} />}
-        week={access(locked ? null : <WeeklyPanel entries={store.entries} sessions={store.sessions} plan={store.sessionPlan}
-          weekPreps={store.weekPreps} themes={store.themes ?? []} themeLinks={store.themeLinks ?? []}
-          judgeSettled={store.judgeSettled ?? []} judgeSkipped={judgeSkipped} onDiscussTheme={setThemeDiscussed}
-          onDismissTheme={dismissSessionTheme} onAddTheme={addSessionTheme} onSavePattern={savePattern}
-          onSaveThemes={saveThemes} initData="" cloud={Boolean(web.account)} disabled={disabled} />)}
-        sessions={locked ? null : <SessionsPanel sessions={store.sessions} plan={store.sessionPlan} notify={store.notify}
-          onSave={upsertSession} onDelete={deleteSession} onSavePlan={saveSessionPlan} onSaveNotify={saveNotify} disabled={disabled} />}
+  const accessProps = {
+    ready: telegram.ready,
+    inTelegram: telegram.inTelegram,
+    inMax,
+    initData: telegram.initData,
+    maxInitData: inMax ? (maxLaunch ?? "") : "",
+    canSubscribe: Boolean(web.account) || inMax,
+    reloadToken: accessNonce,
+    onAccess: onWeekAccess,
+  };
+  const gate =
+    showGate &&
+    (webFirst && !login && !loginRequested && !intro ? (
+      <JournalIntro onFinish={setIntro} onLogin={() => setLogin(true)} />
+    ) : (
+      <WebAccountGate
+        compact
+        initialLogin={login || loginRequested}
+        onSignedIn={web.setAccount}
       />
-      {accountSheet}
-    </>;
+    ));
+  const pending = !telegram.ready || accountPending || status === "loading";
+  const problem = status === "error" && (
+    <div role="alert">
+      {error === "cloud_unavailable"
+        ? t("webServer")
+        : localizeStorageError(error, t)}{" "}
+      <Button
+        onClick={
+          error === "cloud_unavailable"
+            ? () => void retryCloud()
+            : resetCorrupted
+        }
+      >
+        {t(error === "cloud_unavailable" ? "accessRetry" : "startOver")}
+      </Button>
+    </div>
+  );
+  const blocked = pending ? (
+    <JournalSkeleton />
+  ) : (
+    gate ||
+    problem ||
+    (locked || !accessStatus ? (
+      <WeekTab active {...accessProps}>
+        {null}
+      </WeekTab>
+    ) : null)
+  );
+  const hint = !linked && !hideBot && (
+    <aside className="flex items-start gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4">
+      <button
+        type="button"
+        className="flex-1 text-start text-sm font-semibold"
+        onClick={() => setAccountOpen(true)}
+      >
+        {t("webBotOffer")} · Telegram / MAX ↗
+      </button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={t("accountClose")}
+        onClick={() => setHideBot(true)}
+      >
+        <X />
+      </Button>
+    </aside>
+  );
+  function compose() {
+    selectSection("journal");
+    setComposeRequest((n) => n + 1);
   }
-
   return (
     <BotChatPermission
       ready={telegram.ready}
@@ -361,220 +453,157 @@ function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession
       allowsWriteToPm={telegram.allowsWriteToPm}
       initData={telegram.initData}
     >
-    <div
-      className="journal-shell journal-frame fixed inset-x-0 flex flex-col overflow-hidden"
-      style={{
-        top: "var(--vv-top, 0px)",
-        height: "var(--vv-height, var(--tg-viewport-height, 100dvh))",
-      }}
-    >
-      <div
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-        aria-hidden
-      >
-        <div className="atmosphere-blob atmosphere-blob-a" />
-        <div className="atmosphere-blob atmosphere-blob-b" />
-        <div className="atmosphere-grain" />
-      </div>
-
-      {webSurface ? (
-        <aside className="journal-side relative z-30">
-          <div className="journal-side-top relative z-20 grid gap-4">
-            <div>
-              <p className="font-display text-[1.65rem] leading-none text-foreground">Between</p>
-              {webSurface ? null : <p className="mt-2 truncate text-xs text-subtitle">{greeting}</p>}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">{corner}</div>
-          </div>
-          <div className="journal-side-scroll">
-            {!showGate && status === "ready" && !locked ? (
-              <nav className="grid gap-1" aria-label={t("sections")}>
-                {SECTIONS.map((id) => {
-                  const Icon = SECTION_ICON[id];
-                  const on = section === id;
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      aria-current={on ? "page" : undefined}
-                      className={`flex items-center gap-2 rounded-full px-3 py-2.5 text-start text-sm font-extrabold ${on ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-foreground/[0.06]"}`}
-                      onClick={() => selectSection(id)}
-                    >
-                      <Icon aria-hidden className="size-4" />
-                      <span>{t(SECTION_KEY[id])}</span>
-                    </button>
-                  );
-                })}
-              </nav>
-            ) : null}
-          </div>
-        </aside>
-      ) : null}
-
-      <div className="journal-stage relative z-10 flex min-h-0 min-w-0 flex-1 flex-col">
-      <header className="relative z-30">
-        <div className="journal-column mx-auto flex w-full max-w-lg items-center justify-between gap-3 pt-[max(1.25rem,var(--safe-top))] pr-[max(1.25rem,var(--safe-right))] pb-2 pl-[max(1.25rem,var(--safe-left))] sm:pr-[max(1.5rem,var(--safe-right))] sm:pl-[max(1.5rem,var(--safe-left))]">
-          <div className="journal-phone-brand min-w-0">
-            <p className="font-display text-[1.375rem] leading-none tracking-tight text-foreground">
-              Between
-              {premium ? (
-                <span
-                  className="relative -top-[3px] ms-1.5 inline-block text-[0.82em] leading-none"
-                  role="img"
-                  aria-label={t("premiumMark")}
-                >
-                  ⭐
-                </span>
-              ) : null}
-            </p>
-            {webSurface ? null : <p className="mt-1.5 truncate text-xs text-subtitle">{greeting}</p>}
-          </div>
-          <div className={`flex shrink-0 items-center gap-2 ${webSurface ? "journal-mobile-tools" : ""}`}>
-            {!telegram.inTelegram && telegram.ready && !webEntry && (
-              <span className="eyebrow hidden rounded-full border border-[color:var(--glass-border)] bg-background/50 px-2.5 py-2 text-muted-foreground sm:inline-flex">
-                localhost
-              </span>
+      <WebWorkspace
+        section={personal && section === "sessions" ? "topics" : section}
+        onSection={selectSection}
+        tools={
+          <>
+            {!blocked && (
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label={t("howFeel")}
+                onClick={() => {
+                  setMoodSaved("");
+                  setMoodOpen(true);
+                }}
+              >
+                <Smile />
+              </Button>
             )}
-            {corner}
-          </div>
-        </div>
-      </header>
-
-      <div className="journal-column relative z-10 mx-auto flex min-h-0 w-full max-w-lg flex-1 flex-col">
-        {showGate ? (
-          <WebAccountGate onSignedIn={web.setAccount} />
-        ) : locked ? (
-          <div className="journal-scroll pt-3 pr-[max(1rem,var(--safe-right))] pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]">
-            <div className="journal-scroll-inner">
-              {accountPending || status === "loading" ? (
-                <JournalSkeleton />
-              ) : (
-                <WeekTab
-                  active
-                  ready={telegram.ready}
-                  inTelegram={telegram.inTelegram}
-                  inMax={inMax}
-                  initData={telegram.initData}
-                  maxInitData={inMax ? maxLaunch ?? "" : ""}
-                  canSubscribe={Boolean(web.account) || inMax}
-                  reloadToken={accessNonce}
-                  onAccess={onWeekAccess}
-                >
-                  {null}
-                </WeekTab>
+            {accountButton}
+          </>
+        }
+        footer={footer}
+        blocked={blocked}
+        onCompose={compose}
+        personal={personal}
+        name={store.profile?.name ?? ""}
+        pages={{
+          week: (
+            <>
+              {intro && (
+                <IntroResult
+                  answers={intro}
+                  onDone={() => {
+                    if (store.profile || saveProfile(intro.name, intro.therapy))
+                      setIntro(null);
+                  }}
+                />
               )}
-              {status === "ready" && !accountPending ? footer : null}
-            </div>
-          </div>
-        ) : (
-          <Tabs
-            value={section}
-            onValueChange={selectSection}
-            className="flex min-h-0 w-full flex-1 flex-col gap-0 overflow-hidden"
-          >
-            <div
-              ref={scrollerRef}
-              className="journal-scroll pt-3 pr-[max(1rem,var(--safe-right))] pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]"
-            >
-            <div className="journal-scroll-inner">
-            {accountPending || status === "loading" ? (
-              <JournalSkeleton />
-            ) : status === "error" ? (
-              <div
-                className="glass rounded-3xl border-destructive/20 px-6 py-7"
-                role="alert"
-              >
-                <p className="font-display text-xl text-foreground">{t("dataError")}</p>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {localizeStorageError(error, t)}
-                </p>
-                <Button className="mt-5" variant="secondary" onClick={resetCorrupted}>
-                  {t("startOver")}
-                </Button>
-              </div>
-            ) : (
-            <div>
-              <TabsContent keepMounted value="journal" className="mt-0 outline-none">
-                <JournalPanel
+              <WeekTab active={section === "week"} {...accessProps}>
+                <WeeklyPanel
                   entries={store.entries}
-                  onSave={upsertEntry}
-                  onDelete={deleteEntry}
-                  disabled={disabled}
-                  initData={telegram.inTelegram ? telegram.initData : ""}
-                />
-              </TabsContent>
-              <TabsContent keepMounted value="week" className="mt-0 outline-none">
-                <WeekTab
-                  active={section === "week"}
-                  ready={telegram.ready}
-                  inTelegram={telegram.inTelegram}
-                  inMax={inMax}
+                  sessions={
+                    store.sessionPlan && !personal ? store.sessions : []
+                  }
+                  plan={personal ? null : store.sessionPlan}
+                  weekPreps={store.weekPreps}
+                  themes={store.themes}
+                  themeLinks={store.themeLinks}
+                  judgeSettled={store.judgeSettled}
+                  judgeSkipped={judgeSkipped}
+                  onSavePattern={savePattern}
+                  onSaveThemes={saveThemes}
+                  maxInitData={inMax ? (maxLaunch ?? "") : ""}
                   initData={telegram.initData}
-                  maxInitData={inMax ? maxLaunch ?? "" : ""}
-                  canSubscribe={Boolean(web.account) || inMax}
-                  reloadToken={accessNonce}
-                  onAccess={onWeekAccess}
-                >
-                  <WeeklyPanel
-                    entries={store.entries}
-                    sessions={store.sessions}
-                    plan={store.sessionPlan}
-                    weekPreps={store.weekPreps}
-                    themes={store.themes ?? []}
-                    themeLinks={store.themeLinks ?? []}
-                    judgeSettled={store.judgeSettled ?? []}
-                    judgeSkipped={judgeSkipped}
-                    onDiscussTheme={setThemeDiscussed}
-                    onDismissTheme={dismissSessionTheme}
-                    onAddTheme={addSessionTheme}
-                    onSavePattern={savePattern}
-                    onSaveThemes={saveThemes}
-                    initData={telegram.inTelegram ? telegram.initData : ""}
-                    cloud={Boolean(web.account)}
-                    disabled={disabled}
-                  />
-                </WeekTab>
-              </TabsContent>
-              <TabsContent keepMounted value="sessions" className="mt-0 outline-none">
-                <SessionsPanel
-                  sessions={store.sessions}
-                  plan={store.sessionPlan}
-                  notify={store.notify}
-                  onSave={upsertSession}
-                  onDelete={deleteSession}
-                  onSavePlan={saveSessionPlan}
-                  onSaveNotify={saveNotify}
+                  cloud={Boolean(web.account)}
                   disabled={disabled}
                 />
-              </TabsContent>
-            </div>
-            )}
-            {status === "ready" && !accountPending ? footer : null}
-            </div>
-            </div>
-
-            <div className="journal-dock z-30 flex shrink-0 justify-center pt-2 pr-[max(1rem,var(--safe-right))] pb-[max(1.25rem,var(--safe-bottom))] pl-[max(1rem,var(--safe-left))]">
-              <TabsList
-                variant="dock"
-                aria-label={t("sections")}
-                className="w-full max-w-sm justify-stretch"
-              >
-                {SECTIONS.map((id) => {
-                  const Icon = SECTION_ICON[id];
-                  return (
-                    <TabsTrigger key={id} value={id} className="flex-1 px-3">
-                      <Icon aria-hidden />
-                      <span>{t(SECTION_KEY[id])}</span>
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
-            </div>
-          </Tabs>
-        )}
-      </div>
-      </div>
+              </WeekTab>
+            </>
+          ),
+          journal: (
+            <JournalPanel
+              entries={store.entries}
+              onSave={upsertEntry}
+              onDelete={deleteEntry}
+              initData={telegram.initData}
+              disabled={disabled}
+              composeRequest={composeRequest}
+              hint={hint}
+              onReflect={reflect}
+            />
+          ),
+          reflection: (
+            <ReflectionPanel
+              selected={entryId}
+              store={store}
+              onSelect={setEntryId}
+              onSave={saveReflection}
+            />
+          ),
+          connections: (
+            <Connections
+              store={store}
+              onReflect={reflect}
+              onFeedback={setObservation}
+              onTopic={(source) => {
+                const id = keepTopic(source);
+                if (!id) return;
+                setTopic((prev) => ({ id, visit: prev.visit + 1 }));
+                selectSection("topics");
+              }}
+            />
+          ),
+          topics: (
+            <SessionBacklog
+              key={topic.visit}
+              initialTheme={topic.id}
+              themes={store.themes.filter(
+                (theme) =>
+                  (theme.list ?? "therapy") ===
+                  (personal ? "personal" : "therapy"),
+              )}
+              entries={store.entries}
+              links={store.themeLinks}
+              disabled={disabled}
+              personal={personal}
+              onRestore={restoreTheme}
+              onDiscuss={setThemeDiscussed}
+              onDismiss={dismissSessionTheme}
+              onAdd={addSessionTheme}
+            />
+          ),
+          sessions: (
+            <SessionsPanel
+              sessions={store.sessions}
+              plan={store.sessionPlan}
+              notify={store.notify}
+              onSave={upsertSession}
+              onDelete={deleteSession}
+              onSavePlan={saveSessionPlan}
+              onSaveNotify={saveNotify}
+              disabled={disabled}
+              notificationsDisabled={!linked}
+            />
+          ),
+        }}
+      />
+      {!blocked && moodOpen && (
+        <MoodDialog
+          onClose={() => setMoodOpen(false)}
+          onSave={(input) => {
+            const ok = upsertEntry(input);
+            if (ok) {
+              trackAnalytics("note", telegram.initData);
+              setMoodSaved(t("saved"));
+              window.setTimeout(() => setMoodSaved(""), 1800);
+            }
+            return ok;
+          }}
+        />
+      )}
+      {moodSaved && (
+        <div
+          role="status"
+          className="fixed bottom-8 inset-x-0 z-30 mx-auto w-fit rounded-full bg-primary px-4 py-2 text-primary-foreground"
+        >
+          {moodSaved}
+        </div>
+      )}
       <AccountSheet
+        onErased={onErased}
         open={showAccount}
         onClose={closeAccount}
         inTelegram={telegram.inTelegram}
@@ -586,15 +615,26 @@ function TherapyShell({ telegram, inMax, webFirst }: { telegram: TelegramSession
         disabled={disabled}
         account={web.account}
         onRefreshAccount={() => void web.refresh()}
+        onPremium={() => setAccessNonce((n) => n + 1)}
+        profileEditor={
+          !blocked && (
+            <ProfileEditor
+              key={store.profile?.updatedAt}
+              profile={store.profile}
+              onSave={saveProfile}
+            />
+          )
+        }
         onLogout={() => {
+          clearCache();
           clearStore(WEB_STORAGE_KEY);
           web.setAccount(null);
+          setIntro(null);
           closeAccount();
+          window.location.reload();
         }}
-        onPremium={() => setAccessNonce((value) => value + 1)}
       />
       <BotChatSheet />
-    </div>
     </BotChatPermission>
   );
 }

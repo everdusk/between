@@ -1,47 +1,113 @@
 "use client";
 
-/* Re-enter the root document so its surface boot script also runs. */
-/* eslint-disable @next/next/no-html-link-for-pages */
+import { useRef, type ReactNode } from "react";
+import {
+  CalendarDays,
+  Network,
+  NotebookPen,
+  PenLine,
+  Plus,
+  Waves,
+  Bookmark,
+} from "lucide-react";
+import { Button } from "./ui/button";
+import { useI18n } from "./locale-provider";
+import "./web-workspace.css";
 
-import { useState, type ReactNode } from "react";
-import { CalendarDays, ArrowLeft, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useI18n } from "@/components/locale-provider";
+export const sections = {
+  week: [Waves, "deskOverview"],
+  journal: [PenLine, "deskEntries"],
+  reflection: [NotebookPen, "deskReflection"],
+  connections: [Network, "deskConnections"],
+  topics: [Bookmark, "deskTherapy"],
+  sessions: [CalendarDays, "tabSessions"],
+} as const;
+export type SectionId = keyof typeof sections;
 
-export function WebWorkspace({ tools, gate, pending, journal, week, sessions, footer, onCompose, initialSessions = false, canCompose }: {
-  tools: ReactNode; gate?: ReactNode; pending?: ReactNode; journal: ReactNode; week: ReactNode;
-  sessions: ReactNode; footer: ReactNode; onCompose: () => void; initialSessions?: boolean; canCompose: boolean;
+export function WebWorkspace({
+  section,
+  onSection,
+  pages,
+  tools,
+  blocked,
+  footer,
+  onCompose,
+  personal,
+  name,
+}: {
+  section: SectionId;
+  onSection: (id: SectionId) => void;
+  pages: Record<SectionId, ReactNode>;
+  tools: ReactNode;
+  blocked: ReactNode;
+  footer: ReactNode;
+  onCompose: () => void;
+  personal: boolean;
+  name: string;
 }) {
   const { t } = useI18n();
-  const [pickedSettings, setSettings] = useState<boolean | null>(null);
-  const settings = pickedSettings ?? initialSessions;
-  function compose() { setSettings(false); onCompose(); }
+  const main = useRef<HTMLElement>(null);
+  const label = (id: SectionId) =>
+    t(id === "topics" && personal ? "deskPersonal" : sections[id][1]);
+  const ids = (Object.keys(sections) as SectionId[]).filter(
+    (id) => id !== "sessions" || !personal,
+  );
+  function navigate(id: SectionId) {
+    onSection(id);
+    main.current?.scrollTo({ top: 0 });
+  }
   return (
-    <div className="web-workspace fixed inset-x-0 flex flex-col bg-background text-foreground" style={{ top: "var(--vv-top, 0px)", height: "var(--vv-height, 100dvh)" }}>
-      <header className="web-header shrink-0 border-b border-border">
-        <div className="web-header-inner mx-auto flex items-center justify-between gap-3">
-          <a href="/" className="font-display text-xl font-semibold tracking-tight">Between</a>
-          <div className="flex items-center gap-1 sm:gap-2">
-            {!gate && !pending && <Button type="button" disabled={!canCompose} aria-label={t("newEntry")} className="size-10 shrink-0 p-0 sm:w-auto sm:px-4" onClick={compose}><Plus aria-hidden /><span className="hidden sm:inline">{t("newEntry")}</span></Button>}
-            {!gate && !pending && <Button type="button" variant="ghost" size="icon" aria-label={settings ? t("tabJournal") : t("tabSessions")} aria-pressed={settings} onClick={() => setSettings(!settings)}>{settings ? <ArrowLeft /> : <CalendarDays />}</Button>}
-            {tools}
-          </div>
+    <div className="desk-frame">
+      <header className="desk-header">
+        <span className="font-display text-xl font-semibold">Between</span>
+        <div className="flex items-center gap-2">
+          {!blocked && (
+            <Button onClick={onCompose} aria-label={t("newEntry")}>
+              <Plus />
+              <span className="hidden sm:inline">{t("newEntry")}</span>
+            </Button>
+          )}
+          {tools}
         </div>
       </header>
-      <main className="web-main min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        {gate ? <div className="web-auth mx-auto">{gate}</div> : pending ? <div className="mx-auto max-w-2xl px-4 py-8">{pending}</div> : <>
-          <div className="web-content mx-auto px-4 py-6 sm:px-8 sm:py-10">
-            <div className="mb-6 flex items-center justify-between gap-3">
-              <h1 className="font-display text-2xl font-semibold tracking-tight sm:text-3xl">{settings ? t("tabSessions") : t("webWorkspaceTitle")}</h1>
-            </div>
-            <div hidden={settings} className="web-dashboard">
-              <section className="min-w-0" aria-label={t("tabJournal")}>{journal}</section>
-              <section className="web-review min-w-0" aria-label={t("tabWeek")}>{week}</section>
-            </div>
-            <div hidden={!settings} className="mx-auto max-w-2xl">{sessions}</div>
-            {footer}
-          </div>
-        </>}
+      {!blocked && (
+        <nav className="desk-nav" aria-label={t("sections")}>
+          {ids.map((id) => {
+            const Icon = sections[id][0];
+            return (
+              <button
+                key={id}
+                aria-current={section === id ? "page" : undefined}
+                onClick={() => navigate(id)}
+              >
+                <Icon aria-hidden />
+                {label(id)}
+              </button>
+            );
+          })}
+          {name && <span className="desk-name">{name}</span>}
+        </nav>
+      )}
+      <main ref={main} className="desk-main" key={blocked ? "gate" : "diary"}>
+        <div className="desk-page">
+          {blocked || (
+            <>
+              <h1 className="mb-5 font-display text-2xl sm:text-3xl">
+                {label(section)}
+              </h1>
+              {ids.map((id) => (
+                <div key={id} hidden={id !== section}>
+                  {(section === id ||
+                    id === "journal" ||
+                    id === "reflection" ||
+                    id === "topics") &&
+                    pages[id]}
+                </div>
+              ))}
+            </>
+          )}
+          {footer}
+        </div>
       </main>
     </div>
   );

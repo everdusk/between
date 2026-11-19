@@ -145,7 +145,7 @@ async function digestUser(
         record: access.record,
         status: access.view.status,
         store,
-        plan: store.sessionPlan,
+        plan: store.profile?.therapy === false ? null : store.sessionPlan,
         dateKey: clock.dateKey,
         hour: clock.hour,
         now,

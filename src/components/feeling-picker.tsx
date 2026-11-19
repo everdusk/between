@@ -4,21 +4,32 @@ import { useI18n } from "@/components/locale-provider";
 import { feelingFill } from "@/lib/spectrum";
 import { PICKER_FEELINGS, type Feeling } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FeelingPickerProps {
+  immediate?: boolean;
+  initiallyOpen?: boolean;
   value: Feeling[];
   onChange: (value: Feeling[]) => void;
   disabled?: boolean;
 }
 
-export function FeelingPicker({ value, onChange, disabled }: FeelingPickerProps) {
+export function FeelingPicker({ value, onChange, disabled, immediate, initiallyOpen=false }: FeelingPickerProps) {
   const { t, feeling: feelingLabel } = useI18n();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(initiallyOpen);
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const dismiss = (event: PointerEvent) => {
+      const button = event.target instanceof Element && event.target.closest("button");
+      if (!button || (button !== triggerRef.current && !document.getElementById(panelId)?.contains(button))) setOpen(false);
+    };
+    document.addEventListener("pointerdown", dismiss);
+    return () => document.removeEventListener("pointerdown", dismiss);
+  }, [open, panelId]);
 
   function closePicker() {
     setOpen(false);
@@ -30,6 +41,7 @@ export function FeelingPicker({ value, onChange, disabled }: FeelingPickerProps)
   const options: Feeling[] = [...PICKER_FEELINGS, ...extras];
 
   function toggle(feeling: Feeling) {
+    if (immediate) { onChange([feeling]); closePicker(); return; }
     if (value.includes(feeling)) {
       onChange(value.filter((item) => item !== feeling));
       return;
@@ -62,7 +74,7 @@ export function FeelingPicker({ value, onChange, disabled }: FeelingPickerProps)
               "disabled:opacity-50",
               active
                 ? "border-transparent bg-foreground text-background shadow-[0_10px_24px_-14px_var(--foreground)]"
-                : "border-[color:var(--glass-border)] bg-background/55 text-foreground hover:bg-background/85",
+                : "border-[color:var(--glass-border)] bg-background/55 text-foreground hover:border-primary hover:bg-primary/15",
             )}
           >
             <span
@@ -78,9 +90,9 @@ export function FeelingPicker({ value, onChange, disabled }: FeelingPickerProps)
         );
       })}
       </div>
-      <div className="mt-2 flex justify-end">
+      {!immediate && <div className="mt-2 flex justify-end">
         <Button type="button" variant="ghost" size="sm" onClick={closePicker}><Check aria-hidden />{t("feelingDone")}</Button>
-      </div>
+      </div>}
       </div>}
     </div>
   );

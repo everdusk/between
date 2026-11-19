@@ -13,10 +13,12 @@ import { trackAnalytics } from "@/lib/analytics-client";
 import { addDays, formatTime, toDateKey } from "@/lib/dates";
 import { feelingFill } from "@/lib/spectrum";
 import { shownEntryTags, splitTags } from "@/lib/tags";
-import type { Feeling, JournalEntry } from "@/lib/types";
+import { PICKER_FEELINGS, type Feeling, type JournalEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface JournalPanelProps {
+  hint?: React.ReactNode;
+  onReflect?: (id: string) => void;
   entries: JournalEntry[];
   onSave: (input: {
     id?: string;
@@ -31,6 +33,19 @@ interface JournalPanelProps {
   initData?: string;
   webFirst?: boolean;
   composeRequest?: number;
+}
+
+export function MoodDialog({onSave,onClose}:{onSave:JournalPanelProps["onSave"];onClose:()=>void}) {
+  const {t}=useI18n();
+  const [selected,setSelected]=useState<Feeling[]>([]);
+  const [body,setBody]=useState("");
+  return <dialog ref={el=>{if(el&&!el.open)el.showModal()}} aria-label={t("howFeel")} onCancel={onClose} className="m-auto w-[min(92vw,30rem)] max-h-[85dvh] rounded-3xl border border-border bg-popover p-5 text-foreground backdrop:bg-black/50">
+    <form className="space-y-4" onSubmit={e=>{e.preventDefault();if(selected.length && onSave({date:toDateKey(),feelings:selected,body:body.trim(),tags:[]}))onClose()}}>
+      <div className="flex items-center justify-between"><h2 className="font-display text-xl">{t("howFeel")}</h2><Button type="button" variant="ghost" size="icon" aria-label={t("cancel")} onClick={onClose}><X/></Button></div>
+      <FeelingPicker initiallyOpen value={selected} onChange={setSelected}/>
+      <label className="block">{t("note")}<Textarea value={body} placeholder={t("notePlaceholder")} onChange={e=>setBody(e.target.value)}/></label>
+      <Button type="submit" disabled={!selected.length}>{t("feelingDone")}</Button>
+    </form></dialog>;
 }
 
 /** The stored day, plus the local day the note was actually written. */
@@ -60,6 +75,7 @@ function dayMarks(entries: JournalEntry[]): Map<string, Feeling | null> {
 }
 
 export function JournalPanel({
+  hint, onReflect,
   entries,
   onSave,
   onDelete,
@@ -72,6 +88,9 @@ export function JournalPanel({
   const today = toDateKey();
   const [date, setDate] = useState(today);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [query,setQuery]=useState("");
+  const [allDates,setAllDates]=useState(false);
+  const [filter,setFilter]=useState("");
   const [feelings, setFeelings] = useState<Feeling[]>([]);
   const [body, setBody] = useState("");
   const [manual, setManual] = useState<string[]>([]);
@@ -93,9 +112,11 @@ export function JournalPanel({
   const dayEntries = useMemo(
     () =>
       entries
-        .filter((entry) => daysOf(entry).includes(date))
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
-    [entries, date],
+        .filter((entry) => (allDates || daysOf(entry).includes(date)) &&
+          (!filter || entry.feelings.some(f=>f===filter)) &&
+          (!query.trim() || [entry.body,...entry.tags,...entry.feelings.map(feelingLabel)].join(" ").toLocaleLowerCase(locale).includes(query.trim().toLocaleLowerCase(locale))))
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    [entries, date, allDates, filter, query, feelingLabel, locale],
   );
   const marks = useMemo(() => dayMarks(entries), [entries]);
 
@@ -140,6 +161,7 @@ export function JournalPanel({
   }
 
   function changeDate(next: string) {
+    setAllDates(false);
     setDate(next);
     setSavedFlash(false);
     resetForm();
@@ -147,6 +169,14 @@ export function JournalPanel({
 
   const canSave = Boolean(body.trim() || feelings.length > 0);
   const isToday = date === today;
+  function quickSave(emotion?: Feeling) {
+    const text = emotion ? "" : body.trim();
+    if ((!emotion && !text) || !onSave({ date, body: text, feelings: emotion ? [emotion] : [], tags: [] })) return;
+    if (!emotion) setBody("");
+    trackAnalytics("note", initData);
+    setSavedFlash(true);
+    window.setTimeout(() => setSavedFlash(false), 1800);
+  }
 
   return (
     <div className="journal-board flex flex-col gap-4">
@@ -172,6 +202,13 @@ export function JournalPanel({
         </div>
       </section>
 
+      {!composerOpen && <section className="glass space-y-3 rounded-3xl p-4">
+        <form className="flex items-center gap-2" onSubmit={e=>{e.preventDefault();quickSave()}}>
+          <input className="min-w-0 flex-1 rounded-xl border border-input bg-background px-3 py-3 text-base" aria-label={t("newEntry")} placeholder={t("notePlaceholder")} value={body} onChange={e=>setBody(e.target.value)} disabled={disabled}/>
+          <Button type="submit" size="icon" aria-label={t("saveEntry")} disabled={disabled || !body.trim()}><Check/></Button>
+        </form>
+        <FeelingPicker value={[]} immediate onChange={v=>quickSave(v[0])} disabled={disabled}/>
+      </section>}
       {composerOpen && <section ref={composerRef} className="glass scroll-mt-4 rounded-3xl p-5 sm:p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center justify-between gap-3">
@@ -207,10 +244,14 @@ export function JournalPanel({
         </form>
       </section>}
 
+      {hint}
       <section className="space-y-3 px-1 pt-2">
         <div className="flex items-baseline justify-between gap-3 px-1">
-          <h3 className="font-display text-xl tracking-tight text-foreground">{t("thisDay")}</h3>
+          <h3 className="font-display text-xl tracking-tight text-foreground">{t(allDates?"allDates":"thisDay")}</h3>
+          <Button variant="outline" size="sm" aria-pressed={allDates} onClick={()=>setAllDates(!allDates)}>{t(allDates?"thisDay":"allDates")}</Button>
         </div>
+        <div className="flex flex-wrap gap-2"><input type="search" aria-label={t("searchEntries")} placeholder={t("searchEntries")} className="min-w-0 flex-1 rounded-xl border border-input bg-background px-3 py-2" value={query} onChange={e=>setQuery(e.target.value)}/>
+          <select aria-label={t("feelingsGroup")} className="max-w-full rounded-xl border border-input bg-background px-2" value={filter} onChange={e=>setFilter(e.target.value)}><option value="">{t("feelingsGroup")}</option>{PICKER_FEELINGS.map(f=><option key={f} value={f}>{feelingLabel(f)}</option>)}</select></div>
         {dayEntries.length === 0 ? (
           <p className="rounded-3xl border border-dashed border-[color:var(--glass-border)] px-5 py-6 text-center text-sm text-muted-foreground">
             {t("dayEmpty")}
@@ -227,6 +268,8 @@ export function JournalPanel({
                   className={cn(
                     "glass relative overflow-hidden rounded-3xl p-5 pl-6 transition-shadow",
                     editingId === entry.id && "ring-2 ring-primary/30",
+                    savedFlash && entry.id === dayEntries[0]?.id && "entry-arrive",
+                    checkin && "border-s-4 !bg-secondary/60 !py-3",
                   )}
                 >
                   {tone && (
@@ -238,6 +281,7 @@ export function JournalPanel({
                   )}
                   <div className="flex items-start justify-between gap-3">
                     <div className="tabular flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                      {allDates && <time dateTime={entry.date}>{entry.date}</time>}
                       <span className="font-medium text-foreground">
                         {formatTime(entry.createdAt, locale)}
                       </span>
@@ -291,7 +335,7 @@ export function JournalPanel({
                       ))}
                     </div>
                   )}
-                  {entry.body.trim() && (
+                  {!checkin && entry.body.trim() && (
                     <p className="mt-3 whitespace-pre-wrap break-words text-[0.9375rem] leading-relaxed text-foreground/90">
                       {entry.body}
                     </p>
@@ -305,6 +349,7 @@ export function JournalPanel({
                       ))}
                     </div>
                   )}
+                  {!checkin && entry.body.trim() && onReflect && <Button className="mt-2" variant="ghost" size="sm" onClick={()=>onReflect(entry.id)}>{t("deskReflection")}</Button>}
                 </li>
               );
             })}

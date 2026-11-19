@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { actorFromRequest } from "@/lib/account-actor";
 import { accountReady, accountUnavailable, clearSession } from "@/lib/account-http";
 import { eraseActorData } from "@/lib/erase-account";
+import { journalCacheId } from "@/lib/redis";
 
 /** Erases the signed-in journal. The body must ask for it on purpose. */
 export async function POST(req: Request) {
@@ -18,10 +19,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "confirm" }, { status: 400 });
   }
   try {
+    const cacheId = await journalCacheId(actor.id);
     const erased = await eraseActorData(actor);
     if (!erased) return accountUnavailable();
+    return clearSession(NextResponse.json({ ok: true, cacheId }));
   } catch {
     return NextResponse.json({ ok: false, error: "erase_fail" }, { status: 502 });
   }
-  return clearSession(NextResponse.json({ ok: true }));
 }

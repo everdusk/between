@@ -2,7 +2,7 @@ import { weekKey } from "./dates";
 import type { LocaleId } from "./i18n";
 import { mergeStores } from "./journal-api";
 import { loadUserStore, saveUserStore } from "./redis";
-import { entryInWindow, therapyWindow } from "./session-summary";
+import { entryInWindow, observationWindow } from "./session-summary";
 import {
   applyVerdict,
   clipPattern,
@@ -79,7 +79,7 @@ export async function prepareSessionSheet(
   ask?: SessionSheetAsk,
 ): Promise<SessionSheet> {
   const run = ask ?? ((input) => defaultAsk(userId, locale, input));
-  const period = therapyWindow(store.sessions, store.entries, todayKey, now, store.sessionPlan);
+  const period = observationWindow(store.sessions, store.entries, todayKey, now, store.profile?.therapy === false ? null : store.sessionPlan);
   const weekEntries = store.entries.filter((entry) => entryInWindow(entry, period));
   let state: ThemeState = {
     themes: [...(store.themes ?? [])],

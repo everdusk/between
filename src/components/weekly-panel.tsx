@@ -1,22 +1,23 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Share, LoaderCircle, RotateCcw } from "lucide-react";
+import { Share, LoaderCircle, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
 import { badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SessionBacklog } from "@/components/session-backlog";
+
 import { WeekSpectrum } from "@/components/week-spectrum";
 import {
+  addDays, parseDateKey,
   formatDateSpan,
   formatDayLabel,
   formatLongDate,
   formatTime,
   toDateKey,
   weekdayShort,
-  weekKey,
+
 } from "@/lib/dates";
-import { entryInWindow, therapyWindow } from "@/lib/session-summary";
+import { entryInWindow, observationWindow } from "@/lib/session-summary";
 import { briefStamp, tagCounts } from "@/lib/brief";
 import { parseModelThemes, shownEntryTags, themeContextChunks } from "@/lib/tags";
 import { feelingFill, spectrumTimeSummary } from "@/lib/spectrum";
@@ -48,9 +49,6 @@ interface WeeklyPanelProps {
   themeLinks: ThemeLink[];
   judgeSettled: string[];
   judgeSkipped?: string[];
-  onDiscussTheme: (id: string, discussed: boolean) => void;
-  onDismissTheme: (id: string) => void;
-  onAddTheme: (title: string) => void;
   onSavePattern: (weekKey: string, patternText: string, patternStamp: string) => boolean;
   onSaveThemes: (
     updates: { id: string; updatedAt: string; themes: string[] }[],
@@ -59,6 +57,7 @@ interface WeeklyPanelProps {
     themeSource: "model" | "rules",
   ) => boolean;
   initData?: string;
+  maxInitData?: string;
   /** Browser session: the week model may run without Telegram init data. */
   cloud?: boolean;
   disabled?: boolean;
@@ -73,34 +72,32 @@ export function WeeklyPanel({
   themeLinks,
   judgeSettled,
   judgeSkipped = [],
-  onDiscussTheme,
-  onDismissTheme,
-  onAddTheme,
   onSavePattern,
   onSaveThemes,
   initData,
+  maxInitData = "",
   cloud,
   disabled,
 }: WeeklyPanelProps) {
   const { t, locale, feeling, slot, count } = useI18n();
-  const remote = Boolean(initData) || Boolean(cloud);
-  const [now, setNow] = useState(() => new Date());
+  const remote = Boolean(initData || maxInitData || cloud);
+  const [clock, setNow] = useState(() => new Date());
+  const [history, setHistory] = useState<Date[]>([]);
+  const now = history.at(-1) ?? clock;
   const todayKey = toDateKey(now);
-  const period = therapyWindow(sessions, entries, todayKey, now, plan);
+  const period = observationWindow(sessions, entries, todayKey, now, plan);
   const days = period.days;
   const key = period.weekKey;
   const boundaryAt = period.endsAt?.getTime() ?? null;
   useEffect(() => {
-    if (boundaryAt === null) return;
+    if (history.length || boundaryAt === null) return;
     const delay = boundaryAt - Date.now() + 1000;
     if (delay <= 0 || delay > 8 * 24 * 60 * 60 * 1000) return;
     const timer = window.setTimeout(() => setNow(new Date()), delay);
     return () => window.clearTimeout(timer);
-  }, [boundaryAt]);
+  }, [boundaryAt, history.length]);
   const prep =
-    weekPreps.find((item) => item.weekKey === key) ??
-    weekPreps.find((item) => item.weekKey === weekKey(now));
-  const [focusDay, setFocusDay] = useState<string | null>(null);
+    weekPreps.find((item) => item.weekKey === key);
   const [themeFilter, setThemeFilter] = useState<string | null>(null);
 
   const byDate = new Map<string, JournalEntry[]>();
@@ -121,7 +118,7 @@ export function WeeklyPanel({
   );
   const activeTheme = weekTags.some((item) => item.tag === themeFilter) ? themeFilter : null;
   const selectedDay =
-    focusDay && days.includes(focusDay) ? focusDay : latestNotedDay(days, byDate, todayKey);
+    latestNotedDay(days, byDate, todayKey);
   const noteDays = days.filter((day) =>
     (byDate.get(day) ?? []).some((entry) => entry.body.trim()),
   ).length;
@@ -187,6 +184,7 @@ export function WeeklyPanel({
           `${themeStamp}:${index}`,
           locale,
           "themes",
+          maxInitData,
         );
         if (cancelled) return;
         const parsed = result.ok && result.text != null ? parseModelThemes(result.text) : null;
@@ -210,7 +208,7 @@ export function WeeklyPanel({
       cancelled = true;
       if (themeAttempt.current === themeStamp) themeAttempt.current = null;
     };
-  }, [themesSettled, disabled, initData, remote, themeChunkKey, themeStamp, locale, key, onSaveThemes]);
+  }, [themesSettled, disabled, initData, maxInitData, remote, themeChunkKey, themeStamp, locale, key, onSaveThemes]);
 
   const patternAttempt = useRef<string | null>(null);
   const savedPatternStamp = prep?.patternStamp;
@@ -236,7 +234,7 @@ export function WeeklyPanel({
     const facts = patternFactText;
     let cancelled = false;
     void (async () => {
-      const result = await requestBrief(initData ?? "", facts, patternStamp, locale, "pattern");
+      const result = await requestBrief(initData ?? "", facts, patternStamp, locale, "pattern",maxInitData);
       if (cancelled) return;
       const text = result.ok ? clipPattern(0, result.text ?? "") : "";
       if (!result.ok || !patternReplyUsable(text)) {
@@ -258,6 +256,7 @@ export function WeeklyPanel({
     judging,
     key,
     locale,
+    maxInitData,
     onSavePattern,
     patternFactText,
     patternStamp,
@@ -355,7 +354,10 @@ export function WeeklyPanel({
     <div className="space-y-4">
       <div className="relative px-2 pt-1 pb-1">
         <div className="min-w-0 space-y-2 pe-12">
-          <p className="eyebrow text-section-header">{t("weekTitle")}</p>
+          <div className="flex items-center gap-2"><Button variant="ghost" size="icon-sm" aria-label={t("deskOverview")+" ←"} onClick={()=>{
+            const earlier = period.startsAfter ? new Date(period.startsAfter.getTime()-1) : parseDateKey(addDays(days[0] ?? todayKey,-1));
+            if (earlier.getTime()<now.getTime()) setHistory(prev=>[...prev,earlier]);
+          }}><ChevronLeft/></Button><span className="eyebrow">{t("weekTitle")}</span><Button variant="ghost" size="icon-sm" aria-label={t("deskOverview")+" →"} disabled={!history.length} onClick={()=>setHistory(prev=>prev.slice(0,-1))}><ChevronRight/></Button></div>
           <h2 className="font-display text-[2.125rem] leading-[1.05] tracking-tight text-foreground sm:text-[2.5rem]">
             {period.last && days.length === 0
               ? t("afterSessionLead", { date: formatLongDate(period.last.date, locale) })
@@ -433,18 +435,14 @@ export function WeeklyPanel({
           </p>
         </div>
       </div>
+      {weekEntries.some(entry=>entry.reflection) && <section className="glass space-y-3 rounded-3xl p-5"><h2 className="font-display text-xl">{t("insights")}</h2>
+        {weekEntries.filter(entry=>entry.reflection).map(entry=><details key={entry.id} className="rounded-xl border border-border p-3">
+          <summary className="cursor-pointer">{entry.reflection!.insight || entry.reflection!.answer}</summary>
+          <p className="mt-2 text-xs text-muted-foreground">{formatDayLabel(entry.date,locale)}</p><p className="whitespace-pre-wrap">{entry.body}</p>
+          <p className="mt-2 whitespace-pre-wrap">{entry.reflection!.answer}</p>
+        </details>)}</section>}
 
-      <SessionBacklog
-        themes={[...agenda, ...said]}
-        entries={entries}
-        links={themeLinks}
-        refreshing={themesPending || (remote && judging)}
-        disabled={disabled}
-        onDiscuss={onDiscussTheme}
-        onDismiss={onDismissTheme}
-        onAdd={onAddTheme}
-        onOpenNote={setFocusDay}
-      />
+
 
       {weekTags.length > 0 && (
         <div className="space-y-3 px-2 pt-3">

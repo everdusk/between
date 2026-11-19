@@ -34,6 +34,18 @@ function storeKey(userId: number | string): string {
   return `between:user:${userId}:store`;
 }
 
+/** An opaque cache namespace changes when a journal is erased or linked to a different owner. */
+export async function journalCacheId(userId: string): Promise<string> {
+  const redis = getRedis();
+  if (!redis) throw new Error("Redis is not configured");
+  const key = `between:user:${userId}:cache-id`;
+  const candidate = crypto.randomUUID();
+  return redis.eval<string[], string>(
+    "local v=redis.call('GET',KEYS[1]); if v then return v end; redis.call('SET',KEYS[1],ARGV[1]); return ARGV[1]",
+    [key], [candidate],
+  );
+}
+
 function tzKey(userId: number | string): string {
   return `between:user:${userId}:tz`;
 }
