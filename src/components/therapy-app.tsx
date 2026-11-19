@@ -389,6 +389,7 @@ function TherapyShell({
       <JournalIntro onFinish={setIntro} onLogin={() => setLogin(true)} />
     ) : (
       <WebAccountGate
+        surveyAttempt={intro?.attempt}
         compact
         initialLogin={login || loginRequested}
         onSignedIn={web.setAccount}

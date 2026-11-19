@@ -156,7 +156,7 @@ export async function POST(req: Request) {
     fail?: unknown;
   };
   const plan = readPlan(payload.plan);
-  if (payload.event === "web_landing_start" || payload.event === "web_survey_step") {
+  if (payload.event === "web_landing_start" || payload.event === "web_survey_step" || payload.event === "web_registration_step") {
     const properties = surveyProperties(payload);
     const device = req.headers.get("x-between-device") ?? "";
     if (!properties || !/^[a-z0-9]{32}$/.test(device)) {

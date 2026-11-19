@@ -19,6 +19,13 @@ const stepTitles: Record<string, string> = {
 export function surveyProperties(data: Record<string, unknown>): Record<string, unknown> | null {
   if (data.locale !== "ru" && data.locale !== "en") return null;
   const common = { messenger: "web", locale: data.locale, survey_version: 1 };
+  if (data.event === "web_registration_step") {
+    if (typeof data.attempt !== "string" || !/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(data.attempt) ||
+        (data.source !== "direct" && data.source !== "survey") ||
+        typeof data.stage !== "string" || !["form_view","email_started","email_submitted","code_requested","code_submitted","email_registered","messenger_started","signed_in","error","result_view"].includes(data.stage) ||
+        typeof data.method !== "string" || !["form","email","password","telegram","max"].includes(data.method)) return null;
+    return { ...common, attempt_id: data.attempt, registration_source: data.source, registration_step: data.stage, method: data.method };
+  }
   if (data.event === "web_landing_start") {
     return data.placement === "hero" || data.placement === "footer"
       ? { ...common, placement: data.placement } : null;

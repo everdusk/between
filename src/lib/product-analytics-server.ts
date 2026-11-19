@@ -15,7 +15,7 @@ import {
 import { posthogBrowserConfig } from "./posthog-env";
 import { telegramCampaignSource } from "./campaign-source";
 
-export async function captureSurveyEvent(event: "web_landing_start" | "web_survey_step",
+export async function captureSurveyEvent(event: "web_landing_start" | "web_survey_step" | "web_registration_step",
   properties: Record<string, unknown>, device: string, pepper: string): Promise<boolean> {
   const cfg = posthogBrowserConfig({ key: process.env.POSTHOG_KEY, host: process.env.POSTHOG_HOST });
   if (!cfg) return false;
