@@ -89,7 +89,7 @@ export function JournalIntro({
   const [name, setName] = useState("");
   const [therapy, setTherapy] = useState(false);
   const [emotion, setEmotion] = useState<Feeling>("спокойно");
-  const [when, setWhen] = useState<CheckinSlot>("day");
+  const [when, setWhen] = useState<CheckinSlot | null>(null);
   const [thought, setThought] = useState("");
   return (
     <section className="glass space-y-5 rounded-3xl p-6">
@@ -162,17 +162,17 @@ export function JournalIntro({
               <Button
                 key={s}
                 aria-pressed={when === s}
-                variant={when === s ? "secondary" : "outline"}
+                variant={when === s ? "default" : "outline"}
                 onClick={() => setWhen(s)}
               >
                 {slot(s)}
               </Button>
             ))}
           </div>
-          <Button onClick={() => setStep(3)}>{t("feelingDone")}</Button>
+          <Button disabled={!when} onClick={() => setStep(3)}>{t("feelingDone")}</Button>
         </>
       )}
-      {step === 3 && (
+      {step === 3 && when && (
         <form
           className="space-y-3"
           onSubmit={(e) => {
