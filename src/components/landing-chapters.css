@@ -12,7 +12,24 @@
 .chapter-page header { display:flex; justify-content:space-between; align-items:center; padding:clamp(30px,5vw,72px) 0; }
 .chapter-page header b { font-size:clamp(22px,2vw,28px); letter-spacing:-.045em; }
 .chapter-page p,.chapter-screen figcaption { color:#abb8b1; }
-.chapter-page header a { border:1px solid #34423d; border-radius:30px; padding:10px 24px; font-size:14px; }
+.chapter-page header a,
+.chapter-page header button[aria-haspopup="listbox"] {
+  display:inline-flex; align-items:center; justify-content:center;
+  height:44px; border-radius:30px; font-size:14px; font-weight:500; line-height:1;
+}
+.chapter-page header a { border:1px solid #52645c; padding:0 22px; }
+.chapter-page header button[aria-haspopup="listbox"] {
+  padding:0 10px; gap:7px; background:transparent; border:0; box-shadow:none;
+  backdrop-filter:none; color:#c4d1ca; cursor:pointer;
+}
+.chapter-page header button[aria-haspopup="listbox"] svg:first-child { width:16px; height:16px; opacity:1; }
+.chapter-page header button[aria-expanded="true"] svg:last-child { transform:rotate(180deg); }
+.chapter-page header a:hover,
+.chapter-page header button[aria-haspopup="listbox"]:is(:hover,[aria-expanded="true"]) { color:#f3f6f4; background:#ffffff0d; }
+.chapter-page header [role="listbox"] { min-width:132px; background:#14221d; border:1px solid #34423d; }
+.chapter-page header [role="option"] { color:#f3f6f4; }
+.chapter-page header [role="option"]:is(:hover,:focus-visible,[aria-selected="true"]) { background:#253a31; }
+.chapter-page header :is(a,button):focus-visible { outline:2px solid #5ee7c5; outline-offset:2px; }
 .chapter-hero { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:6%; align-items:start; padding-bottom:clamp(90px,13vw,195px); }
 .chapter-story { min-width:0; }
 .chapter-page h1,.chapter-page h2 { font-family:var(--font-unbounded),sans-serif; letter-spacing:-.045em; line-height:1.15; }
@@ -46,7 +63,7 @@
 @media(max-width:760px){
   .chapter-wrap {width:auto;margin:0 6%;}
   .chapter-page header {padding:26px 0 45px;}
-  .chapter-page header a {padding:8px 20px;}
+  .chapter-page header a {padding:0 18px;}
   .chapter-hero,.chapter-audience {grid-template-columns:minmax(0,1fr);}
   .chapter-hero {gap:32px;padding-bottom:48px;}
   .chapter-page h1 {font-size:clamp(32px,9.6vw,48px);max-width:11ch;margin-top:15px;}
