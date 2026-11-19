@@ -365,16 +365,7 @@ function TherapyShell({
   );
   const footer = (
     <footer className="mt-8 text-center text-xs text-muted-foreground">
-      <p>
-        Between ·{" "}
-        {t(
-          syncLabel === "cloud"
-            ? "syncCloud"
-            : syncLabel === "offline-cloud"
-              ? "syncOffline"
-              : "syncDevice",
-        )}
-      </p>
+      {syncLabel === "offline-cloud" && <p role="status">{t("syncOffline")}</p>}
       <LegalLinks telegram={telegram.inTelegram} className="mt-2" />
     </footer>
   );
