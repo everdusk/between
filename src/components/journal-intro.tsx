@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { useI18n } from "./locale-provider";
 import { reflectionQuestion } from "./journal-explore";
 import { Input } from "./ui/input";
@@ -30,14 +30,21 @@ export function ProfileEditor({
   onSave: (name: string, therapy: boolean) => boolean;
 }) {
   const { t } = useI18n();
-  const [name, setName] = useState(profile?.name ?? "");
-  const [therapy, setTherapy] = useState(profile?.therapy ?? true);
+  const [draft, setDraft] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<"saved" | "storageWrite" | null>(null);
+  const name = draft ?? profile?.name ?? "";
+  const therapy = profile?.therapy ?? true;
+  function save(nextTherapy: boolean) {
+    const saved = onSave(name, nextTherapy);
+    if (saved) setDraft(null);
+    setFeedback(saved ? "saved" : "storageWrite");
+  }
   return (
     <form
       className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault();
-        onSave(name, therapy);
+        save(therapy);
       }}
     >
       <label className="block">
@@ -45,7 +52,7 @@ export function ProfileEditor({
         <Input
           value={name}
           maxLength={60}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => { setDraft(e.target.value); setFeedback(null); }}
         />
       </label>
       <label className="block">
@@ -53,15 +60,19 @@ export function ProfileEditor({
         <select
           className="mt-1 block w-full rounded-xl border border-input bg-background p-2"
           value={therapy ? "yes" : "no"}
-          onChange={(e) => setTherapy(e.target.value === "yes")}
+          onChange={(e) => save(e.target.value === "yes")}
         >
           <option value="yes">{t("answerYes")}</option>
           <option value="no">{t("answerNo")}</option>
         </select>
       </label>
-      <Button size="sm" type="submit">
+      <Button size="sm" type="submit" disabled={draft === null}>
         {t("saveSchedule")}
       </Button>
+      <span role="status" className="ms-3 inline-flex items-center gap-1.5 text-sm font-medium">
+        {feedback === "saved" && <Check aria-hidden className="size-4 text-primary" />}
+        {feedback && t(feedback)}
+      </span>
     </form>
   );
 }

@@ -219,7 +219,6 @@ function TherapyShell({
     saveReflection,
     restoreTheme,
     setObservation,
-    keepTopic,
     judgeSkipped,
   } = useTherapyStore({
     initData: telegram.initData,
@@ -542,9 +541,7 @@ function TherapyShell({
               store={store}
               onReflect={reflect}
               onFeedback={setObservation}
-              onTopic={(source) => {
-                const id = keepTopic(source);
-                if (!id) return;
+              onTopic={(id) => {
                 setTopic((prev) => ({ id, visit: prev.visit + 1 }));
                 selectSection("topics");
               }}
@@ -554,11 +551,7 @@ function TherapyShell({
             <SessionBacklog
               key={topic.visit}
               initialTheme={topic.id}
-              themes={store.themes.filter(
-                (theme) =>
-                  (theme.list ?? "therapy") ===
-                  (personal ? "personal" : "therapy"),
-              )}
+              themes={store.themes}
               entries={store.entries}
               links={store.themeLinks}
               disabled={disabled}
@@ -623,7 +616,6 @@ function TherapyShell({
         profileEditor={
           !blocked && (
             <ProfileEditor
-              key={store.profile?.updatedAt}
               profile={store.profile}
               onSave={saveProfile}
             />
