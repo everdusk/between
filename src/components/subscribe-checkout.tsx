@@ -36,7 +36,7 @@ function readTelegramInitData(): string {
  * `/api/account` and leaves for the journal when there is no session.
  */
 export function SubscribeGate({ monthly }: { monthly?: number }) {
-  const [open, setOpen] = useState(false);
+  const [surface, setSurface] = useState<"web" | "max" | null>(null);
   useLayoutEffect(() => {
     if (readTelegramInitData()) {
       window.location.replace("/?tab=subscribe" + window.location.hash);
@@ -44,7 +44,7 @@ export function SubscribeGate({ monthly }: { monthly?: number }) {
     }
     if (readMaxInitData()) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- show the signed messenger checkout before paint
-      setOpen(true);
+      setSurface("max");
       return;
     }
     let cancelled = false;
@@ -54,7 +54,7 @@ export function SubscribeGate({ monthly }: { monthly?: number }) {
         const body = (await response.json().catch(() => null)) as { account?: unknown } | null;
         if (cancelled) return;
         if (response.ok && body?.account) {
-          setOpen(true);
+          setSurface("web");
           return;
         }
       } catch {
@@ -69,8 +69,8 @@ export function SubscribeGate({ monthly }: { monthly?: number }) {
       cancelled = true;
     };
   }, []);
-  if (!open) return null;
-  return <SubscribeCheckout monthly={monthly} />;
+  if (!surface) return null;
+  return <SubscribeCheckout monthly={monthly} surface={surface} />;
 }
 
 const PLANS: SbpPlanId[] = ["month", "quarter", "year"];
@@ -139,6 +139,7 @@ function starCatalog(prices: { month: number; quarter: number; year: number }) {
 
 export function SubscribeCheckout({
   monthly = DEFAULT_RUB_PRICE,
+  surface,
   embed = false,
   stars = null,
   onStarsPay,
@@ -146,6 +147,7 @@ export function SubscribeCheckout({
   starsError = null,
 }: {
   monthly?: number;
+  surface: "web" | "max";
   /** Phone card only. Telegram and MAX never get the wide marketing column. */
   embed?: boolean;
   /** Stars prices. Omits the ruble receipt, the email, and YooKassa. */
@@ -262,7 +264,7 @@ export function SubscribeCheckout({
   return (
     <article className={embed ? "subscribe-page" : "subscribe-page fixed inset-0 z-30 overflow-y-auto"}>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <div className={embed ? "" : "mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 sm:py-10"}>
+      <div className={embed ? "" : `mx-auto w-full ${surface === "web" ? "max-w-6xl" : "max-w-xl"} px-5 py-6 sm:px-8 sm:py-10`}>
         {embed ? null : (
         <header>
           <a href="/journal" className="sub-display text-lg" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "journal" })}>
@@ -271,8 +273,8 @@ export function SubscribeCheckout({
         </header>
         )}
 
-        <div className={embed ? "" : "mt-8 grid items-start gap-10 lg:mt-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16"}>
-          {embed ? null : (
+        <div className={embed ? "" : surface === "max" ? "mt-8" : "mt-8 grid items-start gap-10 lg:mt-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16"}>
+          {embed || surface === "max" ? null : (
           <div className="hidden lg:block">
             <SubscriptionIntro />
             <ul className="sub-points">
@@ -292,10 +294,16 @@ export function SubscribeCheckout({
           )}
 
           <section className="sub-card">
-            <div className={embed ? "" : "lg:hidden"}>
-              <SubscriptionIntro compact />
+            <div className={embed || surface === "max" ? "" : "lg:hidden"}>
+              {surface === "web" ? <SubscriptionIntro compact /> : (
+                <>
+                  <p className="sub-kicker">Подписка Between</p>
+                  <h1 className="sub-display mt-3 text-[2.05rem] leading-[1.05]">Оформление подписки.<br /><span className="sub-shift">Вы честно экономите.</span></h1>
+                  <p className="mt-4 leading-relaxed text-[#a9b4ae]">Between живёт в мессенджере: вечером бот сам спросит, как прошёл день, и к сессии соберёт из ответов готовую выкладку.</p>
+                </>
+              )}
             </div>
-            <h2 className={embed ? "hidden" : "sub-display hidden text-2xl lg:block"}>Выберите план</h2>
+            <h2 className={embed || surface === "max" ? "hidden" : "sub-display hidden text-2xl lg:block"}>Выберите план</h2>
             <fieldset className="mt-5 space-y-3">
               <legend className="sr-only">Срок подписки</legend>
               {PLANS.map((id) => {

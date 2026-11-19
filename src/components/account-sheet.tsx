@@ -279,6 +279,7 @@ export function AccountSheet({
           </button>
           {inTelegram ? <PremiumPaywall access={access} inTelegram inMax={false} payingPlan={payingPlan} payError={payError} onPay={plan=>void pay(plan)}/> : <SubscribeCheckout
             embed
+            surface={inMax ? "max" : "web"}
             monthly={access.rubPrice}
             stars={inTelegram ? access.prices : null}
             onStarsPay={(plan) => void pay(plan)}
