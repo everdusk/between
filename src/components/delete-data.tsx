@@ -111,9 +111,9 @@ function DeletePage() {
     <article className="fixed inset-0 z-20 overflow-y-auto bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-lg flex-col px-5 pt-8 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <header className="flex items-center justify-between gap-4">
-          <Link href="/" className="font-display text-lg text-foreground">
+          <a href="/" className="font-display text-lg text-foreground">
             Between
-          </Link>
+          </a>
           <LanguageSwitch />
         </header>
         <section className="glass mt-8 rounded-[22px] px-5 py-6 sm:px-6">
@@ -137,9 +137,9 @@ function DeletePage() {
             <>
               <p className="mt-2 text-sm leading-relaxed text-foreground">{t("deleteDone")}</p>
               <p className="mt-5 text-center text-sm">
-                <Link href="/" className={buttonVariants({ variant: "link" })}>
+                <a href="/" className={buttonVariants({ variant: "link" })}>
                   {t("deleteHome")}
-                </Link>
+                </a>
               </p>
             </>
           ) : (

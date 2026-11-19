@@ -64,7 +64,7 @@ export function LandingPage() {
             <div aria-live="polite">
               <h1>{title}</h1>
               <p>{body}</p>
-              <a className="chapter-cta" href="/">
+              <a className="chapter-cta" href="/?start=1">
                 Начать знакомство
               </a>
             </div>
@@ -100,7 +100,7 @@ export function LandingPage() {
           </article>
         </section>
         <footer>
-          <a className="chapter-cta" href="/">
+          <a className="chapter-cta" href="/?start=1">
             Начать знакомство
           </a>
           <p>7 дней бесплатно. Без карты и автосписаний.</p>
