@@ -171,11 +171,11 @@ export function ReflectionForm({
   onSave: (id: string, reflection: Reflection, topic: boolean) => boolean;
 }) {
   const { t, feeling } = useI18n();
-  const [emotion, setEmotion] = useState<Reflection["feeling"] | "">(
-    entry.reflection?.feeling ?? entry.feelings[0] ?? nearby ?? "",
-  );
+  const linkedFeeling = entry.reflection?.feeling ?? entry.feelings[0] ?? nearby;
+  const [picked, setPicked] = useState<Reflection["feeling"] | "">("");
+  const emotion = linkedFeeling ?? picked;
   const [answer, setAnswer] = useState(entry.reflection?.answer ?? "");
-  const [insight, setInsight] = useState(entry.reflection?.insight ?? "");
+  const previousInsight = entry.reflection?.insight ?? "";
   const [choose, setChoose] = useState(false);
   const [saved, setSaved] = useState(false);
   function save(topic: boolean) {
@@ -184,7 +184,7 @@ export function ReflectionForm({
       answer.trim() &&
       onSave(
         entry.id,
-        { feeling: emotion, answer: answer.trim(), insight: insight.trim() },
+        { feeling: emotion, answer: answer.trim(), insight: previousInsight },
         topic,
       )
     ) {
@@ -204,13 +204,17 @@ export function ReflectionForm({
       <p className="whitespace-pre-wrap break-words border-s-2 border-primary ps-3">
         {entry.body}
       </p>
-      <label className="block text-sm">
+      {linkedFeeling ? (
+        <p className="text-sm text-muted-foreground">
+          {linkedFeeling === "unsure" ? t("unsure") : feeling(linkedFeeling)}
+        </p>
+      ) : <label className="block text-sm">
         {t("feelingsGroup")}
         <select
           required
           className="mt-2 block w-full rounded-xl border border-input bg-background p-3"
           value={emotion}
-          onChange={(e) => setEmotion(e.target.value as Feeling)}
+          onChange={(e) => setPicked(e.target.value as Reflection["feeling"] | "")}
         >
           <option value="">—</option>
           {[...new Set<Feeling>([...PICKER_FEELINGS, ...entry.feelings])].map(
@@ -222,7 +226,7 @@ export function ReflectionForm({
           )}
           <option value="unsure">{t("unsure")}</option>
         </select>
-      </label>
+      </label>}
       {emotion && (
         <>
           <label className="block font-medium">
@@ -234,15 +238,12 @@ export function ReflectionForm({
               onChange={(e) => setAnswer(e.target.value)}
             />
           </label>
-          <label className="block">
-            {t("insights")}
-            <Textarea
-              className="mt-2"
-              placeholder={t("insightsPlaceholder")}
-              value={insight}
-              onChange={(e) => setInsight(e.target.value)}
-            />
-          </label>
+          {previousInsight && (
+            <details className="text-sm">
+              <summary>{t("insights")}</summary>
+              <p className="mt-2 whitespace-pre-wrap">{previousInsight}</p>
+            </details>
+          )}
           <Button type="submit" disabled={!answer.trim() || saved}>
             {saved ? t("saved") : t("saveEntry")}
           </Button>
