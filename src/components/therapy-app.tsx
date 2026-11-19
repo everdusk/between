@@ -18,6 +18,7 @@ import {
 } from "@/components/scheme-switch";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WebAccountGate } from "@/components/web-account-gate";
+import { toDateKey } from "@/lib/dates";
 import { Connections, ReflectionPanel } from "@/components/journal-explore";
 import {
   JournalIntro,
@@ -488,6 +489,13 @@ function TherapyShell({
               {intro && (
                 <IntroResult
                   answers={intro}
+                  noteSaved={store.entries.some(entry => entry.id === intro.id)}
+                  onSaveNote={() => upsertEntry({id: intro.id, date: toDateKey(), body: intro.thought, feelings: [], tags: []})}
+                  onSchedule={() => {
+                    if (store.profile || saveProfile(intro.name, intro.therapy)) {
+                      selectSection("sessions");
+                    }
+                  }}
                   onDone={() => {
                     if (store.profile || saveProfile(intro.name, intro.therapy))
                       setIntro(null);
