@@ -47,10 +47,7 @@ export function LandingPage() {
     <main className="between-landing chapter-page">
       <div className="chapter-wrap">
         <header>
-          <div>
-            <b>Between</b>
-            <span> — дневник для рефлексии</span>
-          </div>
+          <b>Between</b>
           <a href="/?login=1">Войти</a>
         </header>
         <div className="chapter-hero">

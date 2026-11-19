@@ -11,16 +11,18 @@
 .chapter-wrap { width: min(82.3%,1184px); margin: auto; }
 .chapter-page header { display:flex; justify-content:space-between; align-items:center; padding:clamp(30px,5vw,72px) 0; }
 .chapter-page header b { font-size:clamp(22px,2vw,28px); letter-spacing:-.045em; }
-.chapter-page header span,.chapter-page p,.chapter-screen figcaption { color:#abb8b1; }
+.chapter-page p,.chapter-screen figcaption { color:#abb8b1; }
 .chapter-page header a { border:1px solid #34423d; border-radius:30px; padding:10px 24px; font-size:14px; }
 .chapter-hero { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:6%; align-items:start; padding-bottom:clamp(90px,13vw,195px); }
 .chapter-story { min-width:0; }
 .chapter-page h1,.chapter-page h2 { font-family:var(--font-unbounded),sans-serif; letter-spacing:-.045em; line-height:1.15; }
-.chapter-page h1 { font-size:clamp(32px,3.9vw,56px); min-height:2.3em; margin:10px 0 22px; }
+.chapter-page h1 { font-size:clamp(32px,3.9vw,56px); margin:10px 0 12px; }
 .chapter-page h1::after { content:""; display:inline-block; width:2px;height:.92em; margin-left:.08em; background:#5ee7c5; vertical-align:-.03em; }
 .chapter-copy p { max-width:53ch; line-height:1.55; font-size:clamp(16px,1.34vw,19px); min-height:8.7em; }
 @media (prefers-reduced-motion: no-preference) {
   .chapter-copy { animation: chapter-appear 240ms ease-out; }
+  .chapter-page h1::after { animation: chapter-caret 1.1s step-end infinite; }
+  @keyframes chapter-caret { 0%, 100% { opacity:1; } 50% { opacity:0; } }
   @keyframes chapter-appear { from { opacity:.3; } to { opacity:1; } }
 }
 .chapter-cta { display:inline-flex; align-items:center; justify-content:center; min-height:56px; width:min(262px,100%); background:#5ee7c5; color:#07090d; border-radius:40px; font-weight:700; }
@@ -44,11 +46,10 @@
 @media(max-width:760px){
   .chapter-wrap {width:auto;margin:0 6%;}
   .chapter-page header {padding:26px 0 45px;}
-  .chapter-page header span {display:block;font-size:13px;}
   .chapter-page header a {padding:8px 20px;}
   .chapter-hero,.chapter-audience {grid-template-columns:minmax(0,1fr);}
   .chapter-hero {gap:32px;padding-bottom:48px;}
-  .chapter-page h1 {font-size:clamp(32px,9.6vw,48px);max-width:11ch;margin:15px 0 24px;}
+  .chapter-page h1 {font-size:clamp(32px,9.6vw,48px);max-width:11ch;margin-top:15px;}
   .chapter-page h1[data-chapter=events] {max-width:9ch;}
   .chapter-copy p {min-height:0;margin-bottom:38px;}
   .chapter-cta {width:100%;}
