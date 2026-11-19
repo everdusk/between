@@ -622,17 +622,6 @@ export function useTherapyStore(options?: {
       const current=storeRef.current;
       return persist({...current,themes:current.themes.map(theme=>theme.id===id ? {...theme, observation:response,updatedAt:new Date().toISOString()} : theme)});
     },
-    keepTopic(id:string) {
-      const current=storeRef.current;
-      const source=current.themes.find(t=>t.id===id);
-      if(!source) return "";
-      const list=current.profile?.therapy===false ? "personal" : "therapy";
-      if((source.list ?? "therapy")===list) return id;
-      const nextId=list+":"+id;
-      if(current.themes.some(t=>t.id===nextId && !t.dismissed)) return nextId;
-      const copy:SessionTheme={...source,id:nextId,list,status:"active",manual:true,dismissed:false,updatedAt:new Date().toISOString()};
-      return persist({...current,themes:[...current.themes.filter(t=>t.id!==nextId),copy]}) ? nextId : "";
-    },
     saveReflection(id: string, reflection: NonNullable<JournalEntry["reflection"]>, topic: boolean) {
       const current = storeRef.current;
       const entry = current.entries.find(note => note.id === id);
