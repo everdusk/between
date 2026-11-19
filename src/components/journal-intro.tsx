@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Moon, Sun, Sunrise } from "lucide-react";
 import { useI18n } from "./locale-provider";
 import {
   branchQuestions,
@@ -19,6 +19,7 @@ import {
 } from "@/lib/types";
 
 const slots = ["morning", "day", "evening"] as const;
+const periodIcons = { morning: Sunrise, day: Sun, evening: Moon };
 type DayAnswers = Record<
   CheckinSlot,
   (SurveyFeeling | "varies" | "unnoticed")[]
@@ -26,7 +27,6 @@ type DayAnswers = Record<
 type Exploration = {
   feeling: SurveyFeeling;
   choices: number[];
-  timing: number;
 };
 export type IntroAnswers = {
   id: string;
@@ -36,19 +36,6 @@ export type IntroAnswers = {
   explorations: Exploration[];
   thought: string;
 };
-
-const timings = [
-  ["Чувство появляется примерно в это время", "The feeling starts around then"],
-  [
-    "Оно остаётся после более ранних событий",
-    "It lingers from something earlier",
-  ],
-  [
-    "Только тогда понимаю, что уже чувствовал это",
-    "That's when I realise I was already feeling it",
-  ],
-  ["Пока трудно различить", "I can't tell yet"],
-] as const;
 
 function firstNote(f: SurveyFeeling | undefined, en: boolean) {
   const prompts = {
@@ -182,7 +169,6 @@ export function JournalIntro({
   });
   const [focus, setFocus] = useState<SurveyFeeling>();
   const [choices, setChoices] = useState<number[]>([]);
-  const [timing, setTiming] = useState(-1);
   const [previous, setPrevious] = useState<Exploration>();
   const [thought, setThought] = useState("");
   const period = slots[step - 3];
@@ -198,11 +184,10 @@ export function JournalIntro({
         .map(slot)
         .join(", ")
     : "";
-  const current = focus ? { feeling: focus, choices, timing } : undefined;
+  const current = focus ? { feeling: focus, choices } : undefined;
   function startBranch(f: SurveyFeeling) {
     setFocus(f);
     setChoices([]);
-    setTiming(-1);
     setThought("");
     setStep(7);
   }
@@ -218,18 +203,16 @@ export function JournalIntro({
     setFocus(undefined);
     setPrevious(undefined);
     setChoices([]);
-    setTiming(-1);
     setThought("");
   }
   function back() {
-    if (step === 12 && !focus) setStep(5);
+    if (step === 11 && !focus) setStep(5);
     else if (step === 7 && previous) {
       setFocus(previous.feeling);
       setChoices(previous.choices);
-      setTiming(previous.timing);
       setPrevious(undefined);
-      setStep(11);
-    } else if (step === 12 && (previous || picked.length === 1)) setStep(10);
+      setStep(10);
+    } else if (step === 11 && (previous || picked.length === 1)) setStep(9);
     else setStep(step - 1);
   }
   const nextButton = (action: () => void, disabled = false) => (
@@ -341,23 +324,24 @@ export function JournalIntro({
       )}
       {period && (
         <>
-          {heading(
-            (en
-              ? [
-                  "Over the last week, how did you usually feel in the morning?",
-                  "And during the day?",
-                  "How did you usually feel in the evening?",
-                ]
-              : [
-                  "Вспомните последние семь дней. Как вы чаще чувствовали себя утром?",
-                  "А как вы чаще чувствовали себя днём?",
-                  "Как вы чаще чувствовали себя вечером?",
-                ])[step - 3],
-          )}
+          <ol className="grid grid-cols-3 gap-2" aria-label={en ? "Time of day" : "Время дня"}>
+            {slots.map((s) => {
+              const Icon = periodIcons[s];
+              return (
+                <li key={s} aria-current={s === period ? "step" : undefined}
+                  className="flex items-center justify-center gap-1 border-b-2 border-border pb-2 text-xs capitalize text-muted-foreground aria-[current=step]:border-primary aria-[current=step]:font-bold aria-[current=step]:text-foreground">
+                  <Icon aria-hidden="true" size={16} />{slot(s)}
+                </li>
+              );
+            })}
+          </ol>
+          <div aria-live="polite" aria-atomic="true">
+            <h2 className="font-display text-3xl capitalize">{slot(period)}</h2>
+          </div>
           <p className="text-sm text-muted-foreground">
             {en
-              ? "Choose up to two feelings."
-              : "Можно выбрать до двух чувств."}
+              ? "Think back over the past seven days. Which feelings came up most often? Choose up to two."
+              : "Вспомните последние семь дней. Какие чувства вы чаще замечали в это время? Выберите до двух."}
           </p>
           <div className="flex flex-wrap gap-2">
             {PICKER_FEELINGS.map((f) =>
@@ -381,10 +365,12 @@ export function JournalIntro({
               () => toggle("unnoticed"),
             )}
           </div>
-          {nextButton(
-            () => setStep(step === 5 && !picked.length ? 12 : step + 1),
-            !day[period].length,
-          )}
+          <Button type="button" disabled={!day[period].length}
+            onClick={() => setStep(step === 5 && !picked.length ? 11 : step + 1)}>
+            {period === "morning" ? (en ? "Next: afternoon" : "Дальше — день")
+              : period === "day" ? (en ? "Next: evening" : "Дальше — вечер")
+              : (en ? "Continue" : "Дальше")}
+          </Button>
         </>
       )}
       {step === 6 && (
@@ -412,36 +398,15 @@ export function JournalIntro({
               option(o[lang], choices[branchIndex] === i, () => {
                 if (choices[branchIndex] !== i) {
                   setChoices([...choices.slice(0, branchIndex), i]);
-                  setTiming(-1);
                   setThought("");
                 }
-                setStep(step + 1);
+                setStep(step === 9 && (previous || picked.length === 1) ? 11 : step + 1);
               }),
             )}
           </div>
         </>
       )}
-      {step === 10 && focus && (
-        <>
-          {heading(
-            en
-              ? "Is that when the feeling starts, or when you notice it?"
-              : "Чувство появляется в это время или вы тогда его замечаете?",
-          )}
-          <p>
-            {feeling(focus)} · {times}
-          </p>
-          <div className="flex flex-col items-start gap-2">
-            {timings.map((o, i) =>
-              option(o[lang], timing === i, () => {
-                setTiming(i);
-                setStep(!previous && picked.length > 1 ? 11 : 12);
-              }),
-            )}
-          </div>
-        </>
-      )}
-      {step === 11 && (
+      {step === 10 && (
         <>
           {heading(
             en
@@ -460,10 +425,10 @@ export function JournalIntro({
                 )}
             </div>
           )}
-          {nextButton(() => setStep(12))}
+          {nextButton(() => setStep(11))}
         </>
       )}
-      {step === 12 && (
+      {step === 11 && (
         <form
           className="space-y-4"
           onSubmit={(e) => {
@@ -586,7 +551,6 @@ export function IntroResult({
                 {observation ?? (en ? "You noticed the feeling, but what follows it is still an open question. A note about one specific moment is a place to start." : "Само чувство вы заметили. А что происходит дальше, пока остаётся открытым вопросом. Можно начать с записи об одном конкретном моменте.")}
               </p>
             )}
-            <small>{timings[run.timing][lang]}</small>
             <details><summary>{en ? "How you answered" : "Ваши ответы"}</summary>
               <dl className="mt-2 space-y-2">{ids.map((id,i) => <div key={id}><dt className="text-sm text-muted-foreground">{questions[id].title[lang]}</dt><dd>{questions[id].options[run.choices[i]][lang]}</dd></div>)}</dl>
             </details>
