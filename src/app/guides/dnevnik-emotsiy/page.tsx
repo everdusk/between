@@ -1,5 +1,6 @@
 import Image from "next/image";
 import overview from "../../../../public/landing/chapters/overview.webp";
+import entries from "../../../../public/landing/chapters/events.webp";
 import { JournalGuide } from "@/components/journal-guide";
 import { guideMetadata } from "@/lib/guides";
 
@@ -11,6 +12,7 @@ export default function EmotionGuide() {
     <h2>Шаблон для первой записи</h2>
     <blockquote>Когда это было? …<br />Что произошло? …<br />Что я почувствовал(а)? …</blockquote>
     <p>Например: «Вторник, девять вечера. Смотрю сериал, за одну серию трижды открыла рабочий чат. Тревожно». Этой строки хватит, чтобы через несколько дней вспомнить конкретный вечер.</p>
+    <figure><div className="guide-capture guide-entries"><Image src={entries} alt="Раздел «Записи» с полем быстрой записи и заметкой о рабочем вечере" sizes="(max-width: 600px) 92vw, 540px" /></div><figcaption>Запись и отметка «тревожно» рядом. Позже этот вечер легко найти по дате.</figcaption></figure>
     <p>Если назвать чувство трудно, оставьте свои слова: «стиснула зубы», «хотелось выйти из комнаты», «поймала себя на улыбке». Позже можно дописать, что для вас стояло за этим ощущением. Можно и оставить запись как есть.</p>
     <h2>Как читать свои отметки в конце недели</h2>
     <p>Представьте, что к записи про вторник добавились ещё две.</p>
