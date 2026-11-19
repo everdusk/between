@@ -8,36 +8,41 @@ import { LEGAL_INN } from "@/lib/legal";
 import "./landing-chapters.css";
 
 const chapters = [
-  [
-    "События",
-    "Что произошло.",
-    "Разговор, который не выходит из головы. Хороший день, который хочется запомнить. Мысль, к которой важно вернуться. Сохраните своими словами — достаточно одной строки.",
-  ],
-  [
-    "Чувства",
-    "Что вы чувствуете.",
-    "Отмечайте чувства в течение дня. В обзоре можно увидеть, что чаще сопровождает утро, накапливается к вечеру или возвращается изо дня в день.",
-  ],
-  [
-    "Анализ",
-    "Проанализируйте.",
-    "Отдыхаете, а тревога не отпускает? Between соберёт похожие эпизоды рядом. Сравните свои записи и посмотрите, что у них общего.",
-  ],
-  [
-    "Выводы",
-    "Сделайте выводы.",
-    "Что стало понятнее после разбора? Сохраните свой вывод или вопрос, к которому хочется вернуться самостоятельно или на терапии.",
-  ],
-  [
-    "Изменения",
-    "Меняйтесь.",
-    "Выберите небольшой шаг, который хочется попробовать. Дать себе паузу, иначе ответить на просьбу или чаще делать то, что поддерживает.",
-  ],
+  {
+    "label": "События",
+    "title": "Что произошло.",
+    "body": "Разговор, который не выходит из головы. Хороший день, который хочется запомнить. Мысль, к которой важно вернуться. Сохраните своими словами — достаточно одной строки.",
+    "clip": "events"
+  },
+  {
+    "label": "Чувства",
+    "title": "Что вы чувствуете.",
+    "body": "Отмечайте чувства в течение дня. Between покажет, как меняется ваше состояние: что чаще сопровождает утро, накапливается к вечеру или возвращается изо дня в день.",
+    "clip": "feelings"
+  },
+  {
+    "label": "Анализ",
+    "title": "Проанализируйте.",
+    "body": "Отдыхаете, а тревога не отпускает? Раздражаетесь, но непонятно почему? Between соберёт похожие эпизоды рядом и поможет сравнить их с днями, когда было иначе. Посмотрите, что у них общего и что могло остаться незамеченным.",
+    "clip": "analysis"
+  },
+  {
+    "label": "Выводы",
+    "title": "Сделайте выводы.",
+    "body": "Что стало понятнее после разбора? Что оказалось важным, а что ещё хочется исследовать? Between поможет сформулировать и сохранить ваш вывод — или вопрос, с которым пока нет ясности. К нему можно вернуться самостоятельно или на терапии.",
+    "clip": "insights"
+  },
+  {
+    "label": "Изменения",
+    "title": "Меняйтесь.",
+    "body": "Выберите небольшой шаг, который хочется попробовать. Дать себе паузу, иначе ответить на просьбу или чаще делать то, что поддерживает. Возвращайтесь к записям, чтобы посмотреть, что изменилось и что подходит именно вам.",
+    "clip": "changes"
+  }
 ] as const;
 
 export function LandingPage() {
   const [chapter, setChapter] = useState(0);
-  const [, title, body] = chapters[chapter];
+  const { label, title, body, clip } = chapters[chapter];
   return (
     <main className="between-landing chapter-page">
       <div className="chapter-wrap">
@@ -50,54 +55,33 @@ export function LandingPage() {
         </header>
         <div className="chapter-hero">
           <section className="chapter-story">
+            <div className="chapter-copy" aria-live="polite">
+              <h1 data-chapter={clip}>{title}</h1>
+              <p>{body}</p>
+            </div>
+            <a className="chapter-cta" href="/?start=1">Начать знакомство</a>
             <nav aria-label="Главы">
-              {chapters.map(([label], i) => (
-                <button
-                  key={label}
-                  aria-pressed={chapter === i}
-                  onClick={() => setChapter(i)}
-                >
-                  {label}
+              <small>Главы</small>
+              {chapters.map((item, i) => (
+                <button key={item.clip} aria-pressed={chapter === i} onClick={() => setChapter(i)}>
+                  <span aria-hidden>{String(i + 1).padStart(2, "0")}</span>{item.label}
                 </button>
               ))}
             </nav>
-            <div aria-live="polite">
-              <h1>{title}</h1>
-              <p>{body}</p>
-              <a className="chapter-cta" href="/?start=1">
-                Начать знакомство
-              </a>
-            </div>
           </section>
-          <div className="chapter-screen">
-            <video
-              muted
-              playsInline
-              controls
-              preload="metadata"
-              poster="/landing/poster.webp"
-              aria-label="Демонстрация дневника Between"
-            >
-              <source src="/landing/screen-ru.webm" type="video/webm" />
-              <source src="/landing/screen-ru.mp4" type="video/mp4" />
-            </video>
-          </div>
+          <figure className="chapter-screen">
+            <video key={clip} muted playsInline controls preload="metadata"
+              ref={video => { if (video && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) void video.play().catch(() => {}); }}
+              poster={`/landing/chapters/${clip}.webp`}
+              src={`/landing/chapters/${clip}.mp4`}
+              aria-label={`Веб-дневник Between · ${label}`} />
+            <figcaption>Ваши записи. Ваш темп.</figcaption>
+          </figure>
         </div>
         <section className="chapter-audience">
-          <article>
-            <h2>Для себя.</h2>
-            <p>
-              Собирайте записи по темам, замечайте повторения и выбирайте, что
-              попробовать дальше.
-            </p>
-          </article>
-          <article>
-            <h2>Вместе с терапевтом.</h2>
-            <p>
-              Сохраняйте важное между встречами. Укажите расписание сеансов,
-              чтобы возвращаться к своим записям и вопросам перед встречей.
-            </p>
-          </article>
+          <h2>Для себя.<br />Или вместе с терапевтом.</h2>
+          <article><h3>Для самостоятельной рефлексии</h3><p>Собирайте записи по темам, замечайте повторения и исследуйте возможные связи между событиями и чувствами. Сохраняйте выводы и выбирайте, что попробовать дальше.</p></article>
+          <article><h3>Для тех, кто в терапии</h3><p>Сохраните важное между встречами. Добавьте расписание сеансов — и возвращайтесь к записям и вопросам перед следующей встречей.</p></article>
         </section>
         <footer>
           <a className="chapter-cta" href="/?start=1">
