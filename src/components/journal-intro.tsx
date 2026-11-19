@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { trackSurvey, type SurveyAction } from "@/lib/survey-analytics";
+import { noteStep } from "@/lib/survey-steps";
 import { ArrowRight, Check, Moon, Sun, Sunrise } from "lucide-react";
 import { useI18n } from "./locale-provider";
 import {
@@ -184,11 +186,30 @@ export function JournalIntro({
         .join(", ")
     : "";
   const current = focus ? { feeling: focus, choices } : undefined;
+  const questionId = active[branchIndex] ?? (period ? `mood_${period}` :
+    ({ 0: "name", 1: "therapy", 6: "focus", 10: "another", 11: focus ? noteStep[focus] : "first_note" } as Record<number, string>)[step]);
+  const analytics = useRef({ attempt: "", sequence: 0, visible: "" });
+  function record(action: SurveyAction) {
+    const run = analytics.current;
+    if (!run.attempt) run.attempt = crypto.randomUUID();
+    trackSurvey({ event: "web_survey_step", action, question: questionId, attempt: run.attempt, sequence: ++run.sequence }, locale);
+  }
+  useEffect(() => {
+    if (analytics.current.visible === questionId) return;
+    analytics.current.visible = questionId;
+    record("view");
+    // A new render of the same question (for example while typing) is not a visit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questionId]);
+  function advance(next: number) {
+    record("advance");
+    setStep(next);
+  }
   function startBranch(f: SurveyFeeling) {
     setFocus(f);
     setChoices([]);
     setThought("");
-    setStep(7);
+    advance(7);
   }
   function toggle(value: DayAnswers[CheckinSlot][number]) {
     const list = day[period];
@@ -205,6 +226,7 @@ export function JournalIntro({
     setThought("");
   }
   function back() {
+    record("back");
     if (step === 3) setStep(1);
     else if (step === 11 && !focus) setStep(5);
     else if (step === 7 && previous) {
@@ -265,7 +287,7 @@ export function JournalIntro({
             className="flex gap-2"
             onSubmit={(e) => {
               e.preventDefault();
-              if (name.trim()) setStep(1);
+              if (name.trim()) advance(1);
             }}
           >
             <Input
@@ -296,7 +318,7 @@ export function JournalIntro({
             ).map((label, i) =>
               option(label, therapy === i, () => {
                 setTherapy(i);
-                setStep(3);
+                advance(3);
               }),
             )}
           </div>
@@ -346,7 +368,7 @@ export function JournalIntro({
             )}
           </div>
           <Button type="button" disabled={!day[period].length}
-            onClick={() => setStep(step === 5 && !picked.length ? 11 : step + 1)}>
+            onClick={() => advance(step === 5 && !picked.length ? 11 : step + 1)}>
             {period === "morning" ? (en ? "Next: afternoon" : "Дальше — день")
               : period === "day" ? (en ? "Next: evening" : "Дальше — вечер")
               : (en ? "Continue" : "Дальше")}
@@ -382,9 +404,9 @@ export function JournalIntro({
                 }
                 const path = branchQuestions(focus, branchIndex === 0 ? i : choices[0], branchIndex === 1 ? i : choices[1]);
                 if (branchIndex + 1 === path.length) {
-                  setStep(!previous && picked.length > 1 ? 10 : 11);
+                  advance(!previous && picked.length > 1 ? 10 : 11);
                 } else {
-                  setStep(step + 1);
+                  advance(step + 1);
                 }
               }),
             )}
@@ -410,7 +432,7 @@ export function JournalIntro({
                 )}
             </div>
           )}
-          {nextButton(() => setStep(11))}
+          {nextButton(() => advance(11))}
         </>
       )}
       {step === 11 && (
@@ -418,6 +440,7 @@ export function JournalIntro({
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
+            record("finish");
             onFinish({
               id: crypto.randomUUID(),
               name: name.trim(),
@@ -457,7 +480,7 @@ export function JournalIntro({
             ←
           </Button>
         )}
-        <Button variant="ghost" onClick={onLogin}>
+        <Button variant="ghost" onClick={() => { record("login"); onLogin(); }}>
           {t("webEnter")}
         </Button>
       </div>

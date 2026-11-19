@@ -15,6 +15,23 @@ import {
 import { posthogBrowserConfig } from "./posthog-env";
 import { telegramCampaignSource } from "./campaign-source";
 
+export async function captureSurveyEvent(event: "web_landing_start" | "web_survey_step",
+  properties: Record<string, unknown>, device: string, pepper: string): Promise<boolean> {
+  const cfg = posthogBrowserConfig({ key: process.env.POSTHOG_KEY, host: process.env.POSTHOG_HOST });
+  if (!cfg) return false;
+  try {
+    const response = await fetch(`${cfg.host}/capture/`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(5000),
+      body: JSON.stringify({
+        api_key: cfg.token, event, distinct_id: productDistinctId(pepper, "web", `web:${device}`),
+        properties: { ...properties, $geoip_disable: true, $process_person_profile: false },
+      }),
+    });
+    return response.ok;
+  } catch { return false; }
+}
+
 /** A tagged bot start, separate from daily visits and Yandex offline conversions. */
 export async function captureServerCampaignStart(input: {
   payload: string | null;
