@@ -5,7 +5,7 @@ import { ArrowRight, Check, Moon, Sun, Sunrise } from "lucide-react";
 import { useI18n } from "./locale-provider";
 import {
   branchQuestions,
-  observations,
+  observationLabels,
   questions,
   type SurveyFeeling,
 } from "@/lib/intro-questions";
@@ -44,24 +44,24 @@ function firstNote(f: SurveyFeeling | undefined, en: boolean) {
       "Think of the last time this happened. What did you want to say or do?",
     ],
     тревожно: [
-      "Какая мысль возвращалась в последний раз, когда вы тревожились?",
-      "Which thought kept returning the last time you felt anxious?",
+      "Вспомните последний момент тревоги. Что тогда происходило?",
+      "Think of the last time you felt anxious. What was happening?",
     ],
     усталость: [
       "Когда в последний раз вы заметили, что пора отдохнуть? Что сделали дальше?",
       "When did you last notice you needed a break? What did you do next?",
     ],
     грусть: [
-      "Вспомните один грустный момент. Чего тогда хотелось?",
-      "Think of one sad moment. What did you want then?",
+      "Вспомните один грустный момент. Что из него запомнилось?",
+      "Think of one sad moment. What do you remember about it?",
     ],
     стыд: [
       "Что из последнего такого эпизода осталось с вами?",
       "What stayed with you after the last moment like this?",
     ],
     пусто: [
-      "Когда ощущение пустоты в последний раз хоть немного изменилось?",
-      "When did that empty feeling last shift, even a little?",
+      "Вспомните последний момент, когда было пусто. Что вы тогда делали?",
+      "Think of the last time you felt empty. What were you doing?",
     ],
     напряжение: [
       "Когда вы в последний раз заметили напряжение? Что происходило вокруг?",
@@ -161,7 +161,6 @@ export function JournalIntro({
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [therapy, setTherapy] = useState(-1);
-  const [age, setAge] = useState("");
   const [day, setDay] = useState<DayAnswers>({
     morning: [],
     day: [],
@@ -206,13 +205,15 @@ export function JournalIntro({
     setThought("");
   }
   function back() {
-    if (step === 11 && !focus) setStep(5);
+    if (step === 3) setStep(1);
+    else if (step === 11 && !focus) setStep(5);
     else if (step === 7 && previous) {
       setFocus(previous.feeling);
       setChoices(previous.choices);
       setPrevious(undefined);
       setStep(10);
-    } else if (step === 11 && (previous || picked.length === 1)) setStep(9);
+    } else if (step === 11 && (previous || picked.length === 1)) setStep(6 + active.length);
+    else if (step === 10) setStep(6 + active.length);
     else setStep(step - 1);
   }
   const nextButton = (action: () => void, disabled = false) => (
@@ -295,27 +296,6 @@ export function JournalIntro({
             ).map((label, i) =>
               option(label, therapy === i, () => {
                 setTherapy(i);
-                setStep(2);
-              }),
-            )}
-          </div>
-        </>
-      )}
-      {step === 2 && (
-        <>
-          {heading(en ? "How old are you?" : "Сколько вам лет?")}
-          <div className="flex flex-wrap gap-2">
-            {[
-              "18–24",
-              "25–34",
-              "35–44",
-              "45–54",
-              "55–64",
-              "65+",
-              en ? "Skip" : "Пропустить",
-            ].map((a) =>
-              option(a, age === a, () => {
-                setAge(a);
                 setStep(3);
               }),
             )}
@@ -400,7 +380,12 @@ export function JournalIntro({
                   setChoices([...choices.slice(0, branchIndex), i]);
                   setThought("");
                 }
-                setStep(step === 9 && (previous || picked.length === 1) ? 11 : step + 1);
+                const path = branchQuestions(focus, branchIndex === 0 ? i : choices[0], branchIndex === 1 ? i : choices[1]);
+                if (branchIndex + 1 === path.length) {
+                  setStep(!previous && picked.length > 1 ? 10 : 11);
+                } else {
+                  setStep(step + 1);
+                }
               }),
             )}
           </div>
@@ -446,7 +431,7 @@ export function JournalIntro({
           }}
         >
           <label className="block font-medium">
-            {firstNote(previous?.feeling ?? focus, en)}
+            {firstNote(focus, en)}
             <Textarea
               className="mt-3"
               maxLength={4000}
@@ -531,25 +516,20 @@ export function IntroResult({
           run.choices[0],
           run.choices[1],
         );
-        const observation = observations[ids[2]]?.[run.choices[2]]?.[lang];
+        const context = questions[ids[0]].options[run.choices[0]][lang];
+        const response = questions[ids[1]].options[run.choices[1]][lang];
+        const end = ids[2] && questions[ids[2]];
         return (
           <article key={run.feeling} className="space-y-2">
             <h3 className="font-medium">
               {feeling(run.feeling)} · {periods}
             </h3>
-            {run.feeling === "злость" &&
-            ids[1] === "angerPeople" &&
-            run.choices[1] === 1 &&
-            run.choices[2] === 4 ? (
-              <p>
-                {en
-                  ? "You described staying quiet in the moment and carrying on the argument in your head afterward. The conversation has ended, but your response to it is still taking shape."
-                  : "В момент разговора вы молчите или соглашаетесь, хотя злитесь, а позже продолжаете спор мысленно. Разговор уже закончился, а ваш ответ на него всё ещё складывается."}
-              </p>
-            ) : (
-              <p>
-                {observation ?? (en ? "You noticed the feeling, but what follows it is still an open question. A note about one specific moment is a place to start." : "Само чувство вы заметили. А что происходит дальше, пока остаётся открытым вопросом. Можно начать с записи об одном конкретном моменте.")}
-              </p>
+            <p>
+              {observationLabels[ids[0]][lang]} — «{context}».
+              {" "}{observationLabels[ids[1]][lang]} — «{response}».
+            </p>
+            {end && (
+              <p>{observationLabels[ids[2]][lang]} — «{end.options[run.choices[2]][lang]}».</p>
             )}
             <details><summary>{en ? "How you answered" : "Ваши ответы"}</summary>
               <dl className="mt-2 space-y-2">{ids.map((id,i) => <div key={id}><dt className="text-sm text-muted-foreground">{questions[id].title[lang]}</dt><dd>{questions[id].options[run.choices[i]][lang]}</dd></div>)}</dl>

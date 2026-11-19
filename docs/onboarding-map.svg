@@ -1,0 +1,355 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1730" height="4370" viewBox="0 0 1730 4370"><title>Between · Карта знакомства</title><defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10" fill="#688d7c"/></marker></defs><rect width="100%" height="100%" fill="#fcfdfb"/>
+<text x="32" y="48" font-family="Arial,sans-serif" font-size="32" font-weight="700" fill="#233b33">Between · Карта знакомства</text>
+<text x="32" y="94" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#233b33">Имя → Есть ли терапевт? → Утро → День → Вечер (до двух чувств в каждом периоде).</text>
+<text x="32" y="121" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#233b33">Выбрать одно из отмеченных чувств. Если конкретных чувств нет — сразу к необязательной записи.</text>
+<text x="32" y="148" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#233b33">После ветки можно разобрать ещё одно из оставшихся чувств. Приглашение к записи относится к последнему разобранному чувству.</text>
+<text x="32" y="175" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#233b33">Регистрация → первое наблюдение и ритм дня → сохранить запись по желанию. Расписание предлагается только тем, кто в терапии.</text>
+<text x="32" y="241" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#233b33">Тревожно</text>
+<rect x="32" y="266" width="464" height="196" rx="14" fill="#e2f5ea" stroke="#bccfc7"/>
+<text x="45" y="291" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">О какой тревоге вам хочется поговорить сейчас?</text>
+<text x="46" y="318" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· О будущем</text>
+<text x="46" y="346" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· О том, что уже произошло</text>
+<text x="46" y="374" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Об отношениях с людьми</text>
+<text x="46" y="402" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· О своих решениях и ошибках</text>
+<text x="46" y="430" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Нет понятной темы</text>
+<rect x="597" y="266" width="464" height="168" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="291" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что в этом для вас труднее всего?</text>
+<text x="611" y="318" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Ждать</text>
+<text x="611" y="346" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не знать, как всё получится</text>
+<text x="611" y="374" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Решиться действовать</text>
+<text x="611" y="402" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Пока трудно сказать</text>
+<rect x="597" y="446" width="464" height="168" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="471" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Когда возвращаетесь к событию, что вы ищете?</text>
+<text x="611" y="498" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Объяснение произошедшему</text>
+<text x="611" y="526" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Другой вариант своего ответа</text>
+<text x="611" y="554" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Подтверждение, что всё в порядке</text>
+<text x="611" y="582" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Пока не понимаю</text>
+<rect x="597" y="626" width="464" height="168" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="651" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Какая мысль чаще возвращается после общения?</text>
+<text x="611" y="678" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Как прозвучали мои слова</text>
+<text x="611" y="706" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Что человек обо мне подумал</text>
+<text x="611" y="734" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Что будет между нами дальше</text>
+<text x="611" y="762" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· По-разному</text>
+<rect x="597" y="806" width="464" height="168" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="831" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что вы делаете, когда сомневаетесь в решении?</text>
+<text x="611" y="858" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Снова сравниваю варианты</text>
+<text x="611" y="886" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Спрашиваю мнение другого человека</text>
+<text x="611" y="914" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Проверяю, можно ли что-то изменить</text>
+<text x="611" y="942" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· По-разному</text>
+<rect x="597" y="986" width="464" height="168" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="1011" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Как вы впервые замечаете это чувство?</text>
+<text x="611" y="1038" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· По мыслям</text>
+<text x="611" y="1066" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· По ощущениям в теле</text>
+<text x="611" y="1094" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· По своему поведению</text>
+<text x="611" y="1122" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Замечаю уже потом</text>
+<rect x="1162" y="266" width="464" height="190" rx="14" fill="#f5f0fa" stroke="#bccfc7"/>
+<text x="1175" y="291" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Вспомните последний раз, когда вы тревожились.</text>
+<text x="1175" y="313" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что стало с тревогой чуть позже?</text>
+<text x="1176" y="340" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Стала слабее</text>
+<text x="1176" y="368" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Осталась примерно такой же</text>
+<text x="1176" y="396" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Усилилась</text>
+<text x="1176" y="424" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не помню</text>
+<path d="M496 314 C551 314 547 286 594 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 342 C551 342 547 466 594 466" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 370 C551 370 547 646 594 646" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 398 C551 398 547 826 594 826" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 426 C551 426 547 1006 594 1006" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 314 C1116 314 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 342 C1116 342 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 370 C1116 370 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 398 C1116 398 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 494 C1116 494 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 522 C1116 522 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 550 C1116 550 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 578 C1116 578 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 674 C1116 674 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 702 C1116 702 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 730 C1116 730 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 758 C1116 758 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 854 C1116 854 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 882 C1116 882 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 910 C1116 910 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 938 C1116 938 1112 286 1159 286" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="32" y="1211" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#233b33">Спокойно</text>
+<rect x="32" y="1236" width="464" height="196" rx="14" fill="#e2f5ea" stroke="#bccfc7"/>
+<text x="45" y="1261" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">В какие моменты это чувство заметнее?</text>
+<text x="46" y="1288" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Наедине с собой</text>
+<text x="46" y="1316" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· С близкими</text>
+<text x="46" y="1344" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· За интересным занятием</text>
+<text x="46" y="1372" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Когда есть ясность и порядок</text>
+<text x="46" y="1400" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Без особых обстоятельств</text>
+<rect x="597" y="1236" width="464" height="196" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="1261" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что вы замечаете в себе тогда?</text>
+<text x="611" y="1288" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Легче сосредоточиться</text>
+<text x="611" y="1316" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Больше сил и интереса</text>
+<text x="611" y="1344" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Легче общаться</text>
+<text x="611" y="1372" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Меньше спешки</text>
+<text x="611" y="1400" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Просто хорошо</text>
+<path d="M496 1284 C551 1284 547 1256 594 1256" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 1312 C551 1312 547 1256 594 1256" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 1340 C551 1340 547 1256 594 1256" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 1368 C551 1368 547 1256 594 1256" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 1396 C551 1396 547 1256 594 1256" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="32" y="1489" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#233b33">Злость</text>
+<rect x="32" y="1514" width="464" height="218" rx="14" fill="#e2f5ea" stroke="#bccfc7"/>
+<text x="45" y="1539" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Когда вы злитесь, что чаще всего этому</text>
+<text x="45" y="1561" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">предшествует?</text>
+<text x="46" y="1588" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Со мной неприятно разговаривают</text>
+<text x="46" y="1616" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· От меня требуют больше, чем я готов дать</text>
+<text x="46" y="1644" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не могу повлиять на ситуацию</text>
+<text x="46" y="1672" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Я недоволен собой</text>
+<text x="46" y="1700" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Пока не вижу общего</text>
+<rect x="597" y="1514" width="464" height="196" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="1539" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что вы обычно делаете в этот момент?</text>
+<text x="611" y="1566" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Говорю, что меня не устраивает</text>
+<text x="611" y="1594" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Молчу или соглашаюсь, хотя злюсь</text>
+<text x="611" y="1622" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Отвечаю резче, чем хотелось</text>
+<text x="611" y="1650" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Беру паузу, чтобы вернуться к разговору</text>
+<text x="611" y="1678" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Каждый раз по-разному</text>
+<rect x="597" y="1722" width="464" height="168" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="1747" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Как вы впервые замечаете это чувство?</text>
+<text x="611" y="1774" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· По мыслям</text>
+<text x="611" y="1802" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· По ощущениям в теле</text>
+<text x="611" y="1830" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· По своему поведению</text>
+<text x="611" y="1858" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Замечаю уже потом</text>
+<rect x="597" y="1902" width="464" height="196" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="1927" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">За что вы чаще себя упрекаете?</text>
+<text x="611" y="1954" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Отложил то, что собирался сделать</text>
+<text x="611" y="1982" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Ошибся или не справился</text>
+<text x="611" y="2010" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не смог постоять за себя</text>
+<text x="611" y="2038" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Сравниваю себя с другими</text>
+<text x="611" y="2066" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· За что-то другое</text>
+<rect x="1162" y="1514" width="464" height="224" rx="14" fill="#f5f0fa" stroke="#bccfc7"/>
+<text x="1175" y="1539" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что остаётся, когда злость проходит?</text>
+<text x="1176" y="1566" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Облегчение</text>
+<text x="1176" y="1594" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Яснее вижу, что хочу изменить</text>
+<text x="1176" y="1622" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Вина за свою реакцию</text>
+<text x="1176" y="1650" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Усталость</text>
+<text x="1176" y="1678" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Мысленно возвращаюсь к случившемуся</text>
+<text x="1176" y="1706" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· По-разному</text>
+<rect x="1162" y="1750" width="464" height="190" rx="14" fill="#f5f0fa" stroke="#bccfc7"/>
+<text x="1175" y="1775" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">В последний раз, когда вы злились на себя, что</text>
+<text x="1175" y="1797" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">было потом?</text>
+<text x="1176" y="1824" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Продолжал себя ругать</text>
+<text x="1176" y="1852" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Решил, что попробую иначе</text>
+<text x="1176" y="1880" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Переключился на другое</text>
+<text x="1176" y="1908" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не помню</text>
+<path d="M496 1584 C551 1584 547 1534 594 1534" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 1612 C551 1612 547 1534 594 1534" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 1640 C551 1640 547 1742 594 1742" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 1668 C551 1668 547 1922 594 1922" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 1696 C551 1696 547 1742 594 1742" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 1562 C1116 1562 1112 1534 1159 1534" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 1590 C1116 1590 1112 1534 1159 1534" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 1618 C1116 1618 1112 1534 1159 1534" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 1646 C1116 1646 1112 1534 1159 1534" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 1674 C1116 1674 1112 1534 1159 1534" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 1770 C1116 1770 1112 1534 1159 1534" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 1798 C1116 1798 1112 1534 1159 1534" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 1826 C1116 1826 1112 1534 1159 1534" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 1854 C1116 1854 1112 1534 1159 1534" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 1950 C1116 1950 1112 1770 1159 1770" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 1978 C1116 1978 1112 1770 1159 1770" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 2006 C1116 2006 1112 1770 1159 1770" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 2034 C1116 2034 1112 1770 1159 1770" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 2062 C1116 2062 1112 1770 1159 1770" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="32" y="2155" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#233b33">Грусть</text>
+<rect x="32" y="2180" width="464" height="196" rx="14" fill="#e2f5ea" stroke="#bccfc7"/>
+<text x="45" y="2205" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">С чем чаще соседствует грусть?</text>
+<text x="46" y="2232" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Мне кого-то или чего-то не хватает</text>
+<text x="46" y="2260" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Что-то сложилось не так, как хотелось</text>
+<text x="46" y="2288" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Чувствую одиночество</text>
+<text x="46" y="2316" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Вспоминаю прошлое</text>
+<text x="46" y="2344" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Понятной причины нет</text>
+<rect x="597" y="2180" width="464" height="196" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="2205" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Чего хочется в такие моменты?</text>
+<text x="611" y="2232" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Поговорить с кем-то</text>
+<text x="611" y="2260" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Побыть одному</text>
+<text x="611" y="2288" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Поплакать или дать чувствам выход</text>
+<text x="611" y="2316" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Отвлечься</text>
+<text x="611" y="2344" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Трудно понять</text>
+<rect x="1162" y="2180" width="464" height="162" rx="14" fill="#f5f0fa" stroke="#bccfc7"/>
+<text x="1175" y="2205" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">В последний раз получилось с кем-нибудь</text>
+<text x="1175" y="2227" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">поговорить?</text>
+<text x="1176" y="2254" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Да</text>
+<text x="1176" y="2282" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Нет</text>
+<text x="1176" y="2310" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не помню</text>
+<rect x="1162" y="2354" width="464" height="162" rx="14" fill="#f5f0fa" stroke="#bccfc7"/>
+<text x="1175" y="2379" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">В последний раз получилось сделать то, чего</text>
+<text x="1175" y="2401" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">хотелось?</text>
+<text x="1176" y="2428" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Да</text>
+<text x="1176" y="2456" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Нет</text>
+<text x="1176" y="2484" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не помню</text>
+<path d="M496 2228 C551 2228 547 2200 594 2200" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 2256 C551 2256 547 2200 594 2200" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 2284 C551 2284 547 2200 594 2200" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 2312 C551 2312 547 2200 594 2200" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 2340 C551 2340 547 2200 594 2200" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 2228 C1116 2228 1112 2200 1159 2200" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 2256 C1116 2256 1112 2374 1159 2374" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 2284 C1116 2284 1112 2374 1159 2374" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 2312 C1116 2312 1112 2374 1159 2374" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="32" y="2573" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#233b33">Радость</text>
+<rect x="32" y="2598" width="464" height="196" rx="14" fill="#e2f5ea" stroke="#bccfc7"/>
+<text x="45" y="2623" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">В какие моменты это чувство заметнее?</text>
+<text x="46" y="2650" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Наедине с собой</text>
+<text x="46" y="2678" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· С близкими</text>
+<text x="46" y="2706" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· За интересным занятием</text>
+<text x="46" y="2734" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Когда есть ясность и порядок</text>
+<text x="46" y="2762" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Без особых обстоятельств</text>
+<rect x="597" y="2598" width="464" height="196" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="2623" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что вы замечаете в себе тогда?</text>
+<text x="611" y="2650" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Легче сосредоточиться</text>
+<text x="611" y="2678" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Больше сил и интереса</text>
+<text x="611" y="2706" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Легче общаться</text>
+<text x="611" y="2734" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Меньше спешки</text>
+<text x="611" y="2762" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Просто хорошо</text>
+<path d="M496 2646 C551 2646 547 2618 594 2618" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 2674 C551 2674 547 2618 594 2618" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 2702 C551 2702 547 2618 594 2618" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 2730 C551 2730 547 2618 594 2618" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 2758 C551 2758 547 2618 594 2618" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="32" y="2851" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#233b33">Усталость</text>
+<rect x="32" y="2876" width="464" height="196" rx="14" fill="#e2f5ea" stroke="#bccfc7"/>
+<text x="45" y="2901" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Какую усталость вы чаще замечаете?</text>
+<text x="46" y="2928" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Хочется спать или физически отдохнуть</text>
+<text x="46" y="2956" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Трудно думать и принимать решения</text>
+<text x="46" y="2984" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не хочется общаться</text>
+<text x="46" y="3012" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Даже приятное требует усилий</text>
+<text x="46" y="3040" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Смешанную</text>
+<rect x="597" y="2876" width="464" height="218" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="2901" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что вы сделали первым, когда в последний раз</text>
+<text x="610" y="2923" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">устали?</text>
+<text x="611" y="2950" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Сделал паузу</text>
+<text x="611" y="2978" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Переключился на дело попроще</text>
+<text x="611" y="3006" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Продолжил прежнее дело</text>
+<text x="611" y="3034" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Что-то другое</text>
+<text x="611" y="3062" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не помню</text>
+<rect x="1162" y="2876" width="464" height="196" rx="14" fill="#f5f0fa" stroke="#bccfc7"/>
+<text x="1175" y="2901" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что меняется после отдыха?</text>
+<text x="1176" y="2928" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Сил становится больше</text>
+<text x="1176" y="2956" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Телу легче, но мысли не отпускают</text>
+<text x="1176" y="2984" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Почти ничего</text>
+<text x="1176" y="3012" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Отдохнуть обычно не получается</text>
+<text x="1176" y="3040" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· По-разному</text>
+<path d="M496 2924 C551 2924 547 2896 594 2896" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 2952 C551 2952 547 2896 594 2896" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 2980 C551 2980 547 2896 594 2896" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 3008 C551 3008 547 2896 594 2896" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 3036 C551 3036 547 2896 594 2896" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 2946 C1116 2946 1112 2896 1159 2896" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 2974 C1116 2974 1112 2896 1159 2896" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3002 C1116 3002 1112 2896 1159 2896" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3030 C1116 3030 1112 2896 1159 2896" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3058 C1116 3058 1112 2896 1159 2896" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="32" y="3151" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#233b33">Стыд</text>
+<rect x="32" y="3176" width="464" height="196" rx="14" fill="#e2f5ea" stroke="#bccfc7"/>
+<text x="45" y="3201" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">В какие моменты стыд заметнее?</text>
+<text x="46" y="3228" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· После ошибки</text>
+<text x="46" y="3256" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Когда меня оценивают</text>
+<text x="46" y="3284" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Когда выражаю чувства или потребности</text>
+<text x="46" y="3312" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Когда сравниваю себя с другими</text>
+<text x="46" y="3340" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Пока не понимаю</text>
+<rect x="597" y="3176" width="464" height="224" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="3201" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что хочется сделать в этот момент?</text>
+<text x="611" y="3228" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Спрятаться или закончить разговор</text>
+<text x="611" y="3256" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Оправдаться</text>
+<text x="611" y="3284" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Исправить ситуацию</text>
+<text x="611" y="3312" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Рассказать тому, кому доверяю</text>
+<text x="611" y="3340" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Сделать вид, что ничего не произошло</text>
+<text x="611" y="3368" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Ничего из этого</text>
+<rect x="1162" y="3176" width="464" height="196" rx="14" fill="#f5f0fa" stroke="#bccfc7"/>
+<text x="1175" y="3201" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">К чему вы возвращаетесь позже?</text>
+<text x="1176" y="3228" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· К самому событию</text>
+<text x="1176" y="3256" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· К мыслям о себе</text>
+<text x="1176" y="3284" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· И к тому, и к другому</text>
+<text x="1176" y="3312" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Обычно отпускаю</text>
+<text x="1176" y="3340" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Сложно сказать</text>
+<path d="M496 3224 C551 3224 547 3196 594 3196" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 3252 C551 3252 547 3196 594 3196" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 3280 C551 3280 547 3196 594 3196" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 3308 C551 3308 547 3196 594 3196" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 3336 C551 3336 547 3196 594 3196" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3224 C1116 3224 1112 3196 1159 3196" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3252 C1116 3252 1112 3196 1159 3196" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3280 C1116 3280 1112 3196 1159 3196" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3308 C1116 3308 1112 3196 1159 3196" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3336 C1116 3336 1112 3196 1159 3196" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3364 C1116 3364 1112 3196 1159 3196" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="32" y="3457" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#233b33">Пусто</text>
+<rect x="32" y="3482" width="464" height="196" rx="14" fill="#e2f5ea" stroke="#bccfc7"/>
+<text x="45" y="3507" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что ближе всего к этому ощущению?</text>
+<text x="46" y="3534" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Почти ничего не чувствую</text>
+<text x="46" y="3562" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не понимаю, чего хочется</text>
+<text x="46" y="3590" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Всё кажется безразличным</text>
+<text x="46" y="3618" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Чувства есть, но трудно их назвать</text>
+<text x="46" y="3646" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Для меня это другое</text>
+<rect x="597" y="3482" width="464" height="196" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="3507" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Бывают ли моменты, когда это меняется?</text>
+<text x="611" y="3534" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Рядом с кем-то</text>
+<text x="611" y="3562" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· За определённым занятием</text>
+<text x="611" y="3590" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· После отдыха</text>
+<text x="611" y="3618" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Иногда, без ясной закономерности</text>
+<text x="611" y="3646" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Пока не замечал</text>
+<rect x="1162" y="3482" width="464" height="196" rx="14" fill="#f5f0fa" stroke="#bccfc7"/>
+<text x="1175" y="3507" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что именно в эти моменты меняется?</text>
+<text x="1176" y="3534" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Появляются чувства</text>
+<text x="1176" y="3562" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Возвращается интерес</text>
+<text x="1176" y="3590" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Прибавляется сил</text>
+<text x="1176" y="3618" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Чувствую близость</text>
+<text x="1176" y="3646" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Пока трудно назвать</text>
+<rect x="1162" y="3690" width="464" height="168" rx="14" fill="#f5f0fa" stroke="#bccfc7"/>
+<text x="1175" y="3715" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Что было бы легче заметить в следующий раз?</text>
+<text x="1176" y="3742" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Где я и кто рядом</text>
+<text x="1176" y="3770" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Чем занимаюсь</text>
+<text x="1176" y="3798" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Какие ощущения в теле</text>
+<text x="1176" y="3826" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Пока не знаю</text>
+<path d="M496 3530 C551 3530 547 3502 594 3502" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 3558 C551 3558 547 3502 594 3502" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 3586 C551 3586 547 3502 594 3502" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 3614 C551 3614 547 3502 594 3502" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 3642 C551 3642 547 3502 594 3502" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3530 C1116 3530 1112 3502 1159 3502" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3558 C1116 3558 1112 3502 1159 3502" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3586 C1116 3586 1112 3502 1159 3502" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3614 C1116 3614 1112 3502 1159 3502" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3642 C1116 3642 1112 3710 1159 3710" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="32" y="3915" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#233b33">Напряжение</text>
+<rect x="32" y="3940" width="464" height="196" rx="14" fill="#e2f5ea" stroke="#bccfc7"/>
+<text x="45" y="3965" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Как вы обычно замечаете напряжение?</text>
+<text x="46" y="3992" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· По ощущениям в теле</text>
+<text x="46" y="4020" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· По раздражительности</text>
+<text x="46" y="4048" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Всё время готов что-то делать</text>
+<text x="46" y="4076" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не получается расслабиться</text>
+<text x="46" y="4104" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Иначе</text>
+<rect x="597" y="3940" width="464" height="196" rx="14" fill="#f1f6fb" stroke="#bccfc7"/>
+<text x="610" y="3965" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">В каких обстоятельствах оно заметнее?</text>
+<text x="611" y="3992" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Когда много задач</text>
+<text x="611" y="4020" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Рядом с определёнными людьми</text>
+<text x="611" y="4048" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Когда жду решения или ответа</text>
+<text x="611" y="4076" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Даже в свободное время</text>
+<text x="611" y="4104" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не вижу общего</text>
+<rect x="1162" y="3940" width="464" height="190" rx="14" fill="#f5f0fa" stroke="#bccfc7"/>
+<text x="1175" y="3965" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Когда эта ситуация в последний раз</text>
+<text x="1175" y="3987" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">закончилась, что стало с напряжением?</text>
+<text x="1176" y="4014" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Стало слабее</text>
+<text x="1176" y="4042" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Осталось примерно таким же</text>
+<text x="1176" y="4070" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Усилилось</text>
+<text x="1176" y="4098" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не помню</text>
+<rect x="1162" y="4142" width="464" height="190" rx="14" fill="#f5f0fa" stroke="#bccfc7"/>
+<text x="1175" y="4167" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">Вспомните свободный вечер, когда чувствовалось</text>
+<text x="1175" y="4189" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#233b33">напряжение. Каким оно было к концу вечера?</text>
+<text x="1176" y="4216" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Стало слабее</text>
+<text x="1176" y="4244" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Осталось примерно таким же</text>
+<text x="1176" y="4272" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Усилилось</text>
+<text x="1176" y="4300" font-family="Arial,sans-serif" font-size="15" font-weight="400" fill="#233b33">· Не помню</text>
+<path d="M496 3988 C551 3988 547 3960 594 3960" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 4016 C551 4016 547 3960 594 3960" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 4044 C551 4044 547 3960 594 3960" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 4072 C551 4072 547 3960 594 3960" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M496 4100 C551 4100 547 3960 594 3960" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 3988 C1116 3988 1112 3960 1159 3960" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 4016 C1116 4016 1112 3960 1159 3960" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 4044 C1116 4044 1112 3960 1159 3960" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M1061 4072 C1116 4072 1112 4162 1159 4162" fill="none" stroke="#688d7c" stroke-width="1.4" marker-end="url(#arrow)"/>
+</svg>

@@ -69,14 +69,14 @@ export const questions = {
       ],
       ["Вина за свою реакцию", "Guilt about how I reacted"],
       ["Усталость", "Tiredness"],
-      ["Продолжаю мысленно спорить", "I keep arguing in my head"],
+      ["Мысленно возвращаюсь к случившемуся", "I keep replaying what happened"],
       ["По-разному", "It varies"],
     ],
   },
   worry: {
     title: [
-      "Когда вы тревожитесь, о чём чаще ваши мысли?",
-      "What is usually on your mind when you feel anxious?",
+      "О какой тревоге вам хочется поговорить сейчас?",
+      "Which worry would you like to explore now?",
     ],
     options: [
       ["О будущем", "The future"],
@@ -147,16 +147,12 @@ export const questions = {
     ],
   },
   worryEnd: {
-    title: [
-      "Когда вы пытаетесь разобраться, что обычно происходит?",
-      "What happens when you try to work through it?",
-    ],
+    title: ["Вспомните последний раз, когда вы тревожились. Что стало с тревогой чуть позже?","Think of the last time you felt anxious. How did the anxiety feel a little later?"],
     options: [
-      ["Становится яснее", "Things become clearer"],
-      ["Становится спокойнее", "I feel calmer"],
-      ["Легче ненадолго", "I feel better for a little while"],
-      ["Мыслей становится больше", "I have even more thoughts"],
-      ["Пока не замечал", "I haven't noticed yet"],
+      ["Стала слабее","Less intense"],
+      ["Осталась примерно такой же","About the same"],
+      ["Усилилась","More intense"],
+      ["Не помню","I don’t remember"],
     ],
   },
   sad: {
@@ -189,15 +185,11 @@ export const questions = {
     ],
   },
   sadEnd: {
-    title: [
-      "Получается ли дать себе то, чего хочется?",
-      "Are you able to give yourself what you need?",
-    ],
+    title: ["В последний раз получилось сделать то, чего хотелось?","Did you get to do what you wanted the last time this happened?"],
     options: [
-      ["Чаще да", "Usually"],
-      ["Иногда", "Sometimes"],
-      ["Обычно откладываю свои потребности", "I tend to put my needs off"],
-      ["Пока не знаю, что помогает", "I don't yet know what helps"],
+      ["Да","Yes"],
+      ["Нет","No"],
+      ["Не помню","I don’t remember"],
     ],
   },
   tired: {
@@ -220,19 +212,13 @@ export const questions = {
     ],
   },
   tiredDo: {
-    title: [
-      "Что происходит, когда вы замечаете усталость?",
-      "What do you do when you notice you're tired?",
-    ],
+    title: ["Что вы сделали первым, когда в последний раз устали?","What did you do first the last time you felt tired?"],
     options: [
-      ["Делаю паузу", "I take a break"],
-      ["Продолжаю, пока не закончу", "I keep going until I finish"],
-      ["Берусь за более простые дела", "I switch to an easier task"],
-      ["Откладываю всё", "I put everything off"],
-      [
-        "Замечаю, когда сил совсем не осталось",
-        "I only notice once I'm exhausted",
-      ],
+      ["Сделал паузу","Took a break"],
+      ["Переключился на дело попроще","Switched to an easier task"],
+      ["Продолжил прежнее дело","Kept doing the same thing"],
+      ["Что-то другое","Something else"],
+      ["Не помню","I don’t remember"],
     ],
   },
   tiredEnd: {
@@ -275,6 +261,7 @@ export const questions = {
       ["Исправить ситуацию", "Putting things right"],
       ["Рассказать тому, кому доверяю", "Talking to someone I trust"],
       ["Сделать вид, что ничего не произошло", "Pretending nothing happened"],
+      ["Ничего из этого", "None of these"],
     ],
   },
   shameEnd: {
@@ -371,15 +358,12 @@ export const questions = {
     ],
   },
   tenseEnd: {
-    title: [
-      "Что с напряжением, когда ситуация заканчивается?",
-      "What happens to the tension when the situation ends?",
-    ],
+    title: ["Когда эта ситуация в последний раз закончилась, что стало с напряжением?","The last time that situation ended, what happened to the tension?"],
     options: [
-      ["Уходит", "It goes away"],
-      ["Снижается постепенно", "It eases gradually"],
-      ["Держится ещё долго", "It lingers"],
-      ["По-разному", "It varies"],
+      ["Стало слабее","It eased"],
+      ["Осталось примерно таким же","It stayed about the same"],
+      ["Усилилось","It intensified"],
+      ["Не помню","I don’t remember"],
     ],
   },
   positive: {
@@ -408,24 +392,70 @@ export const questions = {
       ["Просто хорошо", "I simply feel good"],
     ],
   },
-  positiveEnd: {
-    title: [
-      "Получается ли оставлять место для таких моментов?",
-      "Do you get to make room for moments like these?",
-    ],
+  sadTalk: {
+    title: ["В последний раз получилось с кем-нибудь поговорить?","Did you get to talk to someone the last time this happened?"],
     options: [
-      ["Да", "Yes"],
-      ["Иногда", "Sometimes"],
-      [
-        "Они первыми уступают делам",
-        "They're the first thing I give up when things get busy",
-      ],
-      ["Пока не задумывался", "I haven't really thought about it"],
+      ["Да","Yes"],
+      ["Нет","No"],
+      ["Не помню","I don’t remember"],
+    ],
+  },
+  tenseFree: {
+    title: ["Вспомните свободный вечер, когда чувствовалось напряжение. Каким оно было к концу вечера?","Think of a free evening when you felt tense. How did the tension feel by the end?"],
+    options: [
+      ["Стало слабее","It eased"],
+      ["Осталось примерно таким же","It stayed about the same"],
+      ["Усилилось","It intensified"],
+      ["Не помню","I don’t remember"],
+    ],
+  },
+  angerSelfEnd: {
+    title: ["В последний раз, когда вы злились на себя, что было потом?","The last time you felt angry with yourself, what happened afterward?"],
+    options: [
+      ["Продолжал себя ругать","I kept blaming myself"],
+      ["Решил, что попробую иначе","I decided what to try differently"],
+      ["Переключился на другое","I moved on to something else"],
+      ["Не помню","I don’t remember"],
     ],
   },
 } as const;
 
 export type QuestionId = keyof typeof questions;
+
+export const observationLabels: Record<QuestionId, readonly [string, string]> = {
+  angerPeople: ["В такие моменты вы описываете свою реакцию так","You describe your response in those moments as"],
+  angerSelf: ["В такие моменты вы упрекаете себя за следующее","What you tend to fault yourself for is"],
+  notice: ["Вот как вы это замечаете","The first sign you notice is"],
+  future: ["Самое трудное для вас в ожидании","The hardest part for you is"],
+  past: ["Возвращаясь к событию, вы ищете","When you revisit the event, what you look for is"],
+  relationships: ["После общения возвращается мысль","The thought you revisit after an interaction is"],
+  decisions: ["Когда есть сомнения, ваша первая реакция","When you doubt a decision, you describe your response as"],
+  sadNeed: ["В такие моменты вам ближе ответ","What comes closest to what you want then is"],
+  tiredDo: ["В последний раз первым делом вы сделали вот что","The first thing you did last time was"],
+  shameDo: ["Вот что вам хотелось сделать","What you felt like doing was"],
+  emptyWhen: ["На вопрос о том, когда это ощущение меняется, вы ответили","Asked when this feeling shifts, you said"],
+  tenseWhen: ["Так вы описали обстоятельства, в которых замечаете напряжение","You described the circumstances in which you notice tension as"],
+  positiveDo: ["Вот что вы замечаете в себе в такие моменты","What you notice about yourself in those moments is"],
+  angerEnd: ["После злости","After the anger fades"],
+  angerSelfEnd: ["Что было потом в тот раз","What happened afterward that time"],
+  worryEnd: ["Что стало с тревогой в тот раз","How the anxiety felt later that time"],
+  sadEnd: ["Удалось ли сделать это в тот раз","Whether you got to do that last time"],
+  sadTalk: ["Удалось ли в тот раз поговорить","Whether you got to talk that time"],
+  tiredEnd: ["После отдыха","After rest"],
+  shameEnd: ["К чему вы возвращаетесь позже","What you revisit afterward"],
+  emptyEnd: ["За чем вам хочется понаблюдать","What you might like to notice"],
+  emptyShift: ["По чему вы узнаёте перемену","How you recognise a change"],
+  tenseEnd: ["Напряжение после ситуации в тот раз","Tension afterward that time"],
+  tenseFree: ["Напряжение к концу того вечера","Tension by the end of that evening"],
+  anger: ["Перед злостью вы замечаете","What you notice before feeling angry is"],
+  worry: ["Вы выбрали тему для разговора","The worry you chose to explore was"],
+  sad: ["Так вы описываете моменты грусти","You describe your sad moments this way"],
+  tired: ["Ваша усталость ощущается так","You describe your tiredness as"],
+  shame: ["Стыд для вас заметнее в такие моменты","You notice shame most in these moments"],
+  empty: ["Вы описали это ощущение так","You described the feeling this way"],
+  tense: ["Первый признак напряжения для вас","The sign of tension you notice is"],
+  positive: ["Вы замечаете это чувство в такие моменты","You notice this feeling in these moments"],
+};
 
 export function branchQuestions(
   feeling: SurveyFeeling,
@@ -441,9 +471,10 @@ export function branchQuestions(
           : first === 0 || first === 1
             ? "angerPeople"
             : "notice",
-        "angerEnd",
+        first === 3 ? "angerSelfEnd" : "angerEnd",
       ];
     case "тревожно":
+      if (first === 4) return ["worry", "notice"];
       return [
         "worry",
         (["future", "past", "relationships", "decisions", "notice"] as const)[
@@ -452,7 +483,8 @@ export function branchQuestions(
         "worryEnd",
       ];
     case "грусть":
-      return ["sad", "sadNeed", "sadEnd"];
+      if (second === 4) return ["sad", "sadNeed"];
+      return ["sad", "sadNeed", second === 0 ? "sadTalk" : "sadEnd"];
     case "усталость":
       return ["tired", "tiredDo", "tiredEnd"];
     case "стыд":
@@ -460,65 +492,11 @@ export function branchQuestions(
     case "пусто":
       return ["empty", "emptyWhen", second === 4 ? "emptyEnd" : "emptyShift"];
     case "напряжение":
-      return ["tense", "tenseWhen", "tenseEnd"];
+      if (second === 4) return ["tense", "tenseWhen"];
+      return ["tense", "tenseWhen", second === 3 ? "tenseFree" : "tenseEnd"];
     case "спокойно":
     case "радость":
-      return ["positive", "positiveDo", "positiveEnd"];
+      return ["positive", "positiveDo"];
   }
 }
-
-/** Observations describe only the outcome the person reported. */
-export const observations: Partial<Record<QuestionId, readonly (readonly [string, string])[]>> = {
-  angerEnd: [
-    ["Когда злость проходит, вы замечаете облегчение.","You notice relief once the anger passes."],
-    ["После злости становится яснее, что хочется изменить.","After the anger passes, what you want to change becomes clearer."],
-    ["Позже внимание переключается на вашу собственную реакцию: вы чувствуете вину за неё.","Later your attention shifts to your own reaction, and you feel guilty about it."],
-    ["После злости вы чаще замечаете усталость.","You tend to feel tired after the anger passes."],
-    ["Разговор уже закончился, а мысленный спор ещё продолжается.","The conversation ends, but the argument continues in your head."],
-  ],
-  worryEnd: [
-    ["Когда вы разбираете тревожную мысль, ситуация становится понятнее.","Working through the worry helps you understand the situation."],
-    ["Разобрав тревожную мысль, вы обычно чувствуете себя спокойнее.","You usually feel calmer after working through a worry."],
-    ["Вы замечаете облегчение, но ненадолго. Можно проследить, в какой момент мысль возвращается.","You notice some relief, but it is brief. The moment the thought returns may be worth noticing."],
-    ["Пытаясь разобраться с тревогой, вы замечаете, что мыслей становится больше.","When you try to work through the worry, you notice more thoughts coming up."],
-  ],
-  sadEnd: [
-    ["В моменты грусти вам чаще удаётся уделить внимание тому, чего хочется.","When you feel sad, you can usually make room for what you need."],
-    ["Иногда удаётся дать себе то, чего хочется в момент грусти. Что отличает такие дни?","Sometimes you can make room for what you need when you're sad. What is different on those days?"],
-    ["Вы замечаете, чего хочется в момент грусти, но обычно откладываете это на потом.","When you're sad, you notice a need but usually set it aside."],
-  ],
-  tiredEnd: [
-    ["После отдыха вы замечаете, что сил становится больше.","You notice your energy returning after rest."],
-    ["Отдых помогает телу, а мысли продолжают занимать внимание. Для вас это два разных признака восстановления.","Your body feels better after rest, while your thoughts stay busy. Those are two different signs of recovery for you."],
-    ["Даже после отдыха вы пока замечаете мало изменений в самочувствии.","So far, you notice little change in how you feel after resting."],
-    ["Вы замечаете усталость, но до самого отдыха дело доходит редко.","You notice you're tired, yet rarely get to take a break."],
-  ],
-  shameEnd: [
-    ["Позже вы возвращаетесь мыслями к тому, что произошло.","Afterward, you tend to revisit what happened."],
-    ["После эпизода внимание смещается с самого события на мысли о себе.","Afterward, your attention shifts from the event to thoughts about yourself."],
-    ["Вы возвращаетесь и к событию, и к мыслям о себе. Можно понаблюдать, когда внимание переключается.","You revisit both the event and thoughts about yourself. You might notice when your attention shifts."],
-    ["Обычно удаётся отпустить случившееся.","You can usually let the event go."],
-  ],
-  tenseEnd: [
-    ["Когда ситуация заканчивается, вы замечаете, как уходит напряжение.","When the situation ends, you notice the tension lift."],
-    ["Ситуация уже закончилась, а напряжению нужно немного времени, чтобы спасть.","The situation ends before the tension has fully eased."],
-    ["Напряжение остаётся надолго даже после того, как ситуация закончилась.","The tension stays with you long after the situation ends."],
-  ],
-  positiveEnd: [
-    ["В обычной неделе вы находите место для таких моментов.","You make room for these moments during an ordinary week."],
-    ["Иногда для таких моментов находится место. Чем отличаются дни, когда это удаётся?","Sometimes you make room for those moments. What is different on the days when that happens?"],
-    ["Когда прибавляются дела, эти моменты первыми исчезают из недели.","When life gets busy, these moments are the first to slip out of your week."],
-  ],
-  emptyShift: [
-    ["В такие моменты вы снова начинаете что-то чувствовать.","In those moments, you notice feelings returning."],
-    ["Перемена для вас заметна по тому, что возвращается интерес.","Returning interest is how you recognise a shift."],
-    ["Первым заметным изменением для вас становится прилив сил.","Having more energy is how you notice a change."],
-    ["В такие моменты появляется ощущение близости.","In those moments, you notice a sense of connection."],
-  ],
-  emptyEnd: [
-    ["Вы пока не замечали, когда ощущение меняется. Начать наблюдение хочется с того, кто рядом и где вы находитесь.","You haven't noticed a shift yet. Where you are and who's nearby feels like a place to start."],
-    ["Вы пока не замечали перемен, но готовы обратить внимание на то, чем заняты в этот момент.","You haven't noticed a shift yet, but what you're doing feels worth paying attention to."],
-    ["Вы пока не замечали перемен. Телесные ощущения кажутся вам доступной точкой наблюдения.","You haven't noticed a shift yet. How your body feels seems like an accessible place to start."],
-  ],
-};
 
