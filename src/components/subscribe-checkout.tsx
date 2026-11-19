@@ -346,7 +346,7 @@ export function SubscribeCheckout({
                   <span className="ms-1.5 align-baseline text-xl">Stars</span>
                 </p>
               ) : (
-                <p className="sub-display text-3xl">{rub(chosen.rub)}</p>
+                <p className="sub-display shrink-0 whitespace-nowrap text-3xl">{rub(chosen.rub)}</p>
               )}
             </div>
 
