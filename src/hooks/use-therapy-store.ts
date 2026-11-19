@@ -367,7 +367,7 @@ export function useTherapyStore(options?: {
       } else {
         entries = [
           {
-            id: createId(),
+            id: input.id ?? createId(),
             date: input.date,
             createdAt: now,
             updatedAt: now,

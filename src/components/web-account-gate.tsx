@@ -438,7 +438,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   const lead = mode === "forgot" ? t("webForgotLead") : mode === "login" ? t("webFormEnterLead") : null;
 
   return (
-    <main className="journal-scroll">
+    <div className={compact ? undefined : "journal-scroll"}>
       <div className="journal-gate pt-3 pr-[max(1rem,var(--safe-right))] pb-10 pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]">
       {!compact && <section className="journal-gate-pitch">
         <p className="eyebrow text-[color:var(--accent-text)]">{t("webKicker")}</p>
@@ -680,6 +680,6 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         <LegalAgree className="mt-5 text-center text-xs leading-relaxed text-muted-foreground" />
       </section>
       </div>
-    </main>
+    </div>
   );
 }
