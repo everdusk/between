@@ -75,17 +75,23 @@ function subscribeLaunch(onChange: () => void) {
 export function TherapyApp({ webFirst = false }: { webFirst?: boolean }) {
   const telegram = useTelegram();
   const inMax = useInMax();
+  const pathname = usePathname();
+  const webEntry = pathname === "/" || pathname === "/journal" || pathname.startsWith("/journal/");
+  const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
   const [erased, setErased] = useState(false);
   return (
     <LocaleProvider
       telegramLanguage={telegram.user?.language_code}
       initData={telegram.inTelegram ? telegram.initData : ""}
       lockLocale={null}
+      publicLanguages={webFirst && !inMax && !telegram.inTelegram && !web.account}
     >
       {erased ? (
         <ErasedJournal />
       ) : (
         <TherapyShell
+          web={web}
+          webEntry={webEntry}
           onErased={() => setErased(true)}
           telegram={telegram}
           inMax={inMax}
@@ -132,24 +138,22 @@ function ErasedJournal() {
 }
 
 function TherapyShell({
+  web,
+  webEntry,
   telegram,
   inMax,
   webFirst,
   onErased,
 }: {
+  web: ReturnType<typeof useWebAccount>;
+  webEntry: boolean;
   telegram: TelegramSession;
   inMax: boolean;
   webFirst: boolean;
   onErased: () => void;
 }) {
   const { t, locale } = useI18n();
-  const pathname = usePathname();
-  const webEntry =
-    pathname === "/" ||
-    pathname === "/journal" ||
-    pathname.startsWith("/journal/");
   const [composeRequest, setComposeRequest] = useState(0);
-  const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
   // null while MAX may still hand over the launch string. "" means it never arrived.
   const [maxLaunch, setMaxLaunch] = useState<string | null>(null);
   const waitingForMax = inMax && webEntry && !telegram.inTelegram;
