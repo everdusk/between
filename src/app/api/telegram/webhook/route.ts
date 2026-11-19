@@ -212,12 +212,22 @@ async function handleCallback(callback: TelegramCallback) {
   }
   const login = /^lin:([a-z0-9]{32})$/i.exec(callback.data ?? "");
   if (login && callback.from?.id) {
-    const { reply } = await localesFor(callback.from);
-    const account = await finishTelegramLogin(login[1].toLowerCase(), callback.from.id, callback.from.username);
-    await telegramRequest("answerCallbackQuery", {
-      callback_query_id: callback.id,
-      text: translate(reply, account ? "botLoginOk" : "botLinkBad"),
+    await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
+    const { reply } = await localesFor(callback.from).catch(() => ({
+      reply: resolveBotLocale(null, null, callback.from?.language_code),
+    }));
+    const account = await finishTelegramLogin(login[1].toLowerCase(), callback.from.id, callback.from.username).catch(() => {
+      console.error("Telegram login confirmation could not be saved");
+      return null;
     });
+    const text = translate(reply, account ? "botLoginOk" : "webTgLoginFail");
+    const edited = callback.message && await telegramRequest("editMessageText", {
+      chat_id: callback.message.chat.id,
+      message_id: callback.message.message_id,
+      text,
+      reply_markup: { inline_keyboard: [] },
+    });
+    if (!edited) await telegramRequest("sendMessage", { chat_id: callback.from.id, text });
     return;
   }
   const parsed = callback.data ? parseFeelingCallback(callback.data) : null;
@@ -434,6 +444,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "bad json" }, { status: 400 });
   }
 
+  if (update.callback_query?.data?.startsWith("lin:")) {
+    await handleCallback(update.callback_query);
+    return NextResponse.json({ ok: true });
+  }
   await publishBotCommands();
   await ensureTelegramBlocks();
 
