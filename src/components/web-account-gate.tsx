@@ -131,7 +131,9 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   const [busy, setBusy] = useState(false);
   const [messengerUrl, setMessengerUrl] = useState<string | null>(null);
   const [telegramVpn, setTelegramVpn] = useState(false);
-  const [errorScope, setErrorScope] = useState<"login" | "register" | "other">("other");
+  const [errorScope, setErrorScope] = useState<"login" | "register" | "messenger" | "other">("other");
+  const [waitingFor, setWaitingFor] = useState<"max" | "telegram" | null>(null);
+  const startingMessenger = useRef(false);
   const formRef = useRef<HTMLElement>(null);
   const codeRef = useRef<HTMLInputElement>(null);
   const maxTried = useRef(false);
@@ -209,9 +211,9 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     return true;
   }
 
-  function rememberLogin(kind: "max" | "telegram", token: string) {
+  function rememberLogin(kind: "max" | "telegram", token: string, expiresAt: number) {
     try {
-      sessionStorage.setItem("between:messenger-login", JSON.stringify({ kind, token }));
+      sessionStorage.setItem("between:messenger-login", JSON.stringify({ kind, token, expiresAt }));
     } catch {
       // The open tab still polls when storage is blocked.
     }
@@ -225,9 +227,9 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     }
   }
 
-  async function pollMessenger(kind: "max" | "telegram", token: string, mine: number) {
+  async function pollMessenger(kind: "max" | "telegram", token: string, mine: number, expiresAt: number) {
     const waitUrl = kind === "max" ? "/api/account/max/wait" : "/api/account/telegram/wait";
-    for (let attempt = 0; attempt < 120; attempt += 1) {
+    while (Date.now() < expiresAt) {
       if (mine !== maxPoll.current) return;
       try {
         const wait = await fetch(waitUrl, {
@@ -237,12 +239,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         });
         const body = (await wait.json().catch(() => ({}))) as { pending?: boolean; account?: WebAccount };
         if (mine !== maxPoll.current) return;
-        if (wait.status === 403) {
-          forgetLogin();
-          setNote(null);
-          setError(t(kind === "max" ? "webMaxLoginFail" : "webTgLoginFail"));
-          return;
-        }
+        if (wait.status === 403 || wait.status === 400) break;
         if (wait.ok && body.account && !body.pending) {
           forgetLogin();
           onSignedIn(body.account);
@@ -251,18 +248,35 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       } catch {
         // The next attempt asks again.
       }
-      await new Promise((resolve) => window.setTimeout(resolve, 1500));
+      await new Promise<void>((resolve) => {
+        const wake = () => {
+          window.clearTimeout(timer);
+          window.removeEventListener("focus", wake);
+          document.removeEventListener("visibilitychange", wake);
+          resolve();
+        };
+        const timer = window.setTimeout(wake, 1500);
+        window.addEventListener("focus", wake);
+        document.addEventListener("visibilitychange", wake);
+      });
     }
     if (mine !== maxPoll.current) return;
     forgetLogin();
+    setWaitingFor(null);
+    setMessengerUrl(null);
     setNote(null);
+    setErrorScope("messenger");
     setError(t(kind === "max" ? "webMaxLoginFail" : "webTgLoginFail"));
   }
 
   async function loginWithMessenger(kind: "max" | "telegram") {
+    if (startingMessenger.current) return;
+    startingMessenger.current = true;
     const popup = window.open("about:blank", "_blank");
     const mine = ++maxPoll.current;
     setError(null);
+    setErrorScope("messenger");
+    setWaitingFor(kind);
     setNote(null);
     setMessengerUrl(null);
     setTelegramVpn(false);
@@ -286,22 +300,26 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         return;
       }
       if (data.vpn) setTelegramVpn(true);
+      const expiresAt = Date.now() + 10 * 60_000;
+      rememberLogin(kind, data.token, expiresAt);
+      setMessengerUrl(data.url);
       if (popup && !popup.closed) popup.location.replace(data.url);
-      else {
-        popup?.close();
-        setMessengerUrl(data.url);
-      }
-      rememberLogin(kind, data.token);
       setNote(t(kind === "max" ? "webMaxLoginWait" : "webTgLoginWait"));
-      await pollMessenger(kind, data.token, mine);
+      startingMessenger.current = false;
+      await pollMessenger(kind, data.token, mine, expiresAt);
     } catch {
       popup?.close();
       if (mine === maxPoll.current) setError(t("webServer"));
+    } finally {
+      if (mine === maxPoll.current) {
+        startingMessenger.current = false;
+        setWaitingFor(null);
+      }
     }
   }
 
   useEffect(() => {
-    let pending: { kind?: unknown; token?: unknown } | null = null;
+    let pending: { kind?: unknown; token?: unknown; expiresAt?: unknown } | null = null;
     try {
       const raw = sessionStorage.getItem("between:messenger-login");
       pending = raw ? (JSON.parse(raw) as { kind?: unknown; token?: unknown }) : null;
@@ -314,7 +332,8 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     // A reload continues the login this tab already started.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setNote(t(kind === "max" ? "webMaxLoginWait" : "webTgLoginWait"));
-    void pollMessenger(kind, pending.token, mine);
+    setWaitingFor(kind);
+    void pollMessenger(kind, pending.token, mine, typeof pending.expiresAt === "number" ? pending.expiresAt : Date.now() + 10 * 60_000);
     return () => {
       maxPoll.current += 1;
     };
@@ -480,7 +499,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
                 variant="outline"
                 size="lg"
                 className="w-full"
-                disabled={busy}
+                disabled={busy || (waitingFor === "telegram" && Boolean(messengerUrl))}
                 onClick={() => void loginWithMessenger("telegram")}
               >
                 {t("webTgLogin")}
@@ -490,7 +509,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
                 variant="outline"
                 size="lg"
                 className="mt-2 w-full"
-                disabled={busy}
+                disabled={busy || (waitingFor === "max" && Boolean(messengerUrl))}
                 onClick={() => void loginWithMessenger("max")}
               >
                 {t("webMaxLogin")}
@@ -500,7 +519,8 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
                   {t("webBotVpn")}
                 </p>
               ) : null}
-              {note ? <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{note}</p> : null}
+              {note ? <p role="status" className="mt-3 text-sm leading-relaxed text-muted-foreground">{note}</p> : null}
+              {error && errorScope === "messenger" && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}
               {messengerUrl ? (
                 <a
                   href={messengerUrl}

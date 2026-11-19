@@ -124,12 +124,6 @@ async function handleCallback(update: MaxUpdate, userId: number) {
     await answerMaxCallback(callbackId, text);
     return;
   }
-  const login = /^lin:([a-z0-9]{32})$/i.exec(payload);
-  if (login) {
-    const account = await finishMaxLogin(login[1].toLowerCase(), userId, maxUsername(update));
-    await answerMaxCallback(callbackId, translate(reply, account ? "botLoginOk" : "botLinkBad"));
-    return;
-  }
   const parsed = feelingFromMaxPayload(update.callback?.payload);
   if (!parsed || !maxToken() || !redisConfigured()) {
     await answerMaxCallback(callbackId, translate(reply, "botCheckinNotReady"));
@@ -282,6 +276,20 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "bad json" }, { status: 400 });
   }
 
+  const login = update.update_type === "message_callback" &&
+    /^lin:([a-z0-9]{32})$/i.exec(update.callback?.payload ?? "");
+  if (login && update.callback?.callback_id) {
+    const userId = maxUserId(update);
+    if (userId) {
+      const account = await finishMaxLogin(login[1].toLowerCase(), userId, maxUsername(update)).catch(() => {
+        console.error("MAX login confirmation could not be saved");
+        return null;
+      });
+      const text = translate("ru", account ? "botLoginOk" : "webMaxLoginFail");
+      if (!(await answerMaxCallback(update.callback.callback_id, text))) await say(userId, text);
+    }
+    return NextResponse.json({ ok: true });
+  }
   try {
     if (maxToken()) await ensureMaxSubscription();
     if (!isMaxPrivate(update)) return NextResponse.json({ ok: true });

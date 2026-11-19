@@ -338,7 +338,11 @@ function TherapyShell({
   const [login, setLogin] = useState(false);
   const loginRequested = useSyncExternalStore(
     subscribeLaunch,
-    () => new URLSearchParams(location.search).has("login"),
+    () => {
+      if (new URLSearchParams(location.search).has("login")) return true;
+      try { return Boolean(sessionStorage.getItem("between:messenger-login")); }
+      catch { return false; }
+    },
     () => false,
   );
   const personal = store.profile?.therapy === false;
