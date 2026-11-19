@@ -6,17 +6,22 @@ import { useI18n } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDayLabel } from "@/lib/dates";
-import { discussedDateKey, entriesForTheme, splitBacklog } from "@/lib/themes";
+import { discussedDateKey, entriesForTheme } from "@/lib/themes";
 import type { JournalEntry, SessionTheme, ThemeLink } from "@/lib/types";
+import { reflectionQuestion } from "./journal-explore";
+import { Textarea } from "./ui/textarea";
 import { cn } from "@/lib/utils";
 
 interface SessionBacklogProps {
+  initialTheme?: string;
   themes: SessionTheme[];
   entries: JournalEntry[];
   links: ThemeLink[];
   refreshing?: boolean;
   disabled?: boolean;
-  onDiscuss: (id: string, discussed: boolean) => void;
+  personal?: boolean;
+  onRestore?: (id: string, status: SessionTheme["status"]) => void;
+  onDiscuss: (id: string, discussed: boolean, outcome?: string) => void;
   onDismiss: (id: string) => void;
   onAdd: (title: string) => void;
   onOpenNote?: (date: string) => void;
@@ -57,6 +62,7 @@ function ThemeRow({
   onDismiss: () => void;
   onOpenNote?: (date: string) => void;
 }) {
+  const { t } = useI18n();
   return (
     <li className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
       <button
@@ -66,11 +72,11 @@ function ThemeRow({
         aria-label={saidLabel}
         onClick={onToggle}
         className={cn(
-          "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border border-foreground/25 bg-background/40 transition-colors duration-200 focus-visible:ring-4 focus-visible:ring-ring/25",
-          said && "border-foreground bg-foreground text-background",
+          "order-2 mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-foreground/25 bg-background/40 transition-colors duration-200 focus-visible:ring-4 focus-visible:ring-ring/25",
+          said ? "border-primary bg-primary text-primary-foreground" : "text-muted-foreground hover:border-primary hover:text-primary",
         )}
       >
-        <Check className={cn("size-3", said ? "opacity-100" : "opacity-0")} strokeWidth={3} />
+        <Check className={cn("size-3", said ? "opacity-100" : "opacity-60")} strokeWidth={3} />
       </button>
       <div className="min-w-0 flex-1 space-y-1">
         <button
@@ -93,6 +99,7 @@ function ThemeRow({
             className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
           />
         </button>
+        {open && theme.outcome && <p className="whitespace-pre-wrap text-sm">{theme.outcome}</p>}
         {open && (
           <ul className="space-y-2 pt-2">
             {notes.length === 0 ? (
@@ -123,6 +130,7 @@ function ThemeRow({
                       </span>
                     )}
                   </button>
+                  {entry.reflection && <div className="mt-2 space-y-1 rounded-xl border border-border p-3 text-sm"><strong>{entry.reflection.feeling==="unsure" ? t("unsure") : feelingLabel(entry.reflection.feeling)}</strong><p>{t(reflectionQuestion(entry.reflection.feeling))}</p><p className="whitespace-pre-wrap">{entry.reflection.answer}</p><p className="whitespace-pre-wrap">{entry.reflection.insight}</p></div>}
                 </li>
               ))
             )}
@@ -133,7 +141,7 @@ function ThemeRow({
         type="button"
         variant="ghost"
         size="icon-sm"
-        className="-me-2 -mt-1 shrink-0"
+        className="order-3 shrink-0"
         disabled={disabled}
         aria-label={removeLabel}
         onClick={onDismiss}
@@ -145,6 +153,8 @@ function ThemeRow({
 }
 
 export function SessionBacklog({
+  initialTheme,
+  personal, onRestore,
   themes,
   entries,
   links,
@@ -157,9 +167,15 @@ export function SessionBacklog({
 }: SessionBacklogProps) {
   const { t, locale, count, feeling } = useI18n();
   const [draft, setDraft] = useState("");
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [archiveOpen, setArchiveOpen] = useState(false);
-  const { live, archive } = splitBacklog(themes);
+  const [openId, setOpenId] = useState<string | null>(initialTheme ?? null);
+  const [archiveOpen, setArchiveOpen] = useState(themes.some(theme=>theme.id===initialTheme && theme.status==="discussed"));
+  const active = themes.filter(theme => !theme.dismissed && theme.status !== "archived");
+  const live = active.filter(theme => theme.status === "active");
+  const archive = active.filter(theme => theme.status === "discussed");
+  const [removed,setRemoved]=useState<SessionTheme[]>([]);
+  const [closing,setClosing]=useState<string | null>(null);
+  const [outcome,setOutcome]=useState("");
+  function remove(theme:SessionTheme){onDismiss(theme.id);setRemoved(list=>[...list,theme])}
 
   function add(text: string) {
     const clean = text.trim();
@@ -176,9 +192,9 @@ export function SessionBacklog({
             id="session-backlog-title"
             className="font-display text-xl tracking-tight text-foreground"
           >
-            {t("backlogTitle")}
+            {t(personal?"deskPersonal":"deskTherapy")}
           </h3>
-          <p className="text-sm text-muted-foreground">{t("backlogLead")}</p>
+
         </div>
         {live.length > 0 && (
           <span className="tabular inline-flex h-7 min-w-7 shrink-0 items-center justify-center rounded-full bg-foreground/[0.06] px-2 text-xs font-medium text-foreground">
@@ -214,9 +230,9 @@ export function SessionBacklog({
               noteCount={count(theme.count, "note")}
               locale={locale}
               feelingLabel={feeling}
-              onToggle={() => onDiscuss(theme.id, theme.status !== "discussed")}
+              onToggle={() => {setClosing(theme.id); setOutcome(theme.outcome ?? "")}}
               onExpand={() => setOpenId(openId === theme.id ? null : theme.id)}
-              onDismiss={() => onDismiss(theme.id)}
+              onDismiss={() => remove(theme)}
               onOpenNote={onOpenNote}
             />
           ))}
@@ -231,7 +247,7 @@ export function SessionBacklog({
             aria-expanded={archiveOpen}
             onClick={() => setArchiveOpen((open) => !open)}
           >
-            <span className="text-sm text-muted-foreground">{t("backlogArchive")}</span>
+            <span className="text-sm text-muted-foreground">{t(personal ? "feelingDone" : "backlogArchive")}</span>
             <span className="tabular text-xs text-muted-foreground">{archive.length}</span>
             <ChevronDown
               aria-hidden
@@ -243,7 +259,7 @@ export function SessionBacklog({
           </button>
           {archiveOpen && (
             <>
-              <p className="mt-1.5 text-xs text-muted-foreground">{t("backlogArchiveLead")}</p>
+
               <ul className="mt-2 divide-y divide-[color:var(--glass-border)]">
                 {archive.map((theme) => (
                   <ThemeRow
@@ -262,7 +278,7 @@ export function SessionBacklog({
                     feelingLabel={feeling}
                     onToggle={() => onDiscuss(theme.id, false)}
                     onExpand={() => setOpenId(openId === theme.id ? null : theme.id)}
-                    onDismiss={() => onDismiss(theme.id)}
+                    onDismiss={() => remove(theme)}
                     onOpenNote={onOpenNote}
                   />
                 ))}
@@ -272,6 +288,8 @@ export function SessionBacklog({
         </div>
       )}
 
+      {closing && <dialog ref={d=>{if(d&&!d.open)d.showModal()}} onCancel={()=>setClosing(null)} className="m-auto max-w-[90vw] space-y-4 rounded-3xl border border-border bg-popover p-5 text-foreground backdrop:bg-black/50"><label className="block">{t("insights")}<Textarea autoFocus value={outcome} placeholder={t("insightsPlaceholder")} onChange={e=>setOutcome(e.target.value)}/></label><div className="flex gap-2"><Button onClick={()=>{onDiscuss(closing,true,outcome);setClosing(null)}}>{t("feelingDone")}</Button><Button variant="outline" onClick={()=>setClosing(null)}>{t("cancel")}</Button></div></dialog>}
+      {onRestore && removed.map(item=><div key={item.id} className="mt-2 flex items-center justify-between gap-2 text-sm"><span>{item.title}</span><Button variant="outline" onClick={()=>{onRestore(item.id,item.status);setRemoved(rows=>rows.filter(row=>row.id!==item.id))}}>{t("undoChange")}</Button></div>)}
       <form
         className="mt-5 flex items-center gap-2 rounded-full border border-[color:var(--glass-border)] bg-background/55 p-1 ps-4 transition-[box-shadow,border-color] has-[:focus-visible]:border-primary/40 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-primary/12"
         onSubmit={(event) => {
@@ -280,14 +298,14 @@ export function SessionBacklog({
         }}
       >
         <label className="sr-only" htmlFor="backlog-draft">
-          {t("backlogPlaceholder")}
+          {t(personal ? "deskPersonal" : "backlogPlaceholder")}
         </label>
         <Input
           id="backlog-draft"
           value={draft}
           disabled={disabled}
           onChange={(event) => setDraft(event.target.value)}
-          placeholder={t("backlogPlaceholder")}
+          placeholder={t(personal ? "deskPersonal" : "backlogPlaceholder")}
           className="h-9 min-w-0 flex-1 rounded-none border-0 bg-transparent px-0 focus-visible:border-transparent focus-visible:bg-transparent focus-visible:ring-0"
         />
         <Button

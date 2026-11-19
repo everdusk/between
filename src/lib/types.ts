@@ -31,6 +31,7 @@ export type EntrySource = "app" | "bot" | "checkin";
 export type CheckinSlot = "morning" | "day" | "evening";
 
 export interface JournalEntry {
+  reflection?: { feeling: Feeling | "unsure"; answer: string; insight: string };
   id: string;
   date: string; // YYYY-MM-DD
   createdAt: string;
@@ -95,6 +96,9 @@ export interface ThemeLink {
  * the backlog is the list of these themes.
  */
 export interface SessionTheme {
+  outcome?: string;
+  list?: "therapy" | "personal";
+  observation?: "familiar" | "hidden";
   id: string;
   userId: string;
   title: string;
@@ -161,6 +165,7 @@ export interface NotifyPrefs {
 }
 
 export interface TherapyStore {
+  profile?: { name: string; therapy: boolean; updatedAt: string };
   version: 2;
   entries: JournalEntry[];
   sessions: SessionNote[];

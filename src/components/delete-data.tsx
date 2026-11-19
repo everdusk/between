@@ -38,6 +38,8 @@ export function DeleteJournal({
         setError(t("deleteFail"));
         return;
       }
+      const deleted = await res.json();
+      if (typeof deleted.cacheId === "string") clearStore(`between:journal:${deleted.cacheId}`);
       clearStore();
       clearStore(WEB_STORAGE_KEY);
       setStep("done");

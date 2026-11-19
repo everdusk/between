@@ -1,6 +1,6 @@
 import { feelingLabel, translate } from "./messages";
 import type { LocaleId } from "./i18n";
-import { entryInWindow, therapyWindow } from "./session-summary";
+import { entryInWindow, observationWindow } from "./session-summary";
 import { sessionPeriodNoteCount } from "./session-pdf";
 import { buildWeekSpectrum } from "./spectrum";
 import type { TherapyStore } from "./types";
@@ -9,7 +9,7 @@ export type PeriodBrief = { notes: number; mood: string; themes: string };
 
 /** Counts and labels already on the journal. Does not call the model. */
 export function periodBrief(store: TherapyStore, locale: LocaleId, dateKey: string, now: Date): PeriodBrief {
-  const period = therapyWindow(store.sessions, store.entries, dateKey, now, store.sessionPlan);
+  const period = observationWindow(store.sessions, store.entries, dateKey, now, store.profile?.therapy === false ? null : store.sessionPlan);
   const entries = store.entries.filter((entry) => entryInWindow(entry, period));
   const spectrum = buildWeekSpectrum(period.days, entries);
   const mood =

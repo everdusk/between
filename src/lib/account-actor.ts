@@ -61,6 +61,7 @@ export async function actorFromRequest(req: Request): Promise<Actor | null> {
     }
   }
 
+  if (kind === "max") return null;
   if (initData) {
     const validated = validateInitData(initData);
     if (validated) {
@@ -74,7 +75,7 @@ export async function actorFromRequest(req: Request): Promise<Actor | null> {
     }
   }
 
-  if (!secret || !token) return null;
+  if (kind === "telegram" || !secret || !token) return null;
   const account = await accountFromSession(token, secret);
   if (!account) return null;
   return {

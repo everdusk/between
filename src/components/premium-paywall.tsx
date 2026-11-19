@@ -44,6 +44,7 @@ export function PremiumPaywall({
     <section className="space-y-3">
       <h3 className="font-display text-lg tracking-tight text-foreground">{t("premiumMark")}</h3>
       <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{premiumText}</p>
+      {inTelegram && access?.premium !== "forever" && <p className="text-xs text-muted-foreground">{t("starsRenewal")}</p>}
       {access && access.premium !== "forever" ? (
         <div className="space-y-2">
           {inTelegram

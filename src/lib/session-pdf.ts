@@ -3,7 +3,7 @@ import path from "node:path";
 import { formatDateSpan, formatDayLabel, formatLongDate, weekKey, weekdayShort } from "./dates";
 import type { LocaleId } from "./i18n";
 import { countPhrase, feelingLabel, translate } from "./messages";
-import { entryInWindow, therapyWindow } from "./session-summary";
+import { entryInWindow, observationWindow } from "./session-summary";
 import { spectrumTimeSummary } from "./spectrum";
 import { clipPattern, patternReplyUsable, rankedThemes } from "./themes";
 import type { SessionSheet } from "./session-sheet";
@@ -43,7 +43,7 @@ export function sessionPeriodNoteCount(
   todayKey: string,
   now: Date,
 ): number {
-  const period = therapyWindow(store.sessions, store.entries, todayKey, now, store.sessionPlan);
+  const period = observationWindow(store.sessions, store.entries, todayKey, now, store.profile?.therapy === false ? null : store.sessionPlan);
   return store.entries.filter(
     (entry) => entryInWindow(entry, period) && entry.body.trim().length > 0,
   ).length;
@@ -57,7 +57,7 @@ export function buildSessionPdfModel(
   now: Date,
   sheet?: SessionSheet,
 ): WeekPdfModel {
-  const period = therapyWindow(store.sessions, store.entries, todayKey, now, store.sessionPlan);
+  const period = observationWindow(store.sessions, store.entries, todayKey, now, store.profile?.therapy === false ? null : store.sessionPlan);
   const days = period.days;
   const weekEntries = store.entries.filter((entry) => entryInWindow(entry, period));
   const sessionDates = store.sessions.map((session) => session.date);

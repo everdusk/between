@@ -1,4 +1,4 @@
-import { addDays, dateKeysBetween, formatDayLabel, formatLongDate, parseDateKey, toDateKey } from "@/lib/dates";
+import { addDays, dateKeysBetween, formatDayLabel, formatLongDate, parseDateKey, toDateKey, weekDayKeys, weekKey } from "@/lib/dates";
 import { feelingValence, formatFeelings } from "@/lib/feelings";
 import {
   clockLabel,
@@ -155,6 +155,12 @@ export function therapyWindow(
     endsAt,
     weekKey: `since:${toDateKey(sessionStart)}T${clockLabel(sessionStart)}`,
   };
+}
+
+export function observationWindow(sessions: SessionNote[], entries: JournalEntry[], today: string, now: Date, plan: SessionPlan | null): TherapyWindow {
+  if (plan) return therapyWindow(sessions, entries, today, now, plan);
+  const days = weekDayKeys(now);
+  return { days, last: null, previousDays: days.map(day => addDays(day, -7)), weekKey: weekKey(now), startsAfter: null, endsAt: null };
 }
 
 function afterSession(entries: JournalEntry[], sessionDate: string): JournalEntry[] {

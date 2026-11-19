@@ -11,7 +11,7 @@ import {
 } from "./types";
 
 export type JournalFetchResult =
-  | { ok: true; store: TherapyStore; timeZone: string | null }
+  | { ok: true; store: TherapyStore; timeZone: string | null; cacheId:string }
   | { ok: false; status: number; error: string };
 
 /** Headers that name whose journal this is. A MAX launch string wins over a website cookie. */
@@ -47,15 +47,17 @@ export async function fetchJournal(
     const data = (await res.json()) as {
       ok?: boolean;
       store?: unknown;
+      cacheId?: unknown;
       timeZone?: string | null;
     };
     const store = normalizeStore(data.store);
-    if (!data.ok || !store) {
+    if (!data.ok || !store || typeof data.cacheId !== "string" || !data.cacheId) {
       return { ok: false, status: res.status, error: "bad_response" };
     }
     return {
       ok: true,
       store,
+      cacheId:data.cacheId,
       timeZone: data.timeZone ?? null,
     };
   } catch {
@@ -69,11 +71,12 @@ export async function putJournal(
   timeZone?: string | null,
   options?: { dropEntryIds?: string[]; dropSessionIds?: string[]; replace?: boolean },
   maxInitData = "",
+  cacheId = "",
 ): Promise<boolean> {
   try {
     const res = await fetch("/api/journal", {
       method: "PUT",
-      headers: journalAuthHeaders(initData, maxInitData, true),
+      headers: {...journalAuthHeaders(initData, maxInitData, true),"X-Journal-Cache":cacheId},
       body: JSON.stringify({
         store,
         timeZone: timeZone || undefined,
@@ -94,6 +97,7 @@ export async function requestBrief(
   stamp: string,
   locale: LocaleId = "ru",
   kind: "brief" | "backlog" | "themes" | "judge" | "dedup" | "pattern" = "brief",
+  maxInitData = "",
 ): Promise<
   | { ok: true; text: string | null; reason?: string }
   | { ok: false; error: string }
@@ -101,7 +105,7 @@ export async function requestBrief(
   try {
     const res = await fetch("/api/brief", {
       method: "POST",
-      headers: journalAuthHeaders(initData, "", true),
+      headers: journalAuthHeaders(initData, maxInitData, true),
       body: JSON.stringify({ facts, stamp, locale, kind }),
     });
     const data = (await res.json()) as {
@@ -233,6 +237,7 @@ export function applyJournalWrite(
 
 function entryStamp(entry: TherapyStore["entries"][number]): string {
   return JSON.stringify({
+    reflection: entry.reflection,
     body: entry.body,
     date: entry.date,
     feelings: entry.feelings,
@@ -258,6 +263,7 @@ export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
   const goneEntries = new Set(droppedEntryIds);
   const goneSessions = new Set(droppedSessionIds);
   const merged: TherapyStore = {
+    profile: (a.profile?.updatedAt ?? "") > (b.profile?.updatedAt ?? "") ? a.profile : b.profile ?? a.profile,
     version: 2,
     entries: mergeById(a.entries, b.entries).filter((entry) => !goneEntries.has(entry.id)),
     sessions: mergeById(a.sessions, b.sessions).filter((session) => !goneSessions.has(session.id)),

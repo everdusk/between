@@ -7,7 +7,7 @@ import { fetchJournal, mergeStores, putJournal, requestBrief, tombstoneIds } fro
 
 const EMPTY_JUDGE_SKIPS: string[] = [];
 import type { LocaleId } from "@/lib/i18n";
-import { entryInWindow, therapyWindow } from "@/lib/session-summary";
+import { entryInWindow, observationWindow } from "@/lib/session-summary";
 import {
   addManualTheme,
   applyVerdict,
@@ -32,6 +32,7 @@ import {
   type JournalEntry,
   type NotifyPrefs,
   type SessionNote,
+  type SessionTheme,
   type BacklogItem,
   type BacklogSource,
   type SessionPlan,
@@ -94,6 +95,8 @@ export function useTherapyStore(options?: {
   const maxInitRef = useRef(maxInitData);
   const cloudRef = useRef(cloud);
   const storageKeyRef = useRef(storageKey);
+  const cacheId = useRef("");
+  const syncEpoch = useRef(0);
   useEffect(() => {
     storeRef.current = store;
   }, [store]);
@@ -102,11 +105,14 @@ export function useTherapyStore(options?: {
     maxInitRef.current = maxInitData;
     cloudRef.current = cloud;
     storageKeyRef.current = storageKey;
+    cacheId.current = "";
+    syncEpoch.current++;
   }, [initData, maxInitData, cloud, storageKey]);
 
   const applyLocal = useCallback((next: TherapyStore) => {
     const result = saveStore(next, storageKeyRef.current);
     if (result.ok) {
+      storeRef.current = result.data;
       setStore(result.data);
       setStatus("ready");
       setError(null);
@@ -119,31 +125,42 @@ export function useTherapyStore(options?: {
 
   const syncFromCloud = useCallback(async () => {
     if (!cloudRef.current) return;
+    const epoch = ++syncEpoch.current;
     const data = initDataRef.current;
     const maxData = maxInitRef.current;
     const remote = await fetchJournal(data, maxData);
+    if (epoch !== syncEpoch.current) return;
     if (!remote.ok) {
-      if (remote.status === 503 || remote.status === 401) {
-        setSyncLabel("offline-cloud");
+      setSyncLabel("offline-cloud");
+      if (!cacheId.current || remote.status === 401) {
+        cacheId.current = "";
+        setStatus("error");
+        setError("cloud_unavailable");
       }
-      setStatus("ready");
       return;
     }
+    cacheId.current = remote.cacheId;
+    storageKeyRef.current = `between:journal:${remote.cacheId}`;
     const local = loadStore(storageKeyRef.current);
     const localStore = local.ok ? local.data : emptyStore();
     const merged = mergeStores(localStore, remote.store);
     applyLocal(merged);
     setSyncLabel("cloud");
     const tz = deviceTimeZone();
-    void putJournal(data, merged, tz, undefined, maxData);
+    void putJournal(data, merged, tz, undefined, maxData,remote.cacheId);
   }, [applyLocal]);
 
   useEffect(() => {
     if (!hydrated) return;
+    if (cloud) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- wait for the authenticated cache namespace
+      setStatus("loading");
+      void syncFromCloud();
+      return;
+    }
     const result = loadStore(storageKey);
     if (result.ok) {
       // Local journal is only available after mount.
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- hydrate localStorage once on the client
       setStore(result.data);
       setError(null);
       if (!cloud) {
@@ -156,10 +173,6 @@ export function useTherapyStore(options?: {
       return;
     }
 
-    if (cloud) {
-      setStatus("loading");
-      void syncFromCloud();
-    }
   }, [hydrated, cloud, storageKey, syncFromCloud]);
 
   useEffect(() => {
@@ -187,7 +200,7 @@ export function useTherapyStore(options?: {
       if (!ok) return false;
       if (cloudRef.current) {
         const tz = deviceTimeZone();
-        void putJournal(initDataRef.current, next, tz, options, maxInitRef.current).then((cloudOk) => {
+        void putJournal(initDataRef.current, next, tz, options, maxInitRef.current,cacheId.current).then((cloudOk) => {
           setSyncLabel(cloudOk ? "cloud" : "offline-cloud");
         });
       }
@@ -215,7 +228,7 @@ export function useTherapyStore(options?: {
     if (!hydrated || !cloud) return;
     const now = new Date();
     const today = toDateKey(now);
-    const period = therapyWindow(store.sessions, store.entries, today, now, store.sessionPlan);
+    const period = observationWindow(store.sessions, store.entries, today, now, store.profile?.therapy === false ? null : store.sessionPlan);
     const pending = pendingJudgeEntries(
       store.entries.filter((entry) => entryInWindow(entry, period)),
       store.judgeSettled ?? [],
@@ -234,6 +247,7 @@ export function useTherapyStore(options?: {
         modelRequestStamp("j", stamp),
         locale,
         "judge",
+        maxInitData,
       );
       if (!judgeAlive.current || judgeRun.current !== stamp) return;
       let verdict = result.ok && result.text ? parseJudgeVerdict(result.text) : null;
@@ -276,6 +290,7 @@ export function useTherapyStore(options?: {
           modelRequestStamp("d", stamp, pass),
           locale,
           "dedup",
+          maxInitData,
         );
         if (!judgeAlive.current || judgeRun.current !== stamp) return;
         const hit = dedup.ok && dedup.text ? parseDedupHit(dedup.text) : null;
@@ -293,7 +308,7 @@ export function useTherapyStore(options?: {
         judgeSettled: [...new Set([...(latest.judgeSettled ?? []), stamp])].slice(-400),
       });
     })();
-  }, [hydrated, cloud, initData, judgeNudge, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions]);
+  }, [hydrated, cloud, initData, maxInitData, judgeNudge, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions, store.profile?.therapy]);
 
   const resetCorrupted = useCallback(() => {
     const result = clearStore(storageKeyRef.current);
@@ -302,7 +317,7 @@ export function useTherapyStore(options?: {
       setStatus("ready");
       setError(null);
       if (cloudRef.current) {
-        void putJournal(initDataRef.current, result.data, deviceTimeZone(), { replace: true }, maxInitRef.current);
+        void putJournal(initDataRef.current, result.data, deviceTimeZone(), { replace: true }, maxInitRef.current,cacheId.current);
       }
     } else {
       setError(result.error);
@@ -530,11 +545,11 @@ export function useTherapyStore(options?: {
   );
 
   const setThemeDiscussed = useCallback(
-    (id: string, discussed: boolean) => {
+    (id: string, discussed: boolean, outcome?: string) => {
       const current = storeRef.current;
       return persist({
         ...current,
-        themes: discussTheme(current.themes ?? [], id, discussed),
+        themes: discussTheme(current.themes ?? [], id, discussed).map(theme => theme.id === id && outcome?.trim() ? { ...theme, outcome: outcome.trim() } : theme),
       });
     },
     [persist],
@@ -554,9 +569,10 @@ export function useTherapyStore(options?: {
   const addSessionTheme = useCallback(
     (title: string) => {
       const current = storeRef.current;
+      const list = current.profile?.therapy === false ? "personal" : "therapy";
       return persist({
         ...current,
-        themes: addManualTheme(current.themes ?? [], title, toDateKey()),
+        themes: addManualTheme(current.themes ?? [], title, toDateKey()).map((theme,i)=>i===current.themes.length ? {...theme,list} : theme),
       });
     },
     [persist],
@@ -595,10 +611,46 @@ export function useTherapyStore(options?: {
 
   return {
     store,
+    saveProfile(name: string, therapy: boolean) {
+      return persist({ ...storeRef.current, profile: { name: name.trim().slice(0, 60), therapy, updatedAt: new Date().toISOString() } });
+    },
+    restoreTheme(id: string, status: SessionTheme["status"]) {
+      const current = storeRef.current;
+      return persist({ ...current, themes: current.themes.map(theme => theme.id === id ? { ...theme, status, dismissed: false, updatedAt: new Date().toISOString() } : theme) });
+    },
+    setObservation(id:string, response?:SessionTheme["observation"]) {
+      const current=storeRef.current;
+      return persist({...current,themes:current.themes.map(theme=>theme.id===id ? {...theme, observation:response,updatedAt:new Date().toISOString()} : theme)});
+    },
+    keepTopic(id:string) {
+      const current=storeRef.current;
+      const source=current.themes.find(t=>t.id===id);
+      if(!source) return "";
+      const list=current.profile?.therapy===false ? "personal" : "therapy";
+      if((source.list ?? "therapy")===list) return id;
+      const nextId=list+":"+id;
+      if(current.themes.some(t=>t.id===nextId && !t.dismissed)) return nextId;
+      const copy:SessionTheme={...source,id:nextId,list,status:"active",manual:true,dismissed:false,updatedAt:new Date().toISOString()};
+      return persist({...current,themes:[...current.themes.filter(t=>t.id!==nextId),copy]}) ? nextId : "";
+    },
+    saveReflection(id: string, reflection: NonNullable<JournalEntry["reflection"]>, topic: boolean) {
+      const current = storeRef.current;
+      const entry = current.entries.find(note => note.id === id);
+      if (!entry) return false;
+      const updatedAt = new Date().toISOString();
+      const entries = current.entries.map(note => note.id === id ? { ...note, reflection, updatedAt } : note);
+      const themes = topic ? addManualTheme(current.themes, reflection.insight || reflection.answer, toDateKey(), updatedAt) : current.themes;
+      const linkedThemes = topic ? themes.map((theme,index) => index === current.themes.length
+        ? { ...theme, list: current.profile?.therapy === false ? "personal" as const : "therapy" as const, quotes: [{ entryId: id, date: entry.date, text: entry.body, intensity: 0 }] }
+        : theme) : themes;
+      return persist({ ...current, entries, themes: linkedThemes });
+    },
     status: hydrated ? status : "loading",
     error,
     syncLabel,
     resetCorrupted,
+    retryCloud: syncFromCloud,
+    clearCache: () => clearStore(storageKeyRef.current),
     upsertEntry,
     deleteEntry,
     saveBrief,

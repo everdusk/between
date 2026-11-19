@@ -1,7 +1,7 @@
 import type { LocaleId } from "./i18n";
 import { translate } from "./messages";
 import { loadUserStore, loadWeekAccess, saveWeekAccess } from "./redis";
-import { describeSessionPlan } from "./session-plan";
+import { planPreview } from "./session-plan";
 import {
   accessForUser,
   openWeekAccess,
@@ -26,7 +26,7 @@ export async function sessionMenu(
   const loaded = await loadWeekAccess(owner);
   const view = accessForUser(loaded, identity, process.env.WEEK_EXEMPT_USER_IDS, now).view;
   const plan = store.sessionPlan;
-  const text = plan ? describeSessionPlan(plan, now) : translate(locale, "botSessionsEmpty");
+  const text = plan ? planPreview(plan, locale, (key, vars) => translate(locale, key, vars), now) : translate(locale, "botSessionsEmpty");
   const rows: { text: string; data: string }[][] = [
     [{ text: translate(locale, "botSessionsChange"), data: "ps:edit" }],
   ];

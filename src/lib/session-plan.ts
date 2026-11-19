@@ -1,4 +1,4 @@
-import { formatLongDate, toDateKey } from "./dates";
+import { formatLongDate, toDateKey, weekdayLong } from "./dates";
 import type { SessionPlan, SessionSlot } from "./types";
 
 export const WEEKDAY_LONG = [
@@ -151,4 +151,31 @@ export function describeSessionPlan(plan: SessionPlan, now = new Date()): string
     .map((slot) => `${WEEKDAY_LONG[slot.weekday] ?? "день"} в ${slot.time}`)
     .join(", ");
   return `${days}. Ближайший — ${formatLongDate(toDateKey(next))}, ${clockLabel(next)}.`;
+}
+
+export function planPreview(
+  plan: SessionPlan,
+  locale: string,
+  t: (
+    key: "planOnceMissing" | "planOncePast" | "planOnceNext" | "planWeeklyMissing" | "planWeekly" | "planSlot",
+    vars?: Record<string, string>,
+  ) => string,
+  now = new Date(),
+): string {
+  if (plan.mode === "once") {
+    const at = onceSessionDate(plan);
+    if (!at) return t("planOnceMissing");
+    const when = `${formatLongDate(plan.date, locale)}, ${plan.time}`;
+    if (at.getTime() < now.getTime()) return t("planOncePast", { when });
+    return t("planOnceNext", { when });
+  }
+  const chosen = weeklySlots(plan);
+  const next = nextWeeklyOccurrence(plan, now);
+  if (chosen.length === 0 || !next) return t("planWeeklyMissing");
+  return t("planWeekly", {
+    days: chosen
+      .map((slot) => t("planSlot", { day: weekdayLong(slot.weekday, locale), time: slot.time }))
+      .join(", "),
+    date: `${formatLongDate(toDateKey(next), locale)}, ${clockLabel(next)}`,
+  });
 }

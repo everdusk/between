@@ -38,7 +38,12 @@ function readTelegramInitData(): string {
 export function SubscribeGate({ monthly }: { monthly?: number }) {
   const [open, setOpen] = useState(false);
   useLayoutEffect(() => {
-    if (readMaxInitData() || readTelegramInitData()) {
+    if (readTelegramInitData()) {
+      window.location.replace("/?tab=subscribe" + window.location.hash);
+      return;
+    }
+    if (readMaxInitData()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- show the signed messenger checkout before paint
       setOpen(true);
       return;
     }

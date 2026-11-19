@@ -118,10 +118,10 @@ function JournalPreview() {
 
 type GateMode = "login" | "forgot" | "code";
 
-export function WebAccountGate({ onSignedIn, compact = false }: { onSignedIn: (account: WebAccount) => void; compact?: boolean }) {
+export function WebAccountGate({ onSignedIn, compact = false, initialLogin = false }: { onSignedIn: (account: WebAccount) => void; compact?: boolean; initialLogin?: boolean }) {
   const { t } = useI18n();
   const [mode, setMode] = useState<GateMode>("login");
-  const [creating, setCreating] = useState(compact);
+  const [creating, setCreating] = useState(compact && !initialLogin);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordAgain, setPasswordAgain] = useState("");

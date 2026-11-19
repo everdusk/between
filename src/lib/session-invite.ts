@@ -14,6 +14,7 @@ export function sessionInviteDue(input: {
   paused: boolean;
 }): boolean {
   const { store, now, hour, status, paused } = input;
+  if (store.profile?.therapy === false) return false;
   if (paused || (status !== "trial" && status !== "paid")) return false;
   if (store.notify.serviceReminders === false || store.sessionPlan) return false;
   if (hour < 9 || hour >= 22 || Object.values(POLL_HOURS).some((scheduled) => scheduled === hour)) return false;

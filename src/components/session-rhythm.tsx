@@ -7,18 +7,17 @@ import { Button } from "@/components/ui/button";
 import { ThemeDateInput } from "@/components/theme-date-input";
 import { Label } from "@/components/ui/label";
 import { NotificationSettings } from "@/components/notification-settings";
-import { formatLongDate, toDateKey, weekdayLong, weekdayName, weekdayShort } from "@/lib/dates";
+import { formatLongDate, toDateKey, weekdayName, weekdayShort } from "@/lib/dates";
 import {
-  clockLabel,
+  planPreview,
   isSessionTime,
-  nextWeeklyOccurrence,
-  onceSessionDate,
   weeklySlots,
 } from "@/lib/session-plan";
 import type { NotifyPrefs, SessionPlan, SessionSlot } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface SessionRhythmProps {
+  notificationsDisabled?: boolean;
   plan: SessionPlan | null;
   notify: NotifyPrefs;
   onSavePlan: (plan: Omit<SessionPlan, "updatedAt">) => boolean;
@@ -41,6 +40,7 @@ const WEEKDAY_KEYS = [
 ];
 
 function SessionRhythmForm({
+  notificationsDisabled,
   plan,
   notify,
   onSavePlan,
@@ -242,36 +242,10 @@ function SessionRhythmForm({
 
       <section className="glass rounded-3xl p-5 sm:p-6">
         <h3 className="font-display text-xl tracking-tight text-foreground">{t("botReminders")}</h3>
-        <NotificationSettings notify={notify} disabled={disabled} onSave={onSaveNotify} />
+        <NotificationSettings notify={notify} disabled={disabled || notificationsDisabled} onSave={onSaveNotify} />
       </section>
     </>
   );
-}
-
-function planPreview(
-  plan: SessionPlan,
-  locale: string,
-  t: (
-    key: "planOnceMissing" | "planOncePast" | "planOnceNext" | "planWeeklyMissing" | "planWeekly" | "planSlot",
-    vars?: Record<string, string>,
-  ) => string,
-): string {
-  if (plan.mode === "once") {
-    const at = onceSessionDate(plan);
-    if (!at) return t("planOnceMissing");
-    const when = `${formatLongDate(plan.date, locale)}, ${plan.time}`;
-    if (at.getTime() < Date.now()) return t("planOncePast", { when });
-    return t("planOnceNext", { when });
-  }
-  const chosen = weeklySlots(plan);
-  const next = nextWeeklyOccurrence(plan);
-  if (chosen.length === 0 || !next) return t("planWeeklyMissing");
-  return t("planWeekly", {
-    days: chosen
-      .map((slot) => t("planSlot", { day: weekdayLong(slot.weekday, locale), time: slot.time }))
-      .join(", "),
-    date: `${formatLongDate(toDateKey(next), locale)}, ${clockLabel(next)}`,
-  });
 }
 
 function editorSlots(plan: SessionPlan | null): SessionSlot[] {

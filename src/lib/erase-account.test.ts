@@ -17,6 +17,7 @@ describe("erasure plan", () => {
     });
     assert.ok(plan.keys.includes("between:user:web:w1:store"));
     assert.ok(plan.keys.includes("between:user:42:store"));
+    assert.ok(plan.keys.includes("between:user:42:cache-id"));
     assert.ok(plan.keys.includes("between:user:max:7:store"));
     assert.ok(plan.keys.includes("between:acct:w1"));
     assert.ok(plan.keys.includes("between:acct:email:reader@example.com"));

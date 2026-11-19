@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
 import { CircleUser, X } from "lucide-react";
 import { DeleteJournal } from "@/components/delete-data";
+import { LegalLinks } from "@/components/legal-links";
 import { FeedbackForm } from "@/components/feedback-form";
 import { LanguageSwitch } from "@/components/language-switch";
 import { PasswordChange } from "@/components/password-change";
@@ -52,6 +53,8 @@ export function AccountButton({
 }
 
 export function AccountSheet({
+  onErased,
+  profileEditor,
   open,
   onClose,
   inTelegram,
@@ -67,6 +70,8 @@ export function AccountSheet({
   onPremium,
 }: {
   open: boolean;
+  profileEditor?: React.ReactNode;
+  onErased:()=>void;
   onClose: () => void;
   inTelegram: boolean;
   inMax: boolean;
@@ -182,6 +187,7 @@ export function AccountSheet({
         </div>
 
         <div className="mt-5 space-y-6">
+          {profileEditor}
           <section>
             <p className="eyebrow text-section-header">{t("webScheme")}</p>
             <SchemeSwitch className="mt-2 w-full" />
@@ -196,7 +202,7 @@ export function AccountSheet({
 
           <section>
             <h3 className="font-display text-lg tracking-tight text-foreground">{t("botReminders")}</h3>
-            <NotificationSettings notify={notify} disabled={disabled} onSave={onSaveNotify} />
+            <NotificationSettings notify={notify} disabled={disabled || !(inTelegram || inMax || account?.telegramLinked || account?.maxLinked)} onSave={onSaveNotify} />
           </section>
 
           <section className="space-y-3">
@@ -241,15 +247,16 @@ export function AccountSheet({
           ) : null}
           {access?.previewPaywall ? (
             <Button type="button" className="w-full" onClick={() => setPreview(true)}>
-              Посмотреть пейвол
+              {t("premiumMark")}
             </Button>
           ) : null}
 
           <section className="space-y-3">
+            <LegalLinks telegram={inTelegram} className="text-sm text-muted-foreground" />
             <h3 className="font-display text-lg tracking-tight text-foreground">{t("deleteTitle")}</h3>
             <p className="text-sm leading-relaxed text-muted-foreground">{t("deleteLead")}</p>
             {inTelegram || inMax ? (
-              <DeleteJournal initData={initData} maxInitData={maxInitData} onErased={onLogout} />
+              <DeleteJournal initData={initData} maxInitData={maxInitData} onErased={onErased} />
             ) : (
               <a href="/delete" className={buttonVariants({ variant: "destructive", className: "w-full" })}>
                 {t("deleteAsk")}
@@ -268,16 +275,16 @@ export function AccountSheet({
             className="mb-4 text-sm text-[#a9b4ae]"
             onClick={() => setPreview(false)}
           >
-            Закрыть
+            {t("accountClose")}
           </button>
-          <SubscribeCheckout
+          {inTelegram ? <PremiumPaywall access={access} inTelegram inMax={false} payingPlan={payingPlan} payError={payError} onPay={plan=>void pay(plan)}/> : <SubscribeCheckout
             embed
             monthly={access.rubPrice}
             stars={inTelegram ? access.prices : null}
             onStarsPay={(plan) => void pay(plan)}
             starsBusy={payingPlan !== null}
             starsError={payError}
-          />
+          />}
         </div>
       ) : null}
     </div>

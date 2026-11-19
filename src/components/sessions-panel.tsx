@@ -15,6 +15,7 @@ import type { NotifyPrefs, SessionNote, SessionPlan } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface SessionsPanelProps {
+  notificationsDisabled?: boolean;
   sessions: SessionNote[];
   plan: SessionPlan | null;
   notify: NotifyPrefs;
@@ -49,6 +50,7 @@ function upcomingSession(plan: SessionPlan | null, now: Date): Date | null {
 }
 
 export function SessionsPanel({
+  notificationsDisabled,
   sessions,
   plan,
   notify,
@@ -153,6 +155,7 @@ export function SessionsPanel({
       <SessionRhythm
         plan={plan}
         notify={notify}
+        notificationsDisabled={notificationsDisabled}
         onSavePlan={onSavePlan}
         onSaveNotify={onSaveNotify}
         disabled={disabled}

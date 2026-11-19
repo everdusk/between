@@ -58,6 +58,7 @@ export function LocaleProvider({
   children: ReactNode;
 }) {
   const [locale, setLocaleState] = useState<LocaleId>("ru");
+  const storageKey = initData ? STORAGE_KEY + ":telegram" : STORAGE_KEY;
   const [chosen, setChosen] = useState<LocaleId | null>(null);
   const [deviceLocale, setDeviceLocale] = useState<LocaleId>("ru");
 
@@ -70,16 +71,16 @@ export function LocaleProvider({
       applyDocument(lockLocale);
       return;
     }
-    const device = deviceLocaleFromNavigator();
+    const device = localeFromTelegram(telegramLanguage) ?? deviceLocaleFromNavigator();
     let stored: string | null = null;
     let explicit: LocaleId | null = null;
     let next: LocaleId = "ru";
     try {
-      stored = localStorage.getItem(STORAGE_KEY);
+      stored = localStorage.getItem(storageKey);
       if (isLocale(stored)) explicit = stored;
-      next = explicit ?? localeFromTelegram(telegramLanguage) ?? "ru";
+      next = explicit ?? device;
     } catch {
-      next = localeFromTelegram(telegramLanguage) ?? "ru";
+      next = device;
     }
     // Stored choice and the device language are known only on the client.
     setLocaleState(next);
@@ -90,7 +91,7 @@ export function LocaleProvider({
       device,
       ...(isLocale(stored) ? { locale: stored } : {}),
     });
-  }, [telegramLanguage, initData, lockLocale]);
+  }, [telegramLanguage, initData, lockLocale, storageKey]);
 
   const setLocale = useCallback((next: LocaleId) => {
     if (lockLocale) return;
@@ -98,12 +99,12 @@ export function LocaleProvider({
     setChosen(next);
     applyDocument(next);
     try {
-      localStorage.setItem(STORAGE_KEY, next);
+      localStorage.setItem(storageKey, next);
     } catch {
       // Private mode can block storage; the choice still applies for this visit.
     }
     syncLocale(initData, { locale: next });
-  }, [initData, lockLocale]);
+  }, [initData, lockLocale, storageKey]);
 
   const value = useMemo<I18nValue>(() => {
     const slotKey = {

@@ -1,7 +1,7 @@
 import { notificationChoice, setNotificationChoice } from "@/lib/notification-preferences";
 import { NextResponse } from "next/server";
 import { trackMessengerStart } from "@/lib/acquisition-server";
-import { localeFromTelegram, resolveBotLocale, resolveGreetingLocale, type LocaleId } from "@/lib/i18n";
+import { localeFromTelegram, resolveBotLocale, type LocaleId } from "@/lib/i18n";
 import { addCheckin, appendBotMessageToToday } from "@/lib/journal-server";
 import { feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
 import {
@@ -15,7 +15,7 @@ import {
   redisConfigured,
   releasePaymentCharge,
   rememberBotBlocked,
-  rememberDeviceLocale,
+  saveDeviceLocale,
   rememberUser,
   saveWeekAccess,
   takeBriefAttempt,
@@ -148,15 +148,12 @@ async function localesFor(user: TelegramUser | undefined): Promise<{
 }> {
   const code = user?.language_code;
   const seen = localeFromTelegram(code);
-  if (user?.id && seen && redisConfigured()) {
-    await rememberDeviceLocale(user.id, seen);
-  }
-  const selected = user?.id && redisConfigured() ? await loadUserLocale(user.id) : null;
-  const device = user?.id && redisConfigured() ? await loadDeviceLocale(user.id) : null;
-  return {
-    reply: resolveBotLocale(selected, device, code),
-    greeting: resolveGreetingLocale(null, device, code),
-  };
+  const owner = user?.id && redisConfigured() ? await resolveJournalId(user.id) : null;
+  if (owner && seen) await saveDeviceLocale(owner, seen);
+  const selected = owner ? await loadUserLocale(owner) : null;
+  const device = seen ?? (owner ? await loadDeviceLocale(owner) : null);
+  const reply = resolveBotLocale(selected, device, code);
+  return { reply, greeting: reply };
 }
 
 
