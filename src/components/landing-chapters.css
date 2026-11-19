@@ -19,6 +19,10 @@
 .chapter-page h1 { font-size:clamp(32px,3.9vw,56px); min-height:2.3em; margin:10px 0 22px; }
 .chapter-page h1::after { content:""; display:inline-block; width:2px;height:.92em; margin-left:.08em; background:#5ee7c5; vertical-align:-.03em; }
 .chapter-copy p { max-width:53ch; line-height:1.55; font-size:clamp(16px,1.34vw,19px); min-height:8.7em; }
+@media (prefers-reduced-motion: no-preference) {
+  .chapter-copy { animation: chapter-appear 240ms ease-out; }
+  @keyframes chapter-appear { from { opacity:.3; } to { opacity:1; } }
+}
 .chapter-cta { display:inline-flex; align-items:center; justify-content:center; min-height:56px; width:min(262px,100%); background:#5ee7c5; color:#07090d; border-radius:40px; font-weight:700; }
 .chapter-cta:hover { background:#8df4da; }
 .chapter-story nav { display:flex; flex-direction:column; max-width:440px; margin-top:15px; border-top:1px solid #33413c; padding-top:16px; }
