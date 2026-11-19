@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { trackSurvey, type RegistrationMethod, type RegistrationStep } from "@/lib/survey-analytics";
 import { Bot, Check, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -118,8 +119,18 @@ function JournalPreview() {
 
 type GateMode = "login" | "forgot" | "code";
 
-export function WebAccountGate({ onSignedIn, compact = false, initialLogin = false }: { onSignedIn: (account: WebAccount) => void; compact?: boolean; initialLogin?: boolean }) {
-  const { t } = useI18n();
+export function WebAccountGate({ onSignedIn, compact = false, initialLogin = false, surveyAttempt }: { onSignedIn: (account: WebAccount) => void; compact?: boolean; initialLogin?: boolean; surveyAttempt?: string }) {
+  const { t, locale } = useI18n();
+  const registration = useRef<{ attempt: string; source: "survey" | "direct" } | null>(null);
+  const logged = useRef(new Set<string>());
+  const record = useCallback((stage: RegistrationStep, method: RegistrationMethod) => {
+    if (!registration.current) registration.current = { attempt: surveyAttempt ?? crypto.randomUUID(), source: surveyAttempt ? "survey" : "direct" };
+    if (stage === "form_view" || stage === "email_started") {
+      if (logged.current.has(stage)) return;
+      logged.current.add(stage);
+    }
+    trackSurvey({event: "web_registration_step", ...registration.current, stage, method}, locale);
+  }, [locale, surveyAttempt]);
   const [mode, setMode] = useState<GateMode>("login");
   const [creating, setCreating] = useState(compact && !initialLogin);
   const [email, setEmail] = useState("");
@@ -138,6 +149,10 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   const codeRef = useRef<HTMLInputElement>(null);
   const maxTried = useRef(false);
   const maxPoll = useRef(0);
+
+  useEffect(() => {
+    if (mode === "login" && creating) record("form_view", "form");
+  }, [mode, creating, record]);
 
   useEffect(() => {
     if (mode === "code") codeRef.current?.focus();
@@ -213,7 +228,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
   function rememberLogin(kind: "max" | "telegram", token: string, expiresAt: number) {
     try {
-      sessionStorage.setItem("between:messenger-login", JSON.stringify({ kind, token, expiresAt }));
+      sessionStorage.setItem("between:messenger-login", JSON.stringify({ kind, token, expiresAt, registration: registration.current }));
     } catch {
       // The open tab still polls when storage is blocked.
     }
@@ -242,6 +257,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         if (wait.status === 403 || wait.status === 400) break;
         if (wait.ok && body.account && !body.pending) {
           forgetLogin();
+          record("signed_in", kind);
           onSignedIn(body.account);
           return;
         }
@@ -262,6 +278,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     }
     if (mine !== maxPoll.current) return;
     forgetLogin();
+    record("error", kind);
     setWaitingFor(null);
     setMessengerUrl(null);
     setNote(null);
@@ -271,6 +288,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
   async function loginWithMessenger(kind: "max" | "telegram") {
     if (startingMessenger.current) return;
+    record("messenger_started", kind);
     startingMessenger.current = true;
     const popup = window.open("about:blank", "_blank");
     const mine = ++maxPoll.current;
@@ -295,6 +313,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         return;
       }
       if (!res.ok || !data.token || !data.url) {
+        record("error", kind);
         popup?.close();
         setError(data.error === "max_off" ? t("webMaxOff") : t("webServer"));
         return;
@@ -309,7 +328,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       await pollMessenger(kind, data.token, mine, expiresAt);
     } catch {
       popup?.close();
-      if (mine === maxPoll.current) setError(t("webServer"));
+      if (mine === maxPoll.current) { record("error", kind); setError(t("webServer")); }
     } finally {
       if (mine === maxPoll.current) {
         startingMessenger.current = false;
@@ -319,7 +338,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   }
 
   useEffect(() => {
-    let pending: { kind?: unknown; token?: unknown; expiresAt?: unknown } | null = null;
+    let pending: { kind?: unknown; token?: unknown; expiresAt?: unknown; registration?: {attempt?: unknown; source?: unknown} } | null = null;
     try {
       const raw = sessionStorage.getItem("between:messenger-login");
       pending = raw ? (JSON.parse(raw) as { kind?: unknown; token?: unknown }) : null;
@@ -328,6 +347,10 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     }
     if (!pending || (pending.kind !== "max" && pending.kind !== "telegram") || typeof pending.token !== "string") return;
     const kind = pending.kind;
+    const context = pending.registration;
+    if (typeof context?.attempt === "string" && (context.source === "survey" || context.source === "direct")) {
+      registration.current = {attempt: context.attempt, source: context.source};
+    }
     const mine = ++maxPoll.current;
     // A reload continues the login this tab already started.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -351,7 +374,8 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
   async function register(event: { preventDefault: () => void }) {
     event.preventDefault();
-    if (!passwordReady()) return;
+    record("email_submitted", "email");
+    if (!passwordReady()) { record("error", "email"); return; }
     setBusy(true);
     setErrorScope("register");
     setError(null);
@@ -364,12 +388,15 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
+        record("error", "email");
         setError(formError(data.error));
         return;
       }
+      record("code_requested", "email");
       setMode("code");
       setNote(t("webCodeSent", { email }));
     } catch {
+      record("error", "email");
       setError(t("webServer"));
     } finally {
       setBusy(false);
@@ -378,6 +405,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
   async function verifyCode(event: FormEvent) {
     event.preventDefault();
+    record("code_submitted", "email");
     setBusy(true);
     setError(null);
     try {
@@ -388,11 +416,14 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       });
       const data = (await res.json().catch(() => ({}))) as { account?: WebAccount; error?: string };
       if (!res.ok || !data.account) {
+        record("error", "email");
         setError(formError(data.error));
         return;
       }
+      record("email_registered", "email");
       onSignedIn(data.account);
     } catch {
+      record("error", "email");
       setError(t("webServer"));
     } finally {
       setBusy(false);
@@ -415,6 +446,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         setError(formError(data.error));
         return;
       }
+      record("signed_in", "password");
       onSignedIn(data.account);
     } catch {
       setError(t("webServer"));
@@ -579,7 +611,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         {mode === "login" && (!compact || creating) ? (
           <details open={compact || undefined} className="mt-5 border-t border-[color:var(--glass-border)] pt-4">
             <summary hidden={compact} className="cursor-pointer text-sm text-muted-foreground">{t("webRegisterFold")}</summary>
-            <form className="mt-4 space-y-4" onSubmit={register}>
+            <form className="mt-4 space-y-4" onInput={() => record("email_started", "email")} onSubmit={register}>
               <div className="space-y-2">
                 <Label htmlFor="web-register-email">{t("webEmail")}</Label>
                 <Input

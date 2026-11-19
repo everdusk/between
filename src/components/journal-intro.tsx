@@ -31,6 +31,7 @@ type Exploration = {
   choices: number[];
 };
 export type IntroAnswers = {
+  attempt: string;
   id: string;
   name: string;
   therapy: boolean;
@@ -443,6 +444,7 @@ export function JournalIntro({
             record("finish");
             onFinish({
               id: crypto.randomUUID(),
+              attempt: analytics.current.attempt,
               name: name.trim(),
               therapy: therapy === 0 || therapy === 1,
               day,
@@ -504,6 +506,12 @@ export function IntroResult({
   const { t, locale, feeling, slot } = useI18n();
   const en = locale === "en";
   const lang = en ? 1 : 0;
+  const seen = useRef("");
+  useEffect(() => {
+    if (seen.current === answers.attempt) return;
+    seen.current = answers.attempt;
+    trackSurvey({ event: "web_registration_step", attempt: answers.attempt, source: "survey", stage: "result_view", method: "form" }, locale);
+  }, [answers.attempt, locale]);
   return (
     <section className="glass mb-5 space-y-4 rounded-3xl p-5">
       <h2 className="font-display text-xl">
