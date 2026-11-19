@@ -75,6 +75,21 @@ export function SubscribeGate({ monthly }: { monthly?: number }) {
 
 const PLANS: SbpPlanId[] = ["month", "quarter", "year"];
 
+function SubscriptionIntro({ compact = false }: { compact?: boolean }) {
+  return (
+    <>
+      <p className="sub-kicker">Подписка Between</p>
+      <h1 className={compact ? "sub-display mt-3 text-[2.05rem] leading-[1.05]" : "sub-display mt-4 text-5xl leading-[1.05]"}>
+        Замечайте, что <span className="sub-shift">повторяется.</span>
+      </h1>
+      <p className="mt-4 max-w-md leading-relaxed text-[#a9b4ae]">
+        Записывайте, что произошло, и отмечайте, как вы себя чувствуете.
+        В обзоре можно увидеть, в какое время меняется настроение и какие темы возвращаются в записях.
+      </p>
+    </>
+  );
+}
+
 function Check() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
@@ -259,52 +274,26 @@ export function SubscribeCheckout({
         <div className={embed ? "" : "mt-8 grid items-start gap-10 lg:mt-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16"}>
           {embed ? null : (
           <div className="hidden lg:block">
-            <p className="sub-kicker">Дневник для тех, кто в терапии</p>
-            <h1 className="sub-display mt-4 text-5xl leading-[1.05]">
-              Оформление подписки.
-              <br />
-              <span className="sub-shift">Вы честно экономите.</span>
-            </h1>
-            <p className="mt-5 max-w-md text-base leading-relaxed text-[#a9b4ae]">
-              Between живёт в мессенджере: вечером бот сам спросит, как прошёл день, и к сессии соберёт из ответов готовую выкладку.
-            </p>
+            <SubscriptionIntro />
             <ul className="sub-points">
-              <li><Check />Запись за минуту: настроение в один тап, мысли парой строк</li>
-              <li><Check />Неделя складывается в картину: видны повторяющиеся темы</li>
-              <li><Check />Выкладка к сессии — о чём стоит рассказать терапевту</li>
-              <li><Check />Ничего устанавливать не нужно — дневник уже в Telegram</li>
+              <li><Check />Вернитесь к конкретной записи и разберите, что вас задело.</li>
+              <li><Check />Сохраните свой вывод в списке «На подумать».</li>
+              <li><Check />Если вы в терапии, соберите записи и вопросы к следующему сеансу.</li>
             </ul>
             <div className="sub-note mt-8">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs tracking-[0.14em] text-[#8aa097] uppercase">Запись из дневника</p>
+                <p className="text-xs tracking-[0.14em] text-[#8aa097] uppercase">Из обзора недели</p>
                 <span className="sub-sample">Пример</span>
               </div>
-              <p className="sub-display mt-3 text-2xl">вс, 8 ноября</p>
-              <p className="mt-3 text-sm text-[#c5d0ca]">
-                <span className="text-[#8FF0BC]">21:15</span>
-                <span className="ms-2 inline-flex items-center gap-1 rounded-full bg-[#14352c] px-2 py-0.5 text-[#8FF0BC]">
-                  спокойно
-                </span>
-              </p>
-              <p className="mt-2 text-sm">Вечером не лезла в рабочий чат. Отпустило.</p>
-              <p className="mt-3 inline-flex rounded-full bg-white/10 px-3 py-1 text-xs text-[#c5d0ca]">граница с работой</p>
+              <p className="sub-display mt-3 text-2xl">Работа после работы</p>
+              <p className="mt-2 text-sm leading-relaxed text-[#c5d0ca]">В двух вечерних записях вы возвращались к разговору с коллегой. В оба вечера вы отметили тревогу.</p>
             </div>
-            <ul className="mt-4 flex flex-wrap gap-2 text-xs text-[#c5d0ca]">
-              <li className="sub-chip">1 минута в день</li>
-              <li className="sub-chip">7 дней — готовая выкладка</li>
-              <li className="sub-chip">0 установок</li>
-            </ul>
           </div>
           )}
 
           <section className="sub-card">
             <div className={embed ? "" : "lg:hidden"}>
-              <p className="sub-kicker">Подписка Between</p>
-              <h1 className="sub-display mt-3 text-[2.05rem] leading-[1.05]">
-                Оформление подписки.
-                <br />
-                <span className="sub-shift">Вы честно экономите.</span>
-              </h1>
+              <SubscriptionIntro compact />
             </div>
             <h2 className={embed ? "hidden" : "sub-display hidden text-2xl lg:block"}>Выберите план</h2>
             <fieldset className="mt-5 space-y-3">
@@ -327,7 +316,6 @@ export function SubscribeCheckout({
                     <span>
                       <span className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">{item.title}</span>
-                        {"popular" in item && item.popular ? <span className="sub-badge">Выбор пользователей</span> : null}
                         {"off" in item ? <span className="sub-off">−{item.off}%</span> : null}
                       </span>
                       <span className="mt-1 block text-sm text-[#8aa097]">
@@ -350,7 +338,7 @@ export function SubscribeCheckout({
             <div className="mt-5 flex items-end justify-between gap-4 border-t border-white/10 pt-4">
               <div>
                 <p className="text-sm text-[#a9b4ae]">Итого к оплате</p>
-                <p className="text-xs text-[#74827b]">Разовый платёж · доступ {chosen.span}</p>
+                <p className="text-xs text-[#74827b]">Доступ {chosen.span} · разовый платёж без автопродления</p>
               </div>
               {stars ? (
                 <p className="sub-display text-3xl leading-none whitespace-nowrap">
