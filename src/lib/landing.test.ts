@@ -58,12 +58,12 @@ describe("landing start mark", () => {
 });
 
 describe("landing surface", () => {
-  function boot(pathname: string, hash = "") {
+  function boot(pathname: string, hash = "", search = "") {
     const attrs = new Map<string, string>([["data-splash", ""]]);
     const style = { textContent: WEB_SURFACE_CSS };
     let counters = 0;
     const context = {
-      location: { pathname, hash, search: "" },
+      location: { pathname, hash, search },
       sessionStorage: { getItem: () => null },
       localStorage: { getItem: () => "day" },
       document: {
@@ -84,7 +84,7 @@ describe("landing surface", () => {
   }
 
   it("opens the browser workspace immediately without enabling the landing recorder", () => {
-    const { attrs, style, counters } = boot("/");
+    const { attrs, style, counters } = boot("/", "", "?start=1");
     assert.equal(attrs.get("data-between"), "app");
     assert.equal(attrs.get("data-journal"), "web");
     assert.equal(attrs.get("data-scheme"), "day");
@@ -95,6 +95,8 @@ describe("landing surface", () => {
   });
 
   it("keeps the public landing on about and preserves messenger launch surfaces", () => {
+    assert.equal(boot("/", "", "?utm_source=direct").attrs.get("data-between"), "web");
+    assert.equal(boot("/", "", "?login=1").counters, 0);
     const about = boot("/about");
     assert.equal(about.attrs.get("data-between"), "web");
     assert.match(about.style.textContent, /between-landing\{display:block/);

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
@@ -77,9 +76,9 @@ function ResetForm() {
     <article className="fixed inset-0 z-20 overflow-y-auto bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-lg flex-col px-5 pt-8 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <header className="flex items-center justify-between gap-4">
-          <Link href="/" className="font-display text-lg text-foreground">
+          <a href="/" className="font-display text-lg text-foreground">
             Between
-          </Link>
+          </a>
           <LanguageSwitch />
         </header>
         <section className="glass mt-8 rounded-[22px] px-5 py-6 sm:px-6">

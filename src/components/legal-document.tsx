@@ -30,9 +30,9 @@ function LegalArticle({ kind }: { kind: LegalKind }) {
     <article className="fixed inset-0 z-20 overflow-y-auto bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-2xl flex-col px-5 pt-8 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <header className="flex items-center justify-between gap-4">
-          <Link href="/" className="font-display text-lg text-foreground">
+          <a href="/" className="font-display text-lg text-foreground">
             Between
-          </Link>
+          </a>
           <LanguageSwitch />
         </header>
         <p className="mt-8 text-sm">

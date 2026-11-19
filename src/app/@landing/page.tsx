@@ -1,1 +1,1 @@
-export default function LandingSlot() { return null; }
+export { default } from "./about/page";
