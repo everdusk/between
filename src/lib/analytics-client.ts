@@ -71,7 +71,7 @@ function readState(messenger: AnalyticsMessenger): { cohort: string | null; sent
 }
 
 /** Random per browser. It never goes into a counter key; the server only hashes it. */
-function deviceToken(): string | null {
+export function deviceToken(): string | null {
   try {
     const existing = localStorage.getItem(DEVICE_KEY);
     if (existing && /^[a-z0-9]{32}$/.test(existing)) return existing;

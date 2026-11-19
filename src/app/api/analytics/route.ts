@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { acceptClientEvent, analyticsRedis, loadAnalyticsReport, recordAnalytics, trackSubscribeStep, type AnalyticsRedis } from "@/lib/analytics";
 import { PRODUCT_PLANS, SUBSCRIBE_FAILS, SUBSCRIBE_STEPS, analyticsQuiet, type AnalyticsMessenger, type ClientAnalyticsEvent, type ProductPlan, type SubscribeFail, type SubscribeStep } from "@/lib/analytics-model";
 import { validateMaxInitData } from "@/lib/max-auth";
-import { captureServerProduct } from "@/lib/product-analytics-server";
+import { captureServerProduct, captureSurveyEvent } from "@/lib/product-analytics-server";
+import { surveyProperties } from "@/lib/survey-steps";
 import { redisConfigured } from "@/lib/redis";
 import { validateInitData } from "@/lib/telegram-auth";
 import { DEFAULT_TIME_ZONE } from "@/lib/types";
@@ -16,6 +17,14 @@ function quiet(input: { username?: string | null; userId?: number | string | nul
 
 function readPlan(value: unknown): ProductPlan | undefined {
   return (PRODUCT_PLANS as readonly string[]).includes(String(value)) ? (value as ProductPlan) : undefined;
+}
+
+async function quietWebAccount(req: Request) {
+  const secret = sessionSecret();
+  const token = secret ? sessionTokenFromRequest(req) : null;
+  const account = secret && token ? await accountFromSession(token, secret) : null;
+  return account && (quiet({ username: account.telegramUsername, messenger: "web" }) ||
+    quiet({ userId: account.maxUserId, messenger: "max" }));
 }
 
 function readSubscribeStep(value: unknown): SubscribeStep | null {
@@ -101,14 +110,7 @@ async function noteSubscribe(
 
   const device = req.headers.get("x-between-device") ?? "";
   if (!/^[a-z0-9]{32}$/.test(device)) return { ok: false, error: "unauthorized", status: 401 };
-  const secret = sessionSecret();
-  const token = secret ? sessionTokenFromRequest(req) : null;
-  const account = secret && token ? await accountFromSession(token, secret) : null;
-  if (
-    account &&
-    (quiet({ username: account.telegramUsername, messenger: "web" }) ||
-      quiet({ userId: account.maxUserId, messenger: "max" }))
-  ) {
+  if (await quietWebAccount(req)) {
     return { ok: true, quiet: true };
   }
   await trackSubscribeStep({ userId: `web:${device}`, messenger: "web", ...input });
@@ -154,6 +156,16 @@ export async function POST(req: Request) {
     fail?: unknown;
   };
   const plan = readPlan(payload.plan);
+  if (payload.event === "web_landing_start" || payload.event === "web_survey_step") {
+    const properties = surveyProperties(payload);
+    const device = req.headers.get("x-between-device") ?? "";
+    if (!properties || !/^[a-z0-9]{32}$/.test(device)) {
+      return NextResponse.json({ ok: false, error: "bad_event" }, { status: 400 });
+    }
+    if (await quietWebAccount(req)) return NextResponse.json({ ok: true, quiet: true });
+    const sent = await captureSurveyEvent(payload.event, properties, device, pepper);
+    return NextResponse.json({ ok: sent }, { status: sent ? 200 : 503 });
+  }
   if (payload.event === "subscribe") {
     const step = readSubscribeStep(payload.step);
     if (!step) return NextResponse.json({ ok: false, error: "bad_step" }, { status: 400 });
@@ -199,14 +211,7 @@ export async function POST(req: Request) {
     if (!/^[a-z0-9]{32}$/.test(device)) {
       return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
     }
-    const secret = sessionSecret();
-    const token = secret ? sessionTokenFromRequest(req) : null;
-    const account = secret && token ? await accountFromSession(token, secret) : null;
-    if (
-      account &&
-      (quiet({ username: account.telegramUsername, messenger: "web" }) ||
-        quiet({ userId: account.maxUserId, messenger: "max" }))
-    ) {
+    if (await quietWebAccount(req)) {
       return NextResponse.json({ ok: true, quiet: true });
     }
     await countClientStep(redis, {

@@ -1,0 +1,33 @@
+import { questions, type SurveyFeeling } from "./intro-questions";
+
+export const noteStep: Record<SurveyFeeling, string> = {
+  тревожно: "note_worry", злость: "note_anger", усталость: "note_tired",
+  грусть: "note_sad", стыд: "note_shame", пусто: "note_empty",
+  напряжение: "note_tense", спокойно: "note_calm", радость: "note_joy",
+};
+
+const stepTitles: Record<string, string> = {
+  name: "Как вас зовут?", therapy: "Вы занимаетесь с психотерапевтом?",
+  mood_morning: "Чувства · утро", mood_day: "Чувства · день", mood_evening: "Чувства · вечер",
+  focus: "Какое чувство разобрать?", another: "Разобрать ещё одно чувство?",
+  first_note: "Первая запись · свободная тема",
+  ...Object.fromEntries(Object.entries(noteStep).map(([f, id]) => [id, `Первая запись · ${f}`])),
+  ...Object.fromEntries(Object.entries(questions).map(([id, q]) => [id, q.title[0]])),
+};
+
+/** Accept only known screens and navigation actions. Never forward arbitrary properties. */
+export function surveyProperties(data: Record<string, unknown>): Record<string, unknown> | null {
+  if (data.locale !== "ru" && data.locale !== "en") return null;
+  const common = { messenger: "web", locale: data.locale, survey_version: 1 };
+  if (data.event === "web_landing_start") {
+    return data.placement === "hero" || data.placement === "footer"
+      ? { ...common, placement: data.placement } : null;
+  }
+  if (data.event !== "web_survey_step" || typeof data.question !== "string" ||
+      !Object.hasOwn(stepTitles, data.question) ||
+      typeof data.attempt !== "string" || !/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(data.attempt) ||
+      typeof data.sequence !== "number" || !Number.isSafeInteger(data.sequence) || data.sequence < 1 ||
+      !["view", "advance", "back", "login", "finish"].includes(String(data.action)) || typeof data.action !== "string") return null;
+  return { ...common, question_id: data.question, question_title: stepTitles[data.question],
+    survey_action: data.action, attempt_id: data.attempt, sequence: data.sequence };
+}

@@ -7,6 +7,7 @@ import { useState } from "react";
 import { LanguageSwitch } from "./language-switch";
 import { LocaleProvider, useI18n } from "./locale-provider";
 import { LEGAL_INN } from "@/lib/legal";
+import { trackSurvey } from "@/lib/survey-analytics";
 import "./landing-chapters.css";
 
 const chapters = [
@@ -76,7 +77,7 @@ function LandingContent() {
               <h1 data-chapter={clip}>{title}</h1>
               <p>{body}</p>
             </div>
-            <a className="chapter-cta" href={`/?start=1&lang=${locale}`}>{start}</a>
+            <a className="chapter-cta" onClick={() => trackSurvey({event: "web_landing_start", placement: "hero"}, locale)} href={`/?start=1&lang=${locale}`}>{start}</a>
             <nav aria-label={en ? "Chapters" : "Главы"}>
               <small>{en ? "Chapters" : "Главы"}</small>
               {copy.map((item, i) => (
@@ -116,7 +117,7 @@ function LandingContent() {
           </>}
         </section>
         <footer>
-          <a className="chapter-cta" href={`/?start=1&lang=${locale}`}>
+          <a className="chapter-cta" onClick={() => trackSurvey({event: "web_landing_start", placement: "footer"}, locale)} href={`/?start=1&lang=${locale}`}>
             {start}
           </a>
           <p>{en ? "7 days free. No card or automatic charges." : "7 дней бесплатно. Без карты и автосписаний."}</p>
