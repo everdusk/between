@@ -43,6 +43,12 @@ export function PremiumPaywall({
   return (
     <section className="space-y-3">
       <h3 className="font-display text-lg tracking-tight text-foreground">{t("premiumMark")}</h3>
+      {inTelegram && access && access.premium !== "forever" && (
+        <div className="space-y-2">
+          {locale === "ru" && <p className="font-display text-xl">Оформление подписки. Вы честно экономите.</p>}
+          <p className="text-sm leading-relaxed text-muted-foreground">{t("webLead")}</p>
+        </div>
+      )}
       <p className="whitespace-pre-line text-sm leading-relaxed text-muted-foreground">{premiumText}</p>
       {inTelegram && access?.premium !== "forever" && <p className="text-xs text-muted-foreground">{t("starsRenewal")}</p>}
       {access && access.premium !== "forever" ? (

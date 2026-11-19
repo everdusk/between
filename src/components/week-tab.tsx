@@ -175,6 +175,7 @@ export function WeekTab({
     return (
       <SubscribeCheckout
         embed
+        surface={"max"}
         monthly={access.rubPrice}
         stars={inTelegram ? access.prices : null}
         onStarsPay={(plan) => void pay(plan)}
