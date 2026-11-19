@@ -133,6 +133,10 @@ function LandingContent() {
             {start}
           </a>
           <p>{en ? "7 days free. No card or automatic charges." : "7 дней бесплатно. Без карты и автосписаний."}</p>
+          {!en && <nav aria-label="Статьи о дневнике" className="chapter-guide-links">
+            <a href="/guides/dnevnik-emotsiy">Как вести дневник эмоций</a>
+            <a href="/guides/mezhdu-sessiyami">Что записывать между сессиями</a>
+          </nav>}
           <div>
             <a href="/privacy">{en ? "Privacy policy" : "Политика конфиденциальности"}</a> ·{" "}
             <a href="/terms">{en ? "Terms of use" : "Условия использования"}</a> · {en ? "Tax ID" : "ИНН"} {LEGAL_INN}

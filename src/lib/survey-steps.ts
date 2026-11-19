@@ -27,7 +27,7 @@ export function surveyProperties(data: Record<string, unknown>): Record<string, 
     return { ...common, attempt_id: data.attempt, registration_source: data.source, registration_step: data.stage, method: data.method };
   }
   if (data.event === "web_landing_start") {
-    return data.placement === "hero" || data.placement === "footer"
+    return ["hero", "footer", "guide_emotions", "guide_therapy"].includes(String(data.placement)) && typeof data.placement === "string"
       ? { ...common, placement: data.placement } : null;
   }
   if (data.event !== "web_survey_step" || typeof data.question !== "string" ||

@@ -1,0 +1,20 @@
+/* These public, server-rendered pages must also be readable without JavaScript. */
+html:has(.journal-guide) body .app-root { display:contents!important; }
+html:has(.journal-guide) body .splash-screen { display:none!important; }
+.journal-guide { position:fixed; inset:0; overflow:auto; background:#060b09; color:#f2f7f4; font: 1.08rem/1.7 var(--font-sans),sans-serif; }
+.guide-column { max-width:46rem; padding:1.5rem clamp(1.25rem,4vw,3rem) 4rem; margin:auto; }
+.journal-guide header a { font-weight:800; font-size:1.4rem; text-decoration:none; }
+.journal-guide h1,.journal-guide h2 { font-family:var(--font-display),serif; line-height:1.15; text-wrap:balance; }
+.journal-guide h1 { font-size:clamp(2.15rem,5vw,3.6rem); margin:2.7rem 0 1.3rem; }
+.journal-guide h2 { font-size:clamp(1.55rem,3vw,2.05rem); margin:2.3rem 0 .8rem; }
+.journal-guide p,.journal-guide li { margin:.75rem 0; }
+.journal-guide blockquote { border-inline-start:3px solid #8ff0bc; padding:.25rem 1.15rem; margin:1.3rem 0; }
+.journal-guide ul { padding-inline-start:1.3rem; list-style:disc; }
+.journal-guide img { display:block; max-width:100%; width:22rem; height:auto; border-radius:1rem; }
+.journal-guide figure { margin:1.25rem 0; }
+.journal-guide figcaption,.journal-guide footer { color:#abb8b1; font-size:.93rem; }
+.journal-guide figcaption { margin-top:.5rem; }
+.journal-guide a { text-underline-offset:.2em; }
+.journal-guide .guide-start { display:inline-block; margin:.6rem 0 2rem; padding:.7rem 1.2rem; border-radius:2rem; background:#8ff0bc; color:#04130c; font-weight:700; }
+.journal-guide footer { border-top:1px solid #33413c; padding-top:1rem; }
+.journal-guide footer a { text-decoration:underline; color:#f2f7f4; }

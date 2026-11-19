@@ -60,6 +60,8 @@
 .chapter-example { grid-column:1/-1; border-block-start:1px solid #33413c; padding-top:20px; }
 .chapter-example summary { cursor:pointer; font-weight:600; width:fit-content; }
 .chapter-example p { margin:14px 0 0; max-width:64ch; }
+.chapter-guide-links { display:flex; justify-content:center; flex-wrap:wrap; gap:.6rem 1.5rem; margin:1.6rem 0; }
+.chapter-guide-links a { text-decoration:underline; text-underline-offset:.22em; }
 .chapter-page footer { text-align:center; padding:clamp(66px,12vw,180px) 0 30px; }
 .chapter-page footer p,.chapter-page footer div {font-size:12px;color:#a9b4ae;margin-top:20px;}
 .chapter-page footer div {text-align:left;margin-top:58px;}
