@@ -55,7 +55,7 @@ export function LandingPage() {
         </header>
         <div className="chapter-hero">
           <section className="chapter-story">
-            <div className="chapter-copy" aria-live="polite">
+            <div key={clip} className="chapter-copy">
               <h1 data-chapter={clip}>{title}</h1>
               <p>{body}</p>
             </div>
@@ -71,7 +71,16 @@ export function LandingPage() {
           </section>
           <figure className="chapter-screen">
             <video key={clip} muted playsInline controls preload="metadata"
-              ref={video => { if (video && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) void video.play().catch(() => {}); }}
+              ref={video => {
+                if (video?.getClientRects().length && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                  void video.play().catch(() => {});
+                }
+              }}
+              onEnded={() => {
+                if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                  setChapter((chapter + 1) % chapters.length);
+                }
+              }}
               poster={`/landing/chapters/${clip}.webp`}
               src={`/landing/chapters/${clip}.mp4`}
               aria-label={`Веб-дневник Between · ${label}`} />
