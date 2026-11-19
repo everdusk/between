@@ -57,6 +57,9 @@
 .chapter-audience h2 { grid-column:1/-1; font-size:clamp(30px,3vw,44px); }
 .chapter-audience h3 { margin:30px 0 16px; font-size:clamp(18px,1.65vw,24px); }
 .chapter-audience p { max-width:48ch; line-height:1.65; }
+.chapter-example { grid-column:1/-1; border-block-start:1px solid #33413c; padding-top:20px; }
+.chapter-example summary { cursor:pointer; font-weight:600; width:fit-content; }
+.chapter-example p { margin:14px 0 0; max-width:64ch; }
 .chapter-page footer { text-align:center; padding:clamp(66px,12vw,180px) 0 30px; }
 .chapter-page footer p,.chapter-page footer div {font-size:12px;color:#a9b4ae;margin-top:20px;}
 .chapter-page footer div {text-align:left;margin-top:58px;}

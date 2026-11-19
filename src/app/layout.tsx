@@ -5,7 +5,7 @@ import { ProductAnalyticsConfig } from "@/components/product-analytics-config";
 import { SplashScreen } from "@/components/splash-screen";
 import { LandingSurface } from "@/components/landing-surface";
 import { JOURNAL_SURFACE_SCRIPT, SURFACE_BOOT_SCRIPT, WEB_SURFACE_CSS, YANDEX_METRIKA_NOSCRIPT, YANDEX_METRIKA_SCRIPT } from "@/lib/landing";
-import { landingJsonLd, landingMetadata } from "@/lib/landing-seo";
+import { landingMetadata } from "@/lib/landing-seo";
 import { LAUNCH_THEME_SCRIPT, SPLASH_COVER_CSS } from "@/lib/launch-theme";
 import { MAX_LAUNCH_BOOT_SCRIPT } from "@/lib/max-webapp";
 import { posthogBrowserConfig } from "@/lib/posthog-env";
@@ -64,7 +64,6 @@ export default function RootLayout({
         <link rel="preload" href="/splash.webp" as="image" fetchPriority="high" />
       </head>
       <body className="flex h-full flex-col overflow-hidden font-sans">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: landingJsonLd() }} />
         <noscript dangerouslySetInnerHTML={{ __html: YANDEX_METRIKA_NOSCRIPT }} />
         {posthog ? <ProductAnalyticsConfig token={posthog.token} host={posthog.host} /> : null}
         <LandingSurface />

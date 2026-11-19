@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: { absolute: "Подписка Between" },
   description: "Премиум Between на месяц, 3 месяца или год. Оплата через СБП, чек на почту, без автопродления.",
   alternates: { canonical: "/subscribe" },
+  robots: { index: false, follow: true },
 };
 
 export default function SubscribePage() {
