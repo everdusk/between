@@ -2,6 +2,16 @@ import type { Metadata } from "next";
 import { LANDING_ORIGIN, LANDING_OG_IMAGE } from "./landing-seo";
 
 export const guides = {
+  worry: {
+    path: "/guides/trevoga-pered-snom",
+    title: "Тревога перед сном: что записать, когда мысли ходят по кругу",
+    description: "Как разобрать вечернее «а вдруг», выбрать один шаг на завтра и понять по своим записям, какие переживания возвращаются перед сном.",
+  },
+  anger: {
+    path: "/guides/pochemu-sryvayus-na-blizkih",
+    title: "Почему я срываюсь на близких, хотя злюсь на кого-то другого?",
+    description: "Как восстановить один разговор, заметить первые признаки раздражения и подобрать слова для близкого человека после ссоры.",
+  },
   emotions: {
     path: "/guides/dnevnik-emotsiy",
     title: "Как вести дневник эмоций: шаблон и пример заполнения",

@@ -7,7 +7,7 @@ export type RegistrationStep = "form_view" | "email_started" | "email_submitted"
 export type RegistrationMethod = "form" | "email" | "password" | "telegram" | "max";
 export type SurveyEvent =
   | { event: "web_registration_step"; attempt: string; source: "survey" | "direct"; stage: RegistrationStep; method: RegistrationMethod; operation?: AuthOperation; reason?: string }
-  | { event: "web_landing_start"; placement: "hero" | "footer" | "guide_emotions" | "guide_therapy" }
+  | { event: "web_landing_start"; placement: "hero" | "footer" | `guide_${keyof typeof import("./guides").guides}` }
   | { event: "web_survey_step"; action: SurveyAction; question: string; attempt: string; sequence: number };
 
 export function trackSurvey(detail: SurveyEvent, locale: string) {

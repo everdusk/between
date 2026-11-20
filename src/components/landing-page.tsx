@@ -136,6 +136,8 @@ function LandingContent() {
           {!en && <nav aria-label="Статьи о дневнике" className="chapter-guide-links">
             <a href="/guides/dnevnik-emotsiy">Как вести дневник эмоций</a>
             <a href="/guides/mezhdu-sessiyami">Что записывать между сессиями</a>
+            <a href="/guides/trevoga-pered-snom">Тревога перед сном</a>
+            <a href="/guides/pochemu-sryvayus-na-blizkih">Почему я срываюсь на близких</a>
           </nav>}
           <div>
             <a href="/privacy">{en ? "Privacy policy" : "Политика конфиденциальности"}</a> ·{" "}
