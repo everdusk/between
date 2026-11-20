@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandLogo } from "./brand-logo";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { readMaxInitData } from "@/lib/max-webapp";
 import { SbpLockup, SbpSign } from "@/components/sbp-logo";
@@ -268,7 +269,7 @@ export function SubscribeCheckout({
         {embed ? null : (
         <header>
           <a href="/journal" className="sub-display text-lg" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "journal" })}>
-            Between
+            <BrandLogo />
           </a>
         </header>
         )}

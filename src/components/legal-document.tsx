@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandLogo } from "./brand-logo";
 import { useLayoutEffect } from "react";
 import Link from "next/link";
 import { LanguageSwitch } from "@/components/language-switch";
@@ -31,7 +32,7 @@ function LegalArticle({ kind }: { kind: LegalKind }) {
       <div className="mx-auto flex w-full max-w-2xl flex-col px-5 pt-8 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <header className="flex items-center justify-between gap-4">
           <a href="/" className="font-display text-lg text-foreground">
-            Between
+            <BrandLogo />
           </a>
           <LanguageSwitch />
         </header>

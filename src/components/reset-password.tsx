@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandLogo } from "./brand-logo";
 import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { LanguageSwitch } from "@/components/language-switch";
@@ -77,7 +78,7 @@ function ResetForm() {
       <div className="mx-auto flex w-full max-w-lg flex-col px-5 pt-8 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <header className="flex items-center justify-between gap-4">
           <a href="/" className="font-display text-lg text-foreground">
-            Between
+            <BrandLogo />
           </a>
           <LanguageSwitch />
         </header>

@@ -133,6 +133,19 @@
   );
 }
 
+.between-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .21em;
+  vertical-align: middle;
+  font-family: var(--font-sans), sans-serif;
+  font-weight: 600;
+  letter-spacing: -.035em;
+  line-height: 1.15;
+  text-transform: none;
+  white-space: nowrap;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

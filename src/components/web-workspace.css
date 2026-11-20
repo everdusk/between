@@ -1,6 +1,3 @@
-html[data-web-first] .splash-screen {
-  display: none !important;
-}
 .desk-frame {
   position: fixed;
   inset-inline: 0;

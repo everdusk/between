@@ -83,13 +83,13 @@ describe("landing surface", () => {
     return { attrs, style, counters };
   }
 
-  it("opens the browser workspace immediately without enabling the landing recorder", () => {
+  it("opens the branded browser workspace without enabling the landing recorder", () => {
     const { attrs, style, counters } = boot("/", "", "?start=1");
     assert.equal(attrs.get("data-between"), "app");
     assert.equal(attrs.get("data-journal"), "web");
     assert.equal(attrs.get("data-scheme"), "day");
     assert.equal(attrs.has("data-web-first"), true);
-    assert.equal(attrs.has("data-splash"), false);
+    assert.equal(attrs.has("data-splash"), true);
     assert.equal(counters, 0);
     assert.doesNotMatch(style.textContent, /app-root\{display:none/);
   });
@@ -99,6 +99,7 @@ describe("landing surface", () => {
     assert.equal(boot("/", "", "?login=1").counters, 0);
     const about = boot("/about");
     assert.equal(about.attrs.get("data-between"), "web");
+    assert.equal(about.attrs.has("data-landing-launch"), true);
     assert.match(about.style.textContent, /between-landing\{display:block/);
     const max = boot("/journal");
     assert.equal(max.attrs.get("data-between"), "app");

@@ -3,6 +3,7 @@
 /* Full document navigation runs the journal's surface bootstrap. */
 /* eslint-disable @next/next/no-html-link-for-pages */
 
+import { BrandLogo } from "./brand-logo";
 import { useState } from "react";
 import { LanguageSwitch } from "./language-switch";
 import { LocaleProvider, useI18n } from "./locale-provider";
@@ -68,7 +69,7 @@ function LandingContent() {
     <main className="between-landing chapter-page">
       <div className="chapter-wrap">
         <header>
-          <b>Between</b>
+          <b><BrandLogo /></b>
           <div className="flex items-center gap-2"><LanguageSwitch /><a href={`/?login=1&lang=${locale}`}>{en ? "Sign in" : "Войти"}</a></div>
         </header>
         <div className="chapter-hero">

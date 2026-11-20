@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandLogo } from "./brand-logo";
 import { useEffect, useRef, useState } from "react";
 import { trackSurvey, type SurveyAction } from "@/lib/survey-analytics";
 import { noteStep } from "@/lib/survey-steps";
@@ -266,7 +267,7 @@ export function JournalIntro({
   return (
     <section className="glass space-y-5 rounded-3xl p-6">
       <small>
-        Between ·{" "}
+        <BrandLogo /> ·{" "}
         {step < 3
           ? en
             ? "Getting to know you"
