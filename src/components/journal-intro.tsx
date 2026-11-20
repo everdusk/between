@@ -153,10 +153,8 @@ export function ProfileEditor({
 
 export function JournalIntro({
   onFinish,
-  onLogin,
 }: {
   onFinish: (answers: IntroAnswers) => void;
-  onLogin: () => void;
 }) {
   const { t, locale, feeling, slot } = useI18n();
   const en = locale === "en";
@@ -472,8 +470,8 @@ export function JournalIntro({
           <Button type="submit">{t("webCreate")}</Button>
         </form>
       )}
-      <div className="flex justify-between">
-        {step > 0 && (
+      {step > 0 && (
+        <div>
           <Button
             variant="ghost"
             aria-label={en ? "Back" : "Назад"}
@@ -481,11 +479,8 @@ export function JournalIntro({
           >
             ←
           </Button>
-        )}
-        <Button variant="ghost" onClick={() => { record("login"); onLogin(); }}>
-          {t("webEnter")}
-        </Button>
-      </div>
+        </div>
+      )}
     </section>
   );
 }
