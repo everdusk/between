@@ -399,7 +399,7 @@ function TherapyShell({
       <WebAccountGate
         surveyAttempt={intro?.attempt}
         compact
-        initialLogin={login || loginRequested}
+        initialLogin={!intro && (login || loginRequested)}
         onSignedIn={web.setAccount}
       />
     ));
