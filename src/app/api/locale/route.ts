@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { actorFromRequest } from "@/lib/account-actor";
 import { isLocale } from "@/lib/i18n";
-import { redisConfigured, saveDeviceLocale, saveUserLocale } from "@/lib/redis";
+import { loadUserLocale, redisConfigured, saveDeviceLocale, saveUserLocale } from "@/lib/redis";
 import { sessionSecret } from "@/lib/web-account";
 
 export async function POST(req: Request) {
@@ -27,5 +27,5 @@ export async function POST(req: Request) {
   }
   if (locale) await saveUserLocale(actor.id, locale);
   if (device) await saveDeviceLocale(actor.id, device);
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, locale: locale ?? await loadUserLocale(actor.id) });
 }

@@ -80,10 +80,13 @@ export function TherapyApp({ webFirst = false }: { webFirst?: boolean }) {
   const webEntry = pathname === "/" || pathname === "/journal" || pathname.startsWith("/journal/");
   const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
   const [erased, setErased] = useState(false);
+  const [maxLaunch, setMaxLaunch] = useState<string | null>(null);
   return (
     <LocaleProvider
       telegramLanguage={telegram.user?.language_code}
       initData={telegram.inTelegram ? telegram.initData : ""}
+      maxInitData={inMax ? maxLaunch ?? "" : ""}
+      webAccount={!inMax && !telegram.inTelegram ? web.account?.email : undefined}
       lockLocale={null}
       publicLanguages={webFirst && !inMax && !telegram.inTelegram && !web.account}
     >
@@ -91,6 +94,8 @@ export function TherapyApp({ webFirst = false }: { webFirst?: boolean }) {
         <ErasedJournal />
       ) : (
         <TherapyShell
+          maxLaunch={maxLaunch}
+          setMaxLaunch={setMaxLaunch}
           web={web}
           webEntry={webEntry}
           onErased={() => setErased(true)}
@@ -139,6 +144,8 @@ function ErasedJournal() {
 }
 
 function TherapyShell({
+  maxLaunch,
+  setMaxLaunch,
   web,
   webEntry,
   telegram,
@@ -147,6 +154,8 @@ function TherapyShell({
   onErased,
 }: {
   web: ReturnType<typeof useWebAccount>;
+  maxLaunch: string | null;
+  setMaxLaunch: (value: string) => void;
   webEntry: boolean;
   telegram: TelegramSession;
   inMax: boolean;
@@ -156,7 +165,6 @@ function TherapyShell({
   const { t, locale } = useI18n();
   const [composeRequest, setComposeRequest] = useState(0);
   // null while MAX may still hand over the launch string. "" means it never arrived.
-  const [maxLaunch, setMaxLaunch] = useState<string | null>(null);
   const waitingForMax = inMax && webEntry && !telegram.inTelegram;
   const maxReady = !waitingForMax || maxLaunch !== null;
   const signIn = web.setAccount;
@@ -196,7 +204,7 @@ function TherapyShell({
     return () => {
       cancelled = true;
     };
-  }, [waitingForMax, signIn]);
+  }, [waitingForMax, signIn, setMaxLaunch]);
   const {
     store,
     status,
