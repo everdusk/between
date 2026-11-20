@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { trackSurvey, type RegistrationMethod, type RegistrationStep } from "@/lib/survey-analytics";
-import { Bot, Check, Lock } from "lucide-react";
+import { Bot, Check, LoaderCircle, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -132,7 +132,17 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     trackSurvey({event: "web_registration_step", ...registration.current, stage, method}, locale);
   }, [locale, surveyAttempt]);
   const [mode, setMode] = useState<GateMode>("login");
-  const [creating, setCreating] = useState(compact && !initialLogin);
+  const [creating, setCreating] = useState(() => {
+    if (!compact) return false;
+    if (surveyAttempt) return true;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem("between:messenger-login") ?? "null");
+      if (saved?.token && typeof saved.creating === "boolean") return saved.creating;
+    } catch {
+      // A fresh visit uses the requested entry point.
+    }
+    return !initialLogin;
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordAgain, setPasswordAgain] = useState("");
@@ -228,7 +238,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
   function rememberLogin(kind: "max" | "telegram", token: string, expiresAt: number) {
     try {
-      sessionStorage.setItem("between:messenger-login", JSON.stringify({ kind, token, expiresAt, registration: registration.current }));
+      sessionStorage.setItem("between:messenger-login", JSON.stringify({ kind, token, expiresAt, creating, registration: registration.current }));
     } catch {
       // The open tab still polls when storage is blocked.
     }
@@ -490,7 +500,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
   return (
     <div className={compact ? undefined : "journal-scroll"}>
-      <div className="journal-gate pt-3 pr-[max(1rem,var(--safe-right))] pb-10 pl-[max(1rem,var(--safe-left))] sm:pr-[max(1.25rem,var(--safe-right))] sm:pl-[max(1.25rem,var(--safe-left))]">
+      <div className={compact ? "journal-gate w-full min-w-0" : "journal-gate px-4 pt-3 pb-10 sm:px-5"}>
       {!compact && <section className="journal-gate-pitch">
         <p className="eyebrow text-[color:var(--accent-text)]">{t("webKicker")}</p>
         <h1 className="mt-3 font-display text-[2rem] leading-[1.05] text-foreground sm:text-[2.5rem]">
@@ -518,51 +528,47 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
           <Button type="button" size="sm" variant={creating ? "secondary" : "ghost"} aria-pressed={creating} onClick={() => { setCreating(true); setError(null); }}>{t("webCreate")}</Button>
           <Button type="button" size="sm" variant={!creating ? "secondary" : "ghost"} aria-pressed={!creating} onClick={() => { setCreating(false); setError(null); }}>{t("webEnter")}</Button>
         </div>}
-        {lead ? <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{compact && mode === "login" && creating ? t("webFormLead") : lead}</p> : null}
+        {lead && mode !== "login" ? <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{lead}</p> : null}
 
         {mode === "login" ? (
           <>
             <div className="mt-5">
-              <p className="mb-2 text-[0.6875rem] font-extrabold tracking-[0.14em] text-muted-foreground uppercase">
+              {!creating && <p className="mb-2 text-[0.6875rem] font-extrabold tracking-[0.14em] text-muted-foreground uppercase">
                 {t("webOAuth")}
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="w-full"
-                disabled={busy || (waitingFor === "telegram" && Boolean(messengerUrl))}
-                onClick={() => void loginWithMessenger("telegram")}
-              >
-                {t("webTgLogin")}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                className="mt-2 w-full"
-                disabled={busy || (waitingFor === "max" && Boolean(messengerUrl))}
-                onClick={() => void loginWithMessenger("max")}
-              >
-                {t("webMaxLogin")}
-              </Button>
+              </p>}
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="outline" size="lg" className="auth-provider auth-telegram w-full"
+                  disabled={busy || (waitingFor === "telegram" && Boolean(messengerUrl))}
+                  onClick={() => void loginWithMessenger("telegram")}>
+                  {waitingFor === "telegram" && <LoaderCircle aria-hidden className="size-4 motion-safe:animate-spin" />}
+                  {t("webTgLogin")}
+                </Button>
+                <Button type="button" variant="outline" size="lg" className="auth-provider auth-max w-full"
+                  disabled={busy || (waitingFor === "max" && Boolean(messengerUrl))}
+                  onClick={() => void loginWithMessenger("max")}>
+                  {waitingFor === "max" && <LoaderCircle aria-hidden className="size-4 motion-safe:animate-spin" />}
+                  {t("webMaxLogin")}
+                </Button>
+              </div>
+              {(telegramVpn || note || messengerUrl || (error && errorScope === "messenger")) && <div className="glass mt-3 grid gap-2 rounded-2xl p-4 text-sm leading-relaxed" aria-live="polite">
+              {note ? <p>{note}</p> : null}
               {telegramVpn ? (
                 <p className="text-sm leading-relaxed text-muted-foreground" role="status">
                   {t("webBotVpn")}
                 </p>
               ) : null}
-              {note ? <p role="status" className="mt-3 text-sm leading-relaxed text-muted-foreground">{note}</p> : null}
               {error && errorScope === "messenger" && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}
               {messengerUrl ? (
                 <a
                   href={messengerUrl}
-                  className="mt-2 block text-center text-sm text-foreground underline-offset-4 hover:underline"
+                  className="w-fit font-medium text-foreground underline underline-offset-4"
                   target="_blank"
                   rel="noreferrer"
                 >
                   {t("webOpenTab")}
                 </a>
               ) : null}
+              </div>}
             </div>
             <p className="my-4 text-center text-xs font-bold tracking-[0.16em] text-muted-foreground uppercase">
               {t("webOr")}
@@ -609,7 +615,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         ) : null}
 
         {mode === "login" && (!compact || creating) ? (
-          <details open={compact || undefined} className="mt-5 border-t border-[color:var(--glass-border)] pt-4">
+          <details open={compact || undefined} className={compact ? undefined : "mt-5 border-t border-[color:var(--glass-border)] pt-4"}>
             <summary hidden={compact} className="cursor-pointer text-sm text-muted-foreground">{t("webRegisterFold")}</summary>
             <form className="mt-4 space-y-4" onInput={() => record("email_started", "email")} onSubmit={register}>
               <div className="space-y-2">

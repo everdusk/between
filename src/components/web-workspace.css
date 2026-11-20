@@ -100,6 +100,24 @@ html[data-web-first] .splash-screen {
 .desk-frame .journal-gate-form {
   position: static !important;
 }
+.journal-gate-form .auth-provider {
+  min-height: 46px;
+  border: 0;
+  color: white;
+  font-weight: 650;
+}
+.journal-gate-form .auth-telegram {
+  background: #0077af;
+}
+.journal-gate-form .auth-max {
+  background: linear-gradient(110deg, #0067da, #6742cb);
+}
+.journal-gate-form .auth-provider:hover {
+  filter: brightness(1.08);
+}
+.journal-gate-form .auth-provider:disabled {
+  opacity: .85;
+}
 @media (max-width: 760px) {
   .desk-frame {
     grid-template: "header" auto "nav" auto "main" minmax(0, 1fr) / minmax(
