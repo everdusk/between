@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandLogo } from "./brand-logo";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { Smile, X } from "lucide-react";
@@ -137,7 +138,7 @@ function ErasedJournal() {
   const { t } = useI18n();
   return (
     <main className="mx-auto max-w-md p-6" role="status">
-      <h1 className="font-display text-2xl">Between</h1>
+      <h1 className="font-display text-2xl"><BrandLogo /></h1>
       <p className="mt-4">{t("deleteDone")}</p>
     </main>
   );

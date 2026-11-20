@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandLogo } from "./brand-logo";
 import { useRef, type ReactNode } from "react";
 import {
   CalendarDays,
@@ -59,7 +60,7 @@ export function WebWorkspace({
   return (
     <div className="desk-frame">
       <header className="desk-header">
-        <span className="font-display text-xl font-semibold">Between</span>
+        <span className="font-display text-xl font-semibold"><BrandLogo /></span>
         <div className="flex items-center gap-2">
           {!blocked && (
             <Button onClick={onCompose} aria-label={t("newEntry")}>

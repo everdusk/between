@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="228" height="238" viewBox="0 0 228 238"><defs>
+    <linearGradient id="mint" gradientUnits="userSpaceOnUse" x1="80" y1="0" x2="162" y2="238">
+      <stop stop-color="#C2FFDA"/><stop offset=".47" stop-color="#97F4BC"/><stop offset="1" stop-color="#33E7BF"/>
+    </linearGradient>
+  </defs><g id="Pages" fill="url(#mint)">
+      <path d="M0 162V18Q0 0 18 0H165C193 0 216 24 218 50C220 72 209 82 191 88L31 139Q10 145 0 162Z"/>
+      <path d="M0 188Q0 164 24 157L192 105C213 118 227 144 227 169C227 208 200 238 161 238H18Q0 238 0 220Z"/>
+    </g></svg>

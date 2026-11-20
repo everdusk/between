@@ -61,7 +61,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: SURFACE_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: JOURNAL_SURFACE_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: YANDEX_METRIKA_SCRIPT }} />
-        <link rel="preload" href="/splash.webp" as="image" fetchPriority="high" />
+        <link rel="preload" href="/between-mark.svg" as="image" fetchPriority="high" />
       </head>
       <body className="flex h-full flex-col overflow-hidden font-sans">
         <noscript dangerouslySetInnerHTML={{ __html: YANDEX_METRIKA_NOSCRIPT }} />

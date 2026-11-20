@@ -1,5 +1,6 @@
 "use client";
 
+import { BrandLogo } from "./brand-logo";
 import { MESSENGER_CSS, MessengerButtons } from "@/components/landing-messengers";
 import { AcquisitionLink } from "@/components/acquisition-link";
 
@@ -15,7 +16,7 @@ export function OpenFork() {
     <article className="between-open fixed inset-0 z-30 overflow-y-auto">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center px-5 py-10">
-        <p className="text-xs font-semibold tracking-[0.16em] text-[#5ee7c5] uppercase">Between</p>
+        <p className="text-xs font-semibold tracking-[0.16em] text-[#5ee7c5] uppercase"><BrandLogo /></p>
         <h1 className="mt-4 font-display text-4xl leading-[1.05] tracking-tight">Где открыть бота</h1>
         <p className="mt-4 text-base leading-relaxed text-[#a9b4ae]">
           Один дневник. Telegram или MAX. MAX открывается без VPN.

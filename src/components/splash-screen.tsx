@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useState } from "react";
+import { BrandLogo } from "./brand-logo";
 import {
   SPLASH_MAX_MS,
   SPLASH_READY_EVENT,
@@ -33,7 +34,7 @@ export function SplashScreen() {
   useEffect(() => {
     if (splashIsDismissed()) return;
 
-    let appReady = splashAppIsReady();
+    let appReady = splashAppIsReady() || document.documentElement.hasAttribute("data-landing-launch");
     let timer = 0;
     let removed = false;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -107,17 +108,7 @@ export function SplashScreen() {
         backgroundColor: SPLASH_CHROME,
       }}
     >
-      {/* Inline box so the frame covers the page before the stylesheet arrives. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/splash.webp"
-        alt="Between"
-        width={780}
-        height={1560}
-        fetchPriority="high"
-        decoding="sync"
-        style={{ width: "100%", height: "100%", objectFit: "contain" }}
-      />
+      <div style={{ fontSize: "clamp(36px, 11vw, 76px)", color: "#f9f6eb" }}><BrandLogo /></div>
     </div>
   );
 }
