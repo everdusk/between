@@ -180,8 +180,8 @@ export function JournalPanel({
 
   return (
     <div className="journal-board flex flex-col gap-4">
-      <header className="flex items-end justify-between gap-2 px-1">
-        <div className="min-w-0">
+      <header className="px-1">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex min-h-7 flex-wrap items-center gap-x-2">
             {isToday ? <span className="text-sm font-medium text-section-header">{t("todayTitle")}</span> :
               <Button type="button" variant="outline" size="xs" disabled={disabled} onClick={() => changeDate(today)}>{t("todayTitle")}</Button>}
@@ -190,16 +190,16 @@ export function JournalPanel({
               {savedFlash ? <span className="inline-flex items-center gap-1 text-primary"><Check aria-hidden className="size-3.5" />{t("saved")}</span> : count(dayEntries.length, "note")}
             </span>
           </div>
-          <EntryCalendar id="journal-date" value={date} max={today} marks={marks} disabled={disabled} compact onChange={changeDate} />
+          {!composerOpen && <Button type="button" size="icon" aria-label={t("newEntry")} title={t("newEntry")} disabled={disabled} onClick={() => { resetForm(); setComposerOpen(true); }}><Plus aria-hidden /></Button>}
         </div>
-        <div className="ms-auto flex items-center gap-1">
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 text-center">
           <Button type="button" variant="ghost" size="icon" aria-label={t("journalPrevDay")} disabled={disabled} onClick={() => changeDate(addDays(date, -1))}>
             <ChevronLeft aria-hidden className="rtl:scale-x-[-1]" />
           </Button>
+          <EntryCalendar id="journal-date" value={date} max={today} marks={marks} disabled={disabled} compact onChange={changeDate} />
           <Button type="button" variant="ghost" size="icon" aria-label={t("journalNextDay")} disabled={disabled || isToday} onClick={() => changeDate(addDays(date, 1))}>
             <ChevronRight aria-hidden className="rtl:scale-x-[-1]" />
           </Button>
-          {!composerOpen && <Button type="button" size="icon" aria-label={t("newEntry")} title={t("newEntry")} disabled={disabled} onClick={() => { resetForm(); setComposerOpen(true); }}><Plus aria-hidden /></Button>}
         </div>
       </header>
 
