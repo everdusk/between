@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { registrationReason, type AuthOperation } from "@/lib/registration-errors";
 import { trackSurvey, type RegistrationMethod, type RegistrationStep } from "@/lib/survey-analytics";
 import { Bot, Check, LoaderCircle, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -123,13 +124,13 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   const { t, locale } = useI18n();
   const registration = useRef<{ attempt: string; source: "survey" | "direct" } | null>(null);
   const logged = useRef(new Set<string>());
-  const record = useCallback((stage: RegistrationStep, method: RegistrationMethod) => {
+  const record = useCallback((stage: RegistrationStep, method: RegistrationMethod, operation?: AuthOperation, reason?: string) => {
     if (!registration.current) registration.current = { attempt: surveyAttempt ?? crypto.randomUUID(), source: surveyAttempt ? "survey" : "direct" };
     if (stage === "form_view" || stage === "email_started") {
       if (logged.current.has(stage)) return;
       logged.current.add(stage);
     }
-    trackSurvey({event: "web_registration_step", ...registration.current, stage, method}, locale);
+    trackSurvey({event: "web_registration_step", ...registration.current, stage, method, operation, reason}, locale);
   }, [locale, surveyAttempt]);
   const [mode, setMode] = useState<GateMode>("login");
   const [creating, setCreating] = useState(() => {
@@ -185,10 +186,12 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ initData }),
         });
-        const data = (await res.json().catch(() => ({}))) as { account?: WebAccount };
-        if (!stopped && res.ok && data.account) onSignedIn(data.account);
+        const data = (await res.json().catch(() => ({}))) as { account?: WebAccount; error?: string };
+        if (stopped) return;
+        if (res.ok && data.account) onSignedIn(data.account);
+        else record("error", "max", "max_auto_login", registrationReason(data.error, res.status));
       } catch {
-        // The form stays. MAX did not confirm this launch.
+        if (!stopped) record("error", "max", "max_auto_login", "network_error");
       } finally {
         if (!stopped) setBusy(false);
       }
@@ -208,7 +211,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       stopped = true;
       window.clearTimeout(timer);
     };
-  }, [onSignedIn]);
+  }, [onSignedIn, record]);
 
   function formError(value: string | undefined): string {
     if (value === "bad_email") return t("webBadEmail");
@@ -226,10 +229,12 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   function passwordReady(): boolean {
     setErrorScope("register");
     if (password !== passwordAgain) {
+      record("error", "email", "register", "password_mismatch");
       setError(t("webPasswordMismatch"));
       return false;
     }
     if (password.length < 8 || password.length > 200) {
+      record("error", "email", "register", "short_password");
       setError(t("webPasswordShort"));
       return false;
     }
@@ -254,6 +259,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
   async function pollMessenger(kind: "max" | "telegram", token: string, mine: number, expiresAt: number) {
     const waitUrl = kind === "max" ? "/api/account/max/wait" : "/api/account/telegram/wait";
+    let reason = "confirmation_timeout";
     while (Date.now() < expiresAt) {
       if (mine !== maxPoll.current) return;
       try {
@@ -262,8 +268,9 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
         });
-        const body = (await wait.json().catch(() => ({}))) as { pending?: boolean; account?: WebAccount };
+        const body = (await wait.json().catch(() => ({}))) as { pending?: boolean; error?: string; account?: WebAccount };
         if (mine !== maxPoll.current) return;
+        reason = wait.ok && body.pending ? "confirmation_timeout" : registrationReason(body.error, wait.status);
         if (wait.status === 403 || wait.status === 400) break;
         if (wait.ok && body.account && !body.pending) {
           forgetLogin();
@@ -272,7 +279,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
           return;
         }
       } catch {
-        // The next attempt asks again.
+        reason = "network_error";
       }
       await new Promise<void>((resolve) => {
         const wake = () => {
@@ -288,7 +295,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     }
     if (mine !== maxPoll.current) return;
     forgetLogin();
-    record("error", kind);
+    record("error", kind, "messenger_wait", reason);
     setWaitingFor(null);
     setMessengerUrl(null);
     setNote(null);
@@ -323,7 +330,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         return;
       }
       if (!res.ok || !data.token || !data.url) {
-        record("error", kind);
+        record("error", kind, "messenger_start", registrationReason(data.error, res.status));
         popup?.close();
         setError(data.error === "max_off" ? t("webMaxOff") : t("webServer"));
         return;
@@ -338,7 +345,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       await pollMessenger(kind, data.token, mine, expiresAt);
     } catch {
       popup?.close();
-      if (mine === maxPoll.current) { record("error", kind); setError(t("webServer")); }
+      if (mine === maxPoll.current) { record("error", kind, "messenger_start", "network_error"); setError(t("webServer")); }
     } finally {
       if (mine === maxPoll.current) {
         startingMessenger.current = false;
@@ -385,7 +392,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   async function register(event: { preventDefault: () => void }) {
     event.preventDefault();
     record("email_submitted", "email");
-    if (!passwordReady()) { record("error", "email"); return; }
+    if (!passwordReady()) return;
     setBusy(true);
     setErrorScope("register");
     setError(null);
@@ -398,7 +405,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        record("error", "email");
+        record("error", "email", "register", registrationReason(data.error, res.status));
         setError(formError(data.error));
         return;
       }
@@ -406,7 +413,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       setMode("code");
       setNote(t("webCodeSent", { email }));
     } catch {
-      record("error", "email");
+      record("error", "email", "register", "network_error");
       setError(t("webServer"));
     } finally {
       setBusy(false);
@@ -426,14 +433,14 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       });
       const data = (await res.json().catch(() => ({}))) as { account?: WebAccount; error?: string };
       if (!res.ok || !data.account) {
-        record("error", "email");
+        record("error", "email", "verify_code", registrationReason(data.error, res.status));
         setError(formError(data.error));
         return;
       }
       record("email_registered", "email");
       onSignedIn(data.account);
     } catch {
-      record("error", "email");
+      record("error", "email", "verify_code", "network_error");
       setError(t("webServer"));
     } finally {
       setBusy(false);
@@ -453,12 +460,14 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       });
       const data = (await res.json().catch(() => ({}))) as { account?: WebAccount; error?: string };
       if (!res.ok || !data.account) {
+        record("error", "password", "password_login", registrationReason(data.error, res.status));
         setError(formError(data.error));
         return;
       }
       record("signed_in", "password");
       onSignedIn(data.account);
     } catch {
+      record("error", "password", "password_login", "network_error");
       setError(t("webServer"));
     } finally {
       setBusy(false);
@@ -478,11 +487,13 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
+        record("error", "email", "forgot_password", registrationReason(data.error, res.status));
         setError(formError(data.error));
         return;
       }
       setNote(t("webForgotSent", { email }));
     } catch {
+      record("error", "email", "forgot_password", "network_error");
       setError(t("webServer"));
     } finally {
       setBusy(false);
