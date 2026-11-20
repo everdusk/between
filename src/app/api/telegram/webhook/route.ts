@@ -153,7 +153,7 @@ async function localesFor(user: TelegramUser | undefined): Promise<{
   const selected = owner ? await loadUserLocale(owner) : null;
   const device = seen ?? (owner ? await loadDeviceLocale(owner) : null);
   const reply = resolveBotLocale(selected, device, code);
-  return { reply, greeting: seen ?? reply };
+  return { reply, greeting: reply };
 }
 
 

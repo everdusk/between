@@ -1,16 +1,19 @@
 import type { LocaleId } from "./i18n";
 
-export function syncLocale(
+export async function syncLocale(
   initData: string,
+  maxInitData: string,
   body: { locale?: LocaleId; device?: LocaleId },
-): void {
-  if (!initData) return;
-  void fetch("/api/locale", {
+): Promise<{locale: LocaleId | null}> {
+  const res = await fetch("/api/locale", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Telegram-Init-Data": initData,
+      ...(initData && { "X-Telegram-Init-Data": initData }),
+      ...(maxInitData && { "X-Max-Init-Data": maxInitData }),
     },
     body: JSON.stringify(body),
-  }).catch(() => undefined);
+  });
+  if (!res.ok) throw new Error("Language sync failed");
+  return res.json();
 }

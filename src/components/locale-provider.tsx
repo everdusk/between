@@ -6,6 +6,7 @@ import {
   useContext,
   useLayoutEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -50,6 +51,8 @@ function applyDocument(locale: LocaleId) {
 export function LocaleProvider({
   telegramLanguage,
   initData = "",
+  maxInitData = "",
+  webAccount,
   lockLocale = null,
   publicLanguages = false,
   landing = false,
@@ -57,6 +60,8 @@ export function LocaleProvider({
 }: {
   telegramLanguage?: string | null;
   initData?: string;
+  maxInitData?: string;
+  webAccount?: string;
   lockLocale?: LocaleId | null;
   publicLanguages?: boolean;
   landing?: boolean;
@@ -64,6 +69,9 @@ export function LocaleProvider({
 }) {
   const [locale, setLocaleState] = useState<LocaleId>("ru");
   const storageKey = initData ? STORAGE_KEY + ":telegram" : STORAGE_KEY;
+  const signedIn = Boolean(initData || maxInitData || webAccount);
+  const revision = useRef(0);
+  const writes = useRef(Promise.resolve());
   const [chosen, setChosen] = useState<LocaleId | null>(null);
   const [deviceLocale, setDeviceLocale] = useState<LocaleId>("ru");
 
@@ -97,11 +105,34 @@ export function LocaleProvider({
     setChosen(explicit);
     setDeviceLocale(device);
     applyDocument(next);
-    syncLocale(initData, {
-      device,
-      ...(isLocale(stored) ? { locale: stored } : {}),
-    });
-  }, [telegramLanguage, initData, lockLocale, storageKey, publicLanguages, landing]);
+    if (!signedIn) return;
+    let active = true;
+    let readId = 0;
+    const refresh = async () => {
+      if (document.visibilityState === "hidden") return;
+      const id = ++readId;
+      const version = revision.current;
+      await writes.current;
+      if (!active || version !== revision.current) return;
+      try {
+        const result = await syncLocale(initData, maxInitData, { device });
+        if (!active || id !== readId || version !== revision.current || !isLocale(result.locale)) return;
+        setLocaleState(result.locale);
+        setChosen(result.locale);
+        applyDocument(result.locale);
+      } catch {
+        // Keep the local language while the account is unavailable.
+      }
+    };
+    void refresh();
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refresh);
+    return () => {
+      active = false;
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [telegramLanguage, initData, maxInitData, webAccount, signedIn, lockLocale, storageKey, publicLanguages, landing]);
 
   const setLocale = useCallback((next: LocaleId) => {
     if (lockLocale) return;
@@ -113,8 +144,13 @@ export function LocaleProvider({
     } catch {
       // Private mode can block storage; the choice still applies for this visit.
     }
-    syncLocale(initData, { locale: next });
-  }, [initData, lockLocale, storageKey]);
+    revision.current += 1;
+    if (signedIn) {
+      writes.current = writes.current.then(async () => {
+        await syncLocale(initData, maxInitData, { locale: next });
+      }).catch(() => undefined);
+    }
+  }, [initData, maxInitData, signedIn, lockLocale, storageKey]);
 
   const value = useMemo<I18nValue>(() => {
     const slotKey = {
