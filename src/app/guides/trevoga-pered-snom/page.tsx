@@ -1,5 +1,5 @@
 import Image from "next/image";
-import entries from "../../../../public/landing/chapters/events.webp";
+import entries from "../../../../public/landing/guide-entries.webp";
 import overview from "../../../../public/landing/chapters/overview.webp";
 import { JournalGuide } from "@/components/journal-guide";
 import { guideMetadata } from "@/lib/guides";
@@ -13,7 +13,7 @@ export default function WorryGuide() {
     <p>Попробуйте закончить фразу «Я боюсь, что завтра…». Чем ближе ответ к тому, что вы действительно говорите себе в темноте, тем легче понять, есть ли с этим что делать.</p>
     <blockquote>«Боюсь, что меня спросят про сроки, а я даже не помню, какую дату обещала. И ещё боюсь, что начальница уже мной недовольна».</blockquote>
     <p>В одной тревожной мысли оказались две разные заботы. Дату можно проверить. Что думает начальница, пока неизвестно. Если бы письмо пришло в полдень, какой частью вы бы занялись первой?</p>
-    <figure><div className="guide-capture guide-entries"><Image src={entries} alt="Поле для короткой заметки в разделе «Записи» Between" sizes="(max-width: 600px) 92vw, 540px" /></div><figcaption>Для начала хватит той самой фразы, которая мешает уснуть.</figcaption></figure>
+    <figure><div className="guide-capture"><Image src={entries} alt="Поле для короткой заметки в разделе «Записи» Between" sizes="(max-width: 600px) 92vw, 540px" /></div><figcaption>Для начала хватит той самой фразы, которая мешает уснуть.</figcaption></figure>
     <h2>Одна строка на завтра</h2>
     <p>«Утром после кофе открою переписку и найду дату, которую обещала». У этой задачи есть конец. Даже если потом вы снова вспомните о созвоне, решение, что делать с датой, уже записано.</p>
     <p>А что писать про недовольство начальницы? Можно буквально так: «Пока не знаю, о чём она хочет поговорить. Узнаю завтра». Иногда на этом удобнее закрыть дневник. Разбирать ночью все варианты разговора необязательно.</p>
