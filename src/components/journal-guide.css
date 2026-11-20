@@ -15,7 +15,7 @@ html:has(.journal-guide) body .splash-screen { display:none!important; }
 .journal-guide figcaption,.journal-guide footer { color:#abb8b1; font-size:.93rem; }
 .journal-guide figcaption { margin-top:.5rem; }
 .journal-guide a { text-underline-offset:.2em; }
-.journal-guide .guide-start { display:inline-block; margin:.6rem 0 2rem; padding:.7rem 1.2rem; border-radius:2rem; background:#8ff0bc; color:#04130c; font-weight:700; }
+.journal-guide .guide-start { display:inline-block; margin:.6rem 0 2rem; padding:.7rem 1.2rem; border-radius:2rem; }
 .journal-guide footer { border-top:1px solid #33413c; padding-top:1rem; }
 .journal-guide footer a { text-decoration:underline; color:#f2f7f4; }
 .guide-chat,.guide-capture { max-width:34rem; overflow:hidden; border:1px solid #33413c; border-radius:1rem; }
