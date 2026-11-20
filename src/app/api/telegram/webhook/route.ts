@@ -153,7 +153,7 @@ async function localesFor(user: TelegramUser | undefined): Promise<{
   const selected = owner ? await loadUserLocale(owner) : null;
   const device = seen ?? (owner ? await loadDeviceLocale(owner) : null);
   const reply = resolveBotLocale(selected, device, code);
-  return { reply, greeting: reply };
+  return { reply, greeting: seen ?? reply };
 }
 
 
@@ -180,15 +180,15 @@ async function handleCallback(callback: TelegramCallback) {
     return;
   }
   if (callback.data?.startsWith("ob:") && callback.from?.id) {
-    const { reply } = await localesFor(callback.from);
+    const { greeting } = await localesFor(callback.from);
     const owner = await resolveJournalId(callback.from.id);
     await finishOnboarding(owner);
     await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
     if (callback.message) await telegramRequest("editMessageText", {
       chat_id: callback.message.chat.id,
       message_id: callback.message.message_id,
-      text: welcomeCaption(reply),
-      reply_markup: miniAppKeyboard(appUrl(), reply),
+      text: welcomeCaption(greeting),
+      reply_markup: miniAppKeyboard(appUrl(), greeting),
     });
     return;
   }
