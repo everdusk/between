@@ -343,7 +343,6 @@ function TherapyShell({
       saveProfile(intro.name, intro.therapy);
     }
   }, [intro, web.account, status, store.profile, saveProfile]);
-  const [login, setLogin] = useState(false);
   const loginRequested = useSyncExternalStore(
     subscribeLaunch,
     () => {
@@ -393,13 +392,13 @@ function TherapyShell({
   };
   const gate =
     showGate &&
-    (webFirst && !login && !loginRequested && !intro ? (
-      <JournalIntro onFinish={setIntro} onLogin={() => setLogin(true)} />
+    (webFirst && !loginRequested && !intro ? (
+      <JournalIntro onFinish={setIntro} />
     ) : (
       <WebAccountGate
         surveyAttempt={intro?.attempt}
         compact
-        initialLogin={!intro && (login || loginRequested)}
+        initialLogin={!intro && loginRequested}
         onSignedIn={web.setAccount}
       />
     ));
