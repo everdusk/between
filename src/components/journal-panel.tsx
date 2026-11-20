@@ -180,27 +180,28 @@ export function JournalPanel({
 
   return (
     <div className="journal-board flex flex-col gap-4">
-      <section className="glass-strong rounded-3xl px-4 py-4 sm:px-5">
-        <div className="flex min-h-7 items-center justify-between px-1">
-          <p className="eyebrow text-section-header">{isToday ? t("todayTitle") : t("journalTitle")}</p>
-          {!isToday && <Button type="button" variant="ghost" size="xs" disabled={disabled} onClick={() => changeDate(today)}>{t("todayTitle")}</Button>}
+      <header className="flex items-end justify-between gap-2 px-1">
+        <div className="min-w-0">
+          <div className="flex min-h-7 flex-wrap items-center gap-x-2">
+            {isToday ? <span className="text-sm font-medium text-section-header">{t("todayTitle")}</span> :
+              <Button type="button" variant="outline" size="xs" disabled={disabled} onClick={() => changeDate(today)}>{t("todayTitle")}</Button>}
+            <span aria-hidden className="text-muted-foreground">·</span>
+            <span className="text-xs text-muted-foreground" aria-live="polite">
+              {savedFlash ? <span className="inline-flex items-center gap-1 text-primary"><Check aria-hidden className="size-3.5" />{t("saved")}</span> : count(dayEntries.length, "note")}
+            </span>
+          </div>
+          <EntryCalendar id="journal-date" value={date} max={today} marks={marks} disabled={disabled} compact onChange={changeDate} />
         </div>
-        <div className="mt-1 flex items-center gap-1">
+        <div className="ms-auto flex items-center gap-1">
           <Button type="button" variant="ghost" size="icon" aria-label={t("journalPrevDay")} disabled={disabled} onClick={() => changeDate(addDays(date, -1))}>
             <ChevronLeft aria-hidden className="rtl:scale-x-[-1]" />
           </Button>
-          <EntryCalendar id="journal-date" value={date} max={today} marks={marks} disabled={disabled} compact onChange={changeDate} />
           <Button type="button" variant="ghost" size="icon" aria-label={t("journalNextDay")} disabled={disabled || isToday} onClick={() => changeDate(addDays(date, 1))}>
             <ChevronRight aria-hidden className="rtl:scale-x-[-1]" />
           </Button>
+          {!composerOpen && <Button type="button" size="icon" aria-label={t("newEntry")} title={t("newEntry")} disabled={disabled} onClick={() => { resetForm(); setComposerOpen(true); }}><Plus aria-hidden /></Button>}
         </div>
-        <div className="mt-3 flex items-center justify-between gap-3 border-t border-[color:var(--glass-border)] px-1 pt-3">
-          <span className="text-xs text-muted-foreground" aria-live="polite">
-            {savedFlash ? <span className="inline-flex items-center gap-1.5 text-primary"><Check aria-hidden className="size-3.5" />{t("saved")}</span> : count(dayEntries.length, "note")}
-          </span>
-          {!composerOpen && <Button type="button" variant="secondary" size="sm" disabled={disabled} onClick={() => { resetForm(); setComposerOpen(true); }}><Plus aria-hidden />{t("newEntry")}</Button>}
-        </div>
-      </section>
+      </header>
 
       {!composerOpen && <section className="glass space-y-3 rounded-3xl p-4">
         <form className="flex items-center gap-2" onSubmit={e=>{e.preventDefault();quickSave()}}>
