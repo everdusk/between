@@ -1,3 +1,4 @@
+import { authOperations, registrationReason } from "./registration-errors";
 import { questions, type SurveyFeeling } from "./intro-questions";
 
 export const noteStep: Record<SurveyFeeling, string> = {
@@ -24,7 +25,10 @@ export function surveyProperties(data: Record<string, unknown>): Record<string, 
         (data.source !== "direct" && data.source !== "survey") ||
         typeof data.stage !== "string" || !["form_view","email_started","email_submitted","code_requested","code_submitted","email_registered","messenger_started","signed_in","error","result_view"].includes(data.stage) ||
         typeof data.method !== "string" || !["form","email","password","telegram","max"].includes(data.method)) return null;
-    return { ...common, attempt_id: data.attempt, registration_source: data.source, registration_step: data.stage, method: data.method };
+    return { ...common, attempt_id: data.attempt, registration_source: data.source, registration_step: data.stage, method: data.method,
+      ...(data.stage === "error" && authOperations.some(op => op === data.operation)
+        ? { error_operation: data.operation, error_reason: registrationReason(data.reason) } : {}),
+    };
   }
   if (data.event === "web_landing_start") {
     return ["hero", "footer", "guide_emotions", "guide_therapy"].includes(String(data.placement)) && typeof data.placement === "string"
