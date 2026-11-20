@@ -28,7 +28,7 @@ export async function POST(req: Request) {
   const owner = await resolveJournalId(validated.user.id);
   const seen = localeFromTelegram(validated.user.language_code);
   if (seen) await saveDeviceLocale(owner, seen);
-  const greeting = resolveBotLocale(await loadUserLocale(owner), seen ?? await loadDeviceLocale(owner));
+  const greeting = seen ?? resolveBotLocale(await loadUserLocale(owner), await loadDeviceLocale(owner));
   const sent = await sendTelegramWelcome(validated.user.id, welcomeCaption(greeting));
   if (!sent) {
     await releaseBotIntro(validated.user.id);
