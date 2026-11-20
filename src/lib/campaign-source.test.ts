@@ -5,6 +5,10 @@ import { captureServerCampaignStart, productDistinctId } from "./product-analyti
 
 it("only accepts public Telegram campaign labels, never login tokens or Yandex refs", () => {
   assert.equal(telegramCampaignSource("tg_telegain_to4nopsy")?.campaign_name, "to4nopsy");
+  assert.deepEqual(telegramCampaignSource("tg_ads_en_01"), {
+    campaign_source: "telegram", campaign_medium: "sponsored_message",
+    campaign_platform: "telegram_ads", campaign_name: "en_01", campaign_tag: "tg_ads_en_01",
+  });
   for (const payload of [null, "", "app", "login_secret", "link_secret", `ad_${"a".repeat(32)}`, "tg_telegain_", "tg_telegain_private@email.ru", `tg_telegain_${"a".repeat(60)}`]) {
     assert.equal(telegramCampaignSource(payload), null);
   }
