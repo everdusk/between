@@ -162,6 +162,21 @@ export function SubscribeCheckout({
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [logoutState, setLogoutState] = useState<"idle" | "pending" | "error">("idle");
+
+  async function logout() {
+    setLogoutState("pending");
+    try {
+      const res = await fetch("/api/account/logout", { method: "POST" });
+      if (res.ok) {
+        window.location.replace("/");
+        return;
+      }
+    } catch {
+      // A failed request leaves the session and checkout available for retry.
+    }
+    setLogoutState("error");
+  }
   const [order, setOrder] = useState<{
     paymentId: string;
     amount: number;
@@ -268,12 +283,19 @@ export function SubscribeCheckout({
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className={embed ? "" : `mx-auto w-full ${surface === "web" ? "max-w-6xl" : "max-w-xl"} px-5 py-6 sm:px-8 sm:py-10`}>
         {embed ? null : (
-        <header>
+        <header className="flex items-center justify-between gap-4">
           <a href="/journal" className="sub-display text-lg" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "journal" })}>
             <BrandLogo />
           </a>
+          {surface === "web" && (
+            <button type="button" className="min-h-11 rounded-full border border-white/25 px-5 text-sm hover:bg-white/10 disabled:opacity-60"
+              disabled={logoutState === "pending" || busy} onClick={logout}>
+              {logoutState === "pending" ? "Выходим…" : "Выйти"}
+            </button>
+          )}
         </header>
         )}
+        {logoutState === "error" && <p role="alert" className="mt-2 text-end text-sm">Не удалось выйти. Попробуйте ещё раз.</p>}
 
         <div className={embed ? "" : surface === "max" ? "mt-8" : "mt-8 grid items-start gap-10 lg:mt-14 lg:grid-cols-[1.05fr_.95fr] lg:gap-16"}>
           {embed || surface === "max" ? null : (
