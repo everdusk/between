@@ -1,14 +1,15 @@
 "use client";
 
 /* Full document navigation runs the journal's surface bootstrap. */
-/* eslint-disable @next/next/no-html-link-for-pages */
 
 import { BrandLogo } from "./brand-logo";
 import { useRef, useState } from "react";
 import { LanguageSwitch } from "./language-switch";
+import { SchemeSwitch, useDemoMediaDirectory } from "./scheme-switch";
 import { LocaleProvider, useI18n } from "./locale-provider";
 import { LEGAL_INN } from "@/lib/legal";
 import { trackSurvey } from "@/lib/survey-analytics";
+import "./web-theme.css";
 import "./landing-chapters.css";
 
 const chapters = [
@@ -73,8 +74,9 @@ function LandingContent() {
   const journalDemo = chapter < 2;
   const feelingsAt = en ? 62 / 12 : 5;
   const videoRef = useRef<HTMLVideoElement>(null);
-  const folder = `/landing/chapters/${en ? "en/" : ""}`;
-  const media = folder + (journalDemo ? "events" : clip);
+  const directory = useDemoMediaDirectory();
+  const folder = directory && `${directory}/chapters/${en ? "en/" : ""}`;
+  const media = folder && folder + (journalDemo ? "events" : clip);
   const mediaVersion = 7;
   function selectChapter(index: number) {
     if (journalDemo && index < 2 && videoRef.current?.readyState) {
@@ -88,7 +90,11 @@ function LandingContent() {
       <div className="chapter-wrap">
         <header>
           <b><BrandLogo /></b>
-          <div className="flex items-center gap-2"><LanguageSwitch /><a href={`/?login=1&lang=${locale}`}>{en ? "Sign in" : "Войти"}</a></div>
+          <div className="flex items-center gap-2">
+            <SchemeSwitch />
+            <LanguageSwitch />
+            <a className="glass-chrome preference-control" href={`/?login=1&lang=${locale}`}>{en ? "Sign in" : "Войти"}</a>
+          </div>
         </header>
         <div className="chapter-hero">
           <section className="chapter-story">
@@ -123,10 +129,9 @@ function LandingContent() {
                   setChapter(journalDemo ? 2 : (chapter + 1) % chapters.length);
                 }
               }}
-              poster={`${folder}${clip}.webp?v=${mediaVersion}`}
-              src={`${media}.mp4?v=${mediaVersion}`}
+              poster={folder ? `${folder}${clip}.webp?v=${mediaVersion}` : undefined}
+              src={media ? `${media}.mp4?v=${mediaVersion}` : undefined}
               aria-label={`${en ? "Between web journal" : "Веб-дневник Between"} · ${label}`} />
-            <figcaption>{en ? "Your notes. Your pace." : "Ваши записи. Ваш темп."}</figcaption>
           </figure>
         </div>
         <section className="chapter-audience">

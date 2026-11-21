@@ -49,7 +49,20 @@ export function applyLaunchTheme(
 /** Hides the journal until the frame leaves, even if position:fixed is not covering yet. */
 export const SPLASH_COVER_CSS = `
 .app-root { display: contents; }
-html[data-splash], html[data-splash] body { background: #0c1210 !important; background-image: none !important; }
+:root {
+  --splash-background: #0c1210;
+  --splash-foreground: #f9f6eb;
+  --surface-scheme: only dark;
+}
+html[data-scheme="day"]:not([data-telegram-theme]) {
+  --splash-background: #f4ede8;
+  --splash-foreground: #1c242f;
+  --surface-scheme: only light;
+}
+html[data-splash], html[data-splash] body {
+  background: var(--splash-background) !important;
+  color-scheme: var(--surface-scheme);
+}
 html[data-splash] .app-root { display: none !important; }
 html[data-splash] .splash-screen {
   display: flex !important;
@@ -60,7 +73,8 @@ html[data-splash] .splash-screen {
   min-height: 100vh;
   min-height: 100dvh;
   z-index: 80;
-  background: #0c1210;
+  background: var(--splash-background);
+  color: var(--splash-foreground);
 }
 `.trim();
 

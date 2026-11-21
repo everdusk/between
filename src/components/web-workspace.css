@@ -57,7 +57,6 @@
   color: var(--foreground);
 }
 .desk-nav button[aria-current] {
-  font-weight: 700;
   box-shadow: inset 0 0 0 1px var(--border);
 }
 .desk-nav svg {
@@ -82,8 +81,8 @@
   padding: 6px 16px max(8px, env(safe-area-inset-bottom), var(--safe-bottom, 0px));
 }
 .desk-content > footer:empty,
-.desk-content:has(.legal-agreement) > footer > .desk-legal-links,
-.desk-content:has(.legal-agreement) > footer:not(:has([role="status"])) {
+.desk-content:has(details[open] .legal-agreement) > footer > .desk-legal-links,
+.desk-content:has(details[open] .legal-agreement) > footer:not(:has([role="status"])) {
   display: none;
 }
 .desk-main {
@@ -146,7 +145,6 @@
   min-height: 46px;
   border: 0;
   color: white;
-  font-weight: 650;
 }
 .bot-connect-banner :is(.auth-telegram, .auth-max) {
   color: white;

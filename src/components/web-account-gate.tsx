@@ -580,7 +580,6 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         {mode === "login" ? (
           <>
             <div className="mt-5">
-              {creating && <LegalAgree className="legal-agreement mb-4 text-sm leading-relaxed text-foreground" />}
               {!creating && <p className="mb-2 text-[0.6875rem] font-extrabold tracking-[0.14em] text-muted-foreground uppercase">
                 {t("webOAuth")}
               </p>}
@@ -687,6 +686,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
               <Button type="submit" className="w-full" size="lg" disabled={busy}>
                 {t("webCreate")}
               </Button>
+              <LegalAgree className="legal-agreement text-sm leading-relaxed text-foreground" />
             </form>
           </details>
         ) : null}

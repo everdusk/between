@@ -9,8 +9,8 @@ import { landingMetadata } from "@/lib/landing-seo";
 import { LAUNCH_THEME_SCRIPT, SPLASH_COVER_CSS } from "@/lib/launch-theme";
 import { MAX_LAUNCH_BOOT_SCRIPT } from "@/lib/max-webapp";
 import { posthogBrowserConfig } from "@/lib/posthog-env";
-import { SPLASH_CHROME } from "@/lib/telegram";
 import "./globals.css";
+import "@/components/brand.css";
 
 const literata = Literata({
   variable: "--font-display",
@@ -50,7 +50,6 @@ export default function RootLayout({
       translate="no"
       data-splash=""
       className={`${literata.variable} ${manrope.variable} ${unbounded.variable} notranslate h-full antialiased`}
-      style={{ backgroundColor: SPLASH_CHROME }}
       suppressHydrationWarning
     >
       <head>

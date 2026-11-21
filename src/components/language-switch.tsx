@@ -46,7 +46,7 @@ export function LanguageSwitch({ inline = false }: { inline?: boolean }) {
     <div ref={rootRef} className="relative">
       <button
         type="button"
-        className="glass inline-flex h-9 items-center gap-1.5 rounded-full pr-2.5 pl-3 text-xs font-medium text-foreground outline-none focus-visible:ring-4 focus-visible:ring-ring/25 active:scale-[0.97]"
+        className={`glass-chrome preference-control ${inline ? "" : "language-compact"}`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
@@ -56,9 +56,9 @@ export function LanguageSwitch({ inline = false }: { inline?: boolean }) {
           setOpen((value) => !value);
         }}
       >
-        <Languages aria-hidden className="size-3.5 opacity-70" />
+        <Languages aria-hidden size={16} />
         <span className="max-w-24 truncate">{label}</span>
-        <ChevronDown aria-hidden className="size-3 opacity-50" />
+        <ChevronDown aria-hidden className={`size-3 opacity-60 ${open ? "rotate-180" : ""}`} />
       </button>
       {open ? (
         <ul
@@ -67,8 +67,8 @@ export function LanguageSwitch({ inline = false }: { inline?: boolean }) {
           aria-label={t("language")}
           className={
             inline
-              ? "glass-strong mt-2 max-h-60 w-full overflow-y-auto overscroll-contain rounded-2xl p-1"
-              : "glass-strong absolute end-0 top-full z-20 mt-1.5 max-h-[min(18rem,calc(var(--vv-height,100dvh)-7.5rem))] w-max min-w-full overflow-y-auto overscroll-contain rounded-2xl p-1"
+              ? "glass-strong language-menu mt-2 max-h-60 w-full overflow-y-auto overscroll-contain rounded-2xl p-1"
+              : "glass-strong language-menu absolute end-0 top-full z-20 mt-1.5 max-h-[min(18rem,calc(var(--vv-height,100dvh)-7.5rem))] w-max overflow-y-auto overscroll-contain rounded-2xl p-1"
           }
         >
           {LOCALES.filter(item => !publicLanguages || item.id === "ru" || item.id === "en").map((item) => {

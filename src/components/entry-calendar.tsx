@@ -323,7 +323,7 @@ export function EntryCalendar({
         className={cn(
           "inline-flex h-11 items-center gap-2.5 rounded-full text-foreground transition-[box-shadow,background-color] duration-200",
           compact
-            ? "max-w-full justify-start gap-2 rounded-lg text-xl font-display tracking-tight hover:text-primary sm:text-2xl"
+            ? "max-w-full justify-start gap-2 rounded-lg text-xl hover:text-primary sm:text-2xl"
             : "border border-[color:var(--glass-border)] bg-background/55 pr-3.5 pl-4 text-sm",
           "focus-visible:border-primary/40 focus-visible:ring-4 focus-visible:ring-primary/12 focus-visible:outline-none",
           "disabled:opacity-50",
@@ -331,7 +331,7 @@ export function EntryCalendar({
         )}
       >
         {!compact && <CalendarDays aria-hidden className="size-4 shrink-0 opacity-70" />}
-        <span className={cn("tabular min-w-0 truncate", compact ? "font-semibold" : "font-medium")}>
+        <span className="tabular min-w-0 truncate">
           {compact ? formatDayLabel(value, locale) : formatLongDate(value, locale)}
         </span>
         <ChevronDown

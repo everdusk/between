@@ -191,7 +191,7 @@ export function AccountSheet({
           {profileEditor}
           <section>
             <p className="eyebrow text-section-header">{t("webScheme")}</p>
-            <SchemeSwitch className="mt-2 w-full" />
+            <SchemeSwitch className="mt-2" />
           </section>
 
           <section>
