@@ -1,3 +1,4 @@
+import { readIntro } from "./intro-record";
 import { backlogId, USER_BACKLOG_CAP } from "./brief";
 import { isFeeling, normalizeFeelings } from "./feelings";
 import { sanitizeTags } from "./tags";
@@ -369,6 +370,7 @@ export function normalizeStore(value: unknown): TherapyStore | null {
 
   const profile = asRecord(store.profile);
   const normalized: TherapyStore = {
+    ...(Array.isArray(store.introductions) ? { introductions: store.introductions.map(readIntro).filter(r => r !== null) } : {}),
     ...(profile && typeof profile.name === "string" && typeof profile.therapy === "boolean" && typeof profile.updatedAt === "string"
       ? {profile: { name: profile.name.slice(0, 60), therapy: profile.therapy, updatedAt: profile.updatedAt }} : {}),
     version: 2,

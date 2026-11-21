@@ -9,6 +9,7 @@ import { FeedbackForm } from "@/components/feedback-form";
 import { LanguageSwitch } from "@/components/language-switch";
 import { PasswordChange } from "@/components/password-change";
 import { SchemeSwitch } from "@/components/scheme-switch";
+import { BotConnectBanner } from "./bot-connect-banner";
 import { WebAccountCard } from "@/components/web-account-card";
 import { PremiumPaywall } from "@/components/premium-paywall";
 import { SubscribeCheckout } from "@/components/subscribe-checkout";
@@ -202,6 +203,9 @@ export function AccountSheet({
 
           <section>
             <h3 className="font-display text-lg tracking-tight text-foreground">{t("botReminders")}</h3>
+            {account && !inTelegram && !inMax && !account.telegramLinked && !account.maxLinked && (
+              <div className="my-3"><BotConnectBanner reminders onRefresh={onRefreshAccount}/></div>
+            )}
             <NotificationSettings notify={notify} disabled={disabled || !(inTelegram || inMax || account?.telegramLinked || account?.maxLinked)} onSave={onSaveNotify} />
           </section>
 

@@ -8,6 +8,7 @@ export const noteStep: Record<SurveyFeeling, string> = {
 };
 
 const stepTitles: Record<string, string> = {
+  ...Object.fromEntries(["gender","name","therapy","recent","current","spectrum","situation","clarification","observation"].map((id,i)=>["v2_"+id,["Пол","Имя","Терапия","Чувство в последнее время","Чувство сейчас","Спектр","Ситуация","Уточнение","Наблюдение"][i]])),
   name: "Как вас зовут?", therapy: "Вы занимаетесь с психотерапевтом?",
   mood_morning: "Чувства · утро", mood_day: "Чувства · день", mood_evening: "Чувства · вечер",
   focus: "Какое чувство разобрать?", another: "Разобрать ещё одно чувство?",
@@ -19,7 +20,7 @@ const stepTitles: Record<string, string> = {
 /** Accept only known screens and navigation actions. Never forward arbitrary properties. */
 export function surveyProperties(data: Record<string, unknown>): Record<string, unknown> | null {
   if (data.locale !== "ru" && data.locale !== "en") return null;
-  const common = { messenger: "web", locale: data.locale, survey_version: 1 };
+  const common = { messenger: "web", locale: data.locale, survey_version: typeof data.question === "string" && data.question.startsWith("v2_") ? 2 : 1 };
   if (data.event === "web_registration_step") {
     if (typeof data.attempt !== "string" || !/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(data.attempt) ||
         (data.source !== "direct" && data.source !== "survey") ||
