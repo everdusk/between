@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 import { messengerChoices, type MessengerChoice } from "@/lib/intro-messengers";
 import { useEffect, useState } from "react";
 import { useI18n } from "./locale-provider";
+import { useDemoMediaDirectory } from "./scheme-switch";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -47,6 +48,7 @@ export function IntroCard({record}: {record:IntroDraft}) {
 const remainingSteps = ["gender_after_therapy","name","recent","current","spectrum","situation","clarification","observation"] as const;
 export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
   const {locale,feeling} = useI18n();
+  const directory = useDemoMediaDirectory();
   const en = locale==="en", lang=en?1:0;
   const say=(ru:string,eng:string)=>en?eng:ru;
   const [attempt]=useState(()=>crypto.randomUUID());
@@ -99,7 +101,7 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
       : say("Ваша отметка сейчас — "+label(current),"Your check-in right now: "+label(current));
   const record:IntroRecord={attempt,language:en?"en":"ru",name:name.trim(),gender,therapy,messengers,recent,current,...moment,recalled,situation:choice,clarification,answer:answer.trim(),prompt,
     observation:context+say(". Когда вы выбрали «",". When you chose “")+choice+say("», вы описали это так: «","”, you described it this way: “")+answer.trim()+say("».","”.")};
-  const topicsMedia = "/landing/quiz-topics-" + (therapy === "yes" ? "therapy" : "personal") + "-" + (en ? "en" : "ru");
+  const topicsMedia = directory && `${directory}/quiz-topics-${therapy === "yes" ? "therapy" : "personal"}-${en ? "en" : "ru"}`;
   const question = screen === "therapy_first" ? say("Вы сейчас занимаетесь с психотерапевтом?","Are you seeing a therapist?")
     : screen === "topics_demo" ? (therapy === "yes" ? say("Что взять на следующий сеанс?","What would you like to bring to therapy?") : say("К какой мысли вы возвращаетесь?","What keeps coming up for you?"))
     : screen === "messengers" ? say("Какими мессенджерами вы пользуетесь?","Which messaging apps do you use?")
@@ -126,7 +128,7 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
       <figure className="space-y-2">
         <figcaption className="text-sm text-muted-foreground">{say("Пример из дневника","Example from the journal")}</figcaption>
         <video key={topicsMedia} className="block w-full rounded-2xl" muted playsInline controls preload="metadata"
-          poster={topicsMedia + ".webp"} src={topicsMedia + ".mp4"}
+          poster={topicsMedia ? topicsMedia + ".webp" : undefined} src={topicsMedia ? topicsMedia + ".mp4" : undefined}
           aria-label={say("Тема раскрывается и показывает две связанные записи", "A topic opens to show its two linked entries")}
           onLoadedMetadata={event => {
             if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -150,9 +152,9 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
     </>}
     {screen==="bot_demo" && demo && <>
       <p>{say("После регистрации можно подключить бота: отправляйте заметки сообщением и отмечайте настроение прямо в чате.", "After signing up, you can connect the bot to send notes and check in on your mood right in the chat.")}</p>
-      <figure className="max-w-sm space-y-2"><Image src={"/landing/chat-"+demo+"-"+(en?"en":"ru")+"-v2.webp"}
+      <figure className="max-w-sm space-y-2">{directory && <Image src={`${directory}/chat-${demo}-${en ? "en" : "ru"}-v2.webp`}
         width={400} height={408} className="w-full rounded-2xl"
-        alt={say("Пример переписки с Between: заметка об обеде во дворе, кнопка открытия дневника и девять вариантов настроения.","Example Between chat with a note about lunch outside, a button to open the journal and nine mood choices.")}/>
+        alt={say("Пример переписки с Between: заметка об обеде во дворе, кнопка открытия дневника и девять вариантов настроения.","Example Between chat with a note about lunch outside, a button to open the journal and nine mood choices.")}/>}
         <figcaption className="text-sm text-muted-foreground">{say("Пример переписки","Example chat")} · {demo==="max"?"MAX":"Telegram"}</figcaption></figure>
       <Button onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
     </>}

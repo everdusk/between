@@ -13,7 +13,7 @@ import {
   splashRemainMs,
   splashVisibleElapsed,
 } from "@/lib/splash";
-import { releaseSplashChrome, SPLASH_CHROME } from "@/lib/telegram";
+import { releaseSplashChrome } from "@/lib/telegram";
 
 export function SplashScreen() {
   const [shown, setShown] = useState(true);
@@ -105,10 +105,9 @@ export function SplashScreen() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: SPLASH_CHROME,
       }}
     >
-      <div style={{ fontSize: "clamp(36px, 11vw, 76px)", color: "#f9f6eb" }}><BrandLogo /></div>
+      <div style={{ fontSize: "clamp(36px, 11vw, 76px)" }}><BrandLogo /></div>
     </div>
   );
 }

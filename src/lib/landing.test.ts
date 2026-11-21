@@ -99,6 +99,8 @@ describe("landing surface", () => {
     assert.equal(boot("/", "", "?login=1").counters, 0);
     const about = boot("/about");
     assert.equal(about.attrs.get("data-between"), "web");
+    assert.equal(about.attrs.get("data-scheme"), "day");
+    assert.equal(boot("/").attrs.get("data-scheme"), "day");
     assert.equal(about.attrs.has("data-landing-launch"), true);
     assert.match(about.style.textContent, /between-landing\{display:block/);
     const max = boot("/journal");

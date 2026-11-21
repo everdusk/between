@@ -1,6 +1,7 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+import { Moon, Sun } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
 
 export const SCHEME_KEY = "between:scheme";
@@ -136,16 +137,35 @@ export function paintPickedScheme(scheme: JournalScheme) {
   });
 }
 
+function subscribeToScheme(notify: () => void) {
+  const observer = new MutationObserver(notify);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-scheme", "data-telegram-theme"] });
+  window.addEventListener("between-scheme", notify);
+  return () => {
+    observer.disconnect();
+    window.removeEventListener("between-scheme", notify);
+  };
+}
+
+function displayScheme(): JournalScheme {
+  const telegram = document.documentElement.dataset.telegramTheme;
+  if (telegram && !schemeWasPicked()) return telegram === "light" ? "day" : "night";
+  return readScheme();
+}
+
+function useDisplayScheme() {
+  return useSyncExternalStore(subscribeToScheme, displayScheme, () => null);
+}
+
+export function useDemoMediaDirectory() {
+  const scheme = useDisplayScheme();
+  if (!scheme) return null;
+  return scheme === "day" ? "/landing/day" : "/landing";
+}
+
 export function SchemeSwitch({ className = "" }: { className?: string }) {
   const { t } = useI18n();
-  const [scheme, setScheme] = useState<JournalScheme>("night");
-
-  useLayoutEffect(() => {
-    const sync = () => setScheme(readScheme());
-    sync();
-    window.addEventListener("between-scheme", sync);
-    return () => window.removeEventListener("between-scheme", sync);
-  }, []);
+  const scheme = useDisplayScheme() ?? "night";
 
   function choose(next: JournalScheme) {
     applyScheme(next);
@@ -155,26 +175,15 @@ export function SchemeSwitch({ className = "" }: { className?: string }) {
       /* private mode */
     }
     if (document.documentElement.dataset.telegramTheme) paintPickedScheme(next);
-    setScheme(next);
     window.dispatchEvent(new Event("between-scheme"));
   }
 
+  const next = scheme === "night" ? "day" : "night";
+  const label = `${t("webScheme")} · ${t(next === "day" ? "webDay" : "webNight")}`;
+  const Icon = next === "day" ? Sun : Moon;
   return (
-    <div role="group" aria-label={t("webScheme")} className={`glass inline-flex rounded-full p-1 ${className}`}>
-      {(["night", "day"] as const).map((id) => {
-        const on = scheme === id;
-        return (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={on}
-            className={`flex-1 rounded-full px-3 py-1.5 text-center text-xs font-extrabold tracking-wide ${on ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
-            onClick={() => choose(id)}
-          >
-            {t(id === "night" ? "webNight" : "webDay")}
-          </button>
-        );
-      })}
-    </div>
+    <button type="button" className={`glass-chrome preference-control preference-icon ${className}`} aria-label={label} title={label} onClick={() => choose(next)}>
+      <Icon size={20} aria-hidden />
+    </button>
   );
 }

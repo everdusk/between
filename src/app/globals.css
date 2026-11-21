@@ -61,8 +61,6 @@
  * One deep "ink" surface per screen carries the focal point.
  */
 :root {
-  --brand-button-gradient: linear-gradient(100deg, #8ff0bc 0%, #34d399 42%, #5eead4 72%, #8b7cf6 110%);
-  --brand-button-shadow: 0 12px 28px -12px rgba(52, 211, 153, 0.35);
   --background: oklch(0.968 0.012 170);
   --foreground: oklch(0.25 0.028 172);
   --card: oklch(0.992 0.006 175);
@@ -131,19 +129,6 @@
     var(--tg-safe-area-left, 0px),
     var(--tg-content-safe-area-left, 0px)
   );
-}
-
-.between-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: .21em;
-  vertical-align: middle;
-  font-family: var(--font-sans), sans-serif;
-  font-weight: 600;
-  letter-spacing: -.035em;
-  line-height: 1.15;
-  text-transform: none;
-  white-space: nowrap;
 }
 
 @layer base {
@@ -216,10 +201,7 @@ html[data-telegram-theme="dark"] {
    A fixed background also flashes in iOS while the window is still growing. */
 html[data-splash],
 html[data-splash] body {
-  background-color: #0c1210 !important;
-  background-image: none !important;
   background-attachment: scroll !important;
-  color-scheme: only dark;
 }
 
 /* Chrome's translate bar inherits the page scheme and turns into a faint "Google" strip. Languages live in the app. */
@@ -471,25 +453,3 @@ html[data-performance="low"] .blur-3xl {
     animation: none;
   }
 }
-
-:is(.chapter-cta, .guide-start, .topic-save) {
-  background: #8ff0bc var(--brand-button-gradient);
-  color: #04130c;
-  font-weight: 800;
-  box-shadow: var(--brand-button-shadow);
-}
-.topic-save {
-  background-size: 145% 100%;
-  animation: topic-gradient 3.5s ease-in-out infinite alternate;
-}
-@keyframes topic-gradient {
-  from { background-position: 0% 50%; }
-  to { background-position: 100% 50%; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .topic-save { animation: none; background-size: 100% 100%; }
-}
-@media (hover: hover) {
-  :is(.chapter-cta, .guide-start):hover { filter: brightness(1.05); }
-}
-:is(.chapter-cta, .guide-start):focus-visible { outline: 2px solid #8ff0bc; outline-offset: 4px; }

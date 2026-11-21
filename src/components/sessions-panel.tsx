@@ -288,7 +288,7 @@ export function SessionsPanel({
                     }
                     aria-expanded={open}
                   >
-                    <span className="font-display text-lg tracking-tight text-foreground">
+                    <span className="text-lg text-foreground">
                       {formatLongDate(session.date, locale)}
                     </span>
                     <span className="flex items-center gap-2 text-xs text-muted-foreground">

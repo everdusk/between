@@ -5,7 +5,7 @@ import { AcquisitionLink, useAcquisition } from "@/components/acquisition-link";
 
 export const MESSENGER_CSS = `
 .bl-pair{display:flex;flex-wrap:wrap;align-items:center;gap:.65rem}
-.bl-msg{position:relative;isolation:isolate;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:.55rem;height:2.85rem;padding:0 1.05rem 0 .95rem;border-radius:999px;color:#fff;font-weight:650;font-size:.95rem;line-height:1;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 14px 28px -16px rgba(0,0,0,.75);text-decoration:none}
+.bl-msg{position:relative;isolation:isolate;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:.55rem;height:2.85rem;padding:0 1.05rem 0 .95rem;border-radius:999px;color:#fff;font-size:.95rem;line-height:1;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 14px 28px -16px rgba(0,0,0,.75);text-decoration:none}
 .bl-msg > span,.bl-msg > svg{position:relative;z-index:1}
 .bl-tg{background-color:#2aabee;background-image:linear-gradient(118deg,rgba(143,240,188,.34),transparent 42%,rgba(94,231,197,.16) 100%)}
 .bl-max{background-color:#5436c7;background-image:linear-gradient(118deg,rgba(143,240,188,.28),transparent 40%,rgba(196,168,255,.32) 100%)}

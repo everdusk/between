@@ -8,7 +8,8 @@
   letter-spacing: -0.03em;
 }
 
-html[data-journal="web"]:not([data-telegram-theme]) {
+html[data-journal="web"]:not([data-telegram-theme]),
+.chapter-page {
   color-scheme: only dark;
   --background: #060b09;
   --foreground: #f2f7f4;
@@ -60,14 +61,6 @@ html[data-journal="web"]:not([data-telegram-theme]) .atmosphere-blob-b {
   background: rgba(167, 139, 250, 0.22);
 }
 
-html[data-journal="web"]:not([data-telegram-theme]) [data-slot="button"].bg-primary,
-html[data-journal="web"]:not([data-telegram-theme]) [data-slot="tabs-trigger"][data-active] {
-  background-image: var(--brand-button-gradient);
-  color: #04130c;
-  font-weight: 800;
-  box-shadow: var(--brand-button-shadow);
-}
-
 .brand-words {
   background-image: linear-gradient(94deg, #8ff0bc, #34d399 30%, #5eead4 52%, #a78bfa 80%, #f9a8d4);
   -webkit-background-clip: text;
@@ -76,7 +69,8 @@ html[data-journal="web"]:not([data-telegram-theme]) [data-slot="tabs-trigger"][d
 }
 
 /* Day palette. Coral is the only standalone accent. No mint. */
-html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) {
+html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]),
+html[data-scheme="day"] .chapter-page {
   color-scheme: only light;
   --background: #f4ede8;
   --foreground: #1c242f;
@@ -125,14 +119,6 @@ html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) .atmosphe
 
 html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) .atmosphere-blob-b {
   background: rgba(86, 136, 151, 0.2);
-}
-
-html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) [data-slot="button"].bg-primary,
-html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) [data-slot="tabs-trigger"][data-active] {
-  background-image: none;
-  background-color: #f3544e;
-  color: #faf6f3;
-  box-shadow: 0 12px 28px -12px rgba(243, 84, 78, 0.4);
 }
 
 html[data-journal="web"][data-scheme="day"]:not([data-telegram-theme]) .brand-words {
