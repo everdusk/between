@@ -686,7 +686,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
               <Button type="submit" className="w-full" size="lg" disabled={busy}>
                 {t("webCreate")}
               </Button>
-              <LegalAgree className="legal-agreement text-sm leading-relaxed text-foreground" />
+              <LegalAgree className="legal-agreement text-[0.8125rem] leading-normal text-muted-foreground" />
             </form>
           </details>
         ) : null}
