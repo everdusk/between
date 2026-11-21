@@ -1,37 +1,9 @@
 import { journalAuthHeaders } from "./journal-api";
 import {
   DEFAULT_RUB_PRICE,
-  describeWeekAccess,
-  emptyWeekAccess,
-  normalizeWeekAccess,
   type PremiumPlan,
-  type WeekAccessRecord,
   type WeekAccessView,
 } from "./week-access";
-
-const LOCAL_KEY = "between:week-access";
-
-export function readLocalWeekAccess(): WeekAccessRecord {
-  try {
-    const raw = window.localStorage.getItem(LOCAL_KEY);
-    if (!raw) return emptyWeekAccess();
-    return normalizeWeekAccess(JSON.parse(raw));
-  } catch {
-    return emptyWeekAccess();
-  }
-}
-
-export function writeLocalWeekAccess(record: WeekAccessRecord): void {
-  window.localStorage.setItem(LOCAL_KEY, JSON.stringify(normalizeWeekAccess(record)));
-}
-
-export function localWeekView(
-  record: WeekAccessRecord,
-  now = new Date(),
-  prices?: { starPrice?: number; rubPrice?: number },
-): WeekAccessView {
-  return describeWeekAccess(record, now, prices?.starPrice, { rubPrice: prices?.rubPrice });
-}
 
 function isView(value: unknown): value is WeekAccessView {
   if (!value || typeof value !== "object") return false;
@@ -79,17 +51,16 @@ export async function postWeekAccess(
   }
 }
 
-/** Browser session or signed MAX launch. MAX never adopts another browser's trial. */
+/** Browser session or signed MAX launch. The server owns the trial dates. */
 export async function postSessionWeekAccess(
   action: "open" | "seen",
-  local?: WeekAccessRecord,
   maxInitData = "",
 ): Promise<WeekAccessView | null> {
   try {
     const res = await fetch("/api/week-access", {
       method: "POST",
       headers: journalAuthHeaders("", maxInitData, true),
-      body: JSON.stringify({ action, ...(maxInitData ? {} : { local }) }),
+      body: JSON.stringify({ action }),
     });
     return await readAccess(res);
   } catch {

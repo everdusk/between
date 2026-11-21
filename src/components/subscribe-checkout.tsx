@@ -9,6 +9,7 @@ import { sbpCatalog, type SbpPlanId } from "@/lib/sbp-plans";
 import { captureSubscribe, subscribeFail } from "@/lib/subscribe-analytics";
 import type { AnalyticsMessenger } from "@/lib/analytics-model";
 import { DEFAULT_RUB_PRICE } from "@/lib/week-access";
+import { LEGAL_INN } from "@/lib/legal";
 
 function pageMessenger(): AnalyticsMessenger {
   if (readMaxInitData()) return "max";
@@ -384,9 +385,8 @@ export function SubscribeCheckout({
               </>
             )}
             <p className="mt-3 text-xs leading-relaxed text-[#74827b]">
-              Нажимая «{stars ? "Оплатить" : "Оплатить через СБП"}», вы соглашаетесь с{" "}
-              <a href="/terms" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "terms", plan })}>публичной офертой</a> и даёте{" "}
-              <a href="/privacy" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "privacy", plan })}>согласие на обработку персональных данных</a>
+              <a href="/terms" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "terms", plan })}>Публичная оферта</a> ·{" "}
+              <a href="/privacy" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "privacy", plan })}>Политика конфиденциальности</a> · ИНН {LEGAL_INN}
             </p>
             {stars ? null : (
             <p className="mt-2 text-xs text-[#74827b]">Платёж через ЮKassa · чек по 54-ФЗ на почту</p>

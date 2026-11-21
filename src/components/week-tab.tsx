@@ -2,20 +2,18 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
-import { Lock } from "lucide-react";
 import { WeekSkeleton } from "@/components/journal-skeleton";
 import { LegalLinks } from "@/components/legal-links";
 import { useI18n } from "@/components/locale-provider";
 import { trackAnalytics } from "@/lib/analytics-client";
 import { SubscribeCheckout } from "@/components/subscribe-checkout";
 import { PremiumPaywall } from "@/components/premium-paywall";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   createWeekInvoice,
   fetchWeekAccess,
   postSessionWeekAccess,
   postWeekAccess,
-  readLocalWeekAccess,
 } from "@/lib/week-access-client";
 import {
   type PremiumPlan,
@@ -29,8 +27,6 @@ interface WeekTabProps {
   inMax?: boolean;
   initData: string;
   maxInitData?: string;
-  /** Site session or MAX. A logged-out browser has no SBP checkout. */
-  canSubscribe: boolean;
   reloadToken?: number;
   onAccess?: (view: WeekAccessView) => void;
   children: ReactNode;
@@ -43,7 +39,6 @@ export function WeekTab({
   inMax = false,
   initData,
   maxInitData = "",
-  canSubscribe,
   reloadToken = 0,
   onAccess,
   children,
@@ -79,7 +74,7 @@ export function WeekTab({
     async function start() {
       const opened = inTelegram
         ? (initData ? await postWeekAccess(initData, "open") : null)
-        : await postSessionWeekAccess("open", inMax ? undefined : readLocalWeekAccess(), maxInitData);
+        : await postSessionWeekAccess("open", maxInitData);
       if (cancelled) return;
       setFailedOpen(!opened);
       if (opened) publish(opened);
@@ -103,14 +98,15 @@ export function WeekTab({
       if (initData) trackAnalytics("paywall", initData);
       return;
     }
-    trackAnalytics("paywall", "");
-  }, [active, inTelegram, initData, access?.status]);
+    if (inMax) trackAnalytics("paywall", "");
+    else window.location.replace("/subscribe");
+  }, [active, inTelegram, inMax, initData, access?.status]);
 
   async function dismissIntro() {
     if (!access) return;
     const seen = inTelegram
       ? await postWeekAccess(initData, "seen")
-      : await postSessionWeekAccess("seen", undefined, maxInitData);
+      : await postSessionWeekAccess("seen", maxInitData);
     if (!alive.current) return;
     // Hiding the introduction may be local; granting access may not.
     publish(seen ?? { ...access, introSeen: true });
@@ -185,48 +181,7 @@ export function WeekTab({
     );
   }
 
-  if (access.status === "locked") {
-    return (
-      <div className="space-y-4">
-        <div className="space-y-2 px-2 pt-1 pb-1">
-          <p className="eyebrow text-section-header">{t("weekTitle")}</p>
-        </div>
-        <section className="ink relative overflow-hidden rounded-3xl p-6 sm:p-7">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-24 -end-16 size-64 rounded-full bg-ink-foreground/[0.07] blur-2xl"
-          />
-          <div className="relative space-y-6">
-            <div className="flex size-11 items-center justify-center rounded-2xl bg-ink-foreground/10">
-              <Lock aria-hidden className="size-5 text-ink-foreground" />
-            </div>
-            <p className="font-display text-[1.5rem] leading-snug tracking-tight text-ink-foreground">
-              {t("webWeekPaywall", { price: access.rubPrice })}
-            </p>
-            <div className="space-y-3">
-              {canSubscribe ? (
-                <a
-                  href="/subscribe"
-                  className={buttonVariants({
-                    size: "lg",
-                    className: "w-full bg-ink-foreground text-ink hover:bg-ink-foreground/90",
-                  })}
-                >
-                  {t("sbpBuy")}
-                </a>
-              ) : null}
-              {payError && (
-                <p className="text-sm text-ink-muted" role="alert">
-                  {payError}
-                </p>
-              )}
-              <LegalLinks className="text-center text-xs leading-relaxed text-ink-foreground/80" />
-            </div>
-          </div>
-        </section>
-      </div>
-    );
-  }
+  if (access.status === "locked") return null;
 
   const showIntro = !access.introSeen && (access.status === "trial" || access.status === "new");
   const introDays = access.daysLeft > 0 ? access.daysLeft : 7;

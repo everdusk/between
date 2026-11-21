@@ -33,7 +33,7 @@ export function LegalAgree({ className }: { className?: string }) {
       <a href="/privacy" className="underline underline-offset-4">
         {t("legalPrivacyInline")}
       </a>
-      .
+      . <span className="whitespace-nowrap">{t("legalInn", { inn: LEGAL_INN })}</span>
     </p>
   );
 }

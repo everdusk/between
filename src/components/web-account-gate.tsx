@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LegalAgree } from "@/components/legal-links";
+import { LegalAgree, LegalLinks } from "@/components/legal-links";
 import { PasswordField } from "@/components/password-field";
 import { useI18n } from "@/components/locale-provider";
 import type { WebAccount } from "@/hooks/use-web-account";
@@ -571,7 +571,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
               : "После входа всё, что вы написали, сохранится автоматически."}</p>
           </div>
         )}
-        {compact && mode === "login" && <div className="mt-4 flex gap-2" role="group">
+        {compact && !surveyAttempt && mode === "login" && <div className="mt-4 flex gap-2" role="group">
           <Button type="button" size="sm" variant={creating ? "secondary" : "ghost"} aria-pressed={creating} onClick={() => { setCreating(true); setError(null); }}>{t("webCreate")}</Button>
           <Button type="button" size="sm" variant={!creating ? "secondary" : "ghost"} aria-pressed={!creating} onClick={() => { setCreating(false); setError(null); }}>{t("webEnter")}</Button>
         </div>}
@@ -580,6 +580,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         {mode === "login" ? (
           <>
             <div className="mt-5">
+              {creating && <LegalAgree className="mb-4 text-sm leading-relaxed text-foreground" />}
               {!creating && <p className="mb-2 text-[0.6875rem] font-extrabold tracking-[0.14em] text-muted-foreground uppercase">
                 {t("webOAuth")}
               </p>}
@@ -762,8 +763,10 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
             </button>
           </form>
         ) : null}
-        <LegalAgree className="mt-5 text-center text-xs leading-relaxed text-muted-foreground" />
         </>}
+        {(waitingFor || mode !== "login" || !creating) && (
+          <LegalLinks className="mt-5 text-center text-xs leading-relaxed text-muted-foreground" />
+        )}
       </section>
       </div>
     </div>

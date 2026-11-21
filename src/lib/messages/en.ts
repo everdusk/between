@@ -315,7 +315,7 @@ export const en: Catalog = {
   legalPrivacy: "Privacy policy",
   legalTermsInline: "terms of use",
   legalPrivacyInline: "privacy policy",
-  legalAgree: "By continuing, you agree to the",
+  legalAgree: "By selecting a sign-up option, you agree to the",
   legalAnd: "and",
   legalInn: "INN {inn}",
   dayOne: "day",

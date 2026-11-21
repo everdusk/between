@@ -76,7 +76,6 @@ import {
   describeWeekAccess,
   isWeekAccessExempt,
   absorbWeekPremium,
-  adoptClientTrial,
   emptyWeekAccess,
   grantWeekPaidUntil,
   mergeWeekAccess,
@@ -95,7 +94,6 @@ import {
   voiceNotesOpen,
   whitelistSpan,
 } from "./week-access";
-import { localWeekView } from "./week-access-client";
 
 function note(partial: Partial<JournalEntry> & Pick<JournalEntry, "id" | "body">): JournalEntry {
   return {
@@ -1470,7 +1468,6 @@ describe("week access", () => {
     assert.equal(rubPriceFromEnv("299"), 299);
     assert.equal(rubPriceFromEnv("350"), 350);
     assert.equal(rubPriceFromEnv("0"), 150);
-    assert.equal(localWeekView(emptyWeekAccess(), new Date(), { rubPrice: 350 }).rubPrice, 350);
   });
 
   it("adds paid time from both sides and keeps the earlier trial", () => {
@@ -1496,23 +1493,6 @@ describe("week access", () => {
     const onlyTelegram = mergeWeekAccess(emptyWeekAccess(), telegram, now);
     assert.equal(onlyTelegram.paidUntil, telegram.paidUntil);
 
-    const futureTrial = adoptClientTrial(
-      emptyWeekAccess(),
-      grantWeekPaidUntil(
-        openWeekAccess(emptyWeekAccess(), new Date(now.getTime() + day)),
-        new Date(now.getTime() + 40 * day).toISOString(),
-      ),
-      now,
-    );
-    assert.equal(futureTrial.openedAt, null);
-    assert.equal(futureTrial.paidUntil, null);
-
-    const earlier = adoptClientTrial(
-      openWeekAccess(emptyWeekAccess(), now),
-      openWeekAccess(emptyWeekAccess(), new Date(now.getTime() - 3 * day)),
-      now,
-    );
-    assert.equal(earlier.openedAt, new Date(now.getTime() - 3 * day).toISOString());
     assert.equal(describeWeekAccess(merged, now, 150, { rubPrice: 299 }).rubPrice, 299);
   });
 
