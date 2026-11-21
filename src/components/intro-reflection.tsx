@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Check } from "lucide-react";
 import { messengerChoices, type MessengerChoice } from "@/lib/intro-messengers";
 import { useEffect, useState } from "react";
 import { useI18n } from "./locale-provider";
@@ -119,15 +120,20 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
     {screen==="messengers" && <>
       <p className="text-sm text-muted-foreground">{say("Можно выбрать несколько.","Choose all that apply.")}</p>
       <div className="flex flex-wrap gap-2">{messengerChoices.map(m => <Button key={m} type="button"
-        variant={messengers.includes(m) ? "default" : "outline"} aria-pressed={messengers.includes(m)}
-        onClick={()=>toggleMessenger(m)}>{{telegram:"Telegram",max:"MAX",whatsapp:"WhatsApp",none:say("Не пользуюсь","None")}[m]}</Button>)}</div>
+        variant="outline" aria-pressed={messengers.includes(m)}
+        className="gap-2 aria-pressed:border-[color:var(--accent-text)]"
+        onClick={()=>toggleMessenger(m)}>
+        <span aria-hidden className="grid size-4 place-items-center rounded-full border border-current/40">
+          {messengers.includes(m) && <Check className="size-3 text-[color:var(--accent-text)]" strokeWidth={3}/>}
+        </span>
+        {{telegram:"Telegram",max:"MAX",whatsapp:"WhatsApp",none:say("Не пользуюсь","None")}[m]}</Button>)}</div>
       <Button disabled={!messengers.length} onClick={()=>go(step+1)}>{say("Дальше","Continue")}</Button>
     </>}
     {screen==="bot_demo" && demo && <>
       <p>{say("После регистрации можно подключить бота: отправляйте заметки сообщением и отмечайте настроение прямо в чате.", "After signing up, you can connect the bot to send notes and check in on your mood right in the chat.")}</p>
-      <figure className="max-w-sm space-y-2"><Image src={"/landing/chat-"+demo+"-"+(en?"en":"ru")+".webp"}
-        width={400} height={377} className="w-full rounded-2xl"
-        alt={say("Пример: запись о прогулке и отметка настроения «Спокойно».","Example: a note about a walk and a calm mood check-in.")}/>
+      <figure className="max-w-sm space-y-2"><Image src={"/landing/chat-"+demo+"-"+(en?"en":"ru")+"-v2.webp"}
+        width={400} height={408} className="w-full rounded-2xl"
+        alt={say("Пример переписки с Between: заметка об обеде во дворе, кнопка открытия дневника и девять вариантов настроения.","Example Between chat with a note about lunch outside, a button to open the journal and nine mood choices.")}/>
         <figcaption className="text-sm text-muted-foreground">{say("Пример переписки","Example chat")} · {demo==="max"?"MAX":"Telegram"}</figcaption></figure>
       <Button onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
     </>}
