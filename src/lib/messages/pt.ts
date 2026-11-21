@@ -214,6 +214,8 @@ export const pt: Catalog = {
   discussed: "O que conversamos",
   discussedPlaceholder: "O que foi falado",
   insights: "Percepções",
+  topicOutcomeTitle: "O que gostaria de guardar?",
+  topicFinishEmpty: "Concluir sem anotação",
   insightsPlaceholder: "O que ficou mais claro",
   homework: "Tarefa",
   homeworkPlaceholder: "Até a próxima sessão",

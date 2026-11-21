@@ -9,6 +9,7 @@ export const noteStep: Record<SurveyFeeling, string> = {
 };
 
 const stepTitles: Record<string, string> = {
+  v2_topics_demo: "Пример темы по записям",
   v2_messengers: "Мессенджеры", v2_bot_demo: "Пример чата с ботом",
   v2_therapy_first: "Терапия · первый вопрос", v2_gender_after_therapy: "Пол",
   ...Object.fromEntries(["gender","name","therapy","recent","current","spectrum","situation","clarification","observation"].map((id,i)=>["v2_"+id,["Пол","Имя","Терапия","Чувство в последнее время","Чувство сейчас","Спектр","Ситуация","Уточнение","Наблюдение"][i]])),

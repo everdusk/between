@@ -214,6 +214,8 @@ export const hi: Catalog = {
   discussed: "क्या चर्चा हुई",
   discussedPlaceholder: "क्या बात हुई",
   insights: "इनसाइट्स",
+  topicOutcomeTitle: "आप क्या याद रखना चाहेंगे?",
+  topicFinishEmpty: "बिना नोट के पूरा करें",
   insightsPlaceholder: "क्या साफ़ हुआ",
   homework: "होमवर्क",
   homeworkPlaceholder: "अगले सेशन तक",

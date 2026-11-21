@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { LegalAgree, LegalLinks } from "@/components/legal-links";
+import { LegalAgree } from "@/components/legal-links";
 import { PasswordField } from "@/components/password-field";
 import { useI18n } from "@/components/locale-provider";
 import type { WebAccount } from "@/hooks/use-web-account";
@@ -580,7 +580,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         {mode === "login" ? (
           <>
             <div className="mt-5">
-              {creating && <LegalAgree className="mb-4 text-sm leading-relaxed text-foreground" />}
+              {creating && <LegalAgree className="legal-agreement mb-4 text-sm leading-relaxed text-foreground" />}
               {!creating && <p className="mb-2 text-[0.6875rem] font-extrabold tracking-[0.14em] text-muted-foreground uppercase">
                 {t("webOAuth")}
               </p>}
@@ -764,9 +764,6 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
           </form>
         ) : null}
         </>}
-        {(waitingFor || mode !== "login" || !creating) && (
-          <LegalLinks className="mt-5 text-center text-xs leading-relaxed text-muted-foreground" />
-        )}
       </section>
       </div>
     </div>

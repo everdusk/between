@@ -288,7 +288,28 @@ export function SessionBacklog({
         </div>
       )}
 
-      {closing && <dialog ref={d=>{if(d&&!d.open)d.showModal()}} onCancel={()=>setClosing(null)} className="m-auto max-w-[90vw] space-y-4 rounded-3xl border border-border bg-popover p-5 text-foreground backdrop:bg-black/50"><label className="block">{t("insights")}<Textarea autoFocus value={outcome} placeholder={t("insightsPlaceholder")} onChange={e=>setOutcome(e.target.value)}/></label><div className="flex gap-2"><Button onClick={()=>{onDiscuss(closing,true,outcome);setClosing(null)}}>{t("feelingDone")}</Button><Button variant="outline" onClick={()=>setClosing(null)}>{t("cancel")}</Button></div></dialog>}
+      {closing && (
+        <dialog
+          ref={node => { if (node && !node.open) node.showModal(); }}
+          onCancel={() => setClosing(null)}
+          aria-labelledby="topic-outcome-title"
+          className="fixed inset-0 m-auto max-h-[calc(100dvh_-_2rem)] w-[min(28rem,calc(100%_-_2rem))] max-w-none overflow-y-auto rounded-3xl border border-[color:var(--glass-border)] bg-background bg-[linear-gradient(var(--card),var(--card))] p-5 text-foreground shadow-2xl backdrop:bg-black/55 sm:p-6"
+        >
+          <header className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm text-muted-foreground">{t(personal ? "deskPersonal" : "deskTherapy")}</p>
+              <h2 id="topic-outcome-title" className="mt-2 font-display text-xl leading-tight">{t("topicOutcomeTitle")}</h2>
+            </div>
+            <Button autoFocus variant="ghost" size="icon" aria-label={t("cancel")} onClick={() => setClosing(null)}><X /></Button>
+          </header>
+          <p className="my-4 break-words border-s-2 border-primary/50 ps-3 text-sm">{live.find(theme => theme.id === closing)?.title}</p>
+          <Textarea aria-labelledby="topic-outcome-title" className="min-h-28 max-h-52 resize-y" value={outcome} placeholder={t("insightsPlaceholder")} onChange={event => setOutcome(event.target.value)} />
+          <Button className="topic-save mt-4 h-auto min-h-11 w-full whitespace-normal" onClick={() => {
+            onDiscuss(closing, true, outcome.trim());
+            setClosing(null);
+          }}>{t(outcome.trim() ? "saveSession" : "topicFinishEmpty")}</Button>
+        </dialog>
+      )}
       {onRestore && removed.map(item=><div key={item.id} className="mt-2 flex items-center justify-between gap-2 text-sm"><span>{item.title}</span><Button variant="outline" onClick={()=>{onRestore(item.id,item.status);setRemoved(rows=>rows.filter(row=>row.id!==item.id))}}>{t("undoChange")}</Button></div>)}
       <form
         className="mt-5 flex items-center gap-2 rounded-full border border-[color:var(--glass-border)] bg-background/55 p-1 ps-4 transition-[box-shadow,border-color] has-[:focus-visible]:border-primary/40 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-primary/12"

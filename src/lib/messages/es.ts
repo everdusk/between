@@ -214,6 +214,8 @@ export const es: Catalog = {
   discussed: "De qué hablamos",
   discussedPlaceholder: "De qué hablaron",
   insights: "Hallazgos",
+  topicOutcomeTitle: "¿Qué te gustaría recordar?",
+  topicFinishEmpty: "Terminar sin una nota",
   insightsPlaceholder: "Qué quedó más claro",
   homework: "Tarea",
   homeworkPlaceholder: "Hasta la próxima sesión",

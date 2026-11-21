@@ -214,6 +214,8 @@ export const uz: Catalog = {
   discussed: "Nima gaplashdik",
   discussedPlaceholder: "Nima haqida gaplashildi",
   insights: "Tushunchalar",
+  topicOutcomeTitle: "Nimani yodda saqlashni istaysiz?",
+  topicFinishEmpty: "Qaydsiz yakunlash",
   insightsPlaceholder: "Nima oydinlashdi",
   homework: "Vazifa",
   homeworkPlaceholder: "Keyingi seansgacha",

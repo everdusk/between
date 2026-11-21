@@ -89,6 +89,7 @@ export function WebWorkspace({
           {name && <span className="desk-name">{name}</span>}
         </nav>
       )}
+      <div className="desk-content">
       <main ref={main} className="desk-main" key={blocked ? "gate" : "diary"}>
         <div className="desk-page">
           {blocked || (
@@ -107,9 +108,10 @@ export function WebWorkspace({
               ))}
             </>
           )}
-          {footer}
         </div>
       </main>
+      {footer}
+      </div>
     </div>
   );
 }

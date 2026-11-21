@@ -212,6 +212,8 @@ export const ru = {
   discussed: "Что обсудили",
   discussedPlaceholder: "О чём говорили",
   insights: "Инсайты",
+  topicOutcomeTitle: "К какому решению вы пришли?",
+  topicFinishEmpty: "Завершить без итога",
   insightsPlaceholder: "Что стало яснее",
   homework: "Домашка",
   homeworkPlaceholder: "До следующего сеанса",

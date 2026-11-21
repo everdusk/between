@@ -214,6 +214,8 @@ export const en: Catalog = {
   discussed: "What you discussed",
   discussedPlaceholder: "What you talked about",
   insights: "Insights",
+  topicOutcomeTitle: "What did you decide?",
+  topicFinishEmpty: "Finish without a note",
   insightsPlaceholder: "What became clearer",
   homework: "Homework",
   homeworkPlaceholder: "Before the next session",

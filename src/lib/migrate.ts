@@ -386,10 +386,10 @@ export function normalizeStore(value: unknown): TherapyStore | null {
     sessionPlan: normalizePlan(store.sessionPlan),
     notify: normalizeNotify(store.notify),
     themes: Array.isArray(store.themes)
-      ? store.themes.map(normalizeTheme).filter((theme): theme is SessionTheme => Boolean(theme)).slice(0, 40)
+      ? store.themes.map(normalizeTheme).filter((theme): theme is SessionTheme => Boolean(theme))
       : [],
     themeLinks: Array.isArray(store.themeLinks)
-      ? store.themeLinks.map(normalizeLink).filter((link): link is ThemeLink => Boolean(link)).slice(0, 400)
+      ? store.themeLinks.map(normalizeLink).filter((link): link is ThemeLink => Boolean(link))
       : [],
     judgeSettled: Array.isArray(store.judgeSettled)
       ? store.judgeSettled.filter((item): item is string => typeof item === "string" && item.length < 80).slice(0, 400)

@@ -1,13 +1,31 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { requestsBrowserJournal } from "@/lib/landing";
+import { SESSION_COOKIE, sessionSecret } from "@/lib/web-account";
+import { accountFromSession } from "@/lib/web-account-store";
 
 /** Marks the journal tab that MAX itself opened, so the page can stay in Russian. */
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
   if (request.nextUrl.pathname === "/") {
     if (requestsBrowserJournal(request.nextUrl.search)) {
       response.headers.set("X-Robots-Tag", "noindex, follow");
+      return response;
+    }
+    const token = request.cookies.get(SESSION_COOKIE)?.value;
+    const secret = token && sessionSecret();
+    if (token && secret) {
+      try {
+        if (await accountFromSession(token, secret)) {
+          const journal = request.nextUrl.clone();
+          journal.searchParams.set("tab", "week");
+          const redirect = NextResponse.redirect(journal, 307);
+          redirect.headers.set("Cache-Control", "private, no-store");
+          return redirect;
+        }
+      } catch {
+        // Keep the public home available if the account store cannot be reached.
+      }
     }
     return response;
   }

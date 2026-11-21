@@ -214,6 +214,8 @@ export const uk: Catalog = {
   discussed: "Що обговорили",
   discussedPlaceholder: "Про що говорили",
   insights: "Інсайти",
+  topicOutcomeTitle: "Що хочеться запам’ятати?",
+  topicFinishEmpty: "Завершити без підсумку",
   insightsPlaceholder: "Що стало яснішим",
   homework: "Домашка",
   homeworkPlaceholder: "До наступного сеансу",
