@@ -1,4 +1,5 @@
 import { authOperations, registrationReason } from "./registration-errors";
+import { validMessengerChoices } from "./intro-messengers";
 import { questions, type SurveyFeeling } from "./intro-questions";
 
 export const noteStep: Record<SurveyFeeling, string> = {
@@ -8,6 +9,8 @@ export const noteStep: Record<SurveyFeeling, string> = {
 };
 
 const stepTitles: Record<string, string> = {
+  v2_messengers: "Мессенджеры", v2_bot_demo: "Пример чата с ботом",
+  v2_therapy_first: "Терапия · первый вопрос", v2_gender_after_therapy: "Пол",
   ...Object.fromEntries(["gender","name","therapy","recent","current","spectrum","situation","clarification","observation"].map((id,i)=>["v2_"+id,["Пол","Имя","Терапия","Чувство в последнее время","Чувство сейчас","Спектр","Ситуация","Уточнение","Наблюдение"][i]])),
   name: "Как вас зовут?", therapy: "Вы занимаетесь с психотерапевтом?",
   mood_morning: "Чувства · утро", mood_day: "Чувства · день", mood_evening: "Чувства · вечер",
@@ -41,5 +44,7 @@ export function surveyProperties(data: Record<string, unknown>): Record<string, 
       typeof data.sequence !== "number" || !Number.isSafeInteger(data.sequence) || data.sequence < 1 ||
       !["view", "advance", "back", "login", "finish"].includes(String(data.action)) || typeof data.action !== "string") return null;
   return { ...common, question_id: data.question, question_title: stepTitles[data.question],
+    ...(data.question === "v2_messengers" && data.action === "advance" && validMessengerChoices(data.messengers)
+      ? { selected_messengers: data.messengers } : {}),
     survey_action: data.action, attempt_id: data.attempt, sequence: data.sequence };
 }
