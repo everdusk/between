@@ -85,7 +85,7 @@ export async function putJournal(
         replace: options?.replace || undefined,
       }),
     });
-    return res.ok;
+    return res.ok && (await res.json())?.ok === true;
   } catch {
     return false;
   }
@@ -263,6 +263,7 @@ export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
   const goneEntries = new Set(droppedEntryIds);
   const goneSessions = new Set(droppedSessionIds);
   const merged: TherapyStore = {
+    ...(a.introductions || b.introductions ? {introductions: [...new Map([...(a.introductions ?? []), ...(b.introductions ?? [])].map(r=>[r.attempt,r])).values()]} : {}),
     profile: (a.profile?.updatedAt ?? "") > (b.profile?.updatedAt ?? "") ? a.profile : b.profile ?? a.profile,
     version: 2,
     entries: mergeById(a.entries, b.entries).filter((entry) => !goneEntries.has(entry.id)),

@@ -16,7 +16,13 @@ import { shownEntryTags, splitTags } from "@/lib/tags";
 import { PICKER_FEELINGS, type Feeling, type JournalEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+import { introEntryBody, introTranscript, type IntroRecord } from "@/lib/intro-record";
+
 interface JournalPanelProps {
+  initialDate?: string;
+  introductions?: IntroRecord[];
+  firstRecord?: IntroRecord | null;
+  onFirstSaved?: () => void;
   hint?: React.ReactNode;
   onReflect?: (id: string) => void;
   entries: JournalEntry[];
@@ -82,11 +88,12 @@ export function JournalPanel({
   disabled,
   initData = "",
   webFirst = false,
+  introductions, firstRecord, onFirstSaved, initialDate,
   composeRequest = 0,
 }: JournalPanelProps) {
   const { t, locale, count, feeling: feelingLabel, slot } = useI18n();
   const today = toDateKey();
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(initialDate || today);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [query,setQuery]=useState("");
   const [allDates,setAllDates]=useState(false);
@@ -103,11 +110,22 @@ export function JournalPanel({
     // Keep any draft intact when the global action brings the editor back.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setComposerOpen(true);
-    requestAnimationFrame(() => {
-      composerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      composerRef.current?.querySelector("textarea")?.focus({ preventScroll: true });
-    });
   }, [composeRequest]);
+  // On an auth return the splash can still hide the editor when it mounts.
+  useEffect(() => {
+    const field = composerRef.current?.querySelector("textarea");
+    if (!composeRequest || !composerOpen || disabled || !field) return;
+    function focusWhenVisible() {
+      if (!field?.getClientRects().length) return;
+      observer.disconnect();
+      field.focus({preventScroll:true});
+      field.scrollIntoView({block:"nearest"});
+    }
+    const observer = new ResizeObserver(focusWhenVisible);
+    observer.observe(field);
+    focusWhenVisible();
+    return () => observer.disconnect();
+  }, [composeRequest,composerOpen,disabled]);
 
   const dayEntries = useMemo(
     () =>
@@ -121,6 +139,7 @@ export function JournalPanel({
   const marks = useMemo(() => dayMarks(entries), [entries]);
 
   function resetForm() {
+    onFirstSaved?.();
     setEditingId(null);
     setFeelings([]);
     setBody("");
@@ -130,6 +149,7 @@ export function JournalPanel({
   }
 
   function startEdit(entry: JournalEntry) {
+    onFirstSaved?.();
     const parts = splitTags(entry);
     setEditingId(entry.id);
     setFeelings(entry.feelings);
@@ -143,11 +163,11 @@ export function JournalPanel({
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!body.trim() && feelings.length === 0) return;
+    if (!body.trim() && (firstRecord || feelings.length === 0)) return;
     const ok = onSave({
-      id: editingId ?? undefined,
+      id: editingId ?? (firstRecord ? "intro-answer-"+firstRecord.attempt : undefined),
       date,
-      body: body.trim(),
+      body: firstRecord && !editingId ? introEntryBody(firstRecord, body.trim()) : body.trim(),
       feelings,
       tags: manual,
       themeHidden: hidden,
@@ -167,7 +187,7 @@ export function JournalPanel({
     resetForm();
   }
 
-  const canSave = Boolean(body.trim() || feelings.length > 0);
+  const canSave = Boolean(body.trim() || (!firstRecord && feelings.length > 0));
   const isToday = date === today;
   function quickSave(emotion?: Feeling) {
     const text = emotion ? "" : body.trim();
@@ -223,7 +243,8 @@ export function JournalPanel({
           </div>
 
           <div className="space-y-3">
-            <Label htmlFor="journal-body">{t("note")}</Label>
+            {firstRecord && <p className="text-sm">{firstRecord.observation}</p>}
+            <Label htmlFor="journal-body" className={firstRecord ? "font-normal leading-relaxed" : undefined}>{firstRecord?.prompt ?? t("note")}</Label>
             <Textarea
               id="journal-body"
               autoFocus={!webFirst}
@@ -263,6 +284,11 @@ export function JournalPanel({
               const checkin = entry.source === "checkin" || !entry.body.trim();
               const tone = entry.feelings[0];
               const themes = shownEntryTags(entry);
+              const intro = introductions?.find(r => entry.id === "intro-answer-"+r.attempt);
+              const transcript = intro && introTranscript(intro);
+              const divider = transcript ? "\n\n"+transcript.history+"\n\n" : "";
+              const cut = divider ? entry.body.lastIndexOf(divider) : -1;
+              const visibleBody = cut < 0 ? entry.body : entry.body.slice(0, cut);
               return (
                 <li
                   key={entry.id}
@@ -338,7 +364,7 @@ export function JournalPanel({
                   )}
                   {!checkin && entry.body.trim() && (
                     <p className="mt-3 whitespace-pre-wrap break-words text-[0.9375rem] leading-relaxed text-foreground/90">
-                      {entry.body}
+                      {visibleBody}
                     </p>
                   )}
                   {themes.length > 0 && (

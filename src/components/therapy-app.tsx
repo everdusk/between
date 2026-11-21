@@ -3,7 +3,8 @@
 import { BrandLogo } from "./brand-logo";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
-import { Smile, X } from "lucide-react";
+import { BotConnectBanner } from "./bot-connect-banner";
+import { Smile } from "lucide-react";
 import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
 import { JournalPanel, MoodDialog } from "@/components/journal-panel";
 import { JournalSkeleton } from "@/components/journal-skeleton";
@@ -19,14 +20,10 @@ import {
 } from "@/components/scheme-switch";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WebAccountGate } from "@/components/web-account-gate";
-import { toDateKey } from "@/lib/dates";
+import { readIntroDraft, type IntroDraft, type IntroRecord } from "@/lib/intro-record";
+import { IntroCard, IntroReflection, introDraftKey } from "./intro-reflection";
 import { Connections, ReflectionPanel } from "@/components/journal-explore";
-import {
-  JournalIntro,
-  IntroResult,
-  ProfileEditor,
-  type IntroAnswers,
-} from "./journal-intro";
+import { ProfileEditor } from "./journal-intro";
 import { SessionBacklog } from "./session-backlog";
 import { WebWorkspace, type SectionId } from "@/components/web-workspace";
 import { WeekTab } from "@/components/week-tab";
@@ -226,6 +223,7 @@ function TherapyShell({
     addSessionTheme,
     savePattern,
     saveProfile,
+    importIntroduction,
     saveReflection,
     restoreTheme,
     setObservation,
@@ -338,12 +336,70 @@ function TherapyShell({
   const [hideBot, setHideBot] = useState(false);
   const [moodOpen, setMoodOpen] = useState(false);
   const [moodSaved, setMoodSaved] = useState("");
-  const [intro, setIntro] = useState<IntroAnswers | null>(null);
+  const [intro, setIntro] = useState<IntroDraft | null>(() => {
+    if (!webFirst || typeof window === "undefined") return null;
+    try { return readIntroDraft(JSON.parse(sessionStorage.getItem(introDraftKey) ?? "null")); }
+    catch { return null; }
+  });
+  const [editingIntro, setEditingIntro] = useState<IntroRecord | null>(null);
+  const editorKey = "between:intro:open-editor";
+  function finishIntroEditor() {
+    try { sessionStorage.removeItem(editorKey); } catch { /* private browsing */ }
+    setEditingIntro(null);
+  }
   useEffect(() => {
-    if (intro && web.account && status === "ready" && !store.profile) {
-      saveProfile(intro.name, intro.therapy);
-    }
-  }, [intro, web.account, status, store.profile, saveProfile]);
+    if (!webFirst || !web.account || intro || editingIntro || status !== "ready" || syncLabel !== "cloud") return;
+    let attempt: string | null;
+    try { attempt = sessionStorage.getItem(editorKey); } catch { return; }
+    const saved = store.introductions?.find(r => r.attempt === attempt);
+    if (!saved || store.entries.some(e => e.id === "intro-answer-"+attempt)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- restore the editor only in the authenticated owner's journal
+    setEditingIntro(saved);
+    setPicked("journal");
+    setComposeRequest(n => n+1);
+  }, [webFirst,web.account,intro,editingIntro,status,syncLabel,store.introductions,store.entries]);
+  const [handoffError,setHandoffError] = useState(false);
+  const [handoffRetry,setHandoffRetry] = useState(0);
+  const [savedIntroDate, setSavedIntroDate] = useState("");
+  function beginRegistration(record: IntroDraft) {
+    try { sessionStorage.removeItem(introDraftKey+":owner"); sessionStorage.setItem(introDraftKey, JSON.stringify(record)); } catch { return false; }
+    setIntro(record);
+    return true;
+  }
+  useEffect(() => {
+    if (!webFirst || !intro || !web.account || status !== "ready" || syncLabel !== "cloud" || !accessStatus || locked) return;
+    try {
+      const boundOwner = sessionStorage.getItem(introDraftKey+":owner");
+      if (boundOwner && boundOwner !== web.account.email) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- a pending handoff belongs to the previously authenticated account
+        setIntro(null);
+        return;
+      }
+      sessionStorage.setItem(introDraftKey+":owner", web.account.email);
+    } catch { /* in-memory handoff */ }
+    let active = true;
+    void importIntroduction(intro).then(saved => {
+      if (!active) return;
+      if (!saved) { setHandoffError(true); return; }
+      setHandoffError(false);
+      try {
+        if (intro.note) sessionStorage.removeItem(editorKey);
+        else sessionStorage.setItem(editorKey,intro.attempt);
+        sessionStorage.removeItem(introDraftKey);
+        sessionStorage.removeItem(introDraftKey+":owner");
+      } catch { /* private browsing */ }
+      if (intro.note) {
+        setSavedIntroDate(intro.note.date);
+        trackAnalytics("note", "");
+      } else {
+        setEditingIntro(intro);
+        setComposeRequest(n => n+1);
+      }
+      setIntro(null);
+      setPicked("journal");
+    });
+    return () => { active = false; };
+  }, [webFirst,intro,web.account,status,syncLabel,accessStatus,locked,importIntroduction,handoffRetry]);
   const loginRequested = useSyncExternalStore(
     subscribeLaunch,
     () => {
@@ -394,14 +450,16 @@ function TherapyShell({
   const gate =
     showGate &&
     (webFirst && !loginRequested && !intro ? (
-      <JournalIntro onFinish={setIntro} />
+      <IntroReflection onFinish={beginRegistration} />
     ) : (
+      <div className="space-y-4">
+      {intro && <IntroCard record={intro}/>}
       <WebAccountGate
         surveyAttempt={intro?.attempt}
         compact
         initialLogin={!intro && loginRequested}
         onSignedIn={web.setAccount}
-      />
+      /></div>
     ));
   const pending = !telegram.ready || accountPending || status === "loading";
   const problem = status === "error" && (
@@ -425,30 +483,21 @@ function TherapyShell({
   ) : (
     gate ||
     problem ||
+    (webFirst && intro && web.account && accessStatus && !locked ? (
+      <section className="glass space-y-3 rounded-3xl p-5" role="status">
+        <IntroCard record={intro}/>
+        {handoffError || syncLabel==="offline-cloud" ? <><p>{locale==="en"?"Your answers are here. Try saving them again.":"Ответы остались здесь. Попробуйте сохранить их ещё раз."}</p><Button onClick={()=>{setHandoffError(false);setHandoffRetry(n=>n+1);void retryCloud()}}>{t("accessRetry")}</Button></> :
+          <p>{locale==="en"?"Saving your answers…":"Сохраняем ваши ответы…"}</p>}
+      </section>
+    ) : null) ||
     (locked || !accessStatus ? (
       <WeekTab active {...accessProps}>
         {null}
       </WeekTab>
     ) : null)
   );
-  const hint = !linked && !hideBot && (
-    <aside className="flex items-start gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4">
-      <button
-        type="button"
-        className="flex-1 text-start text-sm font-semibold"
-        onClick={() => setAccountOpen(true)}
-      >
-        {t("webBotOffer")} · Telegram / MAX ↗
-      </button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label={t("accountClose")}
-        onClick={() => setHideBot(true)}
-      >
-        <X />
-      </Button>
-    </aside>
+  const hint = web.account && !linked && !hideBot && (
+    <BotConnectBanner onRefresh={web.refresh} onDismiss={()=>setHideBot(true)}/>
   );
   function compose() {
     selectSection("journal");
@@ -490,22 +539,6 @@ function TherapyShell({
         pages={{
           week: (
             <>
-              {intro && (
-                <IntroResult
-                  answers={intro}
-                  noteSaved={store.entries.some(entry => entry.id === intro.id)}
-                  onSaveNote={() => upsertEntry({id: intro.id, date: toDateKey(), body: intro.thought, feelings: [], tags: []})}
-                  onSchedule={() => {
-                    if (store.profile || saveProfile(intro.name, intro.therapy)) {
-                      selectSection("sessions");
-                    }
-                  }}
-                  onDone={() => {
-                    if (store.profile || saveProfile(intro.name, intro.therapy))
-                      setIntro(null);
-                  }}
-                />
-              )}
               <WeekTab active={section === "week"} {...accessProps}>
                 <WeeklyPanel
                   entries={store.entries}
@@ -530,11 +563,15 @@ function TherapyShell({
           ),
           journal: (
             <JournalPanel
+              initialDate={savedIntroDate}
               entries={store.entries}
               onSave={upsertEntry}
               onDelete={deleteEntry}
               initData={telegram.initData}
               disabled={disabled}
+              introductions={webFirst ? store.introductions : undefined}
+              firstRecord={editingIntro}
+              onFirstSaved={finishIntroEditor}
               composeRequest={composeRequest}
               hint={hint}
               onReflect={reflect}
@@ -638,6 +675,8 @@ function TherapyShell({
           clearStore(WEB_STORAGE_KEY);
           web.setAccount(null);
           setIntro(null);
+          finishIntroEditor();
+          try { sessionStorage.removeItem(introDraftKey); sessionStorage.removeItem(introDraftKey+":owner"); } catch { /* private browsing */ }
           closeAccount();
           window.location.reload();
         }}

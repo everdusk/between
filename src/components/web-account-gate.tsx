@@ -535,6 +535,16 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
       <section ref={formRef} className="journal-gate-form glass mt-6 scroll-mt-4 rounded-[22px] px-5 py-6 sm:px-6">
         <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{compact && mode === "login" && creating ? t("webCreate") : title}</h2>
+        {surveyAttempt && mode === "login" && (
+          <div className="mt-4 space-y-2 border-s-2 border-primary/60 ps-4 text-base leading-relaxed text-foreground">
+            <p>{locale === "en"
+              ? "Create a journal to save your reflections."
+              : "Чтобы сохранить свои размышления, создайте дневник."}</p>
+            <p>{locale === "en"
+              ? "After you sign in, we’ll automatically save what you wrote."
+              : "После входа всё, что вы написали, сохранится автоматически."}</p>
+          </div>
+        )}
         {compact && mode === "login" && <div className="mt-4 flex gap-2" role="group">
           <Button type="button" size="sm" variant={creating ? "secondary" : "ghost"} aria-pressed={creating} onClick={() => { setCreating(true); setError(null); }}>{t("webCreate")}</Button>
           <Button type="button" size="sm" variant={!creating ? "secondary" : "ghost"} aria-pressed={!creating} onClick={() => { setCreating(false); setError(null); }}>{t("webEnter")}</Button>

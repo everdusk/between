@@ -17,60 +17,10 @@ export function WebAccountCard({
   plain?: boolean;
 }) {
   const { t } = useI18n();
-  const [url, setUrl] = useState<string | null>(null);
-  const [maxUrl, setMaxUrl] = useState<string | null>(null);
-  const [vpn, setVpn] = useState(false);
-  const [maxOff, setMaxOff] = useState(false);
-  const [busy, setBusy] = useState<"telegram" | "max" | "off" | null>(null);
-  const linked = account.telegramLinked || account.maxLinked;
-
-  async function connectTelegram() {
-    setBusy("telegram");
-    setVpn(false);
-    try {
-      const res = await fetch("/api/account/link", { method: "POST" });
-      const data = (await res.json().catch(() => ({}))) as {
-        url?: string | null;
-        linked?: boolean;
-        vpn?: boolean;
-      };
-      if (data.linked) {
-        onRefresh();
-        return;
-      }
-      if (data.vpn) setVpn(true);
-      if (data.url) setUrl(data.url);
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function connectMax() {
-    setBusy("max");
-    setMaxOff(false);
-    try {
-      const res = await fetch("/api/account/link/max", { method: "POST" });
-      const data = (await res.json().catch(() => ({}))) as {
-        url?: string | null;
-        linked?: boolean;
-        error?: string;
-      };
-      if (data.linked) {
-        onRefresh();
-        return;
-      }
-      if (data.error === "max_off") {
-        setMaxOff(true);
-        return;
-      }
-      if (data.url) setMaxUrl(data.url);
-    } finally {
-      setBusy(null);
-    }
-  }
+  const [busy, setBusy] = useState(false);
 
   async function disconnect(messenger: "telegram" | "max") {
-    setBusy("off");
+    setBusy(true);
     try {
       const res = await fetch("/api/account/unlink", {
         method: "POST",
@@ -78,12 +28,10 @@ export function WebAccountCard({
         body: JSON.stringify({ messenger }),
       });
       if (res.ok) {
-        setUrl(null);
-        setMaxUrl(null);
         onRefresh();
       }
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   }
 
@@ -105,59 +53,6 @@ export function WebAccountCard({
             .join(" · ")}
         </p>
       ) : null}
-      {linked ? null : (
-        <div className="mt-3 space-y-3">
-          <p className="text-sm leading-relaxed text-foreground">{t("webBotOffer")}</p>
-          {vpn ? (
-            <p className="text-sm leading-relaxed text-muted-foreground" role="status">
-              {t("webBotVpn")}
-            </p>
-          ) : null}
-          {maxOff ? (
-            <p className="text-sm leading-relaxed text-muted-foreground" role="status">
-              {t("webMaxOff")}
-            </p>
-          ) : null}
-          <div className="grid gap-2">
-            {url ? (
-              <a
-                href={url}
-                className="inline-flex h-10 w-full items-center justify-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground"
-                onClick={() => {
-                  window.setTimeout(onRefresh, 1500);
-                }}
-              >
-                {t("webConnectBot")}
-              </a>
-            ) : (
-              <Button type="button" className="w-full" disabled={busy !== null} onClick={() => void connectTelegram()}>
-                {t("webConnectBot")}
-              </Button>
-            )}
-            {maxUrl ? (
-              <a
-                href={maxUrl}
-                className="inline-flex h-10 w-full items-center justify-center rounded-full border border-[color:var(--glass-border)] bg-[color:var(--glass-fill)] px-4 text-sm font-medium text-foreground"
-                onClick={() => {
-                  window.setTimeout(onRefresh, 1500);
-                }}
-              >
-                {t("webConnectMax")}
-              </a>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                disabled={busy !== null}
-                onClick={() => void connectMax()}
-              >
-                {t("webConnectMax")}
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
       {account.telegramLinked ? (
         <div className="mt-3 space-y-2">
           <p className="text-sm text-foreground">{t("webBotLinked")}</p>
@@ -165,7 +60,7 @@ export function WebAccountCard({
             type="button"
             variant="secondary"
             className="w-full"
-            disabled={busy !== null}
+            disabled={busy}
             onClick={() => void disconnect("telegram")}
           >
             {t("webBotDisconnect")}
@@ -179,7 +74,7 @@ export function WebAccountCard({
             type="button"
             variant="secondary"
             className="w-full"
-            disabled={busy !== null}
+            disabled={busy}
             onClick={() => void disconnect("max")}
           >
             {t("webBotDisconnect")}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { applyIntro, type IntroDraft } from "@/lib/intro-record";
 import { createId, toDateKey, weekKey } from "@/lib/dates";
 import { isFeeling } from "@/lib/feelings";
 import { fetchJournal, mergeStores, putJournal, requestBrief, tombstoneIds } from "@/lib/journal-api";
@@ -208,6 +209,15 @@ export function useTherapyStore(options?: {
     },
     [applyLocal],
   );
+
+  const importIntroduction = useCallback(async (record: IntroDraft) => {
+    const owner = cacheId.current;
+    if (!owner || !cloudRef.current) return false;
+    const imported = applyIntro(storeRef.current, record);
+    const saved = await putJournal(initDataRef.current, imported, deviceTimeZone(), undefined, maxInitRef.current, owner);
+    if (!saved || cacheId.current !== owner) return false;
+    return applyLocal(mergeStores(storeRef.current, imported));
+  }, [applyLocal]);
 
   const judgeRun = useRef<string | null>(null);
   const judgeTries = useRef<Record<string, number>>({});
@@ -611,6 +621,7 @@ export function useTherapyStore(options?: {
 
   return {
     store,
+    importIntroduction,
     saveProfile(name: string, therapy: boolean) {
       return persist({ ...storeRef.current, profile: { name: name.trim().slice(0, 60), therapy, updatedAt: new Date().toISOString() } });
     },

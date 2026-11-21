@@ -94,6 +94,34 @@
   flex-direction: column;
   align-items: stretch !important;
 }
+@font-face {
+  font-family: "Between Manrope";
+  src: url("/fonts/Manrope-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Between Manrope";
+  src: url("/fonts/Manrope-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Between Unbounded";
+  src: url("/fonts/Unbounded-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-display: swap;
+}
+.bot-connect-banner .font-display {
+  font-family: "Between Unbounded", sans-serif;
+  font-weight: 600;
+}
+.bot-connect-banner {
+  font-family: "Between Manrope", sans-serif;
+  letter-spacing: normal;
+  line-height: 1.5;
+  color: var(--foreground);
+}
 .desk-frame .journal-gate-form {
   position: static !important;
 }
@@ -103,10 +131,14 @@
   color: white;
   font-weight: 650;
 }
-.journal-gate-form .auth-telegram {
+.bot-connect-banner :is(.auth-telegram, .auth-max) {
+  color: white;
+  border-color: transparent;
+}
+:is(.journal-gate-form, .bot-connect-banner) .auth-telegram {
   background: #0077af;
 }
-.journal-gate-form .auth-max {
+:is(.journal-gate-form, .bot-connect-banner) .auth-max {
   background: linear-gradient(110deg, #0067da, #6742cb);
 }
 .journal-gate-form .auth-provider:hover {
