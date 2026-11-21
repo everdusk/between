@@ -23,9 +23,11 @@ export async function POST(req: Request) {
   }
   const secret = sessionSecret();
   if (!secret) return accountUnavailable();
-  const existing = await accountByEmail(email);
+  const [existing, allowed] = await Promise.all([
+    accountByEmail(email),
+    signupSendAllowed(email),
+  ]);
   if (existing) return NextResponse.json({ ok: false, error: "taken" }, { status: 409 });
-  const allowed = await signupSendAllowed(email);
   if (allowed === "soon") return NextResponse.json({ ok: false, error: "soon" }, { status: 429 });
   if (allowed !== "ok") return accountUnavailable();
   const code = newOtpCode();

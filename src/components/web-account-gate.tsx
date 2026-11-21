@@ -241,9 +241,9 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     return true;
   }
 
-  function rememberLogin(kind: "max" | "telegram", token: string, expiresAt: number) {
+  function rememberLogin(kind: "max" | "telegram", token: string, expiresAt: number, url: string, vpn: boolean) {
     try {
-      sessionStorage.setItem("between:messenger-login", JSON.stringify({ kind, token, expiresAt, creating, registration: registration.current }));
+      sessionStorage.setItem("between:messenger-login", JSON.stringify({ kind, token, expiresAt, url, vpn, creating, registration: registration.current }));
     } catch {
       // The open tab still polls when storage is blocked.
     }
@@ -337,7 +337,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       }
       if (data.vpn) setTelegramVpn(true);
       const expiresAt = Date.now() + 10 * 60_000;
-      rememberLogin(kind, data.token, expiresAt);
+      rememberLogin(kind, data.token, expiresAt, data.url, Boolean(data.vpn));
       setMessengerUrl(data.url);
       if (popup && !popup.closed) popup.location.replace(data.url);
       setNote(t(kind === "max" ? "webMaxLoginWait" : "webTgLoginWait"));
@@ -355,7 +355,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   }
 
   useEffect(() => {
-    let pending: { kind?: unknown; token?: unknown; expiresAt?: unknown; registration?: {attempt?: unknown; source?: unknown} } | null = null;
+    let pending: { kind?: unknown; token?: unknown; expiresAt?: unknown; url?: unknown; vpn?: unknown; registration?: {attempt?: unknown; source?: unknown} } | null = null;
     try {
       const raw = sessionStorage.getItem("between:messenger-login");
       pending = raw ? (JSON.parse(raw) as { kind?: unknown; token?: unknown }) : null;
@@ -373,6 +373,8 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setNote(t(kind === "max" ? "webMaxLoginWait" : "webTgLoginWait"));
     setWaitingFor(kind);
+    if (typeof pending.url === "string" && /^https:\/\//i.test(pending.url)) setMessengerUrl(pending.url);
+    setTelegramVpn(kind === "telegram" && pending.vpn === true);
     void pollMessenger(kind, pending.token, mine, typeof pending.expiresAt === "number" ? pending.expiresAt : Date.now() + 10 * 60_000);
     return () => {
       maxPoll.current += 1;
@@ -387,6 +389,17 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     setErrorScope("other");
     setNote(null);
     setCode("");
+  }
+
+  function chooseAnotherMethod() {
+    maxPoll.current += 1;
+    startingMessenger.current = false;
+    forgetLogin();
+    setWaitingFor(null);
+    setMessengerUrl(null);
+    setTelegramVpn(false);
+    setNote(null);
+    setError(null);
   }
 
   async function register(event: { preventDefault: () => void }) {
@@ -534,6 +547,19 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       </section>}
 
       <section ref={formRef} className="journal-gate-form glass mt-6 scroll-mt-4 rounded-[22px] px-5 py-6 sm:px-6">
+        {waitingFor ? (
+          <div className="grid gap-4">
+            <h2 className="font-display text-2xl leading-tight">{t(waitingFor === "max" ? "webMaxLogin" : "webTgLogin")}</h2>
+            <p role="status" className="leading-relaxed">{t(waitingFor === "max" ? "webMaxLoginWait" : "webTgLoginWait")}</p>
+            {telegramVpn && <p className="text-sm text-muted-foreground">{t("webBotVpn")}</p>}
+            {messengerUrl ? (
+              <a href={messengerUrl} target="_blank" rel="noreferrer" className={`auth-provider auth-${waitingFor} flex min-h-12 items-center justify-center rounded-full px-5 font-semibold`}>
+                {t("webOpenTab", { messenger: waitingFor === "max" ? "MAX" : "Telegram" })}
+              </a>
+            ) : <LoaderCircle aria-hidden className="size-5 motion-safe:animate-spin" />}
+            <Button type="button" variant="outline" onClick={chooseAnotherMethod}>{t("webChooseMethod")}</Button>
+          </div>
+        ) : <>
         <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{compact && mode === "login" && creating ? t("webCreate") : title}</h2>
         {surveyAttempt && mode === "login" && (
           <div className="mt-4 space-y-2 border-s-2 border-primary/60 ps-4 text-base leading-relaxed text-foreground">
@@ -559,37 +585,17 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
               </p>}
               <div className="grid grid-cols-2 gap-2">
                 <Button type="button" variant="outline" size="lg" className="auth-provider auth-telegram w-full"
-                  disabled={busy || (waitingFor === "telegram" && Boolean(messengerUrl))}
+                  disabled={busy}
                   onClick={() => void loginWithMessenger("telegram")}>
-                  {waitingFor === "telegram" && <LoaderCircle aria-hidden className="size-4 motion-safe:animate-spin" />}
                   {t("webTgLogin")}
                 </Button>
                 <Button type="button" variant="outline" size="lg" className="auth-provider auth-max w-full"
-                  disabled={busy || (waitingFor === "max" && Boolean(messengerUrl))}
+                  disabled={busy}
                   onClick={() => void loginWithMessenger("max")}>
-                  {waitingFor === "max" && <LoaderCircle aria-hidden className="size-4 motion-safe:animate-spin" />}
                   {t("webMaxLogin")}
                 </Button>
               </div>
-              {(telegramVpn || note || messengerUrl || (error && errorScope === "messenger")) && <div className="glass mt-3 grid gap-2 rounded-2xl p-4 text-sm leading-relaxed" aria-live="polite">
-              {note ? <p>{note}</p> : null}
-              {telegramVpn ? (
-                <p className="text-sm leading-relaxed text-muted-foreground" role="status">
-                  {t("webBotVpn")}
-                </p>
-              ) : null}
               {error && errorScope === "messenger" && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}
-              {messengerUrl ? (
-                <a
-                  href={messengerUrl}
-                  className="w-fit font-medium text-foreground underline underline-offset-4"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t("webOpenTab")}
-                </a>
-              ) : null}
-              </div>}
             </div>
             <p className="my-4 text-center text-xs font-bold tracking-[0.16em] text-muted-foreground uppercase">
               {t("webOr")}
@@ -757,6 +763,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
           </form>
         ) : null}
         <LegalAgree className="mt-5 text-center text-xs leading-relaxed text-muted-foreground" />
+        </>}
       </section>
       </div>
     </div>
