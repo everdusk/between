@@ -434,7 +434,9 @@ function TherapyShell({
   const footer = (
     <footer className="mt-8 text-center text-xs text-muted-foreground">
       {syncLabel === "offline-cloud" && <p role="status">{t("syncOffline")}</p>}
-      <LegalLinks telegram={telegram.inTelegram} className="mt-2" />
+      {!(locked && inMax) && !(showGate && (!webFirst || loginRequested || intro)) && (
+        <LegalLinks telegram={telegram.inTelegram} className="mt-2" />
+      )}
     </footer>
   );
   const accessProps = {
@@ -443,7 +445,6 @@ function TherapyShell({
     inMax,
     initData: telegram.initData,
     maxInitData: inMax ? (maxLaunch ?? "") : "",
-    canSubscribe: Boolean(web.account) || inMax,
     reloadToken: accessNonce,
     onAccess: onWeekAccess,
   };

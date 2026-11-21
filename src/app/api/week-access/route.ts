@@ -6,10 +6,8 @@ import { loadAccount } from "@/lib/web-account-store";
 import {
   accessForUser,
   canPreviewPaywall,
-  adoptClientTrial,
   markWeekIntroSeen,
   messengerAccessIdentity,
-  normalizeWeekAccess,
   openWeekAccess,
   rubPriceFromEnv,
   starPriceFromEnv,
@@ -85,7 +83,6 @@ export async function POST(req: Request) {
   let current = await loadWeekAccess(actor.id);
   if (action === "open") {
     if (actor.messenger === "web") {
-      current = adoptClientTrial(current, normalizeWeekAccess((body as { local?: unknown }).local), now);
       current = openWeekAccess(current, now);
     }
   } else {

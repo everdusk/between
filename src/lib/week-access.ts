@@ -486,28 +486,6 @@ export function absorbWeekPremium(
   };
 }
 
-/** Keeps an earlier trial from this browser. A client cannot grant itself premium. */
-export function adoptClientTrial(
-  server: WeekAccessRecord,
-  client: WeekAccessRecord,
-  now: Date,
-): WeekAccessRecord {
-  const nowMs = now.getTime();
-  const clientOpen = client.openedAt ? Date.parse(client.openedAt) : NaN;
-  const serverOpen = server.openedAt ? Date.parse(server.openedAt) : NaN;
-  let openedAt = server.openedAt;
-  if (Number.isFinite(clientOpen) && clientOpen <= nowMs) {
-    if (!Number.isFinite(serverOpen) || clientOpen < serverOpen) {
-      openedAt = new Date(clientOpen).toISOString();
-    }
-  }
-  return {
-    ...server,
-    openedAt,
-    introSeen: server.introSeen || client.introSeen === true,
-  };
-}
-
 /** Keeps the later end date so a renewal does not shorten an existing period. */
 export function grantWeekPaidUntil(
   record: WeekAccessRecord,

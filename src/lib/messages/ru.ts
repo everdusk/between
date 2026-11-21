@@ -315,7 +315,7 @@ export const ru = {
   legalPrivacy: "Политика конфиденциальности",
   legalTermsInline: "условиями использования",
   legalPrivacyInline: "политикой конфиденциальности",
-  legalAgree: "Продолжая, вы соглашаетесь с",
+  legalAgree: "Нажимая кнопку регистрации, вы соглашаетесь с",
   legalAnd: "и",
   legalInn: "ИНН {inn}",
   dayOne: "день",
