@@ -52,10 +52,11 @@
 .chapter-screen { width:min(100%,420px); margin:0; justify-self:center; }
 .chapter-screen video { display:block; width:100%; aspect-ratio: 624/866; object-fit:contain; border-radius:24px; border:1px solid #34433f; background:#080d0c; }
 .chapter-screen figcaption { margin-top:22px; text-align:center; font-size:12px; }
-.chapter-audience { border-top:1px solid #33413c; padding-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:clamp(36px,6vw,90px); }
+.chapter-audience { border-top:1px solid #33413c; padding-top:20px; display:grid; grid-template-columns:1fr 1fr; column-gap:clamp(36px,6vw,90px); row-gap:16px; }
 .chapter-audience h2 { grid-column:1/-1; font-size:clamp(30px,3vw,44px); }
 .chapter-audience h3 { margin:30px 0 16px; font-size:clamp(18px,1.65vw,24px); }
 .chapter-audience p { max-width:48ch; line-height:1.65; }
+.chapter-audience .chapter-audience-intro { grid-column:1/-1; max-width:65ch; margin:0 0 12px; color:#a9b4ae; text-wrap:pretty; }
 .chapter-example { grid-column:1/-1; border-block-start:1px solid #33413c; padding-top:20px; }
 .chapter-example summary { cursor:pointer; font-weight:600; width:fit-content; }
 .chapter-example p { margin:14px 0 0; max-width:64ch; }

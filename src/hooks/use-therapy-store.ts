@@ -279,8 +279,9 @@ export function useTherapyStore(options?: {
         }
         verdict = fallbackVerdict(entry);
       }
+      const snapshot = storeRef.current;
       const applied = applyVerdict(
-        { themes: storeRef.current.themes ?? [], links: storeRef.current.themeLinks ?? [] },
+        { themes: snapshot.themes, links: snapshot.themeLinks },
         entry,
         verdict,
       );
@@ -311,6 +312,11 @@ export function useTherapyStore(options?: {
       if (!judgeAlive.current || judgeRun.current !== stamp) return;
       const latest = storeRef.current;
       judgeRun.current = null;
+      if (latest.judgeSettled.includes(stamp)) return;
+      if (latest.themes !== snapshot.themes || latest.themeLinks !== snapshot.themeLinks) {
+        // A sync or edit landed during deduplication. Keep the newer topic list.
+        state = applyVerdict({ themes: latest.themes, links: latest.themeLinks }, entry, verdict).state;
+      }
       persist({
         ...latest,
         themes: state.themes,
@@ -579,10 +585,9 @@ export function useTherapyStore(options?: {
   const addSessionTheme = useCallback(
     (title: string) => {
       const current = storeRef.current;
-      const list = current.profile?.therapy === false ? "personal" : "therapy";
       return persist({
         ...current,
-        themes: addManualTheme(current.themes ?? [], title, toDateKey()).map((theme,i)=>i===current.themes.length ? {...theme,list} : theme),
+        themes: addManualTheme(current.themes, title, toDateKey()),
       });
     },
     [persist],
@@ -641,7 +646,7 @@ export function useTherapyStore(options?: {
       const entries = current.entries.map(note => note.id === id ? { ...note, reflection, updatedAt } : note);
       const themes = topic ? addManualTheme(current.themes, reflection.insight || reflection.answer, toDateKey(), updatedAt) : current.themes;
       const linkedThemes = topic ? themes.map((theme,index) => index === current.themes.length
-        ? { ...theme, list: current.profile?.therapy === false ? "personal" as const : "therapy" as const, quotes: [{ entryId: id, date: entry.date, text: entry.body, intensity: 0 }] }
+        ? { ...theme, quotes: [{ entryId: id, date: entry.date, text: entry.body, intensity: 0 }] }
         : theme) : themes;
       return persist({ ...current, entries, themes: linkedThemes });
     },

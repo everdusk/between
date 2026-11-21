@@ -24,6 +24,7 @@ import { buildWeekSpectrum, spectrumHeadline } from "./spectrum";
 import { digestAction, duePoll } from "./digest";
 import { applyJournalWrite, mergeStores } from "./journal-api";
 import { normalizeStore } from "./migrate";
+import { addManualTheme } from "./themes";
 import { nextWeeklyOccurrence, previousWeeklyOccurrence, sessionPlanStamp } from "./session-plan";
 import {
   applyThemePass,
@@ -188,6 +189,28 @@ describe("merge", () => {
     const merged = applyJournalWrite(current, incoming);
     assert.equal(merged.entries.length, 1);
     assert.equal(merged.entries[0]?.body, "день рождения");
+  });
+
+  it("keeps topics, outcomes and links across therapy switches and stale cloud writes", () => {
+    let store = emptyStore();
+    const day = "2026-11-21";
+    store.themes = Array.from({length: 45}, (_, i) => ({
+      ...addManualTheme([], "Topic " + i, day)[0],
+      list: i % 2 ? "therapy" : "personal",
+      ...(i % 3 === 0 ? { status: "discussed" as const, outcome: "Pause before answering" } : {}),
+    }));
+    store.themeLinks = Array.from({length: 405}, (_, i) => ({
+      themeId: store.themes[i % 45].id, entryId: "note-" + i, confidence: 1,
+    }));
+    const {themes, themeLinks} = store;
+    for (const [i, therapy] of [true, false, true].entries()) {
+      const profile = {name: "Test", therapy, updatedAt: day + "T12:00:0" + i + "Z"};
+      const saved = normalizeStore(JSON.parse(JSON.stringify({...store, profile})))!;
+      store = applyJournalWrite(saved, store);
+      assert.equal(store.profile?.therapy, therapy);
+      assert.deepEqual(store.themes.map(t => [t.id, t.list, t.status, t.outcome]), themes.map(t => [t.id, t.list, t.status, t.outcome]));
+      assert.deepEqual(store.themeLinks, themeLinks);
+    }
   });
 
   it("drops only the note the person deleted", () => {

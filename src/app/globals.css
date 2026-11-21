@@ -472,11 +472,22 @@ html[data-performance="low"] .blur-3xl {
   }
 }
 
-:is(.chapter-cta, .guide-start) {
+:is(.chapter-cta, .guide-start, .topic-save) {
   background: #8ff0bc var(--brand-button-gradient);
   color: #04130c;
   font-weight: 800;
   box-shadow: var(--brand-button-shadow);
+}
+.topic-save {
+  background-size: 145% 100%;
+  animation: topic-gradient 3.5s ease-in-out infinite alternate;
+}
+@keyframes topic-gradient {
+  from { background-position: 0% 50%; }
+  to { background-position: 100% 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .topic-save { animation: none; background-size: 100% 100%; }
 }
 @media (hover: hover) {
   :is(.chapter-cta, .guide-start):hover { filter: brightness(1.05); }

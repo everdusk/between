@@ -5,22 +5,28 @@ import { feelingFill } from "@/lib/spectrum";
 import { PICKER_FEELINGS, type Feeling } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useEffect, useId, useRef, useState } from "react";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FeelingPickerProps {
-  immediate?: boolean;
-  initiallyOpen?: boolean;
+  openRequest?: number;
   value: Feeling[];
   onChange: (value: Feeling[]) => void;
   disabled?: boolean;
 }
 
-export function FeelingPicker({ value, onChange, disabled, immediate, initiallyOpen=false }: FeelingPickerProps) {
+export function FeelingPicker({ value, onChange, disabled, openRequest = 0 }: FeelingPickerProps) {
   const { t, feeling: feelingLabel } = useI18n();
-  const [open, setOpen] = useState(initiallyOpen);
+  const [open, setOpen] = useState(false);
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!openRequest) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- open the inline picker from the journal toolbar
+    setOpen(true);
+    triggerRef.current?.focus({preventScroll: true});
+    triggerRef.current?.scrollIntoView({block: "nearest"});
+  }, [openRequest]);
   useEffect(() => {
     if (!open) return;
     const dismiss = (event: PointerEvent) => {
@@ -41,7 +47,6 @@ export function FeelingPicker({ value, onChange, disabled, immediate, initiallyO
   const options: Feeling[] = [...PICKER_FEELINGS, ...extras];
 
   function toggle(feeling: Feeling) {
-    if (immediate) { onChange([feeling]); closePicker(); return; }
     if (value.includes(feeling)) {
       onChange(value.filter((item) => item !== feeling));
       return;
@@ -90,9 +95,6 @@ export function FeelingPicker({ value, onChange, disabled, immediate, initiallyO
         );
       })}
       </div>
-      {!immediate && <div className="mt-2 flex justify-end">
-        <Button type="button" variant="ghost" size="sm" onClick={closePicker}><Check aria-hidden />{t("feelingDone")}</Button>
-      </div>}
       </div>}
     </div>
   );

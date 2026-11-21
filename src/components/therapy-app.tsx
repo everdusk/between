@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { BotConnectBanner } from "./bot-connect-banner";
 import { Smile } from "lucide-react";
 import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
-import { JournalPanel, MoodDialog } from "@/components/journal-panel";
+import { JournalPanel } from "@/components/journal-panel";
 import { JournalSkeleton } from "@/components/journal-skeleton";
 import { AccountButton, AccountSheet } from "@/components/account-sheet";
 import { LanguageSwitch } from "@/components/language-switch";
@@ -334,8 +334,7 @@ function TherapyShell({
   const [entryId, setEntryId] = useState("");
   const [topic, setTopic] = useState({ id: "", visit: 0 });
   const [hideBot, setHideBot] = useState(false);
-  const [moodOpen, setMoodOpen] = useState(false);
-  const [moodSaved, setMoodSaved] = useState("");
+  const [moodRequest, setMoodRequest] = useState(0);
   const [intro, setIntro] = useState<IntroDraft | null>(() => {
     if (!webFirst || typeof window === "undefined") return null;
     try { return readIntroDraft(JSON.parse(sessionStorage.getItem(introDraftKey) ?? "null")); }
@@ -432,10 +431,10 @@ function TherapyShell({
     />
   );
   const footer = (
-    <footer className="mt-8 text-center text-xs text-muted-foreground">
+    <footer className="text-center text-xs text-muted-foreground">
       {syncLabel === "offline-cloud" && <p role="status">{t("syncOffline")}</p>}
-      {!(locked && inMax) && !(showGate && (!webFirst || loginRequested || intro)) && (
-        <LegalLinks telegram={telegram.inTelegram} className="mt-2" />
+      {!(locked && inMax) && (
+        <LegalLinks telegram={telegram.inTelegram} className="desk-legal-links" />
       )}
     </footer>
   );
@@ -522,8 +521,8 @@ function TherapyShell({
                 size="icon"
                 aria-label={t("howFeel")}
                 onClick={() => {
-                  setMoodSaved("");
-                  setMoodOpen(true);
+                  selectSection("journal");
+                  setMoodRequest(n => n + 1);
                 }}
               >
                 <Smile />
@@ -574,6 +573,7 @@ function TherapyShell({
               firstRecord={editingIntro}
               onFirstSaved={finishIntroEditor}
               composeRequest={composeRequest}
+              moodRequest={moodRequest}
               hint={hint}
               onReflect={reflect}
             />
@@ -627,28 +627,6 @@ function TherapyShell({
           ),
         }}
       />
-      {!blocked && moodOpen && (
-        <MoodDialog
-          onClose={() => setMoodOpen(false)}
-          onSave={(input) => {
-            const ok = upsertEntry(input);
-            if (ok) {
-              trackAnalytics("note", telegram.initData);
-              setMoodSaved(t("saved"));
-              window.setTimeout(() => setMoodSaved(""), 1800);
-            }
-            return ok;
-          }}
-        />
-      )}
-      {moodSaved && (
-        <div
-          role="status"
-          className="fixed bottom-8 inset-x-0 z-30 mx-auto w-fit rounded-full bg-primary px-4 py-2 text-primary-foreground"
-        >
-          {moodSaved}
-        </div>
-      )}
       <AccountSheet
         onErased={onErased}
         open={showAccount}

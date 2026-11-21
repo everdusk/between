@@ -214,6 +214,8 @@ export const ar: Catalog = {
   discussed: "ما ناقشناه",
   discussedPlaceholder: "ماذا نوقش",
   insights: "ما اتضح",
+  topicOutcomeTitle: "ما الذي تودّ تذكّره؟",
+  topicFinishEmpty: "إنهاء دون ملاحظة",
   insightsPlaceholder: "ما الذي اتضح",
   homework: "الواجب",
   homeworkPlaceholder: "حتى الجلسة التالية",

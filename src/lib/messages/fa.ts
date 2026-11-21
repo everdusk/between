@@ -214,6 +214,8 @@ export const fa: Catalog = {
   discussed: "چه گفتیم",
   discussedPlaceholder: "دربارهٔ چه حرف زدید",
   insights: "دریافت‌ها",
+  topicOutcomeTitle: "دوست دارید چه چیزی را به خاطر بسپارید؟",
+  topicFinishEmpty: "پایان بدون یادداشت",
   insightsPlaceholder: "چه چیزی روشن شد",
   homework: "تکلیف",
   homeworkPlaceholder: "تا جلسهٔ بعد",

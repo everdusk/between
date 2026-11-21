@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Check, Pencil, Trash2, X, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bot, Check, Pencil, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { EntryCalendar } from "@/components/entry-calendar";
 import { FeelingPicker } from "@/components/feeling-picker";
 import { useI18n } from "@/components/locale-provider";
@@ -39,19 +39,7 @@ interface JournalPanelProps {
   initData?: string;
   webFirst?: boolean;
   composeRequest?: number;
-}
-
-export function MoodDialog({onSave,onClose}:{onSave:JournalPanelProps["onSave"];onClose:()=>void}) {
-  const {t}=useI18n();
-  const [selected,setSelected]=useState<Feeling[]>([]);
-  const [body,setBody]=useState("");
-  return <dialog ref={el=>{if(el&&!el.open)el.showModal()}} aria-label={t("howFeel")} onCancel={onClose} className="m-auto w-[min(92vw,30rem)] max-h-[85dvh] rounded-3xl border border-border bg-popover p-5 text-foreground backdrop:bg-black/50">
-    <form className="space-y-4" onSubmit={e=>{e.preventDefault();if(selected.length && onSave({date:toDateKey(),feelings:selected,body:body.trim(),tags:[]}))onClose()}}>
-      <div className="flex items-center justify-between"><h2 className="font-display text-xl">{t("howFeel")}</h2><Button type="button" variant="ghost" size="icon" aria-label={t("cancel")} onClick={onClose}><X/></Button></div>
-      <FeelingPicker initiallyOpen value={selected} onChange={setSelected}/>
-      <label className="block">{t("note")}<Textarea value={body} placeholder={t("notePlaceholder")} onChange={e=>setBody(e.target.value)}/></label>
-      <Button type="submit" disabled={!selected.length}>{t("feelingDone")}</Button>
-    </form></dialog>;
+  moodRequest?: number;
 }
 
 /** The stored day, plus the local day the note was actually written. */
@@ -89,7 +77,7 @@ export function JournalPanel({
   initData = "",
   webFirst = false,
   introductions, firstRecord, onFirstSaved, initialDate,
-  composeRequest = 0,
+  composeRequest = 0, moodRequest = 0,
 }: JournalPanelProps) {
   const { t, locale, count, feeling: feelingLabel, slot } = useI18n();
   const today = toDateKey();
@@ -101,20 +89,29 @@ export function JournalPanel({
   const [feelings, setFeelings] = useState<Feeling[]>([]);
   const [body, setBody] = useState("");
   const [manual, setManual] = useState<string[]>([]);
-  const [composerOpen, setComposerOpen] = useState(webFirst);
+  const composerOpen = Boolean(editingId || firstRecord);
   const [hidden, setHidden] = useState<string[]>([]);
   const [savedFlash, setSavedFlash] = useState(false);
   const composerRef = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    if (!composeRequest) return;
-    // Keep any draft intact when the global action brings the editor back.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setComposerOpen(true);
-  }, [composeRequest]);
+  const [lastAction, setLastAction] = useState({composeRequest: 0, moodRequest: 0});
+  if (composeRequest !== lastAction.composeRequest || moodRequest !== lastAction.moodRequest) {
+    setLastAction({composeRequest, moodRequest});
+    if (editingId) {
+      setEditingId(null);
+      setManual([]);
+      setHidden([]);
+      setFeelings([]);
+      setBody("");
+    }
+    if (!firstRecord && (editingId || (!body.trim() && !feelings.length))) setDate(today);
+    setAllDates(false);
+    setQuery("");
+    setFilter("");
+  }
   // On an auth return the splash can still hide the editor when it mounts.
   useEffect(() => {
-    const field = composerRef.current?.querySelector("textarea");
-    if (!composeRequest || !composerOpen || disabled || !field) return;
+    const field = composerRef.current?.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea");
+    if (!composeRequest || disabled || !field) return;
     function focusWhenVisible() {
       if (!field?.getClientRects().length) return;
       observer.disconnect();
@@ -144,7 +141,7 @@ export function JournalPanel({
     setFeelings([]);
     setBody("");
     setManual([]);
-    setComposerOpen(webFirst);
+
     setHidden([]);
   }
 
@@ -155,7 +152,7 @@ export function JournalPanel({
     setFeelings(entry.feelings);
     setBody(entry.body);
     setManual(parts.user);
-    setComposerOpen(true);
+
     setDate(entry.date);
     setHidden(parts.hidden);
     requestAnimationFrame(() => composerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
@@ -189,15 +186,6 @@ export function JournalPanel({
 
   const canSave = Boolean(body.trim() || (!firstRecord && feelings.length > 0));
   const isToday = date === today;
-  function quickSave(emotion?: Feeling) {
-    const text = emotion ? "" : body.trim();
-    if ((!emotion && !text) || !onSave({ date, body: text, feelings: emotion ? [emotion] : [], tags: [] })) return;
-    if (!emotion) setBody("");
-    trackAnalytics("note", initData);
-    setSavedFlash(true);
-    window.setTimeout(() => setSavedFlash(false), 1800);
-  }
-
   return (
     <div className="journal-board flex flex-col gap-4">
       <header className="px-1">
@@ -210,7 +198,6 @@ export function JournalPanel({
               {savedFlash ? <span className="inline-flex items-center gap-1 text-primary"><Check aria-hidden className="size-3.5" />{t("saved")}</span> : count(dayEntries.length, "note")}
             </span>
           </div>
-          {!composerOpen && <Button type="button" size="icon" aria-label={t("newEntry")} title={t("newEntry")} disabled={disabled} onClick={() => { resetForm(); setComposerOpen(true); }}><Plus aria-hidden /></Button>}
         </div>
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 text-center">
           <Button type="button" variant="ghost" size="icon" aria-label={t("journalPrevDay")} disabled={disabled} onClick={() => changeDate(addDays(date, -1))}>
@@ -223,12 +210,12 @@ export function JournalPanel({
         </div>
       </header>
 
-      {!composerOpen && <section className="glass space-y-3 rounded-3xl p-4">
-        <form className="flex items-center gap-2" onSubmit={e=>{e.preventDefault();quickSave()}}>
+      {!composerOpen && <section ref={composerRef} className="glass space-y-3 rounded-3xl p-4">
+        <form className="flex items-center gap-2" onSubmit={handleSubmit}>
           <input className="min-w-0 flex-1 rounded-xl border border-input bg-background px-3 py-3 text-base" aria-label={t("newEntry")} placeholder={t("notePlaceholder")} value={body} onChange={e=>setBody(e.target.value)} disabled={disabled}/>
-          <Button type="submit" size="icon" aria-label={t("saveEntry")} disabled={disabled || !body.trim()}><Check/></Button>
+          <Button type="submit" size="icon" aria-label={t("saveEntry")} disabled={disabled || !canSave}><Check/></Button>
         </form>
-        <FeelingPicker value={[]} immediate onChange={v=>quickSave(v[0])} disabled={disabled}/>
+        <FeelingPicker openRequest={moodRequest} value={feelings} onChange={setFeelings} disabled={disabled}/>
       </section>}
       {composerOpen && <section ref={composerRef} className="glass scroll-mt-4 rounded-3xl p-5 sm:p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -256,7 +243,7 @@ export function JournalPanel({
             />
           </div>
 
-          <FeelingPicker value={feelings} onChange={setFeelings} disabled={disabled} />
+          <FeelingPicker openRequest={moodRequest} value={feelings} onChange={setFeelings} disabled={disabled} />
 
           <div className="flex items-center gap-3 pt-1">
             <Button type="submit" size="lg" className="flex-1" disabled={disabled || !canSave}>

@@ -214,6 +214,8 @@ export const vi: Catalog = {
   discussed: "Đã nói gì",
   discussedPlaceholder: "Đã nói gì",
   insights: "Điều nhận ra",
+  topicOutcomeTitle: "Bạn muốn ghi nhớ điều gì?",
+  topicFinishEmpty: "Hoàn tất mà không ghi chú",
   insightsPlaceholder: "Điều gì rõ hơn",
   homework: "Bài về",
   homeworkPlaceholder: "Đến buổi sau",

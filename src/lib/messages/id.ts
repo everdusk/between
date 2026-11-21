@@ -214,6 +214,8 @@ export const id: Catalog = {
   discussed: "Yang dibahas",
   discussedPlaceholder: "Apa yang dibicarakan",
   insights: "Wawasan",
+  topicOutcomeTitle: "Apa yang ingin Anda ingat?",
+  topicFinishEmpty: "Selesaikan tanpa catatan",
   insightsPlaceholder: "Apa yang menjadi lebih jelas",
   homework: "Tugas",
   homeworkPlaceholder: "Sampai sesi berikutnya",

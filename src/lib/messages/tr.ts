@@ -214,6 +214,8 @@ export const tr: Catalog = {
   discussed: "Ne konuştuk",
   discussedPlaceholder: "Ne konuşuldu",
   insights: "İçgörüler",
+  topicOutcomeTitle: "Neyi hatırlamak istersiniz?",
+  topicFinishEmpty: "Not eklemeden tamamla",
   insightsPlaceholder: "Ne netleşti",
   homework: "Ödev",
   homeworkPlaceholder: "Sonraki seansa kadar",

@@ -68,7 +68,7 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
   });
   const [messengers, setMessengers] = useState<MessengerChoice[]>([]);
   const demo = messengers.includes("telegram") ? "telegram" : messengers.includes("max") ? "max" : null;
-  const steps = ["therapy_first", "messengers", ...(demo ? ["bot_demo"] : []), ...remainingSteps];
+  const steps = ["therapy_first", "topics_demo", "messengers", ...(demo ? ["bot_demo"] : []), ...remainingSteps];
   const screen=steps[step];
   function toggleMessenger(choice: MessengerChoice) {
     setMessengers(current => {
@@ -99,7 +99,9 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
       : say("Ваша отметка сейчас — "+label(current),"Your check-in right now: "+label(current));
   const record:IntroRecord={attempt,language:en?"en":"ru",name:name.trim(),gender,therapy,messengers,recent,current,...moment,recalled,situation:choice,clarification,answer:answer.trim(),prompt,
     observation:context+say(". Когда вы выбрали «",". When you chose “")+choice+say("», вы описали это так: «","”, you described it this way: “")+answer.trim()+say("».","”.")};
+  const topicsMedia = "/landing/quiz-topics-" + (therapy === "yes" ? "therapy" : "personal") + "-" + (en ? "en" : "ru");
   const question = screen === "therapy_first" ? say("Вы сейчас занимаетесь с психотерапевтом?","Are you seeing a therapist?")
+    : screen === "topics_demo" ? (therapy === "yes" ? say("Что взять на следующий сеанс?","What would you like to bring to therapy?") : say("К какой мысли вы возвращаетесь?","What keeps coming up for you?"))
     : screen === "messengers" ? say("Какими мессенджерами вы пользуетесь?","Which messaging apps do you use?")
     : screen === "bot_demo" ? say("Дневник прямо в чате","Your journal, right in the chat")
     : [say("Вы мужчина или женщина?","How do you describe yourself?"),say("Как к вам обращаться?","What should we call you?"),
@@ -117,6 +119,23 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
     <small>Between · {say("Знакомство","Getting to know you")} · {step+1}/{steps.length}</small>
     <h1 className="font-display text-2xl">{question}</h1>
     {screen==="therapy_first" && <div className="flex flex-wrap gap-2">{option(say("Да","Yes"),()=>{setTherapy("yes");go(step+1)})}{option(say("Нет","No"),()=>{setTherapy("no");go(step+1)})}</div>}
+    {screen==="topics_demo" && <>
+      <p>{therapy === "yes"
+        ? say("Когда в нескольких записях звучит одна и та же забота, ИИ соберёт их в тему к терапии. Перед сеансом можно открыть тему и вспомнить конкретные моменты.", "When the same concern comes up across entries, AI groups them into a topic for therapy. Open it before your session to recall the moments you want to talk about.")
+        : say("ИИ поможет заметить, что вас волнует чаще всего. Записи о разных событиях соберутся в общую тему в разделе «На подумать». К ней можно вернуться в своём темпе.", "AI helps you spot concerns you keep coming back to. Entries about different events come together under a topic in For reflection, ready to revisit at your own pace.")}</p>
+      <figure className="space-y-2">
+        <figcaption className="text-sm text-muted-foreground">{say("Пример из дневника","Example from the journal")}</figcaption>
+        <video key={topicsMedia} className="block w-full rounded-2xl" muted playsInline controls preload="metadata"
+          poster={topicsMedia + ".webp"} src={topicsMedia + ".mp4"}
+          aria-label={say("Тема раскрывается и показывает две связанные записи", "A topic opens to show its two linked entries")}
+          onLoadedMetadata={event => {
+            if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+              void event.currentTarget.play().catch(() => {});
+            }
+          }} />
+      </figure>
+      <Button onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
+    </>}
     {screen==="messengers" && <>
       <p className="text-sm text-muted-foreground">{say("Можно выбрать несколько.","Choose all that apply.")}</p>
       <div className="flex flex-wrap gap-2">{messengerChoices.map(m => <Button key={m} type="button"
