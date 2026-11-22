@@ -409,6 +409,31 @@ html[data-splash] .app-root {
   }
 }
 
+/* A short press and a softer release. Keep text links and popup backdrops still. */
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-performance="low"]) :is([data-slot="button"], .desk-nav button,
+    .preference-control, .chapter-cta, .guide-start, .sub-pay, .auth-provider):not(.text-action, :disabled, [data-disabled], [aria-disabled="true"]) {
+    transition: scale 220ms cubic-bezier(.2, 1.5, .36, 1), background-color 150ms ease,
+      color 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+    &:active { scale: .96; transition-duration: 65ms; }
+    &[data-back-button]:active {
+      scale: 1.16;
+      background-color: var(--glass-fill-strong);
+    }
+  }
+  html:not([data-performance="low"]) :is(.desk-section:not([hidden]), .intro-screen, .account-settings) {
+    animation: desk-arrive 225ms cubic-bezier(.18, .78, .28, 1);
+  }
+  .intro-screen { --arrive-x: 14px; --arrive-y: 0px; }
+  .intro-screen[data-direction="back"], .intro-screen:dir(rtl) { --arrive-x: -14px; }
+  .intro-screen[data-direction="back"]:dir(rtl) { --arrive-x: 14px; }
+  .account-settings { --arrive-y: 12px; }
+}
+@keyframes desk-arrive {
+  from { opacity: .25; translate: var(--arrive-x, 0px) var(--arrive-y, 6px); }
+  to { opacity: 1; translate: 0 0; }
+}
+
 /* Hide native date/time chrome inside the overlay pattern. */
 .native-overlay::-webkit-calendar-picker-indicator {
   opacity: 0;

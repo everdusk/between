@@ -69,6 +69,7 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
   const say=(ru:string,eng:string)=>en?eng:ru;
   const [attempt]=useState(()=>crypto.randomUUID());
   const [step,setStep]=useState(0);
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [therapy,setTherapy]=useState<IntroCheckin["therapy"]>("no");
   const [recent,setRecent]=useState<IntroMood>("unknown");
   const [recentReason, setRecentReason] = useState("");
@@ -100,6 +101,7 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
   function go(n:number) {
     trackSurvey({event:"web_survey_step",action:n<step?"back":"advance",question:"v2_"+screen,attempt,sequence:nextSequence(),
       ...(screen==="messengers" && n>step ? {messengers} : {})},locale);
+    setDirection(n < step ? "back" : "forward");
     setStep(n);
   }
   const label=(m:IntroMood)=>m==="unknown"?say("Пока трудно назвать","Hard to name"):feeling(m);
@@ -129,6 +131,7 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
     <IntroStepHeader backLabel={say("Назад", "Back")} onBack={step > 0 ? () => go(step - 1) : undefined}>
       Between · {say("Знакомство","Getting to know you")} · {step+1}/{steps.length}
     </IntroStepHeader>
+    <div key={screen} className="intro-screen space-y-5" data-direction={direction}>
     <h1 className="font-display text-2xl">{question}</h1>
     {screen==="therapy_first" && <div className="flex flex-wrap gap-2">{option(say("Да","Yes"),()=>{setTherapy("yes");go(step+1)})}{option(say("Нет","No"),()=>{setTherapy("no");go(step+1)})}</div>}
     {screen==="topics_demo" && <>
@@ -223,5 +226,6 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
       }}>{say("Записать","Save entry")}</Button>
       {draftError && <p role="alert">{say("Не удалось сохранить черновик. Разрешите хранение данных и попробуйте ещё раз.","We couldn’t save the draft. Allow browser storage and try again.")}</p>}
     </>}
+    </div>
   </GlassPanel>;
 }

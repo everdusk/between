@@ -19,6 +19,7 @@ export const DISCUSSED_LINGER_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type JudgeVerdict = {
   relevant: boolean;
+  unreadable?: boolean;
   matchTheme: string | null;
   secondary?: { themeId: string; confidence: number; quote: string };
   intensity: number;
@@ -43,6 +44,25 @@ export type ThemeMark = "new" | "returned" | "week2" | "week3";
 
 function fold(value: string): string {
   return value.toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
+}
+
+/** High-confidence typing noise only. A repeated key inside an otherwise readable sentence is fine. */
+export function isTypingNoise(value: string): boolean {
+  const text = fold(value);
+  const words = text.match(/\p{L}+/gu) ?? [];
+  if (!words.length) return true;
+  if (words.every((word) => ["тест", "проверка", "test", "testing"].includes(word))) return true;
+  const letters = words.join("");
+  const repeated = letters.match(/(\p{L}{1,4})\1{4,}/gu) ?? [];
+  const repeatedLength = repeated.reduce((sum, run) => sum + run.length, 0);
+  if (repeatedLength >= 12 && repeatedLength >= letters.length * 0.6 && words.length <= 2) return true;
+  return words.every((word) => /^(?:asdf(?:ghjkl)?|qwer(?:ty(?:uiop)?)?|zxcv(?:bnm)?|фыва(?:пролджэ)?|йцук(?:ен(?:гшщзхъ)?)?|ячсм(?:итьбю)?)+$/u.test(word));
+}
+
+/** Hide stale automatic suggestions without changing journal entries or handwritten topics. */
+export function visibleTopic(theme: SessionTheme): boolean {
+  return Boolean(theme.manual || theme.outcome || theme.status === "discussed" ||
+    (!isTypingNoise(theme.title) && (theme.count > 0 || theme.quotes.length > 0)));
 }
 
 function words(value: string): string[] {
@@ -206,6 +226,7 @@ export function applyVerdict(
   now = new Date().toISOString(),
   userId = "local",
 ): { state: ThemeState; touchedId: string | null } {
+  if (verdict.unreadable || isTypingNoise(entry.body)) return { state, touchedId: null };
   const marked = feelingIntensity(entry.feelings);
   const heavy = marked >= CREATE_INTENSITY;
   const substantial = entry.body.replace(/\s+/g, " ").trim().length >= 40;
@@ -408,7 +429,7 @@ export function settleEntry(
 }
 
 export function openThemes(themes: SessionTheme[]): SessionTheme[] {
-  return themes.filter((theme) => theme.status === "active" && !theme.dismissed);
+  return themes.filter((theme) => theme.status === "active" && !theme.dismissed && visibleTopic(theme));
 }
 
 export function rankedThemes(
@@ -449,7 +470,7 @@ export function splitBacklog(
   const archive: SessionTheme[] = [];
   const line = now.getTime();
   for (const theme of themes) {
-    if (theme.dismissed || theme.status === "archived") continue;
+    if (theme.dismissed || theme.status === "archived" || !visibleTopic(theme)) continue;
     if (theme.status !== "discussed") {
       live.push(theme);
       continue;
@@ -583,7 +604,7 @@ export function pendingJudgeEntries(
   const days = new Set(periodDates);
   const done = new Set(settled);
   return entries
-    .filter((entry) => entry.body.trim() && days.has(entry.date) && !done.has(judgeStamp(entry)))
+    .filter((entry) => days.has(entry.date) && !done.has(judgeStamp(entry)) && !isTypingNoise(entry.body))
     .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
 }
 
@@ -618,6 +639,10 @@ export function parseJudgeVerdict(raw: string): JudgeVerdict | null {
   const data = readJson(raw);
   if (!data || typeof data !== "object") return null;
   const row = data as Record<string, unknown>;
+  if (row.unreadable === true) return {
+    relevant: false, unreadable: true, matchTheme: null, newTheme: null,
+    intensity: 1, confidence: 0, quote: "", reason: "",
+  };
   const relevant = asBool(row.relevant);
   const confidence = asNum(row.confidence);
   if (relevant === null || confidence === null) return null;
@@ -984,12 +1009,12 @@ export function patternFacts(themes: SessionTheme[], context?: {
     const quoteIds = new Set(theme.quotes.map((quote) => quote.entryId));
     const records = new Map<string, { date: string; text: string; quote: boolean }>();
     for (const entry of context?.entries ?? []) {
-      if ((linked.has(entry.id) || quoteIds.has(entry.id)) && entry.body.trim()) {
+      if ((linked.has(entry.id) || quoteIds.has(entry.id)) && !isTypingNoise(entry.body)) {
         records.set(entry.id, { date: entry.date, text: entry.body.trim(), quote: false });
       }
     }
     for (const quote of theme.quotes) {
-      if (!records.has(quote.entryId) && quote.text.trim()) {
+      if (!records.has(quote.entryId) && !isTypingNoise(quote.text)) {
         records.set(quote.entryId, { date: quote.date, text: quote.text.trim(), quote: true });
       }
     }

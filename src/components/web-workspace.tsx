@@ -1,7 +1,7 @@
 "use client";
 
 import { BrandLogo } from "./brand-logo";
-import { useRef, type ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 import {
   CalendarDays,
   Network,
@@ -48,6 +48,23 @@ export function WebWorkspace({
 }) {
   const { t } = useI18n();
   const main = useRef<HTMLElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const gated = Boolean(blocked);
+  useLayoutEffect(() => {
+    const root = frame.current;
+    if (!root) return;
+    const nav = root.querySelector<HTMLElement>(".desk-nav");
+    const bottom = root.querySelector<HTMLElement>(".desk-content > footer");
+    const measure = () => {
+      root.style.setProperty("--desk-nav-height", (nav?.offsetHeight ?? 0) + "px");
+      root.style.setProperty("--desk-footer-height", (bottom?.offsetHeight ?? 0) + "px");
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (nav) observer.observe(nav);
+    if (bottom) observer.observe(bottom);
+    return () => observer.disconnect();
+  }, [gated]);
   const label = (id: SectionId) =>
     t(id === "topics" && personal ? "deskPersonal" : sections[id][1]);
   const ids = (Object.keys(sections) as SectionId[]).filter(
@@ -58,7 +75,7 @@ export function WebWorkspace({
     main.current?.scrollTo({ top: 0 });
   }
   return (
-    <div className="desk-frame" data-diary={blocked ? undefined : ""}>
+    <div ref={frame} className="desk-frame" data-diary={blocked ? undefined : ""}>
       <header className="desk-header">
         <span className="font-display text-xl font-semibold">
           {homeHref ? (
@@ -97,11 +114,11 @@ export function WebWorkspace({
         <div className="desk-page">
           {blocked || (
             <>
-              {section !== "journal" && <h1 className="mb-5 font-display text-2xl sm:text-3xl">
-                {label(section)}
-              </h1>}
               {ids.map((id) => (
-                <div key={id} hidden={id !== section}>
+                <div key={id} className="desk-section" hidden={id !== section}>
+                  {section === id && id !== "journal" && <h1 className="mb-5 font-display text-2xl sm:text-3xl">
+                    {label(id)}
+                  </h1>}
                   {(section === id ||
                     id === "journal" ||
                     id === "reflection" ||

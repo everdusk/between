@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { FieldSelect } from "./ui/field-select";
 import { Textarea } from "./ui/textarea";
 import { formatDayLabel } from "@/lib/dates";
-import { entriesForTheme } from "@/lib/themes";
+import { entriesForTheme, visibleTopic } from "@/lib/themes";
 import {
   type Feeling,
   type JournalEntry,
@@ -51,7 +51,7 @@ export function Connections({
 }) {
   const { t, feeling, locale, count } = useI18n();
   const groups = store.themes
-    .filter((theme) => !theme.dismissed)
+    .filter((theme) => !theme.dismissed && visibleTopic(theme))
     .map((theme) => ({
       theme,
       notes: entriesForTheme(theme, store.entries, store.themeLinks).filter(
@@ -69,6 +69,7 @@ export function Connections({
             <Button
               key={theme.id}
               variant="ghost"
+              className="max-w-full whitespace-normal"
               onClick={() => onFeedback(theme.id)}
             >
               {t("undoChange")} · {theme.title}

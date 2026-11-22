@@ -6,7 +6,7 @@ import { useI18n } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDayLabel } from "@/lib/dates";
-import { discussedDateKey, entriesForTheme } from "@/lib/themes";
+import { discussedDateKey, entriesForTheme, visibleTopic } from "@/lib/themes";
 import type { JournalEntry, SessionTheme, ThemeLink } from "@/lib/types";
 import { reflectionQuestion } from "./journal-explore";
 import { Textarea } from "./ui/textarea";
@@ -162,7 +162,7 @@ export function SessionBacklog({
   const [draft, setDraft] = useState("");
   const [openId, setOpenId] = useState<string | null>(initialTheme ?? null);
   const [archiveOpen, setArchiveOpen] = useState(themes.some(theme=>theme.id===initialTheme && theme.status==="discussed"));
-  const active = themes.filter(theme => !theme.dismissed && theme.status !== "archived");
+  const active = themes.filter(theme => !theme.dismissed && theme.status !== "archived" && visibleTopic(theme));
   const live = active.filter(theme => theme.status === "active");
   const archive = active.filter(theme => theme.status === "discussed");
   const [removed,setRemoved]=useState<SessionTheme[]>([]);
@@ -178,7 +178,7 @@ export function SessionBacklog({
   }
 
   return (
-    <section className="glass rounded-3xl p-5 sm:p-6" aria-labelledby="session-backlog-title">
+    <section className="glass min-w-0 rounded-3xl p-5 [overflow-wrap:anywhere] sm:p-6" aria-labelledby="session-backlog-title">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1.5">
           <h3

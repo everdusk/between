@@ -12,6 +12,9 @@ import {
   fallbackVerdict,
   dedupComparison,
   judgeFacts,
+  isTypingNoise,
+  pendingJudgeEntries,
+  visibleTopic,
   patternAlreadyCurrent,
   patternFacts,
   patternFromThemes,
@@ -74,6 +77,23 @@ const COPY: BriefCopy = {
 };
 
 describe("theme judge", () => {
+  it("skips keyboard tests before the model and the fallback, but keeps readable observations", () => {
+    const body = "жфжв " + "ю".repeat(130);
+    const note: JournalEntry = { ...entry("test", body, ["злость"]), tags: [], source: "app", createdAt: "now", updatedAt: "now" };
+    assert.deepEqual(pendingJudgeEntries([note], [], [note.date]), []);
+    assert.equal(applyVerdict({ themes: [], links: [] }, note, fallbackVerdict(note)).touchedId, null);
+    assert.equal(isTypingNoise("тест 123 тест"), true);
+    assert.equal(isTypingNoise("Боюсь, что проверка затянется"), false);
+    assert.equal(isTypingNoise("Грущу"), false);
+    assert.equal(isTypingNoise("要照顾好自己"), false);
+    assert.equal(isTypingNoise("Долгий день. Устала! " + "!".repeat(60)), false);
+    const unreadable = parseJudgeVerdict('{"unreadable":true}');
+    assert.ok(unreadable);
+    assert.equal(applyVerdict({ themes: [], links: [] }, { ...note, body: "цщшг зкли цзфм" }, unreadable).touchedId, null);
+    const real = applyVerdict({ themes: [], links: [] }, { ...note, body: "Устаю от споров" }, verdict({ newTheme: "Споры" })).state.themes[0];
+    assert.equal(visibleTopic({ ...real, title: body.slice(0, 80) }), false);
+    assert.equal(visibleTopic({ ...real, title: body.slice(0, 80), manual: true }), true);
+  });
   it("opens a topic from the note when the model does not answer", () => {
     const worried = applyVerdict(
       { themes: [], links: [] },
