@@ -283,9 +283,18 @@ html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) :is(.chapter-ct
   outline: 2px solid var(--foreground);
   outline-offset: 4px;
 }
-html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) :is(.desk-header,.desk-nav) {
+html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) .desk-header {
   background: color-mix(in srgb, var(--glass-fill) 70%, transparent);
   border-color: var(--glass-border); backdrop-filter: blur(14px);
+}
+html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) :is(.desk-nav,.desk-content > footer) {
+  background: color-mix(in srgb, var(--background) 60%, transparent);
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: blur(14px) saturate(115%);
+  backdrop-filter: blur(14px) saturate(115%);
+}
+html[data-design="dawn"][data-performance="low"] :is(.desk-nav,.desk-content > footer) {
+  background: var(--popover); -webkit-backdrop-filter: none; backdrop-filter: none;
 }
 html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) .desk-frame :is(input:not([type="checkbox"],[type="radio"],[type="range"]),textarea,select) {
   color: var(--foreground); border-color: var(--glass-border); background: var(--glass-fill);
@@ -402,7 +411,7 @@ html[data-design="dawn"]:is([data-scheme="night"]:not([data-telegram-theme]),[da
 }
 html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) .desk-frame[data-diary] {
   &::before, &::after { opacity: .72; }
-  & .desk-page > h1 {
+  & .desk-section > h1 {
     margin-block-end: 1rem;
     line-height: 1.15;
     letter-spacing: -.035em;
@@ -640,6 +649,9 @@ html[data-design="dawn"] .feeling-fill {
   }
 }
 @media (prefers-reduced-transparency: reduce) {
+  html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) :is(.desk-header,.desk-nav,.desk-content > footer) {
+    background: var(--popover); -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
   html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) :is(.glass,.glass-chrome,.glass-strong,dialog[open],.preference-control) { background:var(--popover);backdrop-filter:none; }
   html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) :is([data-slot="glass-panel"], .desk-page :is(section, article, li, div):is(.glass, .glass-strong)) { background:var(--popover);backdrop-filter:none; }
 }

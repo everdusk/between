@@ -33,6 +33,8 @@
     12px max(16px, var(--safe-left, 0px));
 }
 .desk-nav {
+  position: relative;
+  z-index: 2;
   grid-area: nav;
   display: flex;
   flex-direction: column;
@@ -66,13 +68,16 @@
 }
 .desk-content {
   grid-area: main;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template: minmax(0, 1fr) auto / minmax(0, 1fr);
   min-height: 0;
   min-width: 0;
 }
 .desk-content > footer {
-  flex: none;
+  grid-area: 2 / 1;
+  position: relative;
+  z-index: 1;
+  border-block-start: 1px solid var(--border);
   padding: 6px 16px max(8px, env(safe-area-inset-bottom), var(--safe-bottom, 0px));
 }
 .desk-content > footer:empty,
@@ -81,7 +86,8 @@
   display: none;
 }
 .desk-main {
-  flex: 1;
+  grid-area: 1 / 1 / -1;
+  scroll-padding-block: var(--desk-under-nav, 0px) var(--desk-footer-height, 0px);
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
@@ -90,7 +96,7 @@
   max-width: 56rem;
   margin: auto;
   padding: 24px max(16px, var(--safe-right, 0px))
-    max(24px, var(--safe-bottom, 0px)) max(16px, var(--safe-left, 0px));
+    calc(max(24px, var(--safe-bottom, 0px)) + var(--desk-footer-height, 0px)) max(16px, var(--safe-left, 0px));
   min-width: 0;
 }
 .desk-frame:has(main):not(:has(.desk-nav)) .desk-page {
@@ -98,6 +104,10 @@
 }
 .desk-frame [hidden] {
   display: none !important;
+}
+.desk-section {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .desk-frame .journal-board,
 .desk-frame .journal-gate {
@@ -168,6 +178,11 @@
     padding: 8px 12px;
     gap: 4px;
     scrollbar-width: thin;
+    border-block-end: 1px solid var(--border);
+  }
+  .desk-frame[data-diary] > .desk-content {
+    grid-area: 2 / 1 / 4;
+    --desk-under-nav: var(--desk-nav-height, 60px);
   }
   .desk-nav button {
     white-space: nowrap;
@@ -175,7 +190,7 @@
     flex-shrink: 0;
   }
   .desk-page {
-    padding-top: 16px;
+    padding-top: calc(16px + var(--desk-under-nav, 0px));
   }
 }
 @keyframes entry-arrive {
