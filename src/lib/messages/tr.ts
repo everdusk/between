@@ -56,6 +56,7 @@ export const tr: Catalog = {
   webHello: "Merhaba",
   webScheme: "Tema",
   webNight: "Gece",
+  myTheme: "Temam",
   webDay: "Gündüz",
   webKicker: "Terapide olanlar için günlük",
   webHeadline: "Terapist günlük tutmanızı istedi.",

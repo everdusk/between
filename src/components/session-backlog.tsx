@@ -127,7 +127,15 @@ function ThemeRow({
                       </span>
                     )}
                   </button>
-                  {entry.reflection && <div className="mt-2 space-y-1 rounded-xl border border-border p-3 text-sm"><strong>{entry.reflection.feeling==="unsure" ? t("unsure") : feelingLabel(entry.reflection.feeling)}</strong><p>{t(reflectionQuestion(entry.reflection.feeling))}</p><p className="whitespace-pre-wrap">{entry.reflection.answer}</p><p className="whitespace-pre-wrap">{entry.reflection.insight}</p></div>}
+                  {entry.reflection && (
+                    <div className="mt-2 space-y-1 rounded-xl border border-border p-3 text-sm">
+                      {(entry.reflection.feeling === "unsure" || entry.feelings.includes(entry.reflection.feeling)) && (
+                        <p>{t(reflectionQuestion(entry.reflection.feeling))}</p>
+                      )}
+                      <p className="whitespace-pre-wrap">{entry.reflection.answer}</p>
+                      <p className="whitespace-pre-wrap">{entry.reflection.insight}</p>
+                    </div>
+                  )}
                 </li>
               ))
             )}

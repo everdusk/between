@@ -56,6 +56,7 @@ export const uz: Catalog = {
   webHello: "Salom",
   webScheme: "Mavzu",
   webNight: "Tun",
+  myTheme: "Mening mavzum",
   webDay: "Kun",
   webKicker: "Terapiyadagilar uchun kundalik",
   webHeadline: "Terapevt kundalik yuritishni so‘radi.",

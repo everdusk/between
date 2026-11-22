@@ -1004,6 +1004,7 @@ describe("telegram theme", () => {
 
     globalThis.document = previous;
     assert.equal(props.get("--secondary"), "#2c2c2e");
+    assert.equal(props.get("--popover"), "#2c2c2e");
     assert.equal(props.get("--muted"), "#2c2c2e");
     assert.equal(props.get("--secondary-foreground"), "#ffffff");
     assert.equal(props.get("--accent-foreground"), "#ffffff");
@@ -1100,6 +1101,7 @@ describe("telegram theme", () => {
     assert.equal(props.get("--link"), "#6ab3f3");
 
     applyTelegramTheme({ bg_color: "#17212b" } as unknown as ThemeParams, "dark");
+    assert.equal(props.get("--popover"), "#17212b");
     assert.equal(props.has("--section-header"), false);
     assert.equal(props.has("--link"), false);
     globalThis.document = previous;

@@ -56,6 +56,7 @@ export const vi: Catalog = {
   webHello: "Xin chào",
   webScheme: "Giao diện",
   webNight: "Đêm",
+  myTheme: "Giao diện của tôi",
   webDay: "Ngày",
   webKicker: "Nhật ký cho người đang trị liệu",
   webHeadline: "Nhà trị liệu nhờ bạn viết nhật ký.",

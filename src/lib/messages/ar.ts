@@ -56,6 +56,7 @@ export const ar: Catalog = {
   webHello: "مرحبًا",
   webScheme: "المظهر",
   webNight: "الليل",
+  myTheme: "سمتي",
   webDay: "النهار",
   webKicker: "يوميات لمن يخضع للعلاج النفسي",
   webHeadline: "طلب المعالج كتابة يوميات.",

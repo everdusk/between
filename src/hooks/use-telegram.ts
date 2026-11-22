@@ -11,11 +11,9 @@ import {
 import { holdAppSurface } from "@/lib/landing";
 import {
   applyDevicePerformance,
-  applyTelegramChrome,
-  applyTelegramSafeArea,
+  syncTelegramAppearance,
   paintSplashChrome,
-  splashChromeIsHeld,
-  applyTelegramTheme,
+  applyTelegramSafeArea,
   applyViewportBox,
   clearTelegramThemeOverrides,
   publishVisualViewport,
@@ -80,13 +78,7 @@ export function useTelegram(): TelegramSession {
       const user = wa.initDataUnsafe?.user ?? null;
       if (inTelegram) {
         holdAppSurface();
-        // Variables can update under the frame. Native chrome and color-scheme
-        // wait until it leaves: each of those repaints the iOS WebView.
-        applyTelegramTheme(wa.themeParams, wa.colorScheme, {
-          scheme: !splashChromeIsHeld(),
-        });
-        if (splashChromeIsHeld()) paintSplashChrome();
-        else applyTelegramChrome(wa);
+        syncTelegramAppearance(wa);
         applyViewportBox(wa.viewportHeight, wa.viewportStableHeight);
         publishVisualViewport();
       } else {
@@ -122,6 +114,7 @@ export function useTelegram(): TelegramSession {
       });
     }
 
+    window.addEventListener("between-scheme", onTheme);
     void import("@twa-dev/sdk")
       .then((mod) => {
         if (cancelled) return;
@@ -206,6 +199,7 @@ export function useTelegram(): TelegramSession {
 
     return () => {
       cancelled = true;
+      window.removeEventListener("between-scheme", onTheme);
       window.clearTimeout(viewportCap);
       window.visualViewport?.removeEventListener("resize", onVisualViewport);
       window.visualViewport?.removeEventListener("scroll", onVisualViewport);
