@@ -250,6 +250,7 @@ export const vi: Catalog = {
   planSlot: "{day} lúc {time}",
   weekTitle: "Tuần",
   weekLead: "{range}",
+  weekPdfDownload: "Tải PDF xuống",
   weekPdf: "Gửi PDF",
   weekPdfBusy: "Đang soạn…",
   weekPdfFail: "PDF chưa tạo được.",

@@ -250,6 +250,7 @@ export const ar: Catalog = {
   planSlot: "{day} في {time}",
   weekTitle: "الأسبوع",
   weekLead: "{range}",
+  weekPdfDownload: "تنزيل PDF",
   weekPdf: "إرسال PDF",
   weekPdfBusy: "أجهّز…",
   weekPdfFail: "لم يُنشأ PDF.",

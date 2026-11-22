@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Share, LoaderCircle, RotateCcw } from "lucide-react";
+import { File as FileIcon, LoaderCircle, RotateCcw } from "lucide-react";
 import { DateNavigation } from "@/components/date-navigation";
 import { useI18n } from "@/components/locale-provider";
 import { badgeVariants } from "@/components/ui/badge";
@@ -42,6 +42,7 @@ const themeGaveUp = new Set<string>();
 const patternGaveUp = new Set<string>();
 
 interface WeeklyPanelProps {
+  inMessenger: boolean;
   entries: JournalEntry[];
   sessions: SessionNote[];
   plan: SessionPlan | null;
@@ -65,6 +66,7 @@ interface WeeklyPanelProps {
 }
 
 export function WeeklyPanel({
+  inMessenger,
   entries,
   sessions,
   plan,
@@ -280,7 +282,7 @@ export function WeeklyPanel({
   const [readyFor, setReadyFor] = useState<string | null>(null);
   const [failedFor, setFailedFor] = useState<string | null>(null);
   const fileRef = useRef<File | null>(null);
-  const deliverRef = useRef<((file: File, fresh: boolean) => Promise<"sent" | "dismissed" | "again">) | null>(null);
+  const deliverRef = useRef<typeof import("@/lib/week-pdf").deliverWeekPdf | null>(null);
   const pdfSignature = [
     todayKey,
     days.join(","),
@@ -348,9 +350,10 @@ export function WeeklyPanel({
     const file = fileRef.current;
     const deliver = deliverRef.current;
     if (!file || !deliver) return;
-    void deliver(file, true);
+    void deliver(file, true, inMessenger ? "messenger" : "web");
   }
 
+  const pdfLabel = t(pdfState === "busy" ? "weekPdfBusy" : pdfState === "fail" ? "weekPdfFail" : inMessenger ? "weekPdf" : "weekPdfDownload");
   return (
     <div className="space-y-4">
       <DateNavigation
@@ -374,8 +377,8 @@ export function WeeklyPanel({
             type="button"
             variant="ghost"
             size="icon"
-            aria-label={pdfState === "busy" ? t("weekPdfBusy") : pdfState === "fail" ? t("weekPdfFail") : t("weekPdf")}
-            title={pdfState === "busy" ? t("weekPdfBusy") : pdfState === "fail" ? t("weekPdfFail") : t("weekPdf")}
+            aria-label={pdfLabel}
+            title={pdfLabel}
             disabled={pdfState === "busy"}
             onClick={() => {
               if (pdfState === "fail") {
@@ -385,7 +388,11 @@ export function WeeklyPanel({
               savePdf();
             }}
           >
-            {pdfState === "busy" ? <LoaderCircle aria-hidden className="animate-spin" /> : pdfState === "fail" ? <RotateCcw aria-hidden /> : <Share aria-hidden />}
+            {pdfState === "busy" ? <LoaderCircle aria-hidden className="animate-spin" /> : pdfState === "fail" ? <RotateCcw aria-hidden /> : (
+              <FileIcon aria-hidden className="size-6" strokeWidth={1.6}>
+                <text x="12" y="17.5" textAnchor="middle" fontSize="7" fontWeight="700" fill="currentColor" stroke="none">PDF</text>
+              </FileIcon>
+            )}
           </Button>
         }
       >

@@ -250,6 +250,7 @@ export const tr: Catalog = {
   planSlot: "{day} {time}",
   weekTitle: "Hafta",
   weekLead: "{range}",
+  weekPdfDownload: "PDF indir",
   weekPdf: "PDF gönder",
   weekPdfBusy: "Hazırlanıyor…",
   weekPdfFail: "PDF oluşmadı.",

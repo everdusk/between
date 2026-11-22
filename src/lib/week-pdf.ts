@@ -696,14 +696,29 @@ function handToTelegram(
   });
 }
 
+function downloadWeekPdf(file: File): "sent" | "again" {
+  if (!globalThis.document || !globalThis.window) return "again";
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = file.name;
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  return "sent";
+}
+
 /**
- * Hand the sheet to the system chooser.
+ * Start a browser download on the web or hand the sheet to the Mini App client.
  * An embedded viewer cannot save a blob in Telegram, and MAX blocks that page,
  * so the click asks where to send the file.
  * Desktop Telegram cannot show that chooser, so the file goes through Telegram's own save.
  * `fresh` is true when this call is the start of the click, with the file already built.
  */
-export async function deliverWeekPdf(file: File, fresh: boolean): Promise<"sent" | "dismissed" | "again"> {
+export async function deliverWeekPdf(file: File, fresh: boolean, surface: "web" | "messenger"): Promise<"sent" | "dismissed" | "again"> {
+  if (surface === "web") return downloadWeekPdf(file);
   const desktop = telegramDesktop();
   if (desktop) {
     const url = await publishWeekPdf(file, desktop.initData);
@@ -743,17 +758,5 @@ export async function deliverWeekPdf(file: File, fresh: boolean): Promise<"sent"
     }
   }
 
-  if (!fresh) return "again";
-  const doc = globalThis.document;
-  if (!doc || !host) return "again";
-  const url = URL.createObjectURL(file);
-  const link = doc.createElement("a");
-  link.href = url;
-  link.download = file.name;
-  link.rel = "noopener";
-  doc.body.appendChild(link);
-  link.click();
-  link.remove();
-  host.setTimeout(() => URL.revokeObjectURL(url), 30_000);
-  return "sent";
+  return fresh ? downloadWeekPdf(file) : "again";
 }

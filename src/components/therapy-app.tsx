@@ -512,6 +512,7 @@ function TherapyShell({
               <WeekTab active={section === "week"} {...accessProps}>
                 {section === "week" && hint}
                 <WeeklyPanel
+                  inMessenger={inMax || telegram.inTelegram}
                   entries={store.entries}
                   sessions={
                     store.sessionPlan && !personal ? store.sessions : []

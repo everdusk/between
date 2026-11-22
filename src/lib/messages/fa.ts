@@ -250,6 +250,7 @@ export const fa: Catalog = {
   planSlot: "{day} ساعت {time}",
   weekTitle: "هفته",
   weekLead: "{range}",
+  weekPdfDownload: "دانلود PDF",
   weekPdf: "ارسال PDF",
   weekPdfBusy: "دارم آماده می‌کنم…",
   weekPdfFail: "PDF ساخته نشد.",
