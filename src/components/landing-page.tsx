@@ -118,7 +118,7 @@ function LandingContent() {
   const directory = useDemoMediaDirectory();
   const folder = directory && `${directory}/chapters/${en ? "en/" : ""}`;
   const media = folder && folder + (journalDemo ? "events" : clip);
-  const mediaVersion = 7;
+  const mediaVersion = 8;
   function selectChapter(index: number) {
     if (journalDemo && index < 2 && videoRef.current?.readyState) {
       videoRef.current.currentTime = index === 1 ? feelingsAt : 0;
