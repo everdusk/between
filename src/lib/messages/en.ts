@@ -250,6 +250,7 @@ export const en: Catalog = {
   planSlot: "{day} at {time}",
   weekTitle: "Week",
   weekLead: "{range}",
+  weekPdfDownload: "Download PDF",
   weekPdf: "Send PDF",
   weekPdfBusy: "Preparing…",
   weekPdfFail: "The PDF did not come together.",

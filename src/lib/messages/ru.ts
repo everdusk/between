@@ -248,6 +248,7 @@ export const ru = {
   planSlot: "{day} в {time}",
   weekTitle: "Неделя",
   weekLead: "{range}",
+  weekPdfDownload: "Скачать PDF",
   weekPdf: "Отправить PDF",
   weekPdfBusy: "Собираю…",
   weekPdfFail: "PDF не собрался.",

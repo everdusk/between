@@ -147,7 +147,31 @@ describe("deliver week pdf", () => {
     }
   }
 
-  it("sends the file through the system chooser", async () => {
+  it("starts a named web download even when system sharing is available", async (t) => {
+    const link = { href: "", download: "", click: t.mock.fn(), remove: t.mock.fn() };
+    const priorDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+    Object.defineProperty(globalThis, "document", { configurable: true, value: {
+      createElement: () => link, body: { appendChild() {} },
+    } });
+    const share = t.mock.fn();
+    const picker = t.mock.fn();
+    try {
+      const outcome = await withChooser({ share, canShare: () => true }, {
+        showSaveFilePicker: picker, setTimeout: (cleanup: () => void) => cleanup(),
+      }, () => deliverWeekPdf(file, true, "web"));
+      assert.equal(outcome, "sent");
+      assert.equal(link.download, file.name);
+      assert.match(link.href, /^blob:/);
+      assert.equal(link.click.mock.callCount(), 1);
+      assert.equal(share.mock.callCount(), 0);
+      assert.equal(picker.mock.callCount(), 0);
+    } finally {
+      if (priorDocument) Object.defineProperty(globalThis, "document", priorDocument);
+      else Reflect.deleteProperty(globalThis, "document");
+    }
+  });
+
+  it("sends the file through the MAX system chooser", async () => {
     let sent: File | null = null;
     let picked = false;
     const outcome = await withChooser(
@@ -158,7 +182,7 @@ describe("deliver week pdf", () => {
         },
       },
       { showSaveFilePicker: async () => { picked = true; } },
-      () => deliverWeekPdf(file, false),
+      () => deliverWeekPdf(file, false, "messenger"),
     );
     assert.equal(outcome, "sent");
     assert.equal(sent, file);
@@ -177,7 +201,7 @@ describe("deliver week pdf", () => {
         },
       },
       { showSaveFilePicker: async () => { picked = true; } },
-      () => deliverWeekPdf(file, false),
+      () => deliverWeekPdf(file, false, "messenger"),
     );
     assert.equal(outcome, "dismissed");
     assert.equal(picked, false);
@@ -214,7 +238,7 @@ describe("deliver week pdf", () => {
             },
           },
         },
-        () => deliverWeekPdf(file, true),
+        () => deliverWeekPdf(file, true, "messenger"),
       );
       assert.equal(outcome, "sent");
       assert.equal(shared, false);
@@ -237,7 +261,7 @@ describe("deliver week pdf", () => {
         throw error;
       },
     };
-    const first = await withChooser({ canShare: () => false }, lost, () => deliverWeekPdf(file, false));
+    const first = await withChooser({ canShare: () => false }, lost, () => deliverWeekPdf(file, false, "messenger"));
     assert.equal(first, "again");
     assert.equal(picks, 1);
 
@@ -249,7 +273,7 @@ describe("deliver week pdf", () => {
         return { createWritable: async () => ({ write: async () => undefined, close: async () => undefined }) };
       },
     };
-    const second = await withChooser({ canShare: () => false }, saved, () => deliverWeekPdf(file, true));
+    const second = await withChooser({ canShare: () => false }, saved, () => deliverWeekPdf(file, true, "messenger"));
     assert.equal(second, "sent");
     assert.equal(picks, 2);
   });

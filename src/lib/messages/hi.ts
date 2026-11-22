@@ -250,6 +250,7 @@ export const hi: Catalog = {
   planSlot: "{day} {time} पर",
   weekTitle: "हफ़्ता",
   weekLead: "{range}",
+  weekPdfDownload: "PDF डाउनलोड करें",
   weekPdf: "PDF भेजें",
   weekPdfBusy: "तैयार हो रहा है…",
   weekPdfFail: "PDF नहीं बना.",

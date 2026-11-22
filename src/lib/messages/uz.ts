@@ -250,6 +250,7 @@ export const uz: Catalog = {
   planSlot: "{day} soat {time}",
   weekTitle: "Hafta",
   weekLead: "{range}",
+  weekPdfDownload: "PDF yuklab olish",
   weekPdf: "PDF yuborish",
   weekPdfBusy: "Yigʻyapman…",
   weekPdfFail: "PDF chiqmadi.",

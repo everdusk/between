@@ -250,6 +250,7 @@ export const uk: Catalog = {
   planSlot: "{day} о {time}",
   weekTitle: "Тиждень",
   weekLead: "{range}",
+  weekPdfDownload: "Завантажити PDF",
   weekPdf: "Надіслати PDF",
   weekPdfBusy: "Збираю…",
   weekPdfFail: "PDF не зібрався.",
