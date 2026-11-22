@@ -198,8 +198,20 @@ export function JournalPanel({
       {!composerOpen && <GlassPanel ref={composerRef} className="space-y-3 p-4">
         <form onSubmit={handleSubmit}>
           <FeelingPicker value={feelings} onChange={setFeelings} disabled={disabled}>
-          <input className="min-w-0 flex-1 rounded-xl border border-input bg-background px-3 py-3 text-base" aria-label={t("newEntry")} placeholder={t("notePlaceholder")} value={body} onChange={e=>setBody(e.target.value)} disabled={disabled}/>
-          <Button type="submit" size="icon" aria-label={t("saveEntry")} disabled={disabled || !canSave}><Check/></Button>
+            <div className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)] text-base *:col-start-1 *:row-start-1 *:border *:p-3 *:whitespace-pre-wrap *:[overflow-wrap:anywhere]">
+              {/* Size older WebViews by the wrapped text, including a trailing newline. */}
+              <span aria-hidden="true" className="invisible pointer-events-none supports-[field-sizing:content]:hidden">{body}{"\u200b"}</span>
+              <textarea
+                rows={1}
+                className="field-sizing-content w-full min-w-0 resize-none overflow-hidden rounded-xl border-input bg-background"
+                aria-label={t("newEntry")}
+                placeholder={t("notePlaceholder")}
+                value={body}
+                onChange={event => setBody(event.target.value)}
+                disabled={disabled}
+              />
+            </div>
+            <Button type="submit" size="icon" aria-label={t("saveEntry")} disabled={disabled || !canSave}><Check/></Button>
           </FeelingPicker>
         </form>
       </GlassPanel>}
