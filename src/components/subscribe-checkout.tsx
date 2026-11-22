@@ -81,7 +81,7 @@ export function SubscribeGate({ monthly }: { monthly?: number }) {
 
 const PLANS: SbpPlanId[] = ["month", "quarter", "year"];
 
-function SubscriptionIntro({ compact = false }: { compact?: boolean }) {
+function SubscriptionIntro({ compact = false, surface = "web" }: { compact?: boolean; surface?: "web" | "max" }) {
   return (
     <>
       <p className="paywall-heading sub-kicker">Подписка Between</p>
@@ -89,8 +89,9 @@ function SubscriptionIntro({ compact = false }: { compact?: boolean }) {
         Замечайте, что <span className="sub-shift">повторяется.</span>
       </h1>
       <p className="mt-4 max-w-md leading-relaxed text-muted-foreground">
-        Записывайте, что произошло, и отмечайте, как вы себя чувствуете.
-        В обзоре можно увидеть, в какое время меняется настроение и какие темы возвращаются в записях.
+        {surface === "max"
+          ? "Between живёт в мессенджере: вечером бот сам спросит, как прошёл день, и к сессии соберёт из ответов готовую выкладку."
+          : "Записывайте, что произошло, и отмечайте, как вы себя чувствуете. В обзоре можно увидеть, в какое время меняется настроение и какие темы возвращаются в записях."}
       </p>
     </>
   );
@@ -322,13 +323,7 @@ export function SubscribeCheckout({
 
           <GlassPanel className="sub-card">
             <div className={embed || surface === "max" ? "" : "lg:hidden"}>
-              {surface === "web" ? <SubscriptionIntro compact /> : (
-                <>
-                  <p className="paywall-heading sub-kicker">Подписка Between</p>
-                  <h1 className="sub-display mt-3 text-[2.05rem] leading-[1.05]">Выберите срок подписки</h1>
-                  <p className="mt-4 leading-relaxed text-muted-foreground">Between живёт в мессенджере: вечером бот сам спросит, как прошёл день, и к сессии соберёт из ответов готовую выкладку.</p>
-                </>
-              )}
+              <SubscriptionIntro compact surface={surface} />
             </div>
             <h2 className={embed || surface === "max" ? "hidden" : "paywall-heading sub-display hidden text-2xl lg:flex"}>Выберите план</h2>
             <fieldset className="mt-5 space-y-3">
