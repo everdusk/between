@@ -1,37 +1,38 @@
 import fontkit from "@pdf-lib/fontkit";
-import { PDFDocument, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage } from "pdf-lib";
 import { PDF_NIGHT, type Rgb, type WeekPdfModel, type WeekPdfTheme } from "./week-pdf-model";
 
 const PAGE_W = 595.28;
 const PAGE_H = 841.89;
 const MARGIN = 40;
 const BOTTOM = 48;
+const CONTENT_TOP = 73;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 
-type Kind = "display" | "text" | "strong";
+type Kind = "text" | "strong";
 
 type Face = {
   pdf: PDFFont;
   covers: (text: string) => boolean;
 };
 
-export type WeekPdfFonts = {
-  display: Uint8Array;
+export type WeekPdfAssets = {
+  background: Uint8Array;
   text: Uint8Array;
   strong: Uint8Array;
   arabic: Uint8Array;
   devanagari: Uint8Array;
 };
 
-const FONT_URLS: Record<keyof WeekPdfFonts, string> = {
-  display: "/fonts/Unbounded-SemiBold.ttf",
+export const WEEK_PDF_ASSET_URLS: Record<keyof WeekPdfAssets, string> = {
+  background: "/week-pdf-night.jpg",
   text: "/fonts/Manrope-Regular.ttf",
   strong: "/fonts/Manrope-SemiBold.ttf",
   arabic: "/fonts/NotoSansArabic-Regular.ttf",
   devanagari: "/fonts/NotoSansDevanagari-Regular.ttf",
 };
 
-let fontCache: Promise<WeekPdfFonts> | null = null;
+let assetCache: Promise<WeekPdfAssets> | null = null;
 
 function paint(color: Rgb) {
   return rgb(clamp(color.r), clamp(color.g), clamp(color.b));
@@ -69,36 +70,33 @@ function glyphCovers(font: { glyphForCodePoint: (code: number) => { id: number }
   return true;
 }
 
-export async function renderWeekPdf(model: WeekPdfModel, fonts: WeekPdfFonts): Promise<Uint8Array> {
+export async function renderWeekPdf(model: WeekPdfModel, assets: WeekPdfAssets): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   doc.setTitle(model.range || "Between");
   doc.setAuthor("Between");
   const opened = {
-    display: fontkit.create(fonts.display),
-    text: fontkit.create(fonts.text),
-    strong: fontkit.create(fonts.strong),
-    arabic: fontkit.create(fonts.arabic),
-    devanagari: fontkit.create(fonts.devanagari),
+    text: fontkit.create(assets.text),
+    strong: fontkit.create(assets.strong),
+    arabic: fontkit.create(assets.arabic),
+    devanagari: fontkit.create(assets.devanagari),
   };
   const embedded = {
-    display: await doc.embedFont(fonts.display, { subset: true }),
-    text: await doc.embedFont(fonts.text, { subset: true }),
-    strong: await doc.embedFont(fonts.strong, { subset: true }),
-    arabic: await doc.embedFont(fonts.arabic, { subset: true }),
-    devanagari: await doc.embedFont(fonts.devanagari, { subset: true }),
+    text: await doc.embedFont(assets.text, { subset: true }),
+    strong: await doc.embedFont(assets.strong, { subset: true }),
+    arabic: await doc.embedFont(assets.arabic, { subset: true }),
+    devanagari: await doc.embedFont(assets.devanagari, { subset: true }),
   };
   const faces: Record<Kind | "arabic" | "devanagari", Face> = {
-    display: { pdf: embedded.display, covers: (text) => glyphCovers(opened.display, text) },
     text: { pdf: embedded.text, covers: (text) => glyphCovers(opened.text, text) },
     strong: { pdf: embedded.strong, covers: (text) => glyphCovers(opened.strong, text) },
     arabic: { pdf: embedded.arabic, covers: (text) => glyphCovers(opened.arabic, text) },
     devanagari: { pdf: embedded.devanagari, covers: (text) => glyphCovers(opened.devanagari, text) },
   };
-  const order: Face[] = [faces.display, faces.text, faces.strong, faces.arabic, faces.devanagari];
+  const order: Face[] = [faces.text, faces.strong, faces.arabic, faces.devanagari];
 
-  const sheet = new Sheet(doc);
-  drawMast(sheet, faces.display, order, model.range);
+  const sheet = new Sheet(doc, await doc.embedJpg(assets.background), faces.strong.pdf);
+  drawMast(sheet, faces.text, order, model.range);
   drawSpectrum(sheet, faces, order, model);
   drawBacklog(sheet, faces, order, model);
   const pages = doc.getPages();
@@ -119,23 +117,18 @@ export async function renderWeekPdf(model: WeekPdfModel, fonts: WeekPdfFonts): P
 
 class Sheet {
   page: PDFPage;
-  top = MARGIN;
+  top = CONTENT_TOP;
 
-  constructor(private doc: PDFDocument) {
+  constructor(private doc: PDFDocument, private background: PDFImage, private brandFont: PDFFont) {
     this.page = this.fresh();
   }
 
   fresh(): PDFPage {
     const page = this.doc.addPage([PAGE_W, PAGE_H]);
-    page.drawRectangle({
-      x: 0,
-      y: 0,
-      width: PAGE_W,
-      height: PAGE_H,
-      color: paint(PDF_NIGHT.ground),
-    });
+    page.drawImage(this.background, { x: 0, y: 0, width: PAGE_W, height: PAGE_H });
+    page.drawText("Between", { x: MARGIN + 24, y: PAGE_H - 49, size: 15, font: this.brandFont, color: paint(PDF_NIGHT.ink) });
     this.page = page;
-    this.top = MARGIN;
+    this.top = CONTENT_TOP;
     return page;
   }
 
@@ -144,7 +137,7 @@ class Sheet {
   }
 
   ensure(height: number) {
-    if (this.top > MARGIN && height > this.room()) this.fresh();
+    if (this.top > CONTENT_TOP && height > this.room()) this.fresh();
   }
 
   y(fromTop: number): number {
@@ -229,25 +222,10 @@ function drawLines(
   }
 }
 
-const HAIRLINE = { color: PDF_NIGHT.line, width: 0.7, opacity: 0.16 };
+const HAIRLINE = { color: PDF_NIGHT.line, width: 0.7, opacity: 0.24 };
 
-function drawEyebrow(sheet: Sheet, text: string, x: number, prefer: Face, order: Face[], color: Rgb = PDF_NIGHT.muted) {
-  const label = keepVisible(text, order).toLocaleUpperCase();
-  const size = 8;
-  const tracking = 1.28;
-  let cursor = x;
-  for (const char of label) {
-    const face = faceFor(char, prefer, order);
-    sheet.page.drawText(char, {
-      x: cursor,
-      y: sheet.y(sheet.top + size),
-      size,
-      font: face.pdf,
-      color: paint(color),
-    });
-    cursor += face.pdf.widthOfTextAtSize(char, size) + tracking;
-  }
-  sheet.top += 14;
+function drawSectionLabel(sheet: Sheet, text: string, x: number, prefer: Face, order: Face[], color: Rgb = PDF_NIGHT.muted) {
+  drawLines(sheet, [keepVisible(text, order)], x, 11, 15, prefer, order, color);
 }
 
 function roundRect(
@@ -275,10 +253,8 @@ function roundRect(
 }
 
 function drawMast(sheet: Sheet, display: Face, order: Face[], range: string) {
-  drawEyebrow(sheet, "Between", MARGIN, display, order, PDF_NIGHT.mint);
-  sheet.top += 4;
-  const lines = wrap(range, 22, CONTENT_W, display, order);
-  drawLines(sheet, lines, MARGIN, 22, 26, display, order, PDF_NIGHT.ink);
+  const lines = wrap(range, 26, CONTENT_W, display, order);
+  drawLines(sheet, lines, MARGIN, 26, 32, display, order, PDF_NIGHT.ink);
   sheet.top += 16;
 }
 
@@ -303,26 +279,25 @@ function drawSpectrum(
 ) {
   const pad = 16;
   const inner = CONTENT_W - pad * 2;
-  const title = model.spectrumTitle ? wrap(model.spectrumTitle, 18, inner, faces.display, order) : [];
+  const title = model.spectrumTitle ? wrap(model.spectrumTitle, 18, inner, faces.text, order) : [];
   const lead =
     model.spectrumLead && model.spectrumLead !== model.spectrumTitle
       ? wrap(model.spectrumLead, 10, inner, faces.text, order)
       : [];
-  const pattern = wrap(model.patternText, 10.5, inner - 24, faces.text, order);
+  const pattern = wrap(model.patternText, 11, inner, faces.text, order);
   const shareDelta = model.shares.length
     ? 12 + 16 + (legendRows(model, inner, faces.text) - 1) * 14 + 12 + (model.axis ? 12 : 0)
     : 0;
   const dayDelta = model.days.length ? 12 + 108 : 0;
-  const nestH = 12 + 14 + 2 + pattern.length * 15 + 10;
-  const height = 16 + 14 + (title.length ? 4 + title.length * 22 : 0) + (lead.length ? 4 + lead.length * 14 : 0) + shareDelta + dayDelta + 12 + nestH + 16;
-  sheet.ensure(Math.min(height, PAGE_H - MARGIN - BOTTOM));
+  const height = 16 + 15 + (title.length ? 4 + title.length * 22 : 0) + (lead.length ? 4 + lead.length * 14 : 0) + shareDelta + dayDelta + 16;
+  sheet.ensure(Math.min(height, PAGE_H - CONTENT_TOP - BOTTOM));
   const top = sheet.top;
   const x = MARGIN + pad;
-  roundRect(sheet.page, MARGIN, sheet.y(top + height), CONTENT_W, height, 22, PDF_NIGHT.strong, HAIRLINE);
+  roundRect(sheet.page, MARGIN, sheet.y(top + height), CONTENT_W, height, 22, PDF_NIGHT.strong, HAIRLINE, 0.78);
   sheet.top = top + 16;
-  drawEyebrow(sheet, model.spectrumLabel, x, faces.display, order);
+  drawSectionLabel(sheet, model.spectrumLabel, x, faces.strong, order, PDF_NIGHT.ink);
   if (title.length) sheet.top += 4;
-  drawLines(sheet, title, x, 18, 22, faces.display, order, PDF_NIGHT.ink);
+  drawLines(sheet, title, x, 18, 22, faces.text, order, PDF_NIGHT.ink);
   if (lead.length) {
     sheet.top += 4;
     drawLines(sheet, lead, x, 10, 14, faces.text, order, PDF_NIGHT.muted);
@@ -333,16 +308,30 @@ function drawSpectrum(
   }
   if (model.days.length) {
     sheet.top += 12;
-    drawDays(sheet, x, inner, model, faces.text, order);
+    drawDays(sheet, x, inner, model.days.slice(0, 7), faces.text, order);
   }
-  sheet.top += 12;
-  const nestTop = sheet.top;
-  roundRect(sheet.page, x, sheet.y(nestTop + nestH), inner, nestH, 16, PDF_NIGHT.nest);
-  sheet.top = nestTop + 12;
-  drawEyebrow(sheet, model.patternTitle, x + 12, faces.display, order);
-  sheet.top += 2;
-  drawLines(sheet, pattern, x + 12, 10.5, 15, faces.text, order, PDF_NIGHT.ink);
-  sheet.top = top + height + 14;
+  sheet.top = top + height + 10;
+  for (let i = 7; i < model.days.length; i += 7) {
+    sheet.ensure(140);
+    roundRect(sheet.page, MARGIN, sheet.y(sheet.top + 140), CONTENT_W, 140, 22, PDF_NIGHT.strong, HAIRLINE, 0.78);
+    sheet.top += 16;
+    drawDays(sheet, x, inner, model.days.slice(i, i + 7), faces.text, order);
+    sheet.top += 26;
+  }
+  let offset = 0;
+  while (offset < pattern.length) {
+    const paddingAndTitle = 53;
+    sheet.ensure(paddingAndTitle + 16);
+    const take = Math.min(pattern.length - offset, Math.floor((sheet.room() - paddingAndTitle) / 16));
+    const height = paddingAndTitle + take * 16;
+    roundRect(sheet.page, MARGIN, sheet.y(sheet.top + height), CONTENT_W, height, 18, PDF_NIGHT.card, HAIRLINE, 0.77);
+    sheet.top += 16;
+    drawSectionLabel(sheet, model.patternTitle, x, faces.strong, order, PDF_NIGHT.coral);
+    sheet.top += 6;
+    drawLines(sheet, pattern.slice(offset, offset + take), x, 11, 16, faces.text, order, PDF_NIGHT.ink);
+    sheet.top += 30;
+    offset += take;
+  }
 }
 
 function drawShares(sheet: Sheet, x: number, width: number, model: WeekPdfModel, text: Face, order: Face[]) {
@@ -397,11 +386,10 @@ function drawShares(sheet: Sheet, x: number, width: number, model: WeekPdfModel,
   }
 }
 
-function drawDays(sheet: Sheet, x: number, width: number, model: WeekPdfModel, text: Face, order: Face[]) {
-  const count = model.days.length;
+function drawDays(sheet: Sheet, x: number, width: number, days: WeekPdfModel["days"], text: Face, order: Face[]) {
   const gap = 6;
-  const slot = count > 7 ? (width - gap * (count - 1)) / count : (width - gap * 6) / 7;
-  model.days.forEach((day, index) => {
+  const slot = (width - gap * 6) / 7;
+  days.forEach((day, index) => {
     const left = x + index * (slot + gap);
     const body = 64;
     const faded = day.future && day.slices.length === 0;
@@ -414,7 +402,7 @@ function drawDays(sheet: Sheet, x: number, width: number, model: WeekPdfModel, t
         body,
         10,
         undefined,
-        { color: day.today ? PDF_NIGHT.mint : PDF_NIGHT.muted, width: day.today ? 1.4 : 0.8, dash: [2, 2], opacity: faded ? 0.35 : day.today ? 1 : 0.55 },
+        { color: day.today ? PDF_NIGHT.coral : PDF_NIGHT.muted, width: day.today ? 1.4 : 0.8, dash: [2, 2], opacity: faded ? 0.35 : day.today ? 1 : 0.55 },
         faded ? 0.4 : 1,
       );
     } else {
@@ -426,11 +414,11 @@ function drawDays(sheet: Sheet, x: number, width: number, model: WeekPdfModel, t
         body,
         10,
         PDF_NIGHT.nest,
-        day.today ? { color: PDF_NIGHT.mint, width: 1.2 } : HAIRLINE,
+        day.today ? { color: PDF_NIGHT.coral, width: 1.2 } : HAIRLINE,
       );
       const pad = 4;
       const innerH = body - pad * 2;
-      const gapY = 2;
+      const gapY = Math.min(2, innerH / (day.slices.length * 2));
       const sliceH = (innerH - gapY * (day.slices.length - 1)) / day.slices.length;
       day.slices.forEach((slice, sliceIndex) => {
         const sliceTop = sheet.top + pad + sliceIndex * (sliceH + gapY);
@@ -478,12 +466,10 @@ function drawBacklog(
   model: WeekPdfModel,
 ) {
   sheet.ensure(64);
-  const heading = wrap(model.backlogTitle, 18, CONTENT_W, faces.display, order);
-  drawLines(sheet, heading, MARGIN, 18, 22, faces.display, order, PDF_NIGHT.ink);
+  const heading = wrap(model.backlogTitle, 18, CONTENT_W, faces.text, order);
+  drawLines(sheet, heading, MARGIN, 18, 22, faces.text, order, PDF_NIGHT.ink);
   sheet.top += 4;
-  const lead = wrap(model.backlogLead, 10, CONTENT_W, faces.text, order);
-  drawLines(sheet, lead, MARGIN, 10, 14, faces.text, order, PDF_NIGHT.muted);
-  sheet.top += 10;
+  sheet.top += 8;
   if (model.emptyBacklog) {
     const lines = wrap(model.emptyBacklog, 10.5, CONTENT_W - 32, faces.text, order);
     const height = 20 + lines.length * 15;
@@ -508,11 +494,11 @@ function drawBacklog(
 }
 
 function drawTheme(sheet: Sheet, faces: Record<Kind, Face>, order: Face[], theme: WeekPdfTheme) {
-  const title = wrap(theme.title, 13, CONTENT_W, faces.display, order);
+  const title = wrap(theme.title, 13, CONTENT_W, faces.text, order);
   const block = 8 + title.length * 17 + 16;
   sheet.ensure(block + 28);
   sheet.top += 8;
-  drawLines(sheet, title, MARGIN, 13, 17, faces.display, order, PDF_NIGHT.ink);
+  drawLines(sheet, title, MARGIN, 13, 17, faces.text, order, PDF_NIGHT.ink);
   sheet.top += 2;
   sheet.page.drawText(theme.meta, {
     x: MARGIN,
@@ -530,30 +516,17 @@ function drawTheme(sheet: Sheet, faces: Record<Kind, Face>, order: Face[], theme
     const body = note.body ? wrap(note.body, 10.5, CONTENT_W - 32, faces.text, order) : [];
     const head = note.feelings.length ? `${note.when} · ${note.feelings.map((item) => item.label).join(", ")}` : note.when;
     const all = [head, ...body];
-    const whole = 16 + all.reduce((sum, _, line) => sum + (line === 0 ? 15 : 14), 0) + 4;
-    if (whole + 8 <= PAGE_H - MARGIN - BOTTOM && whole > sheet.room()) sheet.fresh();
+    const whole = 20 + 15 + body.length * 14;
+    if (whole + 8 <= PAGE_H - CONTENT_TOP - BOTTOM && whole > sheet.room()) sheet.fresh();
     let index = 0;
     while (index < all.length) {
-      const lead = index === 0 ? 15 : 14;
-      const room = Math.max(lead + 14, sheet.room() - 24);
-      let take = 0;
-      let used = 16;
-      while (index + take < all.length) {
-        const step = index + take === 0 ? 15 : 14;
-        if (take > 0 && used + step > room) break;
-        used += step;
-        take += 1;
-        if (sheet.top === MARGIN && used > PAGE_H - MARGIN - BOTTOM - 24) break;
-      }
-      if (take === 0) {
-        sheet.fresh();
-        continue;
-      }
+      const extraForDate = index === 0 ? 1 : 0;
+      sheet.ensure(20 + extraForDate + 14 * Math.min(2, all.length - index));
+      const take = Math.min(all.length - index, Math.floor((sheet.room() - 20 - extraForDate) / 14));
       const chunk = all.slice(index, index + take);
-      const height = 16 + chunk.reduce((sum, _, line) => sum + (index + line === 0 ? 15 : 14), 0) + 4;
-      sheet.ensure(height);
+      const height = 20 + chunk.length * 14 + extraForDate;
       const top = sheet.top;
-      roundRect(sheet.page, MARGIN, sheet.y(top + height), CONTENT_W, height, 14, PDF_NIGHT.card, HAIRLINE);
+      roundRect(sheet.page, MARGIN, sheet.y(top + height), CONTENT_W, height, 15, PDF_NIGHT.card, HAIRLINE, 0.77);
       sheet.top = top + 10;
       chunk.forEach((line, lineIndex) => {
         const first = index + lineIndex === 0;
@@ -582,32 +555,32 @@ function drawTheme(sheet: Sheet, faces: Record<Kind, Face>, order: Face[], theme
       });
       sheet.top = top + height + 8;
       index += take;
+      if (index < all.length) sheet.fresh();
     }
   }
 }
 
-async function loadFonts(): Promise<WeekPdfFonts> {
-  if (!fontCache) {
-    fontCache = (async () => {
+async function loadAssets(): Promise<WeekPdfAssets> {
+  if (!assetCache) {
+    assetCache = (async () => {
       const pairs = await Promise.all(
-        (Object.keys(FONT_URLS) as (keyof WeekPdfFonts)[]).map(async (key) => {
-          const response = await fetch(FONT_URLS[key]);
-          if (!response.ok) throw new Error("font");
+        (Object.keys(WEEK_PDF_ASSET_URLS) as (keyof WeekPdfAssets)[]).map(async (key) => {
+          const response = await fetch(WEEK_PDF_ASSET_URLS[key]);
+          if (!response.ok) throw new Error("PDF asset unavailable: " + key);
           return [key, new Uint8Array(await response.arrayBuffer())] as const;
         }),
       );
-      return Object.fromEntries(pairs) as WeekPdfFonts;
-    })();
+      return Object.fromEntries(pairs) as WeekPdfAssets;
+    })().catch(error => {
+      assetCache = null;
+      throw error;
+    });
   }
-  return fontCache;
-}
-
-export function preloadWeekPdfFonts(): Promise<WeekPdfFonts> {
-  return loadFonts();
+  return assetCache;
 }
 
 export async function createWeekPdfFile(model: WeekPdfModel): Promise<File> {
-  const bytes = await renderWeekPdf(model, await loadFonts());
+  const bytes = await renderWeekPdf(model, await loadAssets());
   return new File([Uint8Array.from(bytes)], model.filename, { type: "application/pdf" });
 }
 

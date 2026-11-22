@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     "/api/telegram/introduce": ["./public/welcome-flow.png"],
     "/api/max/webhook": ["./public/welcome-flow.png"],
     "/api/telegram/digest": [
-      "./public/fonts/Unbounded-SemiBold.ttf",
+      "./public/week-pdf-night.jpg",
       "./public/fonts/Manrope-Regular.ttf",
       "./public/fonts/Manrope-SemiBold.ttf",
       "./public/fonts/NotoSansArabic-Regular.ttf",

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 import { buildWeekPdfModel, feelingRgb, oklchToRgb } from "./week-pdf-model";
-import { deliverWeekPdf, renderWeekPdf, type WeekPdfFonts } from "./week-pdf";
+import { deliverWeekPdf, renderWeekPdf, type WeekPdfAssets } from "./week-pdf";
 import type { JournalEntry, SessionTheme, ThemeLink } from "./types";
 
 function theme(partial: Partial<SessionTheme> & Pick<SessionTheme, "id" | "title" | "status">): SessionTheme {
@@ -52,7 +52,7 @@ function model(themes: SessionTheme[], entries: JournalEntry[], links: ThemeLink
     patternTitle: "Что смотрится как паттерн",
     patternText: "Тревога перед встречами возвращается по утрам.",
     backlogTitle: "Что обсудить",
-    backlogLead: "Название открывает записи.",
+
     emptyBacklog: "Пока пусто.",
     noNotes: "К этой теме пока не привязана запись.",
     said: "Уже сказано",
@@ -105,8 +105,8 @@ describe("week pdf", () => {
   });
 
   it("renders a night sheet the fonts can encode", async () => {
-    const fonts: WeekPdfFonts = {
-      display: new Uint8Array(await readFile("public/fonts/Unbounded-SemiBold.ttf")),
+    const fonts: WeekPdfAssets = {
+      background: new Uint8Array(await readFile("public/week-pdf-night.jpg")),
       text: new Uint8Array(await readFile("public/fonts/Manrope-Regular.ttf")),
       strong: new Uint8Array(await readFile("public/fonts/Manrope-SemiBold.ttf")),
       arabic: new Uint8Array(await readFile("public/fonts/NotoSansArabic-Regular.ttf")),

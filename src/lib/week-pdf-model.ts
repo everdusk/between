@@ -2,23 +2,15 @@ import { buildWeekSpectrum, feelingFill } from "./spectrum";
 import { entriesForTheme, splitBacklog } from "./themes";
 import type { Feeling, JournalEntry, SessionTheme, ThemeLink } from "./types";
 
-const NIGHT_GROUND = rgbOf(6, 11, 9);
-const NIGHT_INK = rgbOf(0xf2, 0xf7, 0xf4);
-const NIGHT_STRONG = mix(NIGHT_GROUND, rgbOf(255, 255, 255), 0.14);
-
-/** Night brandbook. Day and night do not mix, so the sheet is night throughout. */
+/** Fixed dark dawn palette, shared by browser exports and scheduled session sheets. */
 export const PDF_NIGHT = {
-  ground: NIGHT_GROUND,
-  ink: NIGHT_INK,
-  mint: rgbOf(0x8f, 0xf0, 0xbc),
-  muted: rgbOf(0x90, 0x9c, 0x96),
-  /** `glass` — white at 9% over the night ground. */
-  card: mix(NIGHT_GROUND, rgbOf(255, 255, 255), 0.09),
-  /** `glass-strong` — the spectrum tile. */
-  strong: NIGHT_STRONG,
-  /** Pattern nest sits a step lighter than the spectrum tile. */
-  nest: mix(NIGHT_STRONG, NIGHT_INK, 0.05),
-  line: rgbOf(255, 255, 255),
+  ink: rgbOf(255, 245, 245),
+  coral: rgbOf(255, 182, 170),
+  muted: rgbOf(226, 211, 223),
+  card: rgbOf(47, 43, 67),
+  strong: rgbOf(62, 50, 76),
+  nest: rgbOf(47, 43, 67),
+  line: rgbOf(255, 230, 242),
 };
 
 export type Rgb = { r: number; g: number; b: number };
@@ -56,21 +48,13 @@ export type WeekPdfModel = {
   patternTitle: string;
   patternText: string;
   backlogTitle: string;
-  backlogLead: string;
+
   emptyBacklog: string | null;
   themes: WeekPdfTheme[];
 };
 
 function rgbOf(r: number, g: number, b: number): Rgb {
   return { r: r / 255, g: g / 255, b: b / 255 };
-}
-
-function mix(base: Rgb, over: Rgb, alpha: number): Rgb {
-  return {
-    r: base.r * (1 - alpha) + over.r * alpha,
-    g: base.g * (1 - alpha) + over.g * alpha,
-    b: base.b * (1 - alpha) + over.b * alpha,
-  };
 }
 
 /** `oklch(L C H)` from the feeling scale, as the PDF can paint it. */
@@ -123,7 +107,7 @@ export function buildWeekPdfModel(input: {
   patternTitle: string;
   patternText: string;
   backlogTitle: string;
-  backlogLead: string;
+
   emptyBacklog: string;
   noNotes: string;
   said: string;
@@ -177,7 +161,7 @@ export function buildWeekPdfModel(input: {
     patternTitle: input.patternTitle,
     patternText: input.patternText,
     backlogTitle: input.backlogTitle,
-    backlogLead: input.backlogLead,
+
     emptyBacklog: themes.length === 0 ? input.emptyBacklog : null,
     themes,
   };

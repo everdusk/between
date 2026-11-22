@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { File as FileIcon, LoaderCircle, RotateCcw } from "lucide-react";
+import { Download, LoaderCircle, RotateCcw } from "lucide-react";
 import { DateNavigation } from "@/components/date-navigation";
 import { useI18n } from "@/components/locale-provider";
 import { badgeVariants } from "@/components/ui/badge";
@@ -318,7 +318,7 @@ export function WeeklyPanel({
       patternTitle: t("briefPatternTitle"),
       patternText: shownPattern || t("patternThin"),
       backlogTitle: t("backlogTitle"),
-      backlogLead: t("backlogLead"),
+
       emptyBacklog: t("backlogEmpty"),
       noNotes: t("backlogNoNotes"),
       said: t("backlogSaid"),
@@ -388,11 +388,7 @@ export function WeeklyPanel({
               savePdf();
             }}
           >
-            {pdfState === "busy" ? <LoaderCircle aria-hidden className="animate-spin" /> : pdfState === "fail" ? <RotateCcw aria-hidden /> : (
-              <FileIcon aria-hidden className="size-6" strokeWidth={1.6}>
-                <text x="12" y="17.5" textAnchor="middle" fontSize="7" fontWeight="700" fill="currentColor" stroke="none">PDF</text>
-              </FileIcon>
-            )}
+            {pdfState === "busy" ? <LoaderCircle aria-hidden className="animate-spin" /> : pdfState === "fail" ? <RotateCcw aria-hidden /> : <Download aria-hidden />}
           </Button>
         }
       >

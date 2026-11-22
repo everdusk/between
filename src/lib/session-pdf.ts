@@ -9,32 +9,24 @@ import { clipPattern, patternReplyUsable, rankedThemes } from "./themes";
 import type { SessionSheet } from "./session-sheet";
 import type { TherapyStore } from "./types";
 import { buildWeekPdfModel, type WeekPdfModel } from "./week-pdf-model";
-import { renderWeekPdf, type WeekPdfFonts } from "./week-pdf";
+import { renderWeekPdf, WEEK_PDF_ASSET_URLS, type WeekPdfAssets } from "./week-pdf";
 
-const FONT_FILES: Record<keyof WeekPdfFonts, string> = {
-  display: "Unbounded-SemiBold.ttf",
-  text: "Manrope-Regular.ttf",
-  strong: "Manrope-SemiBold.ttf",
-  arabic: "NotoSansArabic-Regular.ttf",
-  devanagari: "NotoSansDevanagari-Regular.ttf",
-};
+let assetCache: Promise<WeekPdfAssets> | null = null;
 
-let fontCache: Promise<WeekPdfFonts> | null = null;
-
-function loadFonts(): Promise<WeekPdfFonts> {
-  if (!fontCache) {
-    const dir = path.join(process.cwd(), "public/fonts");
-    fontCache = (async () => {
+function loadAssets(): Promise<WeekPdfAssets> {
+  if (!assetCache) {
+    const dir = path.join(process.cwd(), "public");
+    assetCache = (async () => {
       const pairs = await Promise.all(
-        (Object.keys(FONT_FILES) as (keyof WeekPdfFonts)[]).map(async (key) => {
-          const bytes = new Uint8Array(await readFile(path.join(dir, FONT_FILES[key])));
+        (Object.keys(WEEK_PDF_ASSET_URLS) as (keyof WeekPdfAssets)[]).map(async (key) => {
+          const bytes = new Uint8Array(await readFile(path.join(dir, WEEK_PDF_ASSET_URLS[key])));
           return [key, bytes] as const;
         }),
       );
-      return Object.fromEntries(pairs) as WeekPdfFonts;
+      return Object.fromEntries(pairs) as WeekPdfAssets;
     })();
   }
-  return fontCache;
+  return assetCache;
 }
 
 /** Notes with text inside the same therapy period the sheet covers. Mood marks do not count. */
@@ -96,7 +88,7 @@ export function buildSessionPdfModel(
     patternTitle: t("briefPatternTitle"),
     patternText: pattern || t("patternThin"),
     backlogTitle: t("backlogTitle"),
-    backlogLead: t("backlogLead"),
+
     emptyBacklog: t("backlogEmpty"),
     noNotes: t("backlogNoNotes"),
     said: t("backlogSaid"),
@@ -116,6 +108,6 @@ export async function renderSessionPdf(
   sheet?: SessionSheet,
 ): Promise<{ bytes: Uint8Array; filename: string }> {
   const model = buildSessionPdfModel(store, locale, todayKey, now, sheet);
-  const bytes = await renderWeekPdf(model, await loadFonts());
+  const bytes = await renderWeekPdf(model, await loadAssets());
   return { bytes, filename: model.filename };
 }
