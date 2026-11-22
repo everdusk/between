@@ -498,6 +498,7 @@ function TherapyShell({
       initData={telegram.initData}
     >
       <WebWorkspace
+        homeHref={telegram.ready && !telegram.inTelegram && !inMax ? `/?lang=${locale}` : undefined}
         section={personal && section === "sessions" ? "topics" : section}
         onSection={selectSection}
         tools={accountButton}
