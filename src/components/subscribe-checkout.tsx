@@ -288,7 +288,8 @@ export function SubscribeCheckout({
       <div className={embed ? "" : `mx-auto w-full ${surface === "web" ? "max-w-6xl" : "max-w-xl"} px-5 py-6 sm:px-8 sm:py-10`}>
         {embed ? null : (
         <header className="flex items-center justify-between gap-4">
-          <a href="/journal" className="sub-display text-lg" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "journal" })}>
+          <a href={surface === "web" ? "/" : "/journal"} className="sub-display text-lg"
+            onClick={surface === "web" ? undefined : () => captureSubscribe({ messenger: pageMessenger(), step: "journal" })}>
             <BrandLogo />
           </a>
           {surface === "web" && (

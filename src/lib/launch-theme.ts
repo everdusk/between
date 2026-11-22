@@ -1,3 +1,5 @@
+import { resolveMessengerChoice, type SchemeChoice } from "./messenger-scheme";
+
 /**
  * Theme colors from the Mini App launch hash. Runs before first paint,
  * while the journal is still hidden behind the splash.
@@ -5,11 +7,18 @@
 export function applyLaunchTheme(
   hash: string,
   root: {
-    dataset: { telegramTheme?: string };
+    dataset: { telegramTheme?: string; scheme?: string; telegramLaunch?: string };
     style: { setProperty: (name: string, value: string) => void };
   },
+  choice: SchemeChoice,
 ): boolean {
   const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
+  if (!["tgWebAppData", "tgWebAppThemeParams", "tgWebAppPlatform", "tgWebAppVersion"].some(key => params.has(key))) return false;
+  root.dataset.telegramLaunch = "";
+  if (choice !== "client") {
+    root.dataset.scheme = choice;
+    return true;
+  }
   const raw = params.get("tgWebAppThemeParams");
   if (!raw) return false;
   let theme: Record<string, unknown>;
@@ -25,6 +34,7 @@ export function applyLaunchTheme(
   const channel = (start: number) => Number.parseInt(bg.slice(start, start + 2), 16);
   const luminance = (0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5)) / 255;
   root.dataset.telegramTheme = luminance > 0.55 ? "light" : "dark";
+  root.dataset.scheme = root.dataset.telegramTheme === "dark" ? "night" : "day";
   const set = (name: string, value: unknown) => {
     const color = hex(value);
     if (color) root.style.setProperty(name, color);
@@ -78,4 +88,9 @@ html[data-splash] .splash-screen {
 }
 `.trim();
 
-export const LAUNCH_THEME_SCRIPT = `try{(${applyLaunchTheme.toString()})(location.hash,document.documentElement)}catch(e){}`;
+export const LAUNCH_THEME_SCRIPT = `try{
+  var launchHash=location.hash, savedChoice=null;
+  if(!launchHash){try{var cached=JSON.parse(sessionStorage.getItem("__telegram__initParams")||"null");if(cached&&cached.tgWebAppData)launchHash=new URLSearchParams(cached).toString()}catch(e){}}
+  try{savedChoice=localStorage.getItem("between:scheme:telegram")}catch(e){}
+  (${applyLaunchTheme.toString()})(launchHash,document.documentElement,(${resolveMessengerChoice.toString()})("telegram",savedChoice));
+}catch(e){}`;

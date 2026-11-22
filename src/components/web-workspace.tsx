@@ -26,6 +26,7 @@ export const sections = {
 export type SectionId = keyof typeof sections;
 
 export function WebWorkspace({
+  homeHref,
   section,
   onSection,
   pages,
@@ -35,6 +36,7 @@ export function WebWorkspace({
   onCompose,
   personal,
 }: {
+  homeHref?: string;
   section: SectionId;
   onSection: (id: SectionId) => void;
   pages: Record<SectionId, ReactNode>;
@@ -58,7 +60,11 @@ export function WebWorkspace({
   return (
     <div className="desk-frame" data-diary={blocked ? undefined : ""}>
       <header className="desk-header">
-        <span className="font-display text-xl font-semibold"><BrandLogo /></span>
+        <span className="font-display text-xl font-semibold">
+          {homeHref ? (
+            <a href={homeHref} aria-label={`Between — ${t("deleteHome")}`}><BrandLogo /></a>
+          ) : <BrandLogo />}
+        </span>
         <div className="flex items-center gap-2">
           {!blocked && (
             <Button data-confirm="" size="icon" className="desk-compose sm:w-auto sm:px-4" onClick={onCompose} aria-label={t("newEntry")}>

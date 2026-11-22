@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { resolveMessengerChoice } from "./messenger-scheme";
 import { describe, it } from "node:test";
 import { applyLaunchTheme, LAUNCH_THEME_SCRIPT, SPLASH_COVER_CSS } from "./launch-theme";
 
@@ -7,7 +8,7 @@ function root() {
   return {
     props,
     node: {
-      dataset: {} as { telegramTheme?: string },
+      dataset: {} as { telegramTheme?: string; scheme?: string },
       style: {
         setProperty(name: string, value: string) {
           props.set(name, value);
@@ -29,7 +30,7 @@ describe("launch theme", () => {
         button_text_color: "#1a1020",
       }),
     }).toString()}`;
-    assert.equal(applyLaunchTheme(hash, node), true);
+    assert.equal(applyLaunchTheme(hash, node, "client"), true);
     assert.equal(node.dataset.telegramTheme, "dark");
     assert.equal(props.get("--background"), "#241430");
     assert.equal(props.get("--foreground"), "#f4eef8");
@@ -39,9 +40,20 @@ describe("launch theme", () => {
 
   it("ignores a launch url without a theme", () => {
     const { props, node } = root();
-    assert.equal(applyLaunchTheme("", node), false);
-    assert.equal(applyLaunchTheme("#tgWebAppData=user%3D1", node), false);
+    assert.equal(applyLaunchTheme("", node, "night"), false);
+    assert.equal(applyLaunchTheme("#tgWebAppData=user%3D1", node, "client"), false);
     assert.equal(props.size, 0);
+  });
+
+  it("uses dawn night on first Telegram launch and respects every saved choice", () => {
+    const hash = "#tgWebAppThemeParams=" + encodeURIComponent(JSON.stringify({ bg_color: "#ffffff" }));
+    for (const saved of [null, "invalid", "day", "night", "client"]) {
+      const { node, props } = root();
+      applyLaunchTheme(hash, node, resolveMessengerChoice("telegram", saved));
+      assert.equal(node.dataset.scheme, saved === "day" || saved === "client" ? "day" : "night");
+      assert.equal(props.has("--background"), saved === "client");
+    }
+    assert.equal(resolveMessengerChoice("max", null), "client");
   });
 
   it("keeps the journal hidden until the frame leaves", () => {
