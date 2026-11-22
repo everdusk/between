@@ -1,4 +1,5 @@
 import { type LocaleId } from "./i18n";
+import { translate } from "./messages";
 import { WEB_PRIVACY, WEB_TERMS } from "./legal-web";
 import { ATTRIBUTION_PRIVACY } from "./legal-attribution";
 
@@ -30,7 +31,8 @@ export type LegalDoc = { title: string; updated: string; preface?: string[]; sec
 /** Site and MAX share this edition. Telegram builds its own documents inside the client. */
 export function legalDocument(kind: LegalKind, locale: LocaleId): LegalDoc {
   const book = kind === "terms" ? WEB_TERMS : WEB_PRIVACY;
-  const doc = book[locale] ?? book.ru;
+  const source = book[locale] ?? book.ru;
+  const doc = { ...source, preface: [...(source.preface ?? []), translate(locale, "legalInn", { inn: LEGAL_INN })] };
   if (kind !== "privacy") return doc;
   const attribution = ATTRIBUTION_PRIVACY[locale] ?? ATTRIBUTION_PRIVACY.ru;
   return {

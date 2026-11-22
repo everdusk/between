@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useI18n } from "./locale-provider";
 import { Button } from "./ui/button";
+import { FieldSelect } from "./ui/field-select";
+import { feelingFill } from "@/lib/spectrum";
 import { Textarea } from "./ui/textarea";
 import { formatDayLabel } from "@/lib/dates";
 import { entriesForTheme } from "@/lib/themes";
@@ -201,32 +203,19 @@ export function ReflectionForm({
         setChoose(true);
       }}
     >
-      <p className="whitespace-pre-wrap break-words border-s-2 border-primary ps-3">
+      <p className="diary-quote whitespace-pre-wrap break-words">
         {entry.body}
       </p>
       {linkedFeeling ? (
         <p className="text-sm text-muted-foreground">
           {linkedFeeling === "unsure" ? t("unsure") : feeling(linkedFeeling)}
         </p>
-      ) : <label className="block text-sm">
-        {t("feelingsGroup")}
-        <select
-          required
-          className="mt-2 block w-full rounded-xl border border-input bg-background p-3"
-          value={emotion}
-          onChange={(e) => setPicked(e.target.value as Reflection["feeling"] | "")}
-        >
-          <option value="">—</option>
-          {[...new Set<Feeling>([...PICKER_FEELINGS, ...entry.feelings])].map(
-            (f) => (
-              <option key={f} value={f}>
-                {feeling(f)}
-              </option>
-            ),
-          )}
-          <option value="unsure">{t("unsure")}</option>
-        </select>
-      </label>}
+      ) : <div>
+        <FieldSelect<Reflection["feeling"] | ""> label={t("feelingsGroup")} showLabel required value={emotion} onChange={setPicked}
+          options={[{ value: "", label: "—" }, ...[...new Set<Feeling>([...PICKER_FEELINGS, ...entry.feelings])].map(f => ({
+            value: f, label: feeling(f), color: feelingFill(f),
+          })), { value: "unsure", label: t("unsure") }]} />
+      </div>}
       {emotion && (
         <>
           <label className="block font-medium">
@@ -261,10 +250,10 @@ export function ReflectionForm({
             {t(personal ? "deskPersonal" : "deskTherapy")}?
           </h2>
           <div className="flex gap-2">
-            <Button type="button" onClick={() => save(true)}>
+            <Button data-confirm="" type="button" onClick={() => save(true)}>
               {t("backlogAdd")}
             </Button>
-            <Button type="button" variant="outline" onClick={() => save(false)}>
+            <Button data-confirm="" type="button" onClick={() => save(false)}>
               {t("saveEntry")}
             </Button>
           </div>
@@ -310,20 +299,8 @@ export function ReflectionPanel({
   );
   return (
     <div className="space-y-4">
-      <label className="block">
-        {t("note")}
-        <select
-          className="mt-2 block w-full rounded-xl border border-input bg-background p-3"
-          value={entry.id}
-          onChange={(e) => onSelect(e.target.value)}
-        >
-          {notes.map((n) => (
-            <option key={n.id} value={n.id}>
-              {formatDayLabel(n.date, locale)} · {n.body.slice(0, 64)}
-            </option>
-          ))}
-        </select>
-      </label>
+      <FieldSelect label={t("note")} triggerClassName="field-select-trigger w-full" value={entry.id} onChange={onSelect}
+        options={notes.map(n => ({ value: n.id, label: `${formatDayLabel(n.date, locale)} · ${n.body.slice(0, 64)}` }))} />
       <ReflectionForm
         key={entry.id}
         entry={entry}

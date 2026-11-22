@@ -4,37 +4,30 @@ import { useI18n } from "@/components/locale-provider";
 import { feelingFill } from "@/lib/spectrum";
 import { PICKER_FEELINGS, type Feeling } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { useEffect, useId, useRef, useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Check, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FeelingPickerProps {
-  openRequest?: number;
+  children: ReactNode;
   value: Feeling[];
   onChange: (value: Feeling[]) => void;
   disabled?: boolean;
 }
 
-export function FeelingPicker({ value, onChange, disabled, openRequest = 0 }: FeelingPickerProps) {
+export function FeelingPicker({ value, onChange, disabled, children }: FeelingPickerProps) {
   const { t, feeling: feelingLabel } = useI18n();
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
-    if (!openRequest) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- open the inline picker from the journal toolbar
-    setOpen(true);
-    triggerRef.current?.focus({preventScroll: true});
-    triggerRef.current?.scrollIntoView({block: "nearest"});
-  }, [openRequest]);
-  useEffect(() => {
     if (!open) return;
-    const dismiss = (event: PointerEvent) => {
+    const dismiss = (event: MouseEvent) => {
       const button = event.target instanceof Element && event.target.closest("button");
       if (!button || (button !== triggerRef.current && !document.getElementById(panelId)?.contains(button))) setOpen(false);
     };
-    document.addEventListener("pointerdown", dismiss);
-    return () => document.removeEventListener("pointerdown", dismiss);
+    document.addEventListener("click", dismiss);
+    return () => document.removeEventListener("click", dismiss);
   }, [open, panelId]);
 
   function closePicker() {
@@ -56,14 +49,21 @@ export function FeelingPicker({ value, onChange, disabled, openRequest = 0 }: Fe
 
   return (
     <div className="space-y-3" onKeyDown={(event) => { if (event.key === "Escape" && open) { event.stopPropagation(); closePicker(); } }}>
-      <Button ref={triggerRef} type="button" variant="secondary" size="sm" className="max-w-full" disabled={disabled}
-        aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((current) => !current)}>
-        {value.slice(0, 3).map((feeling) => <span key={feeling} aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: feelingFill(feeling) }} />)}
-        <span className="truncate">{value.length ? value.map(feelingLabel).join(", ") : t("howFeel")}</span>
-        <ChevronDown aria-hidden className={cn("transition-transform", open && "rotate-180")} />
-      </Button>
-      {open && <div id={panelId} className="rounded-2xl bg-foreground/[0.04] p-3">
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("feelingsGroup")}>
+      <div className="flex items-center gap-2 has-[>textarea]:items-start">
+        <Button ref={triggerRef} type="button" variant="outline" size="icon" className="relative" disabled={disabled}
+          aria-label={[t("feelingsGroup"), ...value.map(feelingLabel)].join(", ")}
+          aria-expanded={open} aria-controls={panelId} onClick={() => setOpen((current) => !current)}>
+          <Smile aria-hidden />
+          {value.length > 0 && (
+            <span aria-hidden className="absolute bottom-1 flex gap-0.5">
+              {value.slice(0, 3).map(f => <span key={f} className="size-1 rounded-full" style={{ background: feelingFill(f) }} />)}
+            </span>
+          )}
+        </Button>
+        {children}
+      </div>
+      {open && <div id={panelId} className="feeling-choice-panel rounded-2xl p-2">
+      <div className="grid grid-cols-2 gap-1 sm:grid-cols-3" role="group" aria-label={t("feelingsGroup")}>
       {options.map((feeling) => {
         const active = value.includes(feeling);
         return (
@@ -74,7 +74,7 @@ export function FeelingPicker({ value, onChange, disabled, openRequest = 0 }: Fe
             aria-pressed={active}
             onClick={() => toggle(feeling)}
             className={cn(
-              "inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs transition-[background-color,color,border-color,transform] duration-200 select-none",
+              "inline-flex min-h-10 items-center gap-2 rounded-xl border px-2.5 py-2 text-start text-sm transition-colors select-none",
               "focus-visible:ring-4 focus-visible:ring-ring/25 focus-visible:outline-none active:scale-[0.97]",
               "disabled:opacity-50",
               active
@@ -91,6 +91,7 @@ export function FeelingPicker({ value, onChange, disabled, openRequest = 0 }: Fe
               style={{ background: feelingFill(feeling) }}
             />
             {feelingLabel(feeling)}
+            {active && <Check aria-hidden className="ms-auto size-4 shrink-0" />}
           </button>
         );
       })}

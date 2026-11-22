@@ -19,7 +19,7 @@ export function Switch({ label, description, className, disabled, ...props }: Sw
       )}
     >
       <span className="min-w-0 flex-1">
-        <span className="block text-sm leading-snug text-foreground">{label}</span>
+        <span data-slot="switch-label" className="block text-sm leading-snug text-foreground">{label}</span>
         {description && (
           <span className="mt-0.5 block text-xs text-muted-foreground">{description}</span>
         )}
@@ -34,6 +34,7 @@ export function Switch({ label, description, className, disabled, ...props }: Sw
         />
         <span
           aria-hidden
+          data-slot="switch-track"
           className={cn(
             "block h-7 w-12 rounded-full border border-[color:var(--glass-border)] bg-foreground/[0.08] transition-colors duration-300",
             "peer-checked:border-transparent peer-checked:bg-primary",
@@ -42,6 +43,7 @@ export function Switch({ label, description, className, disabled, ...props }: Sw
         />
         <span
           aria-hidden
+          data-slot="switch-thumb"
           className={cn(
             "pointer-events-none absolute start-1 size-5 rounded-full bg-foreground shadow-[0_2px_6px_-1px_oklch(0_0_0_/_0.25)] transition-[transform,background-color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
             "peer-checked:translate-x-5 peer-checked:bg-primary-foreground rtl:peer-checked:-translate-x-5",

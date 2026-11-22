@@ -56,7 +56,7 @@ export function PremiumPaywall({
           {inTelegram
             ? PLANS.map((plan) => (
                 <Button
-                  key={plan}
+                  data-confirm="" key={plan}
                   type="button"
                   className="w-full"
                   disabled={payingPlan !== null}
@@ -67,7 +67,7 @@ export function PremiumPaywall({
                 </Button>
               ))
             : showSbp ? (
-                <a href="/subscribe" className={buttonVariants({ className: "w-full" })}>
+                <a data-confirm="" href="/subscribe" className={buttonVariants({ className: "w-full" })}>
                   {t("sbpBuy")}
                 </a>
               ) : null}

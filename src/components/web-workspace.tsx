@@ -34,7 +34,6 @@ export function WebWorkspace({
   footer,
   onCompose,
   personal,
-  name,
 }: {
   section: SectionId;
   onSection: (id: SectionId) => void;
@@ -44,7 +43,6 @@ export function WebWorkspace({
   footer: ReactNode;
   onCompose: () => void;
   personal: boolean;
-  name: string;
 }) {
   const { t } = useI18n();
   const main = useRef<HTMLElement>(null);
@@ -58,13 +56,13 @@ export function WebWorkspace({
     main.current?.scrollTo({ top: 0 });
   }
   return (
-    <div className="desk-frame">
+    <div className="desk-frame" data-diary={blocked ? undefined : ""}>
       <header className="desk-header">
         <span className="font-display text-xl font-semibold"><BrandLogo /></span>
         <div className="flex items-center gap-2">
           {!blocked && (
-            <Button onClick={onCompose} aria-label={t("newEntry")}>
-              <Plus />
+            <Button data-confirm="" size="icon" className="desk-compose sm:w-auto sm:px-4" onClick={onCompose} aria-label={t("newEntry")}>
+              <Plus aria-hidden className="sm:hidden" />
               <span className="hidden sm:inline">{t("newEntry")}</span>
             </Button>
           )}
@@ -86,7 +84,6 @@ export function WebWorkspace({
               </button>
             );
           })}
-          {name && <span className="desk-name">{name}</span>}
         </nav>
       )}
       <div className="desk-content">
@@ -94,9 +91,9 @@ export function WebWorkspace({
         <div className="desk-page">
           {blocked || (
             <>
-              <h1 className="mb-5 font-display text-2xl sm:text-3xl">
+              {section !== "journal" && <h1 className="mb-5 font-display text-2xl sm:text-3xl">
                 {label(section)}
-              </h1>
+              </h1>}
               {ids.map((id) => (
                 <div key={id} hidden={id !== section}>
                   {(section === id ||

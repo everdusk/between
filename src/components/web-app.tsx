@@ -31,7 +31,7 @@ function BrowserJournal({ starPrice, rubPrice }: Prices) {
   useLayoutEffect(() => {
     holdAppSurface();
     document.documentElement.setAttribute("data-journal", "web");
-    let scheme = "night";
+    let scheme = document.documentElement.dataset.telegramTheme === "dark" ? "night" : "day";
     try {
       const saved = localStorage.getItem("between:scheme");
       if (saved === "day" || saved === "night") scheme = saved;

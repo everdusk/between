@@ -3,22 +3,21 @@
 import { useEffect, useState } from "react";
 import { Check, ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ThemeDateInput } from "@/components/theme-date-input";
+import { EntryCalendar } from "@/components/entry-calendar";
+import { GlassPanel } from "@/components/ui/glass-panel";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useI18n } from "@/components/locale-provider";
 import { BotChatSettings } from "@/components/bot-chat-gate";
 import { SessionRhythm } from "@/components/session-rhythm";
 import { dateKeysBetween, formatDayLabel, formatLongDate, toDateKey } from "@/lib/dates";
-import { clockLabel, nextWeeklyOccurrence, onceSessionDate } from "@/lib/session-plan";
-import type { NotifyPrefs, SessionNote, SessionPlan } from "@/lib/types";
+import { clockLabel, nextWeeklyOccurrence, onceSessionDate, planPreview } from "@/lib/session-plan";
+import type { SessionNote, SessionPlan } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface SessionsPanelProps {
-  notificationsDisabled?: boolean;
   sessions: SessionNote[];
   plan: SessionPlan | null;
-  notify: NotifyPrefs;
   onSave: (input: {
     id?: string;
     date: string;
@@ -28,7 +27,6 @@ interface SessionsPanelProps {
   }) => boolean;
   onDelete: (id: string) => boolean;
   onSavePlan: (plan: Omit<SessionPlan, "updatedAt">) => boolean;
-  onSaveNotify: (prefs: Omit<NotifyPrefs, "updatedAt">) => boolean;
   disabled?: boolean;
 }
 
@@ -50,14 +48,11 @@ function upcomingSession(plan: SessionPlan | null, now: Date): Date | null {
 }
 
 export function SessionsPanel({
-  notificationsDisabled,
   sessions,
   plan,
-  notify,
   onSave,
   onDelete,
   onSavePlan,
-  onSaveNotify,
   disabled,
 }: SessionsPanelProps) {
   const { t, locale, count } = useI18n();
@@ -117,27 +112,19 @@ export function SessionsPanel({
 
   return (
     <div className="space-y-4">
-      <div className="space-y-2 px-2 pt-1 pb-1">
-        <p className="eyebrow text-section-header">{t("sessionsTitle")}</p>
-      </div>
-
-      <section className="ink relative overflow-hidden rounded-3xl p-5 sm:p-6">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-24 -end-16 size-64 rounded-full bg-ink-foreground/[0.07] blur-2xl"
-        />
-        <div className="relative">
-          <p className="eyebrow text-ink-muted">{t("nextSession")}</p>
+      <GlassPanel className="space-y-2 p-5 text-foreground sm:p-6">
+          <h2 className="diary-card-title">{t("nextSession")}</h2>
           {upcoming && upcomingKey ? (
             <>
-              <p className="mt-3 font-display text-[2.125rem] leading-[1.05] tracking-tight text-ink-foreground sm:text-[2.5rem]">
+              <time dateTime={upcomingKey} className="tabular block text-2xl leading-tight sm:text-3xl">
                 {formatDayLabel(upcomingKey, locale)}
-              </p>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="tabular inline-flex h-8 items-center rounded-full bg-ink-foreground/12 px-3 text-sm font-medium text-ink-foreground">
+              </time>
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <span className="tabular">
                   {clockLabel(upcoming)}
                 </span>
-                <span className="inline-flex h-8 items-center rounded-full border border-ink-foreground/15 px-3 text-sm text-ink-muted">
+                <span aria-hidden>·</span>
+                <span>
                   {daysUntil === 0
                     ? t("todayTitle")
                     : t("inDays", { days: count(daysUntil ?? 0, "day") })}
@@ -145,19 +132,15 @@ export function SessionsPanel({
               </div>
             </>
           ) : (
-            <p className="mt-3 font-display text-[1.75rem] leading-snug tracking-tight text-ink-foreground">
-              {t("noSchedule")}
+            <p className="text-sm text-muted-foreground">
+              {plan?.mode === "once" ? planPreview(plan, locale, t, now) : t("noSchedule")}
             </p>
           )}
-        </div>
-      </section>
+      </GlassPanel>
 
       <SessionRhythm
         plan={plan}
-        notify={notify}
-        notificationsDisabled={notificationsDisabled}
         onSavePlan={onSavePlan}
-        onSaveNotify={onSaveNotify}
         disabled={disabled}
       />
 
@@ -179,17 +162,14 @@ export function SessionsPanel({
 
           <div className="space-y-3">
             <Label htmlFor="session-date">{t("sessionDate")}</Label>
-            <ThemeDateInput
+            <EntryCalendar
               id="session-date"
-              type="date"
-              display={formatLongDate(form.date, locale)}
+              showDate
+              label={t("sessionDate")}
               value={form.date}
               max={toDateKey()}
               disabled={disabled}
-              onChange={(e) => {
-                if (e.target.value) setForm((f) => ({ ...f, date: e.target.value }));
-              }}
-              required
+              onChange={date => setForm(f => ({ ...f, date }))}
             />
           </div>
 

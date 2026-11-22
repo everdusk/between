@@ -7,12 +7,16 @@ import { useEffect, useState } from "react";
 import { useI18n } from "./locale-provider";
 import { useDemoMediaDirectory } from "./scheme-switch";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { IntroStepHeader } from "./intro-step-header";
+import { GlassPanel } from "./ui/glass-panel";
 import { Textarea } from "./ui/textarea";
 import { PICKER_FEELINGS, type Feeling, type JournalEntry } from "@/lib/types";
 import { WeekSpectrum } from "./week-spectrum";
-import { scenes } from "@/lib/intro-scenes";
-import { markMoment, type IntroMood, type IntroDraft, type IntroRecord } from "@/lib/intro-record";
+import { checkinEntry, checkinQuestion, type IntroCheckin } from "@/lib/intro-checkin";
+import { Badge } from "./ui/badge";
+import { FeelingStripe } from "./feeling-stripe";
+import { formatTime } from "@/lib/dates";
+import { markMoment, type IntroMood, type IntroDraft } from "@/lib/intro-record";
 import { feelingFill } from "@/lib/spectrum";
 import { trackSurvey } from "@/lib/survey-analytics";
 
@@ -36,33 +40,43 @@ const sampleEntries: JournalEntry[] = sampleFeelings.flatMap((day, index) => day
 }));
 
 export function IntroCard({record}: {record:IntroDraft}) {
-  const {locale} = useI18n();
-  return <section className="glass space-y-3 rounded-3xl p-5">
+  const {locale, feeling} = useI18n();
+  if (record.kind === "checkin") {
+    const entry = checkinEntry(record);
+    const mood = entry.feelings[0];
+    return <GlassPanel className="relative overflow-hidden px-6 py-5">
+      {mood && <FeelingStripe feeling={mood} className="inset-y-5" />}
+      <time dateTime={entry.createdAt} className="tabular text-xs font-medium">{formatTime(entry.createdAt, locale)}</time>
+      {mood && <div className="mt-3"><Badge variant="secondary" className="font-normal">
+        <span aria-hidden className="size-1.5 rounded-full" style={{background: feelingFill(mood)}}/>{feeling(mood)}
+      </Badge></div>}
+      <p className="mt-3 whitespace-pre-wrap break-words text-[0.9375rem] leading-relaxed text-foreground/90">{entry.body}</p>
+    </GlassPanel>;
+  }
+  return <GlassPanel className="space-y-3 p-5">
     <small>{locale==="en" ? "Your first observation" : "Ваше первое наблюдение"}</small>
     <p>{record.observation}</p>
     <p className="font-normal leading-relaxed">{record.prompt}</p>
-    {record.note && <blockquote className="whitespace-pre-wrap break-words border-s-2 border-primary/60 ps-3">{record.note.body}</blockquote>}
-  </section>;
+    {record.note && <blockquote className="diary-quote whitespace-pre-wrap break-words">{record.note.body}</blockquote>}
+  </GlassPanel>;
 }
 
-const remainingSteps = ["gender_after_therapy","name","recent","current","spectrum","situation","clarification","observation"] as const;
 export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
   const {locale,feeling} = useI18n();
   const directory = useDemoMediaDirectory();
-  const en = locale==="en", lang=en?1:0;
+  const en = locale==="en";
+  const language = en ? "en" : "ru";
   const say=(ru:string,eng:string)=>en?eng:ru;
   const [attempt]=useState(()=>crypto.randomUUID());
   const [step,setStep]=useState(0);
-  const [gender,setGender]=useState<IntroRecord["gender"]>("neutral");
-  const [name,setName]=useState("");
-  const [therapy,setTherapy]=useState<IntroRecord["therapy"]>("no");
+  const [therapy,setTherapy]=useState<IntroCheckin["therapy"]>("no");
   const [recent,setRecent]=useState<IntroMood>("unknown");
+  const [recentReason, setRecentReason] = useState("");
   const [current,setCurrent]=useState<IntroMood>("unknown");
   const [moment,setMoment]=useState(markMoment);
-  const [recalled,setRecalled]=useState(false);
-  const [index,setIndex]=useState(0);
-  const [answer,setAnswer]=useState("");
-  const [note,setNote]=useState("");
+  const [changing, setChanging] = useState<boolean | null>(null);
+  const [selected, setSelected] = useState<IntroMood | null>(null);
+  const [currentReason, setCurrentReason] = useState("");
   const [draftError,setDraftError]=useState(false);
   const [nextSequence] = useState(() => {
     let sequence = 0;
@@ -70,7 +84,8 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
   });
   const [messengers, setMessengers] = useState<MessengerChoice[]>([]);
   const demo = messengers.includes("telegram") ? "telegram" : messengers.includes("max") ? "max" : null;
-  const steps = ["therapy_first", "topics_demo", "messengers", ...(demo ? ["bot_demo"] : []), ...remainingSteps];
+  const steps = ["therapy_first", "topics_demo", "messengers", ...(demo ? ["bot_demo"] : []),
+    "recent", "recent_reason", "current", "spectrum", "observation"];
   const screen=steps[step];
   function toggleMessenger(choice: MessengerChoice) {
     setMessengers(current => {
@@ -87,38 +102,33 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
       ...(screen==="messengers" && n>step ? {messengers} : {})},locale);
     setStep(n);
   }
-  const focus=current==="unknown" && recalled?recent:current;
-  const scene=scenes[focus];
-  const item=scene.choices[index];
-  const choice=item ? situation(index) : say("По-другому","Something else");
-  const clarification=item?.clarify[lang] ?? say("Какая деталь лучше всего передаёт ваш опыт?","Which detail best captures what it was like for you?");
-  const prompt=item?.prompt[lang] ?? say("Что об этом вам хочется запомнить?","What about this would you like to remember?");
   const label=(m:IntroMood)=>m==="unknown"?say("Пока трудно назвать","Hard to name"):feeling(m);
-  const context=current==="unknown"
-    ? recalled?say("Вы вспомнили недавний момент","You recalled a recent moment") : say("Вы начали с детали дня","You started with a detail from your day")
-    : recent!=="unknown" && recent!==current
-      ? say("В последнее время — "+label(recent)+". Сейчас — "+label(current),"Lately: "+label(recent)+". Right now: "+label(current))
-      : say("Ваша отметка сейчас — "+label(current),"Your check-in right now: "+label(current));
-  const record:IntroRecord={attempt,language:en?"en":"ru",name:name.trim(),gender,therapy,messengers,recent,current,...moment,recalled,situation:choice,clarification,answer:answer.trim(),prompt,
-    observation:context+say(". Когда вы выбрали «",". When you chose “")+choice+say("», вы описали это так: «","”, you described it this way: “")+answer.trim()+say("».","”.")};
+  const record: IntroCheckin = {kind: "checkin", attempt, language, therapy, messengers, recent, current,
+    recentReason: recentReason.trim(), ...(current !== recent ? {currentReason: currentReason.trim()} : {}), ...moment};
+  function confirmCurrent(mood: IntroMood) {
+    setCurrent(mood);
+    setMoment(markMoment());
+    go(step+1);
+  }
   const topicsMedia = directory && `${directory}/quiz-topics-${therapy === "yes" ? "therapy" : "personal"}-${en ? "en" : "ru"}`;
   const question = screen === "therapy_first" ? say("Вы сейчас занимаетесь с психотерапевтом?","Are you seeing a therapist?")
     : screen === "topics_demo" ? (therapy === "yes" ? say("Что взять на следующий сеанс?","What would you like to bring to therapy?") : say("К какой мысли вы возвращаетесь?","What keeps coming up for you?"))
     : screen === "messengers" ? say("Какими мессенджерами вы пользуетесь?","Which messaging apps do you use?")
     : screen === "bot_demo" ? say("Дневник прямо в чате","Your journal, right in the chat")
-    : [say("Вы мужчина или женщина?","How do you describe yourself?"),say("Как к вам обращаться?","What should we call you?"),
-    say("Какое чувство вы чаще замечаете в последнее время?","Which feeling have you noticed most lately?"),
-    say("Что вы чувствуете прямо сейчас?","What are you feeling right now?"),current==="unknown"?say("Так выглядит спектр дневника","A look at your mood spectrum"):say("Ваша первая отметка","Your first check-in"),
-    scene.title[lang],clarification,say("Ваше первое наблюдение","Your first observation")][remainingSteps.findIndex(id => id === screen)];
+    : screen === "recent" ? say("Какое чувство вы чаще замечаете в последнее время?","Which feeling have you noticed most lately?")
+    : screen === "recent_reason" ? say("Поделитесь?", "Would you share?")
+    : screen === "current" ? say("Что вы чувствуете прямо сейчас?", "How do you feel right now?")
+    : screen === "spectrum" ? say("Почему важно наблюдать за чувствами?", "Why pay attention to your feelings?")
+    : say("Ваша первая отметка", "Your first check-in");
   function option(text:string,click:()=>void) {
     return <Button key={text} type="button" variant="outline" className="h-auto min-h-10 max-w-full whitespace-normal text-start" onClick={click}>{text}</Button>;
   }
-  function situation(i:number){
-    if(!en && focus==="грусть" && i===1) return gender==="male"?"Хочу побыть один":gender==="female"?"Хочу побыть одна":"Хочу побыть наедине с собой";
-    return scene.choices[i].option[lang];
-  }
-  return <section className="glass space-y-5 rounded-3xl p-6">
-    <small>Between · {say("Знакомство","Getting to know you")} · {step+1}/{steps.length}</small>
+  const showMascot = screen === "bot_demo" || screen === "spectrum" || screen === "observation"
+    || (screen === "topics_demo" && therapy === "yes");
+  return <GlassPanel className="space-y-5 p-6" data-intro-mascot={showMascot ? screen : undefined}>
+    <IntroStepHeader backLabel={say("Назад", "Back")} onBack={step > 0 ? () => go(step - 1) : undefined}>
+      Between · {say("Знакомство","Getting to know you")} · {step+1}/{steps.length}
+    </IntroStepHeader>
     <h1 className="font-display text-2xl">{question}</h1>
     {screen==="therapy_first" && <div className="flex flex-wrap gap-2">{option(say("Да","Yes"),()=>{setTherapy("yes");go(step+1)})}{option(say("Нет","No"),()=>{setTherapy("no");go(step+1)})}</div>}
     {screen==="topics_demo" && <>
@@ -136,19 +146,19 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
             }
           }} />
       </figure>
-      <Button onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
+      <Button className="ms-auto flex w-fit" data-confirm="" onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
     </>}
     {screen==="messengers" && <>
       <p className="text-sm text-muted-foreground">{say("Можно выбрать несколько.","Choose all that apply.")}</p>
       <div className="flex flex-wrap gap-2">{messengerChoices.map(m => <Button key={m} type="button"
         variant="outline" aria-pressed={messengers.includes(m)}
-        className="gap-2 aria-pressed:border-[color:var(--accent-text)]"
+        className={`gap-2 aria-pressed:border-current ${m === "telegram" || m === "max" ? "auth-" + m : ""}`}
         onClick={()=>toggleMessenger(m)}>
         <span aria-hidden className="grid size-4 place-items-center rounded-full border border-current/40">
-          {messengers.includes(m) && <Check className="size-3 text-[color:var(--accent-text)]" strokeWidth={3}/>}
+          {messengers.includes(m) && <Check className="size-3" strokeWidth={3}/>}
         </span>
         {{telegram:"Telegram",max:"MAX",whatsapp:"WhatsApp",none:say("Не пользуюсь","None")}[m]}</Button>)}</div>
-      <Button disabled={!messengers.length} onClick={()=>go(step+1)}>{say("Дальше","Continue")}</Button>
+      <Button className="ms-auto flex w-fit" data-confirm="" disabled={!messengers.length} onClick={()=>go(step+1)}>{say("Дальше","Continue")}</Button>
     </>}
     {screen==="bot_demo" && demo && <>
       <p>{say("После регистрации можно подключить бота: отправляйте заметки сообщением и отмечайте настроение прямо в чате.", "After signing up, you can connect the bot to send notes and check in on your mood right in the chat.")}</p>
@@ -156,59 +166,62 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
         width={400} height={408} className="w-full rounded-2xl"
         alt={say("Пример переписки с Between: заметка об обеде во дворе, кнопка открытия дневника и девять вариантов настроения.","Example Between chat with a note about lunch outside, a button to open the journal and nine mood choices.")}/>}
         <figcaption className="text-sm text-muted-foreground">{say("Пример переписки","Example chat")} · {demo==="max"?"MAX":"Telegram"}</figcaption></figure>
-      <Button onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
+      <Button className="ms-auto flex w-fit" data-confirm="" onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
     </>}
-    {screen==="gender_after_therapy" && <div className="flex flex-wrap gap-2">{(["male","female","neutral"] as const).map((g,i)=>option([say("Мужчина","Man"),say("Женщина","Woman"),say("Предпочитаю не указывать","Prefer not to say")][i],()=>{setGender(g);go(step+1)}))}</div>}
-    {screen==="name" && <form className="space-y-3" onSubmit={e=>{e.preventDefault();if(name.trim())go(step+1)}}><Input aria-label={question} autoComplete="given-name" maxLength={60} value={name} onChange={e=>setName(e.target.value)}/><Button type="submit" disabled={!name.trim()}>{say("Дальше","Continue")}</Button></form>}
-    {(screen==="recent" || screen==="current") && <>
-      {screen==="current" && <p>{say("В последнее время","Lately")} · {label(recent)}</p>}
-      <div className="flex flex-wrap gap-2">{([...PICKER_FEELINGS,"unknown"] as const).map(m=>option(m==="unknown" && screen==="recent"?say("Не помню","I don’t remember"):label(m),()=>{
-        if(screen==="recent")setRecent(m);else {setCurrent(m);setMoment(markMoment());setRecalled(false)}
-        setAnswer("");setIndex(0);go(step+1);
-      }))}</div></>}
-    {screen==="spectrum" && <><p className="flex items-center gap-2"><span className="size-3 rounded-full" style={{background:feelingFill(current==="unknown"?"спокойно":current)}}/>
-      {current==="unknown"?say("Пример отметки","Example check-in"):new Date(moment.markedAt).toLocaleTimeString(locale,{hour:"2-digit",minute:"2-digit"})} · {label(current==="unknown"?"спокойно":current)}</p>
-      <p>{say("В какие моменты тревожно, даже если день прошёл спокойно? Сверяясь с записями, можно заметить, например, что в три таких вечера вы ждали ответа на важное сообщение.","When do you feel anxious, even after a quiet day? Looking back at your entries, you might notice that on three of those evenings you were waiting for a reply to an important message.")}</p>
+    {screen==="recent" && <div className="flex flex-wrap gap-2">
+      {([...PICKER_FEELINGS,"unknown"] as const).map(m=>option(m==="unknown"?say("Не помню","I don’t remember"):label(m),()=>{
+        if (m !== recent) { setRecentReason(""); setChanging(null); setSelected(null); setCurrentReason(""); }
+        setRecent(m); go(step+1);
+      }))}
+    </div>}
+    {screen==="recent_reason" && <form className="space-y-3" onSubmit={event=>{event.preventDefault();if(recentReason.trim())go(step+1)}}>
+      <label htmlFor="recent-reason" className="block">{checkinQuestion(recent, "recentQuestion", language)}</label>
+      <Textarea id="recent-reason" value={recentReason} maxLength={1000} required
+        onChange={event=>setRecentReason(event.target.value)} placeholder={say("Можно одной фразой","A few words are enough")}/>
+      <Button type="submit" disabled={!recentReason.trim()} className="ms-auto flex w-fit">{say("Продолжить","Continue")}</Button>
+    </form>}
+    {screen==="current" && <>
+      <p>{say("Ваше состояние сейчас отличается от того, что вы описали?", "Does it feel different from what you just described?")}</p>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" aria-pressed={changing === true} onClick={()=>setChanging(true)}>
+          {changing === true && <Check aria-hidden className="size-4"/>}{say("Да","Yes")}
+        </Button>
+        <Button variant="outline" aria-pressed={changing === false}
+          onClick={()=>{setChanging(false);setSelected(null);setCurrentReason("");confirmCurrent(recent)}}>
+          {changing === false && <Check aria-hidden className="size-4"/>}{say("Нет, то же самое","No, it feels the same")}
+        </Button>
+      </div>
+      {changing && <div className="space-y-3">
+        <p>{say("Какое чувство вы замечаете сейчас?", "Which feeling do you notice now?")}</p>
+        <div className="flex flex-wrap gap-2">{([...PICKER_FEELINGS,"unknown"] as const).filter(m=>m!==recent).map(m=>
+          <Button key={m} variant="outline" aria-pressed={selected===m} onClick={()=>{if(selected!==m)setCurrentReason("");setSelected(m)}}>
+            {selected===m && <Check aria-hidden className="size-4"/>}{label(m)}
+          </Button>)}</div>
+        {selected && <form className="space-y-3" onSubmit={event=>{event.preventDefault();if(currentReason.trim())confirmCurrent(selected)}}>
+          <label htmlFor="current-reason" className="block">{checkinQuestion(selected,"currentQuestion",language)}</label>
+          <Textarea id="current-reason" required maxLength={1000} value={currentReason} onChange={event=>setCurrentReason(event.target.value)}/>
+          <Button type="submit" className="ms-auto flex w-fit" disabled={!currentReason.trim()}>{say("Продолжить","Continue")}</Button>
+        </form>}
+      </div>}
+    </>}
+    {screen==="spectrum" && <>
+      <p>{say("Когда вы описываете свои чувства словами и перечитываете записи, легче заметить, что повторяется. Постепенно становится яснее, что придаёт вам сил, что утомляет и как вы чувствуете себя рядом с разными людьми. Так проще понять, чему уделять больше времени, а чего избегать.",
+        "Putting your feelings into words and looking back at your notes can help you spot patterns. Over time, you may see what gives you energy, what wears you out, and how you feel around different people. That makes it easier to see what to make more time for and what to avoid.")}</p>
       <figure className="space-y-2">
         <figcaption className="text-sm text-muted-foreground">{say("Пример из дневника · 9–15 ноября","Example journal · November 9–15")}</figcaption>
         <WeekSpectrum dayKeys={sampleDays} entries={sampleEntries} todayKey={sampleDays[6]}
           patternTitle="" patternText="" patternPending="" />
         <p className="text-sm text-muted-foreground">{say("Отмечайте чувства сколько хочется раз в день. Дни можно пропускать.","Check in as often as you like. It’s fine to skip days.")}</p>
       </figure>
-      <div className="flex flex-wrap gap-2">{current==="unknown" && recent!=="unknown" && option(say("Вспомнить недавний момент","Recall a recent moment")+" · "+label(recent),()=>{setRecalled(true);setIndex(0);setAnswer("");go(step+1)})}
-      {option(say("Продолжить","Continue"),()=>{setRecalled(false);setIndex(0);setAnswer("");go(step+1)})}</div></>}
-    {screen==="situation" && <><p>{recalled?say("Вспомните один недавний эпизод и отвечайте о нём.","Think of one recent episode and answer about that moment."):context}</p>
-      <div className="flex flex-wrap gap-2">{[...scene.choices.map((_,i)=>situation(i)),say("По-другому","Something else")].map((v,i)=>option(v,()=>{if(i!==index)setAnswer("");setIndex(i);go(step+1)}))}</div></>}
-    {screen==="clarification" && <form className="space-y-3" onSubmit={e=>{e.preventDefault();if(answer.trim())go(step+1)}}>
-      <p className="text-muted-foreground">{choice}</p><Textarea aria-label={clarification} value={answer} maxLength={1000} onChange={e=>setAnswer(e.target.value)} placeholder={say("Можно одной фразой","A few words are enough")}/>
-      <Button type="submit" disabled={!answer.trim()}>{say("Посмотреть наблюдение","See my observation")}</Button></form>}
-    {screen==="observation" && <><p>{record.observation}</p>
-      <form className="space-y-3" onSubmit={event=>{
-        event.preventDefault();
-        if (!note.trim()) return;
-        if (!onFinish({...record, note:{body:note.trim(), ...markMoment()}})) {
-          setDraftError(true);
-          return;
-        }
+      <Button className="ms-auto flex w-fit" data-confirm="" onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
+    </>}
+    {screen==="observation" && <>
+      <IntroCard record={record}/>
+      <Button className="ms-auto flex w-fit" data-confirm="" onClick={()=>{
+        if (!onFinish(record)) { setDraftError(true); return; }
         trackSurvey({event:"web_survey_step",action:"finish",question:"v2_observation",attempt,sequence:nextSequence()},locale);
-      }}>
-        <label htmlFor="intro-note" className="block font-normal leading-relaxed">{prompt}</label>
-        <Textarea id="intro-note" value={note} onChange={e=>setNote(e.target.value)} placeholder={say("Ваша первая запись","Your first entry")}/>
-        <Button type="submit" disabled={!note.trim()}>{say("Записать","Save entry")}</Button>
-        {draftError && <p role="alert">{say("Браузеру не удалось сохранить черновик. Текст остался в поле. Разрешите хранение данных и попробуйте ещё раз.","Your browser couldn’t keep the draft. Your text is still here. Allow browser storage and try again.")}</p>}
-      </form>
-      <details className="border-t border-border pt-3 text-sm">
-        <summary className="cursor-pointer">{say("Как выглядит недельный обзор · пример","What a weekly review looks like · example")}</summary>
-        <div className="glass mt-3 space-y-3 rounded-2xl p-4">
-          <p className="text-muted-foreground">{say("Из вымышленного дневника","From a fictional journal")}</p>
-          <ul className="space-y-2">
-            <li>{say("Вт · тревога · «Выходной, а я за завтраком всё проверяю рабочий чат».","Tue · Anxious · “It’s my day off and I keep checking the work chat over breakfast.”")}</li>
-            <li>{say("Сб · тревога · «Опять читаю рабочую переписку, хотя сегодня никуда не надо».","Sat · Anxious · “Reading work messages again, even though I have the day off.”")}</li>
-          </ul>
-          <p><strong>{say("Что повторяется","What repeats")}</strong><br/>
-            {say("Оба раза тревога отмечена в выходной. В обеих записях появляется рабочий чат.","Both anxious check-ins fell on days off. Both entries mention the work chat.")}</p>
-        </div>
-      </details></>}
-    {step>0 && <div><Button variant="ghost" size="sm" onClick={()=>go(step-1)}>{say("Назад","Back")}</Button></div>}
-  </section>;
+      }}>{say("Записать","Save entry")}</Button>
+      {draftError && <p role="alert">{say("Не удалось сохранить черновик. Разрешите хранение данных и попробуйте ещё раз.","We couldn’t save the draft. Allow browser storage and try again.")}</p>}
+    </>}
+  </GlassPanel>;
 }

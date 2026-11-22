@@ -7,9 +7,9 @@ export const MESSENGER_CSS = `
 .bl-pair{display:flex;flex-wrap:wrap;align-items:center;gap:.65rem}
 .bl-msg{position:relative;isolation:isolate;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:.55rem;height:2.85rem;padding:0 1.05rem 0 .95rem;border-radius:999px;color:#fff;font-size:.95rem;line-height:1;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.38),0 14px 28px -16px rgba(0,0,0,.75);text-decoration:none}
 .bl-msg > span,.bl-msg > svg{position:relative;z-index:1}
-.bl-tg{background-color:#2aabee;background-image:linear-gradient(118deg,rgba(143,240,188,.34),transparent 42%,rgba(94,231,197,.16) 100%)}
-.bl-max{background-color:#5436c7;background-image:linear-gradient(118deg,rgba(143,240,188,.28),transparent 40%,rgba(196,168,255,.32) 100%)}
-.bl-msg::before{content:"";position:absolute;inset:-20% -10%;z-index:0;background:linear-gradient(100deg,transparent 32%,rgba(143,240,188,.15) 42%,rgba(200,248,196,.72) 50%,rgba(126,182,240,.28) 58%,transparent 70%);transform:translateX(-125%);animation:bl-sheen 4.6s ease-in-out infinite}
+.bl-tg{background:var(--telegram-button-fill)}
+.bl-max{background:var(--max-button-fill)}
+.bl-msg::before{content:"";position:absolute;inset:-20% -10%;z-index:0;background:linear-gradient(100deg,transparent 32%,rgba(255,255,255,.32) 50%,transparent 70%);transform:translateX(-125%);animation:bl-sheen 4.6s ease-in-out infinite}
 .bl-max::before{animation-delay:1.4s}
 .bl-msg:hover{filter:saturate(1.08) brightness(1.05)}
 .bl-msg:active{transform:scale(.98)}

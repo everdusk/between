@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="232" height="255" viewBox="164 103 928 1020" role="img" aria-labelledby="title">
+  <title id="title">Between — енот в форме буквы B</title>
+  <style>
+    @media (max-width: 96px) {
+      .brow-light { opacity: .15; }
+    }
+  </style>
+  <defs>
+    <linearGradient id="coral" gradientUnits="userSpaceOnUse" x1="540" y1="116" x2="670" y2="1105">
+      <stop stop-color="#fa9d99"/>
+      <stop offset=".58" stop-color="#fa8191"/>
+      <stop offset="1" stop-color="#ed5a83"/>
+    </linearGradient>
+    <radialGradient id="blush" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="1" gradientTransform="translate(574 384) scale(485 270)">
+      <stop stop-color="#ffd4c0" stop-opacity=".72"/>
+      <stop offset="1" stop-color="#ffd4c0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="brow" cx="50%" cy="35%" r="65%">
+      <stop stop-color="#ffc1b6"/>
+      <stop offset="1" stop-color="#fba5a7"/>
+    </radialGradient>
+    <linearGradient id="mask" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#c998bd"/>
+      <stop offset=".65" stop-color="#da99ba"/>
+      <stop offset="1" stop-color="#f1a7b4"/>
+    </linearGradient>
+    <path id="upper" d="M184 802V327C184 275 203 231 239 196C262 144 297 118 348 117C401 115 415 145 451 162C477 175 518 173 577 173H684C740 173 753 159 781 138C802 121 823 117 846 117C895 117 924 143 948 195C1008 248 1043 307 1044 371C1046 448 1011 488 940 514L301 719C241 738 206 766 184 802Z"/>
+  </defs>
+  <use href="#upper" fill="url(#coral)"/>
+  <use href="#upper" fill="url(#blush)"/>
+  <path fill="url(#coral)" d="M180 902C180 835 214 800 277 780L934 572C1026 633 1073 724 1073 832C1073 984 981 1105 818 1105H258C206 1105 179 1077 179 1027Z"/>
+  <g id="face">
+    <path class="brow-light" fill="url(#brow)" d="M252 394C330 388 365 286 443 273C515 261 571 302 599 374C625 302 683 261 755 273C831 285 870 386 948 394C853 439 720 470 598 427C474 470 343 440 252 394Z"/>
+    <path fill="url(#mask)" d="M252 393C327 389 381 313 467 313C527 313 558 345 598 395C554 441 493 467 426 463C358 459 296 437 252 393Z"/>
+    <path fill="url(#mask)" d="M948 393C868 390 816 313 730 313C669 313 637 346 600 395C645 441 704 467 772 463C841 459 901 438 948 393Z"/>
+    <g fill="#553049">
+      <circle cx="493" cy="380" r="18"/>
+      <circle cx="705" cy="380" r="18"/>
+      <path d="M579 393C581 382 617 382 619 393C620 400 607 410 599 411C590 410 578 400 579 393Z"/>
+    </g>
+    <path d="M599 408V413C597 429 578 434 570 417M599 413C601 429 621 434 628 417" fill="none" stroke="#553049" stroke-width="8" stroke-linecap="round"/>
+  </g>
+</svg>

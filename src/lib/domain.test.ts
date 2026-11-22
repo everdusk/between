@@ -928,6 +928,12 @@ describe("session plan", () => {
     assert.equal(after?.getHours(), 10);
   });
 
+  it("keeps the one-off time when weekly slots are also saved", () => {
+    const slots = [{ weekday: 3, time: "17:00" }];
+    const plan: SessionPlan = { mode: "once", date: "2026-11-24", time: "09:07", weekday: 3, slots, updatedAt: "" };
+    assert.deepEqual(normalizeStore({ ...emptyStore(), sessionPlan: plan })?.sessionPlan, plan);
+  });
+
   it("treats a weekly rhythm and a next date as a filled plan", () => {
     const empty = { mode: "once" as const, date: "", time: "", weekday: 0, updatedAt: "" };
     assert.equal(sessionPlanStamp(empty), "");

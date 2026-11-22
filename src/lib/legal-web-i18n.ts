@@ -3,7 +3,6 @@ import type { LegalDoc } from "./legal";
 
 const BINDING = "Если формулировки разойдутся, главный текст — на русском языке.";
 const NAME = "Ляторовская Анастасия Борисовна";
-const INN = "770507475005";
 const MAIL = "help@between-journal.ru";
 
 type Pair = [heading: string, paragraphs: string[]];
@@ -25,7 +24,7 @@ export const TERMS_REST: Rest = {
   en: webDoc(
     "Terms of use of Between",
     "Revision of 9 November 2026",
-    ["Between · between-journal.ru · these terms cover the website and the MAX version", `Operator: ${NAME}, self-employed, INN ${INN}`],
+    ["Between · between-journal.ru · these terms cover the website and the MAX version", `Operator: ${NAME}, self-employed`],
     [
       ["1. This document", [
         "1.1. These terms govern the website of Between at between-journal.ru and the Between mini app in MAX (together, the Service).",
@@ -103,14 +102,14 @@ export const TERMS_REST: Rest = {
       ]],
       ["14. Operator and contact", [
         `14.1. Write about the Service only to ${MAIL}. Messages through chat bots and messengers are not accepted.`,
-        `Operator details. ${NAME}, self-employed, INN ${INN}. Email: ${MAIL} (the only contact channel). Site: between-journal.ru.`,
+        `Operator details. ${NAME}, self-employed. Email: ${MAIL} (the only contact channel). Site: between-journal.ru.`,
       ]],
     ],
   ),
   uk: webDoc(
     "Умови використання сервісу Between",
     "Редакція від 9 листопада 2026 року",
-    ["Сервіс Between · between-journal.ru · діють для вебверсії і версії в MAX", `Оператор: ${NAME}, самозайнята, ІПН ${INN}`],
+    ["Сервіс Between · between-journal.ru · діють для вебверсії і версії в MAX", `Оператор: ${NAME}, самозайнята`],
     [
       ["1. Про документ", ["1.1. Ці умови регулюють сайт between-journal.ru і мінізастосунок Between у MAX. 1.2. Версія в Telegram (бот @BetweenJournalBot) має окремі документи в тій версії. Ці умови на неї не поширюються. 1.3. Умови є публічною офертою самозайнятої " + NAME + ". Початок користування означає прийняття умов."]],
       ["2. Терміни", ["Сервіс — щоденник настрою і думок зі зведенням за тиждень. Вебверсія відкривається в браузері. Версія MAX — мінізастосунок у MAX. Щоденник — нотатки, почуття, теми і нагадування. Вкладка «Тиждень» — спектр, повтори і теми для розмови зі спеціалістом. Платний період — строк доступу до «Тижня» після оплати."]],
@@ -125,13 +124,13 @@ export const TERMS_REST: Rest = {
       ["11. Зміна умов", ["11.1. Нова редакція публікується на цій сторінці з датою. 11.2. Подальше користування означає згоду."]],
       ["12. Відповідальність", ["12.1. Сервіс надається «як є». Безперебійність не гарантується. Оператор не відповідає за зміст записів і обставини терапії. 12.2. Фінансова відповідальність обмежена сумою останнього платежу, якщо закон Російської Федерації не каже інше."]],
       ["13. Право і спори", ["13.1. Застосовується право Російської Федерації. 13.2. До суду надішліть претензію на " + MAIL + ". Відповідь — до 10 робочих днів. 13.3. Спір розглядає суд за правилами підсудності."]],
-      ["14. Реквізити і зв’язок", ["14.1. Усі звернення лише на " + MAIL + ". Через ботів і месенджери їх не приймають. " + NAME + ", ІПН " + INN + ". Сайт: between-journal.ru."]],
+      ["14. Реквізити і зв’язок", ["14.1. Усі звернення лише на " + MAIL + ". Через ботів і месенджери їх не приймають. " + NAME + ". Сайт: between-journal.ru."]],
     ],
   ),
   es: webDoc(
     "Condiciones de uso de Between",
     "Edición del 9 de noviembre de 2026",
-    ["Between · between-journal.ru · rigen para el sitio y la versión en MAX", `Operadora: ${NAME}, autónoma, INN ${INN}`],
+    ["Between · between-journal.ru · rigen para el sitio y la versión en MAX", `Operadora: ${NAME}, autónoma`],
     [
       ["1. El documento", ["1.1. Estas condiciones regulan el sitio between-journal.ru y la mini app de Between en MAX. 1.2. La versión de Telegram (bot @BetweenJournalBot) tiene documentos propios en esa versión. Estas condiciones no se aplican a Telegram. 1.3. Son una oferta pública de " + NAME + ". Usar el servicio significa aceptarlas."]],
       ["2. Términos", ["Servicio: diario de ánimo y pensamientos con un resumen semanal. Versión web: el sitio en el navegador. Versión MAX: la mini app en MAX. Diario: notas, sentimientos, temas y recordatorios. Semana: espectro, repeticiones y temas para hablar con un especialista. Periodo de pago: el tiempo en que Semana queda abierta tras pagar."]],
@@ -146,13 +145,13 @@ export const TERMS_REST: Rest = {
       ["11. Cambios", ["11.1. La nueva edición se publica en esta página con la fecha. 11.2. Seguir usando el servicio es aceptarla."]],
       ["12. Responsabilidad", ["12.1. El servicio se ofrece tal cual. No se garantiza el funcionamiento continuo. La operadora no responde por sus notas ni por las circunstancias de su terapia. 12.2. La responsabilidad económica se limita al último pago, salvo que la ley de la Federación de Rusia diga otra cosa."]],
       ["13. Ley y conflictos", ["13.1. Se aplica el derecho de la Federación de Rusia. 13.2. Antes de ir a juicio, envíe una reclamación a " + MAIL + ". Respuesta en hasta 10 días hábiles. 13.3. El tribunal es el que indique la ley."]],
-      ["14. Datos y contacto", ["14.1. Escriba solo a " + MAIL + ". No se aceptan mensajes por bots ni mensajeros. " + NAME + ", INN " + INN + ". Sitio: between-journal.ru."]],
+      ["14. Datos y contacto", ["14.1. Escriba solo a " + MAIL + ". No se aceptan mensajes por bots ni mensajeros. " + NAME + ". Sitio: between-journal.ru."]],
     ],
   ),
   pt: webDoc(
     "Termos de uso do Between",
     "Edição de 9 de novembro de 2026",
-    ["Between · between-journal.ru · valem para o site e a versão no MAX", `Operadora: ${NAME}, autônoma, INN ${INN}`],
+    ["Between · between-journal.ru · valem para o site e a versão no MAX", `Operadora: ${NAME}, autônoma`],
     [
       ["1. O documento", ["1.1. Estes termos regulam o site between-journal.ru e o mini app do Between no MAX. 1.2. A versão no Telegram (bot @BetweenJournalBot) tem documentos próprios nessa versão. Estes termos não se aplicam ao Telegram. 1.3. São uma oferta pública de " + NAME + ". Usar o serviço significa aceitá-los."]],
       ["2. Termos", ["Serviço: diário de humor e pensamentos com um resumo da semana. Versão web: o site no navegador. Versão MAX: o mini app no MAX. Diário: notas, sentimentos, temas e lembretes. Semana: espectro, repetições e temas para falar com um especialista. Período pago: o tempo em que a Semana fica aberta depois do pagamento."]],
@@ -167,13 +166,13 @@ export const TERMS_REST: Rest = {
       ["11. Mudanças", ["11.1. A nova edição é publicada nesta página com a data. 11.2. Continuar usando o serviço é aceitá-la."]],
       ["12. Responsabilidade", ["12.1. O serviço é oferecido como está. O funcionamento contínuo não é garantido. A operadora não responde pelas suas notas nem pelas circunstâncias da terapia. 12.2. A responsabilidade financeira se limita ao último pagamento, salvo se a lei da Federação da Rússia disser outra coisa."]],
       ["13. Lei e disputas", ["13.1. Aplica-se o direito da Federação da Rússia. 13.2. Antes do tribunal, envie uma reclamação para " + MAIL + ". Resposta em até 10 dias úteis. 13.3. O foro é o da lei."]],
-      ["14. Dados e contato", ["14.1. Escreva só para " + MAIL + ". Mensagens por bots e mensageiros não são aceitas. " + NAME + ", INN " + INN + ". Site: between-journal.ru."]],
+      ["14. Dados e contato", ["14.1. Escreva só para " + MAIL + ". Mensagens por bots e mensageiros não são aceitas. " + NAME + ". Site: between-journal.ru."]],
     ],
   ),
   tr: webDoc(
     "Between kullanım koşulları",
     "9 Kasım 2026 tarihli sürüm",
-    ["Between · between-journal.ru · site ve MAX sürümü için geçerlidir", `İşleten: ${NAME}, serbest meslek, INN ${INN}`],
+    ["Between · between-journal.ru · site ve MAX sürümü için geçerlidir", `İşleten: ${NAME}, serbest meslek`],
     [
       ["1. Belge", ["1.1. Bu koşullar between-journal.ru sitesini ve MAX’teki Between mini uygulamasını düzenler. 1.2. Telegram sürümünün (bot @BetweenJournalBot) kendi belgeleri o sürümün içindedir. Bu koşullar Telegram’a uygulanmaz. 1.3. Koşullar " + NAME + " adlı kişinin kamu teklifidir. Hizmeti kullanmak kabul anlamına gelir."]],
       ["2. Terimler", ["Hizmet: haftalık özetli bir duygu ve düşünce günlüğü. Web sürümü tarayıcıda açılır. MAX sürümü MAX’te mini uygulamadır. Günlük: notlar, duygular, konular ve anımsatmalar. Hafta: spektrum, tekrarlar ve bir uzmanla konuşulacak konular. Ücretli dönem: ödemeden sonra Haftanın açık kaldığı süre."]],
@@ -188,13 +187,13 @@ export const TERMS_REST: Rest = {
       ["11. Değişiklik", ["11.1. Yeni sürüm bu sayfada tarihle yayımlanır. 11.2. Kullanmaya devam etmek kabuldür."]],
       ["12. Sorumluluk", ["12.1. Hizmet olduğu gibi sunulur. Kesintisiz çalışma garanti edilmez. İşleten notlarınızdan ve terapinizin koşullarından sorumlu değildir. 12.2. Mali sorumluluk son ödemeyle sınırlıdır, Rusya Federasyonu hukuku başka demedikçe."]],
       ["13. Hukuk ve uyuşmazlık", ["13.1. Rusya Federasyonu hukuku uygulanır. 13.2. Mahkemeden önce " + MAIL + " adresine talep yazın. Yanıt en çok 10 iş günü. 13.3. Yetkili mahkeme hukuka göredir."]],
-      ["14. Künye ve iletişim", ["14.1. Yalnızca " + MAIL + " adresine yazın. Bot ve mesajlaşma kabul edilmez. " + NAME + ", INN " + INN + ". Site: between-journal.ru."]],
+      ["14. Künye ve iletişim", ["14.1. Yalnızca " + MAIL + " adresine yazın. Bot ve mesajlaşma kabul edilmez. " + NAME + ". Site: between-journal.ru."]],
     ],
   ),
   id: webDoc(
     "Ketentuan penggunaan Between",
     "Revisi 9 November 2026",
-    ["Between · between-journal.ru · berlaku untuk situs dan versi MAX", `Penyelenggara: ${NAME}, pekerja mandiri, INN ${INN}`],
+    ["Between · between-journal.ru · berlaku untuk situs dan versi MAX", `Penyelenggara: ${NAME}, pekerja mandiri`],
     [
       ["1. Dokumen", ["1.1. Ketentuan ini mengatur situs between-journal.ru dan mini app Between di MAX. 1.2. Versi Telegram (bot @BetweenJournalBot) punya dokumen sendiri di versi itu. Ketentuan ini tidak berlaku untuk Telegram. 1.3. Ini penawaran umum dari " + NAME + ". Memakai layanan berarti menerima ketentuan."]],
       ["2. Istilah", ["Layanan: jurnal suasana dan pikiran dengan ringkasan minggu. Versi web dibuka di peramban. Versi MAX adalah mini app di MAX. Jurnal: catatan, perasaan, topik, dan pengingat. Minggu: spektrum, pengulangan, dan topik untuk dibicarakan dengan ahli. Masa berbayar: waktu Minggu tetap terbuka setelah bayar."]],
@@ -209,13 +208,13 @@ export const TERMS_REST: Rest = {
       ["11. Perubahan", ["11.1. Edisi baru dipublikasikan di halaman ini beserta tanggalnya. 11.2. Terus memakai layanan berarti menerima edisi itu."]],
       ["12. Tanggung jawab", ["12.1. Layanan diberikan apa adanya. Kerja tanpa henti tidak dijamin. Penyelenggara tidak bertanggung jawab atas catatan Anda atau keadaan terapi Anda. 12.2. Tanggung jawab keuangan dibatasi pembayaran terakhir, kecuali hukum Federasi Rusia menentukan lain."]],
       ["13. Hukum dan sengketa", ["13.1. Hukum Federasi Rusia yang berlaku. 13.2. Sebelum ke pengadilan, kirim tuntutan ke " + MAIL + ". Jawaban paling lama 10 hari kerja. 13.3. Pengadilan mengikuti aturan yurisdiksi."]],
-      ["14. Identitas dan kontak", ["14.1. Tulis hanya ke " + MAIL + ". Pesan lewat bot dan pengirim pesan tidak diterima. " + NAME + ", INN " + INN + ". Situs: between-journal.ru."]],
+      ["14. Identitas dan kontak", ["14.1. Tulis hanya ke " + MAIL + ". Pesan lewat bot dan pengirim pesan tidak diterima. " + NAME + ". Situs: between-journal.ru."]],
     ],
   ),
   vi: webDoc(
     "Điều khoản sử dụng Between",
     "Bản ngày 9 tháng 11 năm 2026",
-    ["Between · between-journal.ru · áp dụng cho trang web và bản MAX", `Người điều hành: ${NAME}, tự kinh doanh, INN ${INN}`],
+    ["Between · between-journal.ru · áp dụng cho trang web và bản MAX", `Người điều hành: ${NAME}, tự kinh doanh`],
     [
       ["1. Văn bản", ["1.1. Điều khoản này điều chỉnh trang between-journal.ru và mini app Between trong MAX. 1.2. Bản Telegram (bot @BetweenJournalBot) có văn bản riêng trong bản đó. Điều khoản này không áp dụng cho Telegram. 1.3. Đây là chào bán công khai của " + NAME + ". Dùng dịch vụ là chấp nhận điều khoản."]],
       ["2. Thuật ngữ", ["Dịch vụ: nhật ký tâm trạng và suy nghĩ với bản tóm tắt tuần. Bản web mở trên trình duyệt. Bản MAX là mini app trong MAX. Nhật ký: ghi chú, cảm xúc, chủ đề và lời nhắc. Tuần: phổ cảm xúc, điều lặp lại và chủ đề để nói với chuyên gia. Thời gian trả phí: khoảng Tuần còn mở sau khi thanh toán."]],
@@ -230,13 +229,13 @@ export const TERMS_REST: Rest = {
       ["11. Thay đổi", ["11.1. Bản mới được đăng trên trang này kèm ngày. 11.2. Tiếp tục dùng là chấp nhận bản đó."]],
       ["12. Trách nhiệm", ["12.1. Dịch vụ được cung cấp như hiện có. Không bảo đảm chạy liên tục. Người điều hành không chịu trách nhiệm về ghi chú của bạn hay hoàn cảnh trị liệu. 12.2. Trách nhiệm tài chính giới hạn ở khoản thanh toán gần nhất, trừ khi pháp luật Liên bang Nga quy định khác."]],
       ["13. Luật và tranh chấp", ["13.1. Áp dụng pháp luật Liên bang Nga. 13.2. Trước khi ra tòa, gửi khiếu nại tới " + MAIL + ". Trả lời trong tối đa 10 ngày làm việc. 13.3. Tòa án theo quy tắc thẩm quyền."]],
-      ["14. Danh tính và liên hệ", ["14.1. Chỉ viết tới " + MAIL + ". Tin qua bot và ứng dụng nhắn tin không được nhận. " + NAME + ", INN " + INN + ". Trang: between-journal.ru."]],
+      ["14. Danh tính và liên hệ", ["14.1. Chỉ viết tới " + MAIL + ". Tin qua bot và ứng dụng nhắn tin không được nhận. " + NAME + ". Trang: between-journal.ru."]],
     ],
   ),
   ar: webDoc(
     "شروط استخدام Between",
     "نسخة 9 نوفمبر 2026",
-    ["Between · between-journal.ru · تسري على الموقع ونسخة MAX", `المشغّلة: ${NAME}، عاملة لحسابها، INN ${INN}`],
+    ["Between · between-journal.ru · تسري على الموقع ونسخة MAX", `المشغّلة: ${NAME}، عاملة لحسابها`],
     [
       ["1. الوثيقة", ["1.1. تنظّم هذه الشروط موقع between-journal.ru وتطبيق Between المصغّر في MAX. 1.2. لنسخة Telegram (البوت @BetweenJournalBot) وثائقها داخل تلك النسخة. هذه الشروط لا تسري على Telegram. 1.3. الشروط عرض عام من " + NAME + ". بدء الاستخدام قبول لها."]],
       ["2. المصطلحات", ["الخدمة: يوميات للمزاج والأفكار مع ملخص أسبوعي. نسخة الويب تُفتح في المتصفح. نسخة MAX تطبيق مصغّر في MAX. اليوميات: الملاحظات والمشاعر والمواضيع والتذكيرات. الأسبوع: الطيف والتكرار ومواضيع للنقاش مع مختص. المدة المدفوعة: الوقت الذي يبقى فيه الأسبوع مفتوحًا بعد الدفع."]],
@@ -251,13 +250,13 @@ export const TERMS_REST: Rest = {
       ["11. التعديل", ["11.1. النسخة الجديدة تُنشر في هذه الصفحة مع التاريخ. 11.2. استمرار الاستخدام قبول لها."]],
       ["12. المسؤولية", ["12.1. تُقدَّم الخدمة كما هي. لا ضمان لعمل بلا انقطاع. المشغّلة لا تسأل عن محتوى ملاحظاتكم ولا عن ظروف علاجكم. 12.2. المسؤولية المالية محدودة بآخر دفعة ما لم ينص قانون الاتحاد الروسي على غير ذلك."]],
       ["13. القانون والنزاع", ["13.1. يُطبق قانون الاتحاد الروسي. 13.2. قبل المحكمة أرسلوا مطالبة إلى " + MAIL + ". الرد خلال 10 أيام عمل. 13.3. المحكمة بحسب قواعد الاختصاص."]],
-      ["14. البيانات والتواصل", ["14.1. راسلوا " + MAIL + " فقط. رسائل البوتات وتطبيقات المراسلة لا تُقبل. " + NAME + "، INN " + INN + ". الموقع: between-journal.ru."]],
+      ["14. البيانات والتواصل", ["14.1. راسلوا " + MAIL + " فقط. رسائل البوتات وتطبيقات المراسلة لا تُقبل. " + NAME + ". الموقع: between-journal.ru."]],
     ],
   ),
   fa: webDoc(
     "شرایط استفاده از Between",
     "ویرایش ۹ نوامبر ۲۰۲۶",
-    ["Between · between-journal.ru · برای سایت و نسخهٔ MAX", `گرداننده: ${NAME}، خویش‌فرما، INN ${INN}`],
+    ["Between · between-journal.ru · برای سایت و نسخهٔ MAX", `گرداننده: ${NAME}، خویش‌فرما`],
     [
       ["1. سند", ["1.1. این شرایط سایت between-journal.ru و مینی‌اپ Between در MAX را تنظیم می‌کند. 1.2. نسخهٔ تلگرام (بات @BetweenJournalBot) سندهای خودش را در همان نسخه دارد. این شرایط به تلگرام نمی‌رسد. 1.3. شرایط پیشنهاد عمومی " + NAME + " است. شروع استفاده یعنی پذیرش."]],
       ["2. واژه‌ها", ["سرویس: دفتر حال و فکر با خلاصهٔ هفته. نسخهٔ وب در مرورگر باز می‌شود. نسخهٔ MAX مینی‌اپ در MAX است. دفتر: یادداشت، احساس، موضوع و یادآوری. هفته: طیف، تکرار و موضوع‌هایی برای گفتگو با متخصص. دورهٔ پولی: مدتی که هفته پس از پرداخت باز می‌ماند."]],
@@ -272,13 +271,13 @@ export const TERMS_REST: Rest = {
       ["11. تغییر", ["11.1. ویرایش تازه با تاریخ در همین صفحه منتشر می‌شود. 11.2. ادامهٔ استفاده یعنی پذیرش."]],
       ["12. مسئولیت", ["12.1. سرویس همان‌گونه که هست داده می‌شود. کار بی‌وقفه تضمین نیست. گرداننده مسئول متن شما و شرایط درمان شما نیست. 12.2. مسئولیت مالی به آخرین پرداخت محدود است، مگر قانون فدراسیون روسیه جز این بگوید."]],
       ["13. قانون و اختلاف", ["13.1. قانون فدراسیون روسیه اعمال می‌شود. 13.2. پیش از دادگاه به " + MAIL + " مطالبه بفرستید. پاسخ تا ۱۰ روز کاری. 13.3. دادگاه طبق قاعدهٔ صلاحیت است."]],
-      ["14. مشخصات و تماس", ["14.1. فقط به " + MAIL + " بنویسید. پیام بات و پیام‌رسان پذیرفته نمی‌شود. " + NAME + "، INN " + INN + ". سایت: between-journal.ru."]],
+      ["14. مشخصات و تماس", ["14.1. فقط به " + MAIL + " بنویسید. پیام بات و پیام‌رسان پذیرفته نمی‌شود. " + NAME + ". سایت: between-journal.ru."]],
     ],
   ),
   hi: webDoc(
     "Between की उपयोग शर्तें",
     "9 नवंबर 2026 का संस्करण",
-    ["Between · between-journal.ru · साइट और MAX संस्करण के लिए", `संचालिका: ${NAME}, स्व-नियोजित, INN ${INN}`],
+    ["Between · between-journal.ru · साइट और MAX संस्करण के लिए", `संचालिका: ${NAME}, स्व-नियोजित`],
     [
       ["1. दस्तावेज़", ["1.1. ये शर्तें between-journal.ru और MAX में Between मिनी ऐप को चलाती हैं. 1.2. Telegram संस्करण (बॉट @BetweenJournalBot) के अपने दस्तावेज़ उसी संस्करण में हैं. ये शर्तें Telegram पर नहीं लगतीं. 1.3. यह " + NAME + " का सार्वजनिक प्रस्ताव है. सेवा शुरू करना स्वीकार है."]],
       ["2. शब्द", ["सेवा: हफ़्ते के सार के साथ मूड और विचार की डायरी. वेब संस्करण ब्राउज़र में खुलता है. MAX संस्करण MAX का मिनी ऐप है. डायरी: नोट, भावना, विषय और याद. हफ़्ता: स्पेक्ट्रम, दोहराव और विशेषज्ञ से कहने योग्य विषय. सशुल्क अवधि: भुगतान के बाद हफ़्ता जितनी देर खुला रहता है."]],
@@ -293,13 +292,13 @@ export const TERMS_REST: Rest = {
       ["11. बदलाव", ["11.1. नया संस्करण तारीख के साथ इसी पृष्ठ पर छपता है. 11.2. आगे इस्तेमाल स्वीकार है."]],
       ["12. ज़िम्मेदारी", ["12.1. सेवा जैसी है वैसी दी जाती है. बिना रुके चलने की गारंटी नहीं. संचालिका आपके नोट और चिकित्सा की परिस्थितियों के लिए ज़िम्मेदार नहीं. 12.2. धन की ज़िम्मेदारी अंतिम भुगतान तक है, जब तक रूसी संघ का क़ानून और न कहे."]],
       ["13. क़ानून और विवाद", ["13.1. रूसी संघ का क़ानून लगता है. 13.2. अदालत से पहले " + MAIL + " पर दावा भेजें. जवाब 10 कार्यदिवस तक. 13.3. अदालत अधिकार के नियम से होती है."]],
-      ["14. पहचान और संपर्क", ["14.1. केवल " + MAIL + " पर लिखें. बॉट और मैसेंजर के संदेश नहीं लिए जाते. " + NAME + ", INN " + INN + ". साइट: between-journal.ru."]],
+      ["14. पहचान और संपर्क", ["14.1. केवल " + MAIL + " पर लिखें. बॉट और मैसेंजर के संदेश नहीं लिए जाते. " + NAME + ". साइट: between-journal.ru."]],
     ],
   ),
   uz: webDoc(
     "Between’dan foydalanish shartlari",
     "2026-yil 9-noyabr tahriri",
-    ["Between · between-journal.ru · sayt va MAX versiyasi uchun", `Operator: ${NAME}, o‘zini o‘zi band qilgan, INN ${INN}`],
+    ["Between · between-journal.ru · sayt va MAX versiyasi uchun", `Operator: ${NAME}, o‘zini o‘zi band qilgan`],
     [
       ["1. Hujjat", ["1.1. Bu shartlar between-journal.ru sayti va MAX’dagi Between mini-ilovasini tartibga soladi. 1.2. Telegram versiyasi (bot @BetweenJournalBot) o‘z hujjatlariga ega. Bu shartlar Telegramga tatbiq etilmaydi. 1.3. Shartlar " + NAME + "ning ommaviy ofertasi. Foydalanishni boshlash qabul qilishdir."]],
       ["2. Atamalar", ["Xizmat: haftalik xulosa bilan kayfiyat va fikr kundaligi. Veb-versiya brauzerda ochiladi. MAX versiyasi MAX’dagi mini-ilova. Kundalik: yozuvlar, hislar, mavzular va eslatmalar. Hafta: spektr, takrorlar va mutaxassis bilan gaplashiladigan mavzular. Pulli davr: to‘lovdan keyin Hafta ochiq turadigan muddat."]],
@@ -314,7 +313,7 @@ export const TERMS_REST: Rest = {
       ["11. O‘zgarish", ["11.1. Yangi tahrir sana bilan shu sahifada chiqadi. 11.2. Foydalanishda davom etish rozilikdir."]],
       ["12. Javobgarlik", ["12.1. Xizmat boricha beriladi. Uzluksiz ish kafolatlanmaydi. Operator yozuvlaringiz va terapiya holati uchun javob bermaydi. 12.2. Moliyaviy javobgarlik oxirgi to‘lov bilan cheklanadi, Rossiya Federatsiyasi qonuni boshqacha demasa."]],
       ["13. Huquq va nizo", ["13.1. Rossiya Federatsiyasi huquqi qo‘llanadi. 13.2. Suddan oldin " + MAIL + " ga da’vo yuboring. Javob 10 ish kunigacha. 13.3. Sud qonundagi qoidaga ko‘ra."]],
-      ["14. Rekvizit va aloqa", ["14.1. Faqat " + MAIL + " ga yozing. Bot va messenjer qabul qilinmaydi. " + NAME + ", INN " + INN + ". Sayt: between-journal.ru."]],
+      ["14. Rekvizit va aloqa", ["14.1. Faqat " + MAIL + " ga yozing. Bot va messenjer qabul qilinmaydi. " + NAME + ". Sayt: between-journal.ru."]],
     ],
   ),
 };
@@ -323,7 +322,7 @@ export const PRIVACY_REST: Rest = {
   en: webDoc(
     "Privacy policy of Between",
     "Revision of 9 November 2026",
-    ["Between · between-journal.ru · this policy covers the website and the MAX version", `Operator: ${NAME}, self-employed, INN ${INN}`],
+    ["Between · between-journal.ru · this policy covers the website and the MAX version", `Operator: ${NAME}, self-employed`],
     [
       ["1. General", [
         "1.1. This policy describes personal data processed on the Between website (between-journal.ru) and in the Between mini app in MAX (together, the Service), and the rights of the people that data is about.",
@@ -332,7 +331,7 @@ export const PRIVACY_REST: Rest = {
         `1.4. Questions about personal data go only to ${MAIL}. Messages through chat bots and messengers are not accepted.`,
       ]],
       ["2. Operator", [
-        `2.1. The operator of personal data is ${NAME}, self-employed, INN ${INN}. Contact email: ${MAIL}.`,
+        `2.1. The operator of personal data is ${NAME}, self-employed. Contact email: ${MAIL}.`,
       ]],
       ["3. Legal grounds", [
         "3.1. Processing rests on the contract (the terms of use), on your consent shown by starting to use the Service, and on the law of the Russian Federation, including Federal Law No. 54-FZ for receipts.",
@@ -403,7 +402,7 @@ export const PRIVACY_REST: Rest = {
       ]],
       ["14. Contact", [
         `14.1. Questions about personal data go only to ${MAIL}.`,
-        `Operator details. ${NAME}, self-employed, INN ${INN}. Email: ${MAIL} (the only contact channel). Site: between-journal.ru.`,
+        `Operator details. ${NAME}, self-employed. Email: ${MAIL} (the only contact channel). Site: between-journal.ru.`,
       ]],
     ],
   ),
@@ -420,9 +419,9 @@ export const PRIVACY_REST: Rest = {
 };
 
 function privacyUk(): LegalDoc {
-  return webDoc("Політика конфіденційності сервісу Between", "Редакція від 9 листопада 2026 року", ["Сервіс Between · between-journal.ru · діє для вебверсії і версії в MAX", `Оператор: ${NAME}, самозайнята, ІПН ${INN}`], [
+  return webDoc("Політика конфіденційності сервісу Between", "Редакція від 9 листопада 2026 року", ["Сервіс Between · between-journal.ru · діє для вебверсії і версії в MAX", `Оператор: ${NAME}, самозайнята`], [
     ["1. Загальні положення", ["1.1. Політика описує персональні дані вебверсії between-journal.ru і мінізастосунку в MAX та права суб’єктів. 1.2. Вона складена за Федеральним законом від 27.07.2006 № 152-ФЗ «Про персональні дані». 1.3. Для Telegram (бот @BetweenJournalBot) діє окрема політика в тій версії. Ця політика на Telegram не поширюється. 1.4. Звернення лише на " + MAIL + ". Через ботів і месенджери їх не приймають."]],
-    ["2. Оператор", ["2.1. Оператор — самозайнята " + NAME + ", ІПН " + INN + ". Пошта: " + MAIL + "."]],
+    ["2. Оператор", ["2.1. Оператор — самозайнята " + NAME + ". Пошта: " + MAIL + "."]],
     ["3. Підстави", ["3.1. Підстави: договір (умови використання), згода початком користування і вимоги законодавства Російської Федерації, включно із законом № 54-ФЗ щодо чеків. 3.2. Записи добровільні. Відомостей про здоров’я оператор не запитує і не вимагає."]],
     ["4. Які дані", ["4.1. Пошта для входу на сайті, ідентифікатор MAX, текст нотаток, почуття, теми, сеанси, нагадування, мова, часовий пояс, знеособлені лічильники, країна за IP, факт оплати, сума, дата і строк, голос лише для тексту і без зберігання файлу, листи підтримки з текстом, адресою, платформою й ідентифікатором. 4.2. Країну за IP дивляться лише в момент запиту, щоб попередити про Telegram з Росії без VPN, і не зберігають. 4.3. Дані карток обробляє ЮKassa, оператор їх не отримує і не зберігає."]],
     ["5. Цілі", ["5.1. Зберігати щоденник, збирати «Тиждень», нагадувати, забезпечувати вхід кодами, приймати платежі і чеки, відповідати на підтримку, рахувати знеособлену статистику."]],
@@ -434,14 +433,14 @@ function privacyUk(): LegalDoc {
     ["11. Права", ["11.1. Можна дізнатися про обробку, вимагати уточнення, блокування чи видалення, відкликати згоду і оскаржити дії. 11.2. Самостійно це робить сторінка видалення, поки ви ввійшли. 11.3. Інше — лист на " + MAIL + " із поштою або ідентифікатором MAX. Відповідь до 10 робочих днів. 11.4. Можна звернутися до Роскомнадзору або до суду."]],
     ["12. Неповнолітні", ["12.1. Сервіс для осіб старше 18 років. Дані неповнолітніх не збирають. Якщо стане відомо, що щоденник веде неповнолітній, дані видаляють."]],
     ["13. Зміни", ["13.1. Нова редакція публікується на цій сторінці з датою."]],
-    ["14. Контакти", ["14.1. Питання щодо персональних даних лише на " + MAIL + ". " + NAME + ", ІПН " + INN + ". Сайт: between-journal.ru."]],
+    ["14. Контакти", ["14.1. Питання щодо персональних даних лише на " + MAIL + ". " + NAME + ". Сайт: between-journal.ru."]],
   ]);
 }
 
 function privacyEs(): LegalDoc {
-  return webDoc("Política de privacidad de Between", "Edición del 9 de noviembre de 2026", ["Between · between-journal.ru · rige para el sitio y la versión en MAX", `Operadora: ${NAME}, autónoma, INN ${INN}`], [
+  return webDoc("Política de privacidad de Between", "Edición del 9 de noviembre de 2026", ["Between · between-journal.ru · rige para el sitio y la versión en MAX", `Operadora: ${NAME}, autónoma`], [
     ["1. Disposiciones generales", ["1.1. Esta política describe los datos personales del sitio between-journal.ru y de la mini app en MAX, y los derechos de las personas. 1.2. Sigue la Ley federal del 27.07.2006 n.º 152-FZ sobre datos personales. 1.3. La versión de Telegram (bot @BetweenJournalBot) tiene su propia política en esa versión. Esta política no se aplica a Telegram. 1.4. Escriba solo a " + MAIL + ". No se aceptan mensajes por bots ni mensajeros."]],
-    ["2. Operadora", ["2.1. La operadora es " + NAME + ", autónoma, INN " + INN + ". Correo: " + MAIL + "."]],
+    ["2. Operadora", ["2.1. La operadora es " + NAME + ", autónoma. Correo: " + MAIL + "."]],
     ["3. Bases", ["3.1. Bases: el contrato (condiciones de uso), el consentimiento al empezar a usar el servicio y la ley de la Federación de Rusia, incluida la ley n.º 54-FZ sobre recibos. 3.2. Las notas son voluntarias. No se piden datos de salud ni se exigen."]],
     ["4. Qué datos", ["4.1. Correo de la web, id de MAX, texto de notas, sentimientos, temas, sesiones, recordatorios, idioma, zona horaria, conteos anónimos, país según la IP, hecho del pago, suma, fecha y plazo, voz solo para convertirla en texto sin guardar el archivo, y cartas de ayuda con texto, dirección, plataforma e id. 4.2. El país de la IP se mira solo en esa solicitud, para avisar de que Telegram desde Rusia puede no abrirse sin VPN, y no se guarda. 4.3. Los datos de tarjeta los trata YooKassa. La operadora no los recibe ni los guarda."]],
     ["5. Fines", ["5.1. Guardar el diario, armar Semana, recordar, asegurar el acceso con códigos, cobrar y emitir recibos, responder a ayuda y contar estadística anónima."]],
@@ -453,14 +452,14 @@ function privacyEs(): LegalDoc {
     ["11. Derechos", ["11.1. Puede informarse, pedir corrección, bloqueo o borrado, retirar el consentimiento e impugnar. 11.2. El borrado propio es la página de eliminación mientras haya entrado. 11.3. Lo demás, por carta a " + MAIL + " con el correo o el id de MAX. Respuesta en hasta 10 días hábiles. 11.4. También puede acudir a Roskomnadzor o a un tribunal."]],
     ["12. Menores", ["12.1. El servicio es para mayores de 18 años. No se recogen datos de menores. Si se sabe que un menor lleva el diario, los datos se borran."]],
     ["13. Cambios", ["13.1. La nueva edición se publica en esta página con la fecha."]],
-    ["14. Contacto", ["14.1. Las preguntas sobre datos personales van solo a " + MAIL + ". " + NAME + ", INN " + INN + ". Sitio: between-journal.ru."]],
+    ["14. Contacto", ["14.1. Las preguntas sobre datos personales van solo a " + MAIL + ". " + NAME + ". Sitio: between-journal.ru."]],
   ]);
 }
 
 function privacyPt(): LegalDoc {
-  return webDoc("Política de privacidade do Between", "Edição de 9 de novembro de 2026", ["Between · between-journal.ru · vale para o site e a versão no MAX", `Operadora: ${NAME}, autônoma, INN ${INN}`], [
+  return webDoc("Política de privacidade do Between", "Edição de 9 de novembro de 2026", ["Between · between-journal.ru · vale para o site e a versão no MAX", `Operadora: ${NAME}, autônoma`], [
     ["1. Disposições gerais", ["1.1. Esta política descreve os dados pessoais do site between-journal.ru e do mini app no MAX, e os direitos das pessoas. 1.2. Segue a Lei federal de 27.07.2006 n.º 152-FZ sobre dados pessoais. 1.3. A versão no Telegram (bot @BetweenJournalBot) tem a própria política nessa versão. Esta política não se aplica ao Telegram. 1.4. Escreva só para " + MAIL + ". Mensagens por bots e mensageiros não são aceitas."]],
-    ["2. Operadora", ["2.1. A operadora é " + NAME + ", autônoma, INN " + INN + ". E-mail: " + MAIL + "."]],
+    ["2. Operadora", ["2.1. A operadora é " + NAME + ", autônoma. E-mail: " + MAIL + "."]],
     ["3. Bases", ["3.1. Bases: o contrato (termos de uso), o consentimento ao começar a usar o serviço e a lei da Federação da Rússia, inclusive a lei n.º 54-FZ sobre recibos. 3.2. As notas são voluntárias. Dados de saúde não são pedidos nem exigidos."]],
     ["4. Quais dados", ["4.1. E-mail da web, id do MAX, texto das notas, sentimentos, temas, sessões, lembretes, idioma, fuso, contagens anônimas, país pelo IP, fato do pagamento, soma, data e prazo, voz só para virar texto sem guardar o arquivo, e cartas de ajuda com texto, endereço, plataforma e id. 4.2. O país do IP é lido só naquela solicitação, para avisar que o Telegram da Rússia pode não abrir sem VPN, e não é guardado. 4.3. Os dados do cartão ficam com a YooKassa. A operadora não os recebe nem os guarda."]],
     ["5. Fins", ["5.1. Guardar o diário, montar a Semana, lembrar, proteger a entrada com códigos, receber pagamentos e recibos, responder à ajuda e contar estatística anônima."]],
@@ -472,14 +471,14 @@ function privacyPt(): LegalDoc {
     ["11. Direitos", ["11.1. Você pode saber o que é tratado, pedir correção, bloqueio ou exclusão, retirar o consentimento e contestar. 11.2. A exclusão própria é a página de exclusão enquanto houver sessão. 11.3. O resto vai por carta a " + MAIL + ", com o e-mail ou o id do MAX. Resposta em até 10 dias úteis. 11.4. Também é possível procurar o Roskomnadzor ou um tribunal."]],
     ["12. Menores", ["12.1. O serviço é para maiores de 18 anos. Dados de menores não são coletados. Se ficar sabido que um menor mantém o diário, os dados são apagados."]],
     ["13. Mudanças", ["13.1. A nova edição é publicada nesta página com a data."]],
-    ["14. Contato", ["14.1. Perguntas sobre dados pessoais vão só para " + MAIL + ". " + NAME + ", INN " + INN + ". Site: between-journal.ru."]],
+    ["14. Contato", ["14.1. Perguntas sobre dados pessoais vão só para " + MAIL + ". " + NAME + ". Site: between-journal.ru."]],
   ]);
 }
 
 function privacyTr(): LegalDoc {
-  return webDoc("Between gizlilik politikası", "9 Kasım 2026 tarihli sürüm", ["Between · between-journal.ru · site ve MAX sürümü için geçerlidir", `İşleten: ${NAME}, serbest meslek, INN ${INN}`], [
+  return webDoc("Between gizlilik politikası", "9 Kasım 2026 tarihli sürüm", ["Between · between-journal.ru · site ve MAX sürümü için geçerlidir", `İşleten: ${NAME}, serbest meslek`], [
     ["1. Genel", ["1.1. Politika, between-journal.ru sitesinde ve MAX mini uygulamasında işlenen kişisel verileri ve kişilerin haklarını anlatır. 1.2. 27.07.2006 tarihli 152-FZ sayılı kişisel veriler yasasına uygundur. 1.3. Telegram sürümünün (bot @BetweenJournalBot) kendi politikası o sürümün içindedir. Bu politika Telegram’a uygulanmaz. 1.4. Yalnızca " + MAIL + " adresine yazın. Bot ve mesajlaşma kabul edilmez."]],
-    ["2. İşleten", ["2.1. İşleten " + NAME + ", serbest meslek, INN " + INN + ". E-posta: " + MAIL + "."]],
+    ["2. İşleten", ["2.1. İşleten " + NAME + ", serbest meslek. E-posta: " + MAIL + "."]],
     ["3. Dayanak", ["3.1. Dayanak: sözleşme (kullanım koşulları), hizmete başlayarak verilen onay ve Rusya Federasyonu hukuku, fişler için 54-FZ dahil. 3.2. Kayıtlar isteğe bağlıdır. Sağlık bilgisi istenmez ve zorunlu tutulmaz."]],
     ["4. Hangi veriler", ["4.1. Web e-postası, MAX kimliği, not metni, duygular, konular, seanslar, anımsatmalar, dil, saat dilimi, anonim sayaçlar, IP’den ülke, ödemenin olup olmadığı, tutar, tarih ve süre, ses yalnızca metne çevirmek için ve dosya saklanmadan, destek mektubunun metni, adresi, platformu ve günlük kimliği. 4.2. IP ülkesi yalnızca o istekte, Rusya’dan Telegram’ın VPN’siz açılmayabileceğini söylemek için okunur ve saklanmaz. 4.3. Kart verisini YooKassa işler. İşleten almaz ve saklamaz."]],
     ["5. Amaçlar", ["5.1. Günlüğü saklamak, Haftayı kurmak, anımsatmak, kodlarla girişi korumak, ödeme ve fiş, desteğe yanıt ve anonim istatistik."]],
@@ -491,14 +490,14 @@ function privacyTr(): LegalDoc {
     ["11. Haklar", ["11.1. İşlemeyi öğrenmek, düzeltme, engelleme ya da silme istemek, onayı geri almak ve itiraz etmek hakkınızdır. 11.2. Kendi silmeniz, giriş yapılmışken silme sayfasıdır. 11.3. Diğer istekler " + MAIL + " adresine, e-posta ya da MAX kimliğiyle. Yanıt en çok 10 iş günü. 11.4. Roskomnadzor’a ya da mahkemeye de başvurabilirsiniz."]],
     ["12. Reşit olmayanlar", ["12.1. Hizmet 18 yaşından büyükler içindir. Reşit olmayanın verisi toplanmaz. Günlüğü reşit olmayanın tuttuğu öğrenilirse veri silinir."]],
     ["13. Değişiklik", ["13.1. Yeni sürüm bu sayfada tarihle yayımlanır."]],
-    ["14. İletişim", ["14.1. Kişisel veri soruları yalnız " + MAIL + " adresine. " + NAME + ", INN " + INN + ". Site: between-journal.ru."]],
+    ["14. İletişim", ["14.1. Kişisel veri soruları yalnız " + MAIL + " adresine. " + NAME + ". Site: between-journal.ru."]],
   ]);
 }
 
 function privacyId(): LegalDoc {
-  return webDoc("Kebijakan privasi Between", "Revisi 9 November 2026", ["Between · between-journal.ru · berlaku untuk situs dan versi MAX", `Penyelenggara: ${NAME}, pekerja mandiri, INN ${INN}`], [
+  return webDoc("Kebijakan privasi Between", "Revisi 9 November 2026", ["Between · between-journal.ru · berlaku untuk situs dan versi MAX", `Penyelenggara: ${NAME}, pekerja mandiri`], [
     ["1. Umum", ["1.1. Kebijakan ini menjelaskan data pribadi di situs between-journal.ru dan mini app di MAX, serta hak orang yang bersangkutan. 1.2. Disusun menurut Undang-Undang Federal 27.07.2006 No. 152-FZ tentang data pribadi. 1.3. Versi Telegram (bot @BetweenJournalBot) punya kebijakan sendiri di versi itu. Kebijakan ini tidak berlaku untuk Telegram. 1.4. Tulis hanya ke " + MAIL + ". Pesan lewat bot dan pengirim pesan tidak diterima."]],
-    ["2. Penyelenggara", ["2.1. Penyelenggara adalah " + NAME + ", pekerja mandiri, INN " + INN + ". Email: " + MAIL + "."]],
+    ["2. Penyelenggara", ["2.1. Penyelenggara adalah " + NAME + ", pekerja mandiri. Email: " + MAIL + "."]],
     ["3. Dasar", ["3.1. Dasarnya: kontrak (ketentuan penggunaan), persetujuan dengan mulai memakai layanan, dan hukum Federasi Rusia, termasuk undang-undang No. 54-FZ untuk tanda terima. 3.2. Catatan bersifat sukarela. Data kesehatan tidak diminta dan tidak diwajibkan."]],
     ["4. Data apa", ["4.1. Email web, id MAX, teks catatan, perasaan, topik, sesi, pengingat, bahasa, zona waktu, hitungan anonim, negara dari IP, fakta pembayaran, jumlah, tanggal dan jangka, suara hanya untuk dijadikan teks tanpa menyimpan berkas, serta surat bantuan berisi teks, alamat, platform, dan id. 4.2. Negara dari IP dibaca hanya pada permintaan itu, untuk memperingatkan bahwa Telegram dari Rusia mungkin tidak terbuka tanpa VPN, dan tidak disimpan. 4.3. Data kartu diproses YooKassa. Penyelenggara tidak menerimanya dan tidak menyimpannya."]],
     ["5. Tujuan", ["5.1. Menyimpan jurnal, menyusun Minggu, mengingatkan, menjaga masuk dengan kode, menerima pembayaran dan tanda terima, menjawab bantuan, dan menghitung statistik anonim."]],
@@ -510,14 +509,14 @@ function privacyId(): LegalDoc {
     ["11. Hak", ["11.1. Anda dapat mengetahui pemrosesan, meminta perbaikan, pemblokiran, atau penghapusan, menarik persetujuan, dan menyanggah. 11.2. Penghapusan sendiri ada di halaman penghapusan saat Anda masuk. 11.3. Permintaan lain dikirim ke " + MAIL + " dengan email atau id MAX. Jawaban paling lama 10 hari kerja. 11.4. Anda juga dapat menghubungi Roskomnadzor atau pengadilan."]],
     ["12. Anak", ["12.1. Layanan untuk orang di atas 18 tahun. Data anak tidak dikumpulkan. Jika diketahui jurnal dipegang anak, data dihapus."]],
     ["13. Perubahan", ["13.1. Edisi baru dipublikasikan di halaman ini beserta tanggalnya."]],
-    ["14. Kontak", ["14.1. Pertanyaan tentang data pribadi hanya ke " + MAIL + ". " + NAME + ", INN " + INN + ". Situs: between-journal.ru."]],
+    ["14. Kontak", ["14.1. Pertanyaan tentang data pribadi hanya ke " + MAIL + ". " + NAME + ". Situs: between-journal.ru."]],
   ]);
 }
 
 function privacyVi(): LegalDoc {
-  return webDoc("Chính sách quyền riêng tư của Between", "Bản ngày 9 tháng 11 năm 2026", ["Between · between-journal.ru · áp dụng cho trang web và bản MAX", `Người điều hành: ${NAME}, tự kinh doanh, INN ${INN}`], [
+  return webDoc("Chính sách quyền riêng tư của Between", "Bản ngày 9 tháng 11 năm 2026", ["Between · between-journal.ru · áp dụng cho trang web và bản MAX", `Người điều hành: ${NAME}, tự kinh doanh`], [
     ["1. Quy định chung", ["1.1. Chính sách này mô tả dữ liệu cá nhân trên between-journal.ru và mini app trong MAX, cùng quyền của người có dữ liệu. 1.2. Soạn theo Luật liên bang ngày 27.07.2006 số 152-FZ về dữ liệu cá nhân. 1.3. Bản Telegram (bot @BetweenJournalBot) có chính sách riêng trong bản đó. Chính sách này không áp dụng cho Telegram. 1.4. Chỉ viết tới " + MAIL + ". Tin qua bot và ứng dụng nhắn tin không được nhận."]],
-    ["2. Người điều hành", ["2.1. Người điều hành là " + NAME + ", tự kinh doanh, INN " + INN + ". Email: " + MAIL + "."]],
+    ["2. Người điều hành", ["2.1. Người điều hành là " + NAME + ", tự kinh doanh. Email: " + MAIL + "."]],
     ["3. Căn cứ", ["3.1. Căn cứ: hợp đồng (điều khoản sử dụng), sự đồng ý khi bắt đầu dùng dịch vụ, và pháp luật Liên bang Nga, kể cả luật số 54-FZ về biên lai. 3.2. Ghi chú là tự nguyện. Thông tin sức khỏe không được hỏi và không bị bắt buộc."]],
     ["4. Dữ liệu nào", ["4.1. Email trên web, id MAX, nội dung ghi chú, cảm xúc, chủ đề, buổi, lời nhắc, ngôn ngữ, múi giờ, số đếm ẩn danh, quốc gia theo IP, việc đã trả, số tiền, ngày và thời hạn, giọng nói chỉ để thành chữ và không giữ tệp, thư hỗ trợ gồm nội dung, địa chỉ, nền tảng và mã nhật ký. 4.2. Quốc gia theo IP chỉ được đọc ở lần yêu cầu đó, để báo Telegram từ Nga có thể không mở nếu không có VPN, và không được lưu. 4.3. Dữ liệu thẻ do YooKassa xử lý. Người điều hành không nhận và không lưu."]],
     ["5. Mục đích", ["5.1. Giữ nhật ký, lập Tuần, nhắc, giữ lối vào bằng mã, nhận thanh toán và biên lai, trả lời hỗ trợ, và đếm thống kê ẩn danh."]],
@@ -529,14 +528,14 @@ function privacyVi(): LegalDoc {
     ["11. Quyền", ["11.1. Bạn có thể biết việc xử lý, yêu cầu sửa, chặn hoặc xóa, rút sự đồng ý và khiếu nại. 11.2. Tự xóa bằng trang xóa khi bạn đã vào. 11.3. Yêu cầu khác gửi tới " + MAIL + ", kèm email hoặc id MAX. Trả lời trong tối đa 10 ngày làm việc. 11.4. Bạn cũng có thể liên hệ Roskomnadzor hoặc tòa án."]],
     ["12. Người chưa thành niên", ["12.1. Dịch vụ dành cho người trên 18 tuổi. Dữ liệu của người chưa thành niên không được thu. Nếu biết nhật ký do người chưa thành niên giữ, dữ liệu bị xóa."]],
     ["13. Thay đổi", ["13.1. Bản mới được đăng trên trang này kèm ngày."]],
-    ["14. Liên hệ", ["14.1. Câu hỏi về dữ liệu cá nhân chỉ gửi tới " + MAIL + ". " + NAME + ", INN " + INN + ". Trang: between-journal.ru."]],
+    ["14. Liên hệ", ["14.1. Câu hỏi về dữ liệu cá nhân chỉ gửi tới " + MAIL + ". " + NAME + ". Trang: between-journal.ru."]],
   ]);
 }
 
 function privacyAr(): LegalDoc {
-  return webDoc("سياسة خصوصية Between", "نسخة 9 نوفمبر 2026", ["Between · between-journal.ru · تسري على الموقع ونسخة MAX", `المشغّلة: ${NAME}، عاملة لحسابها، INN ${INN}`], [
+  return webDoc("سياسة خصوصية Between", "نسخة 9 نوفمبر 2026", ["Between · between-journal.ru · تسري على الموقع ونسخة MAX", `المشغّلة: ${NAME}، عاملة لحسابها`], [
     ["1. أحكام عامة", ["1.1. تصف السياسة البيانات الشخصية في موقع between-journal.ru وتطبيق MAX، وحقوق أصحابها. 1.2. وُضعت وفق القانون الاتحادي الصادر في 27.07.2006 رقم 152-FZ بشأن البيانات الشخصية. 1.3. لنسخة Telegram (البوت @BetweenJournalBot) سياستها داخل تلك النسخة. هذه السياسة لا تسري على Telegram. 1.4. راسلوا " + MAIL + " فقط. رسائل البوتات وتطبيقات المراسلة لا تُقبل."]],
-    ["2. المشغّلة", ["2.1. المشغّلة هي " + NAME + "، عاملة لحسابها، INN " + INN + ". البريد: " + MAIL + "."]],
+    ["2. المشغّلة", ["2.1. المشغّلة هي " + NAME + "، عاملة لحسابها. البريد: " + MAIL + "."]],
     ["3. الأسس", ["3.1. الأسس: العقد (شروط الاستخدام)، والموافقة ببدء الاستخدام، ومتطلبات قانون الاتحاد الروسي بما فيها القانون رقم 54-FZ بشأن الإيصالات. 3.2. السجلات طوعية. لا تُطلب بيانات الصحة ولا تُشترط."]],
     ["4. أي بيانات", ["4.1. بريد الويب، ومعرّف MAX، ونص الملاحظات، والمشاعر، والمواضيع، والجلسات، والتذكيرات، واللغة، والمنطقة الزمنية، والعدادات المجهولة، والبلد من عنوان IP، وواقعة الدفع والمبلغ والتاريخ والمدة، والصوت لتحويله إلى نص دون حفظ الملف، ورسائل الدعم بنصها وعنوانها والمنصة والمعرّف. 4.2. يُقرأ البلد من IP في لحظة الطلب فقط للتحذير من أن Telegram من روسيا قد لا يفتح بلا VPN، ولا يُخزَّن. 4.3. بيانات البطاقة تعالجها YooKassa. المشغّلة لا تستلمها ولا تخزنها."]],
     ["5. الأغراض", ["5.1. حفظ اليوميات، وتكوين الأسبوع، والتذكير، وتأمين الدخول بالرموز، وقبول الدفع والإيصالات، والرد على الدعم، وإحصاء مجهول."]],
@@ -548,14 +547,14 @@ function privacyAr(): LegalDoc {
     ["11. الحقوق", ["11.1. يحق لكم معرفة المعالجة وطلب التصحيح أو الحجب أو الحذف وسحب الموافقة والطعن. 11.2. الحذف الذاتي في صفحة الحذف وأنتم داخلون. 11.3. سائر الطلبات برسالة إلى " + MAIL + " مع البريد أو معرّف MAX. الرد خلال 10 أيام عمل. 11.4. يحق لكم أيضًا مراجعة Roskomnadzor أو المحكمة."]],
     ["12. القاصرون", ["12.1. الخدمة لمن تجاوز 18 عامًا. بيانات القاصرين لا تُجمع. إذا عُلم أن قاصرًا يمسك اليوميات تُحذف البيانات."]],
     ["13. التغيير", ["13.1. النسخة الجديدة تُنشر في هذه الصفحة مع التاريخ."]],
-    ["14. التواصل", ["14.1. أسئلة البيانات الشخصية إلى " + MAIL + " فقط. " + NAME + "، INN " + INN + ". الموقع: between-journal.ru."]],
+    ["14. التواصل", ["14.1. أسئلة البيانات الشخصية إلى " + MAIL + " فقط. " + NAME + ". الموقع: between-journal.ru."]],
   ]);
 }
 
 function privacyFa(): LegalDoc {
-  return webDoc("سیاست حریم خصوصی Between", "ویرایش ۹ نوامبر ۲۰۲۶", ["Between · between-journal.ru · برای سایت و نسخهٔ MAX", `گرداننده: ${NAME}، خویش‌فرما، INN ${INN}`], [
+  return webDoc("سیاست حریم خصوصی Between", "ویرایش ۹ نوامبر ۲۰۲۶", ["Between · between-journal.ru · برای سایت و نسخهٔ MAX", `گرداننده: ${NAME}، خویش‌فرما`], [
     ["1. کلیات", ["1.1. این سیاست داده‌های شخصی سایت between-journal.ru و مینی‌اپ MAX و حقوق اشخاص را می‌گوید. 1.2. مطابق قانون فدرال ۲۷٫۰۷٫۲۰۰۶ شمارهٔ ۱۵۲-FZ دربارهٔ داده‌های شخصی است. 1.3. نسخهٔ تلگرام (بات @BetweenJournalBot) سیاست خودش را در همان نسخه دارد. این سیاست به تلگرام نمی‌رسد. 1.4. فقط به " + MAIL + " بنویسید. پیام بات و پیام‌رسان پذیرفته نمی‌شود."]],
-    ["2. گرداننده", ["2.1. گرداننده " + NAME + "، خویش‌فرما، INN " + INN + " است. ایمیل: " + MAIL + "."]],
+    ["2. گرداننده", ["2.1. گرداننده " + NAME + "، خویش‌فرما است. ایمیل: " + MAIL + "."]],
     ["3. مبناها", ["3.1. مبنا: قرارداد (شرایط استفاده)، رضایت با شروع استفاده، و قانون فدراسیون روسیه از جمله قانون شمارهٔ ۵۴-FZ برای رسید. 3.2. یادداشت‌ها داوطلبانه‌اند. دادهٔ سلامت خواسته و الزام نمی‌شود."]],
     ["4. چه داده‌هایی", ["4.1. ایمیل وب، شناسهٔ MAX، متن یادداشت، احساس، موضوع، جلسه، یادآوری، زبان، منطقهٔ زمانی، شمارندهٔ بی‌نام، کشور از IP، وقوع پرداخت و مبلغ و تاریخ و مدت، صدا فقط برای تبدیل به متن بدون نگهداری فایل، و نامهٔ پشتیبانی با متن، نشانی، سکو و شناسه. 4.2. کشور از IP فقط در همان درخواست خوانده می‌شود تا هشدار دهد تلگرام از روسیه ممکن است بدون VPN باز نشود، و ذخیره نمی‌شود. 4.3. دادهٔ کارت را YooKassa پردازش می‌کند. گرداننده آن را نمی‌گیرد و نگه نمی‌دارد."]],
     ["5. هدف‌ها", ["5.1. نگهداری دفتر، ساختن هفته، یادآوری، امنیت ورود با کد، دریافت پرداخت و رسید، پاسخ به پشتیبانی و آمار بی‌نام."]],
@@ -567,14 +566,14 @@ function privacyFa(): LegalDoc {
     ["11. حقوق", ["11.1. می‌توانید از پردازش باخبر شوید، اصلاح، مسدودسازی یا حذف بخواهید، رضایت را پس بگیرید و اعتراض کنید. 11.2. حذف به‌دست خودتان در صفحهٔ حذف است، وقتی وارد شده‌اید. 11.3. درخواست‌های دیگر با نامه به " + MAIL + " و ذکر ایمیل یا شناسهٔ MAX. پاسخ تا ۱۰ روز کاری. 11.4. می‌توانید به Roskomnadzor یا دادگاه هم مراجعه کنید."]],
     ["12. خردسالان", ["12.1. سرویس برای بالای ۱۸ سال است. دادهٔ خردسال جمع نمی‌شود. اگر معلوم شود دفتر را خردسال می‌نویسد، داده حذف می‌شود."]],
     ["13. تغییر", ["13.1. ویرایش تازه با تاریخ در همین صفحه منتشر می‌شود."]],
-    ["14. تماس", ["14.1. پرسش دادهٔ شخصی فقط به " + MAIL + ". " + NAME + "، INN " + INN + ". سایت: between-journal.ru."]],
+    ["14. تماس", ["14.1. پرسش دادهٔ شخصی فقط به " + MAIL + ". " + NAME + ". سایت: between-journal.ru."]],
   ]);
 }
 
 function privacyHi(): LegalDoc {
-  return webDoc("Between की गोपनीयता नीति", "9 नवंबर 2026 का संस्करण", ["Between · between-journal.ru · साइट और MAX संस्करण के लिए", `संचालिका: ${NAME}, स्व-नियोजित, INN ${INN}`], [
+  return webDoc("Between की गोपनीयता नीति", "9 नवंबर 2026 का संस्करण", ["Between · between-journal.ru · साइट और MAX संस्करण के लिए", `संचालिका: ${NAME}, स्व-नियोजित`], [
     ["1. सामान्य", ["1.1. यह नीति between-journal.ru और MAX मिनी ऐप में संसाधित व्यक्तिगत डेटा और लोगों के अधिकार बताती है. 1.2. यह 27.07.2006 के संघीय क़ानून संख्या 152-FZ, व्यक्तिगत डेटा पर, के अनुसार है. 1.3. Telegram संस्करण (बॉट @BetweenJournalBot) की अपनी नीति उसी संस्करण में है. यह नीति Telegram पर नहीं लगती. 1.4. केवल " + MAIL + " पर लिखें. बॉट और मैसेंजर के संदेश नहीं लिए जाते."]],
-    ["2. संचालिका", ["2.1. संचालिका " + NAME + " हैं, स्व-नियोजित, INN " + INN + ". ईमेल: " + MAIL + "."]],
+    ["2. संचालिका", ["2.1. संचालिका " + NAME + " हैं, स्व-नियोजित. ईमेल: " + MAIL + "."]],
     ["3. आधार", ["3.1. आधार: अनुबंध (उपयोग शर्तें), सेवा शुरू करने से सहमति, और रूसी संघ का क़ानून, रसीद के लिए क़ानून संख्या 54-FZ सहित. 3.2. नोट स्वैच्छिक हैं. स्वास्थ्य की जानकारी नहीं माँगी जाती और ज़रूरी नहीं ठहराई जाती."]],
     ["4. कौन सा डेटा", ["4.1. वेब का ईमेल, MAX पहचान, नोट का पाठ, भावना, विषय, सत्र, याद, भाषा, समय क्षेत्र, बिना नाम की गिनती, IP से देश, भुगतान का तथ्य, रकम, तारीख और अवधि, आवाज़ केवल पाठ बनाने के लिए और फ़ाइल रखे बिना, तथा सहायता पत्र का पाठ, पता, प्लेटफ़ॉर्म और पहचान. 4.2. IP से देश केवल उसी अनुरोध पर देखा जाता है, यह बताने के लिए कि रूस से Telegram बिना VPN नहीं खुल सकता, और अलग से नहीं रखा जाता. 4.3. कार्ड का डेटा YooKassa संसाधित करती है. संचालिका उसे नहीं लेती और नहीं रखती."]],
     ["5. उद्देश्य", ["5.1. डायरी रखना, हफ़्ता बनाना, याद दिलाना, कोड से प्रवेश सुरक्षित रखना, भुगतान और रसीद, सहायता का जवाब, और बिना नाम की गिनती."]],
@@ -586,14 +585,14 @@ function privacyHi(): LegalDoc {
     ["11. अधिकार", ["11.1. आप प्रसंस्करण जान सकते हैं, सुधार, रोक या मिटाने को कह सकते हैं, सहमति वापस ले सकते हैं और आपत्ति कर सकते हैं. 11.2. स्वयं मिटाना प्रवेश के बाद मिटाने के पृष्ठ पर होता है. 11.3. बाकी अनुरोध " + MAIL + " पर पत्र से, ईमेल या MAX पहचान के साथ. जवाब 10 कार्यदिवस तक. 11.4. Roskomnadzor या अदालत में भी जा सकते हैं."]],
     ["12. अवयस्क", ["12.1. सेवा 18 वर्ष से अधिक के लिए है. अवयस्क का डेटा नहीं लिया जाता. यदि पता चले कि डायरी अवयस्क रखता है, डेटा मिटा दिया जाता है."]],
     ["13. बदलाव", ["13.1. नया संस्करण तारीख के साथ इसी पृष्ठ पर छपता है."]],
-    ["14. संपर्क", ["14.1. व्यक्तिगत डेटा के प्रश्न केवल " + MAIL + " पर. " + NAME + ", INN " + INN + ". साइट: between-journal.ru."]],
+    ["14. संपर्क", ["14.1. व्यक्तिगत डेटा के प्रश्न केवल " + MAIL + " पर. " + NAME + ". साइट: between-journal.ru."]],
   ]);
 }
 
 function privacyUz(): LegalDoc {
-  return webDoc("Between maxfiylik siyosati", "2026-yil 9-noyabr tahriri", ["Between · between-journal.ru · sayt va MAX versiyasi uchun", `Operator: ${NAME}, o‘zini o‘zi band qilgan, INN ${INN}`], [
+  return webDoc("Between maxfiylik siyosati", "2026-yil 9-noyabr tahriri", ["Between · between-journal.ru · sayt va MAX versiyasi uchun", `Operator: ${NAME}, o‘zini o‘zi band qilgan`], [
     ["1. Umumiy", ["1.1. Siyosat between-journal.ru sayti va MAX mini-ilovasidagi shaxsiy ma’lumotlarni va shaxslar huquqini tasvirlaydi. 1.2. U 27.07.2006 yildagi 152-FZ-son shaxsiy ma’lumotlar to‘g‘risidagi federal qonunga muvofiq. 1.3. Telegram versiyasi (bot @BetweenJournalBot) o‘z siyosatiga ega. Bu siyosat Telegramga tatbiq etilmaydi. 1.4. Faqat " + MAIL + " ga yozing. Bot va messenjer qabul qilinmaydi."]],
-    ["2. Operator", ["2.1. Operator — " + NAME + ", o‘zini o‘zi band qilgan, INN " + INN + ". Pochta: " + MAIL + "."]],
+    ["2. Operator", ["2.1. Operator — " + NAME + ", o‘zini o‘zi band qilgan. Pochta: " + MAIL + "."]],
     ["3. Asoslar", ["3.1. Asoslar: shartnoma (foydalanish shartlari), foydalanishni boshlash bilan rozilik va Rossiya Federatsiyasi qonunchiligi, cheklar bo‘yicha 54-FZ qonuni bilan. 3.2. Yozuvlar ixtiyoriy. Sog‘liq haqida ma’lumot so‘ralmaydi va talab qilinmaydi."]],
     ["4. Qanday ma’lumot", ["4.1. Veb pochta, MAX identifikatori, yozuv matni, hislar, mavzular, seanslar, eslatmalar, til, vaqt mintaqasi, ismsiz hisoblagichlar, IP bo‘yicha mamlakat, to‘lov fakti, summa, sana va muddat, ovoz faqat matnga aylantirish uchun va fayl saqlanmasdan, yordam xati matni, manzili, platformasi va identifikatori. 4.2. IP bo‘yicha mamlakat faqat o‘sha so‘rovda, Rossiyadan Telegram VPN’siz ochilmasligi mumkinligini aytish uchun o‘qiladi va saqlanmaydi. 4.3. Karta ma’lumotini YooKassa qayta ishlaydi. Operator olmaydi va saqlamaydi."]],
     ["5. Maqsadlar", ["5.1. Kundalikni saqlash, Haftani yig‘ish, eslatish, kod bilan kirishni himoyalash, to‘lov va chek, yordamga javob va ismsiz statistika."]],
@@ -605,6 +604,6 @@ function privacyUz(): LegalDoc {
     ["11. Huquqlar", ["11.1. Qayta ishlash haqida bilish, tuzatish, bloklash yoki o‘chirishni so‘rash, rozilikni qaytarib olish va e’tiroz bildirish mumkin. 11.2. O‘zingiz o‘chirish — kirganingizda o‘chirish sahifasi. 11.3. Qolgani " + MAIL + " ga xat, pochta yoki MAX identifikatori bilan. Javob 10 ish kunigacha. 11.4. Roskomnadzor yoki sudga ham murojaat qilish mumkin."]],
     ["12. Voyaga yetmaganlar", ["12.1. Xizmat 18 yoshdan katta shaxslar uchun. Voyaga yetmaganlarning ma’lumoti yig‘ilmaydi. Kundalikni voyaga yetmagan yuritayotgani ma’lum bo‘lsa, ma’lumot o‘chiriladi."]],
     ["13. O‘zgarish", ["13.1. Yangi tahrir sana bilan shu sahifada chiqadi."]],
-    ["14. Aloqa", ["14.1. Shaxsiy ma’lumot savollari faqat " + MAIL + " ga. " + NAME + ", INN " + INN + ". Sayt: between-journal.ru."]],
+    ["14. Aloqa", ["14.1. Shaxsiy ma’lumot savollari faqat " + MAIL + " ga. " + NAME + ". Sayt: between-journal.ru."]],
   ]);
 }

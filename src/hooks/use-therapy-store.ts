@@ -627,8 +627,9 @@ export function useTherapyStore(options?: {
   return {
     store,
     importIntroduction,
-    saveProfile(name: string, therapy: boolean) {
-      return persist({ ...storeRef.current, profile: { name: name.trim().slice(0, 60), therapy, updatedAt: new Date().toISOString() } });
+    saveProfile(therapy: boolean) {
+      const store = storeRef.current;
+      return persist({ ...store, profile: { ...store.profile, therapy, updatedAt: new Date().toISOString() } });
     },
     restoreTheme(id: string, status: SessionTheme["status"]) {
       const current = storeRef.current;

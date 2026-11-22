@@ -59,23 +59,29 @@ export const SPECTRUM_ORDER: readonly Feeling[] = [
   "тяжело",
 ];
 
-const FILL: Record<Feeling, string> = {
-  радость: "oklch(0.8 0.12 95)",
-  спокойно: "oklch(0.74 0.09 165)",
-  усталость: "oklch(0.7 0.05 305)",
-  пусто: "oklch(0.78 0.02 235)",
-  грусть: "oklch(0.62 0.08 250)",
-  тревожно: "oklch(0.76 0.12 55)",
-  напряжение: "oklch(0.66 0.11 42)",
-  стыд: "oklch(0.66 0.1 8)",
-  злость: "oklch(0.6 0.14 28)",
-  тяжело: "oklch(0.46 0.045 255)",
+// The first stop also identifies the feeling in small markers and the PDF.
+const FILL: Record<Feeling, readonly [start: string, end: string]> = {
+  радость: ["oklch(0.84 0.15 91)", "oklch(0.83 0.12 57)"],
+  спокойно: ["oklch(0.73 0.116 177)", "oklch(0.72 0.108 218)"],
+  усталость: ["oklch(0.74 0.087 278)", "oklch(0.73 0.10 317)"],
+  пусто: ["oklch(0.76 0.047 215)", "oklch(0.75 0.032 275)"],
+  грусть: ["oklch(0.65 0.15 253)", "oklch(0.64 0.17 281)"],
+  тревожно: ["oklch(0.77 0.14 49)", "oklch(0.76 0.15 20)"],
+  напряжение: ["oklch(0.62 0.17 306)", "oklch(0.64 0.19 340)"],
+  стыд: ["oklch(0.70 0.14 350)", "oklch(0.69 0.095 315)"],
+  злость: ["oklch(0.63 0.207 27)", "oklch(0.63 0.19 358)"],
+  тяжело: ["oklch(0.54 0.105 273)", "oklch(0.53 0.105 313)"],
 };
 
 const ORDER = new Map(SPECTRUM_ORDER.map((feeling, index) => [feeling, index]));
 
 export function feelingFill(feeling: Feeling): string {
-  return FILL[feeling];
+  return FILL[feeling][0];
+}
+
+export function feelingGradient(feeling: Feeling) {
+  const [color, end] = FILL[feeling];
+  return { color, "--feeling-gradient-end": end };
 }
 
 export type DaySlice = {

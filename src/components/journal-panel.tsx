@@ -1,27 +1,30 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Check, Pencil, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Bot, Check, Pencil, Trash2, X } from "lucide-react";
+import { DateNavigation } from "@/components/date-navigation";
 import { EntryCalendar } from "@/components/entry-calendar";
 import { FeelingPicker } from "@/components/feeling-picker";
+import { FeelingStripe } from "@/components/feeling-stripe";
 import { useI18n } from "@/components/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { GlassPanel } from "@/components/ui/glass-panel";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { trackAnalytics } from "@/lib/analytics-client";
-import { addDays, formatTime, toDateKey } from "@/lib/dates";
+import { addDays, formatDayLabel, formatTime, toDateKey } from "@/lib/dates";
 import { feelingFill } from "@/lib/spectrum";
 import { shownEntryTags, splitTags } from "@/lib/tags";
-import { PICKER_FEELINGS, type Feeling, type JournalEntry } from "@/lib/types";
+import type { Feeling, JournalEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-import { introEntryBody, introTranscript, type IntroRecord } from "@/lib/intro-record";
+import { introEntryBody, introTranscript, type LegacyIntroRecord, type IntroRecord } from "@/lib/intro-record";
 
 interface JournalPanelProps {
   initialDate?: string;
   introductions?: IntroRecord[];
-  firstRecord?: IntroRecord | null;
+  firstRecord?: LegacyIntroRecord | null;
   onFirstSaved?: () => void;
   hint?: React.ReactNode;
   onReflect?: (id: string) => void;
@@ -39,7 +42,6 @@ interface JournalPanelProps {
   initData?: string;
   webFirst?: boolean;
   composeRequest?: number;
-  moodRequest?: number;
 }
 
 /** The stored day, plus the local day the note was actually written. */
@@ -77,15 +79,12 @@ export function JournalPanel({
   initData = "",
   webFirst = false,
   introductions, firstRecord, onFirstSaved, initialDate,
-  composeRequest = 0, moodRequest = 0,
+  composeRequest = 0,
 }: JournalPanelProps) {
-  const { t, locale, count, feeling: feelingLabel, slot } = useI18n();
+  const { t, locale, feeling: feelingLabel, slot } = useI18n();
   const today = toDateKey();
   const [date, setDate] = useState(initialDate || today);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [query,setQuery]=useState("");
-  const [allDates,setAllDates]=useState(false);
-  const [filter,setFilter]=useState("");
   const [feelings, setFeelings] = useState<Feeling[]>([]);
   const [body, setBody] = useState("");
   const [manual, setManual] = useState<string[]>([]);
@@ -93,9 +92,9 @@ export function JournalPanel({
   const [hidden, setHidden] = useState<string[]>([]);
   const [savedFlash, setSavedFlash] = useState(false);
   const composerRef = useRef<HTMLElement | null>(null);
-  const [lastAction, setLastAction] = useState({composeRequest: 0, moodRequest: 0});
-  if (composeRequest !== lastAction.composeRequest || moodRequest !== lastAction.moodRequest) {
-    setLastAction({composeRequest, moodRequest});
+  const [lastComposeRequest, setLastComposeRequest] = useState(0);
+  if (composeRequest !== lastComposeRequest) {
+    setLastComposeRequest(composeRequest);
     if (editingId) {
       setEditingId(null);
       setManual([]);
@@ -104,9 +103,6 @@ export function JournalPanel({
       setBody("");
     }
     if (!firstRecord && (editingId || (!body.trim() && !feelings.length))) setDate(today);
-    setAllDates(false);
-    setQuery("");
-    setFilter("");
   }
   // On an auth return the splash can still hide the editor when it mounts.
   useEffect(() => {
@@ -127,11 +123,9 @@ export function JournalPanel({
   const dayEntries = useMemo(
     () =>
       entries
-        .filter((entry) => (allDates || daysOf(entry).includes(date)) &&
-          (!filter || entry.feelings.some(f=>f===filter)) &&
-          (!query.trim() || [entry.body,...entry.tags,...entry.feelings.map(feelingLabel)].join(" ").toLocaleLowerCase(locale).includes(query.trim().toLocaleLowerCase(locale))))
+        .filter((entry) => daysOf(entry).includes(date))
         .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    [entries, date, allDates, filter, query, feelingLabel, locale],
+    [entries, date],
   );
   const marks = useMemo(() => dayMarks(entries), [entries]);
 
@@ -178,7 +172,6 @@ export function JournalPanel({
   }
 
   function changeDate(next: string) {
-    setAllDates(false);
     setDate(next);
     setSavedFlash(false);
     resetForm();
@@ -188,36 +181,29 @@ export function JournalPanel({
   const isToday = date === today;
   return (
     <div className="journal-board flex flex-col gap-4">
-      <header className="px-1">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-h-7 flex-wrap items-center gap-x-2">
-            {isToday ? <span className="text-sm font-medium text-section-header">{t("todayTitle")}</span> :
-              <Button type="button" variant="outline" size="xs" disabled={disabled} onClick={() => changeDate(today)}>{t("todayTitle")}</Button>}
-            <span aria-hidden className="text-muted-foreground">·</span>
-            <span className="text-xs text-muted-foreground" aria-live="polite">
-              {savedFlash ? <span className="inline-flex items-center gap-1 text-primary"><Check aria-hidden className="size-3.5" />{t("saved")}</span> : count(dayEntries.length, "note")}
-            </span>
-          </div>
-        </div>
-        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 text-center">
-          <Button type="button" variant="ghost" size="icon" aria-label={t("journalPrevDay")} disabled={disabled} onClick={() => changeDate(addDays(date, -1))}>
-            <ChevronLeft aria-hidden className="rtl:scale-x-[-1]" />
-          </Button>
-          <EntryCalendar id="journal-date" value={date} max={today} marks={marks} disabled={disabled} compact onChange={changeDate} />
-          <Button type="button" variant="ghost" size="icon" aria-label={t("journalNextDay")} disabled={disabled || isToday} onClick={() => changeDate(addDays(date, 1))}>
-            <ChevronRight aria-hidden className="rtl:scale-x-[-1]" />
-          </Button>
-        </div>
+      <header>
+        <h1 className="mb-4 font-display text-2xl leading-[1.15] tracking-[-.035em] sm:text-3xl">{t("deskEntries")}</h1>
+        <DateNavigation
+          previous={{ label: t("journalPrevDay"), disabled, onClick: () => changeDate(addDays(date, -1)) }}
+          next={{ label: t("journalNextDay"), disabled: disabled || isToday, onClick: () => changeDate(addDays(date, 1)) }}
+          action={<EntryCalendar id="journal-date" value={date} max={today} marks={marks} disabled={disabled} onChange={changeDate} />}
+        >
+          <time dateTime={date}>
+            {isToday ? t("todayTitle") : formatDayLabel(date, locale)}
+          </time>
+        </DateNavigation>
       </header>
+      <span className="sr-only" role="status">{savedFlash ? t("saved") : ""}</span>
 
-      {!composerOpen && <section ref={composerRef} className="glass space-y-3 rounded-3xl p-4">
-        <form className="flex items-center gap-2" onSubmit={handleSubmit}>
+      {!composerOpen && <GlassPanel ref={composerRef} className="space-y-3 p-4">
+        <form onSubmit={handleSubmit}>
+          <FeelingPicker value={feelings} onChange={setFeelings} disabled={disabled}>
           <input className="min-w-0 flex-1 rounded-xl border border-input bg-background px-3 py-3 text-base" aria-label={t("newEntry")} placeholder={t("notePlaceholder")} value={body} onChange={e=>setBody(e.target.value)} disabled={disabled}/>
           <Button type="submit" size="icon" aria-label={t("saveEntry")} disabled={disabled || !canSave}><Check/></Button>
+          </FeelingPicker>
         </form>
-        <FeelingPicker openRequest={moodRequest} value={feelings} onChange={setFeelings} disabled={disabled}/>
-      </section>}
-      {composerOpen && <section ref={composerRef} className="glass scroll-mt-4 rounded-3xl p-5 sm:p-6">
+      </GlassPanel>}
+      {composerOpen && <GlassPanel ref={composerRef} className="scroll-mt-4 p-5 sm:p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <h3 className="font-display text-xl tracking-tight text-foreground">
@@ -232,6 +218,7 @@ export function JournalPanel({
           <div className="space-y-3">
             {firstRecord && <p className="text-sm">{firstRecord.observation}</p>}
             <Label htmlFor="journal-body" className={firstRecord ? "font-normal leading-relaxed" : undefined}>{firstRecord?.prompt ?? t("note")}</Label>
+            <FeelingPicker value={feelings} onChange={setFeelings} disabled={disabled}>
             <Textarea
               id="journal-body"
               autoFocus={!webFirst}
@@ -239,11 +226,11 @@ export function JournalPanel({
               disabled={disabled}
               onChange={(event) => setBody(event.target.value)}
               placeholder={t("notePlaceholder")}
-              className="min-h-28 resize-none text-[0.9375rem]"
+              className="min-h-28 min-w-0 flex-1 resize-none text-[0.9375rem]"
             />
+            </FeelingPicker>
           </div>
 
-          <FeelingPicker openRequest={moodRequest} value={feelings} onChange={setFeelings} disabled={disabled} />
 
           <div className="flex items-center gap-3 pt-1">
             <Button type="submit" size="lg" className="flex-1" disabled={disabled || !canSave}>
@@ -251,16 +238,10 @@ export function JournalPanel({
             </Button>
           </div>
         </form>
-      </section>}
+      </GlassPanel>}
 
       {hint}
-      <section className="space-y-3 px-1 pt-2">
-        <div className="flex items-baseline justify-between gap-3 px-1">
-          <h3 className="font-display text-xl tracking-tight text-foreground">{t(allDates?"allDates":"thisDay")}</h3>
-          <Button variant="outline" size="sm" aria-pressed={allDates} onClick={()=>setAllDates(!allDates)}>{t(allDates?"thisDay":"allDates")}</Button>
-        </div>
-        <div className="flex flex-wrap gap-2"><input type="search" aria-label={t("searchEntries")} placeholder={t("searchEntries")} className="min-w-0 flex-1 rounded-xl border border-input bg-background px-3 py-2" value={query} onChange={e=>setQuery(e.target.value)}/>
-          <select aria-label={t("feelingsGroup")} className="max-w-full rounded-xl border border-input bg-background px-2" value={filter} onChange={e=>setFilter(e.target.value)}><option value="">{t("feelingsGroup")}</option>{PICKER_FEELINGS.map(f=><option key={f} value={f}>{feelingLabel(f)}</option>)}</select></div>
+      <section className="px-1">
         {dayEntries.length === 0 ? (
           <p className="rounded-3xl border border-dashed border-[color:var(--glass-border)] px-5 py-6 text-center text-sm text-muted-foreground">
             {t("dayEmpty")}
@@ -272,7 +253,7 @@ export function JournalPanel({
               const tone = entry.feelings[0];
               const themes = shownEntryTags(entry);
               const intro = introductions?.find(r => entry.id === "intro-answer-"+r.attempt);
-              const transcript = intro && introTranscript(intro);
+              const transcript = intro && intro.kind !== "checkin" && introTranscript(intro);
               const divider = transcript ? "\n\n"+transcript.history+"\n\n" : "";
               const cut = divider ? entry.body.lastIndexOf(divider) : -1;
               const visibleBody = cut < 0 ? entry.body : entry.body.slice(0, cut);
@@ -280,22 +261,15 @@ export function JournalPanel({
                 <li
                   key={entry.id}
                   className={cn(
-                    "glass relative overflow-hidden rounded-3xl p-5 pl-6 transition-shadow",
+                    "glass relative overflow-hidden rounded-3xl px-6 py-5 transition-shadow",
                     editingId === entry.id && "ring-2 ring-primary/30",
                     savedFlash && entry.id === dayEntries[0]?.id && "entry-arrive",
                     checkin && "border-s-4 !bg-secondary/60 !py-3",
                   )}
                 >
-                  {tone && (
-                    <span
-                      aria-hidden
-                      className="absolute inset-y-5 start-0 w-1 rounded-e-full"
-                      style={{ background: feelingFill(tone) }}
-                    />
-                  )}
-                  <div className="flex items-start justify-between gap-3">
+                  {tone && <FeelingStripe feeling={tone} className="inset-y-5" />}
+                  <div className="flex items-center justify-between gap-3">
                     <div className="tabular flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-                      {allDates && <time dateTime={entry.date}>{entry.date}</time>}
                       <span className="font-medium text-foreground">
                         {formatTime(entry.createdAt, locale)}
                       </span>
@@ -308,7 +282,7 @@ export function JournalPanel({
                       )}
                       {checkin && entry.source === "checkin" && <span>· {t("checkinMark")}</span>}
                     </div>
-                    <div className="-mt-1.5 -me-2 flex shrink-0 items-center">
+                    <div className="flex shrink-0 items-center gap-1.5">
                       <Button
                         type="button"
                         size="icon-sm"

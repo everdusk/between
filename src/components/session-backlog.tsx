@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, ChevronDown, Plus, X } from "lucide-react";
+import { Check, ChevronDown, Plus, Undo2, X } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,24 +64,10 @@ function ThemeRow({
 }) {
   const { t } = useI18n();
   return (
-    <li className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-      <button
-        type="button"
-        disabled={disabled}
-        aria-pressed={said}
-        aria-label={saidLabel}
-        onClick={onToggle}
-        className={cn(
-          "order-2 mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-foreground/25 bg-background/40 transition-colors duration-200 focus-visible:ring-4 focus-visible:ring-ring/25",
-          said ? "border-primary bg-primary text-primary-foreground" : "text-muted-foreground hover:border-primary hover:text-primary",
-        )}
-      >
-        <Check className={cn("size-3", said ? "opacity-100" : "opacity-60")} strokeWidth={3} />
-      </button>
-      <div className="min-w-0 flex-1 space-y-1">
+    <li className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-2 py-3 first:pt-0 last:pb-0">
         <button
           type="button"
-          className="flex w-full items-start gap-2 text-start"
+          className={cn("topic-row-trigger flex w-full items-center gap-2 rounded-2xl ps-3 pe-2 py-2 text-start", said && "col-span-2")}
           aria-expanded={open}
           onClick={onExpand}
         >
@@ -96,12 +82,23 @@ function ThemeRow({
           </span>
           <ChevronDown
             aria-hidden
-            className={cn("mt-0.5 size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
+            className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")}
           />
         </button>
-        {open && theme.outcome && <p className="whitespace-pre-wrap text-sm">{theme.outcome}</p>}
+        {!said && <Button type="button" size="icon-sm" variant="ghost" disabled={disabled}
+          aria-label={saidLabel} onClick={onToggle}>
+          <Check aria-hidden />
+        </Button>}
+        <Button type="button" size="icon-sm" variant="ghost" disabled={disabled} aria-label={removeLabel} onClick={onDismiss}>
+          <X aria-hidden />
+        </Button>
+        {said && <Button type="button" size="sm" variant="outline" disabled={disabled}
+          className="col-span-full ms-3 mt-1 justify-self-start" onClick={onToggle}>
+          <Undo2 aria-hidden className="rtl:scale-x-[-1]" />{t("backlogRestoreActive")}
+        </Button>}
+        {open && theme.outcome && <p className="col-span-full whitespace-pre-wrap text-sm">{theme.outcome}</p>}
         {open && (
-          <ul className="space-y-2 pt-2">
+          <ul className="col-span-full space-y-2 pt-2">
             {notes.length === 0 ? (
               <li className="text-sm text-muted-foreground">{emptyLabel}</li>
             ) : (
@@ -136,18 +133,6 @@ function ThemeRow({
             )}
           </ul>
         )}
-      </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-sm"
-        className="order-3 shrink-0"
-        disabled={disabled}
-        aria-label={removeLabel}
-        onClick={onDismiss}
-      >
-        <X aria-hidden />
-      </Button>
     </li>
   );
 }
@@ -243,7 +228,7 @@ export function SessionBacklog({
         <div className="mt-5 border-t border-[color:var(--glass-border)] pt-4">
           <button
             type="button"
-            className="flex w-full items-center gap-2 text-start"
+            className="topic-row-trigger flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-start"
             aria-expanded={archiveOpen}
             onClick={() => setArchiveOpen((open) => !open)}
           >
@@ -302,7 +287,7 @@ export function SessionBacklog({
             </div>
             <Button autoFocus variant="ghost" size="icon" aria-label={t("cancel")} onClick={() => setClosing(null)}><X /></Button>
           </header>
-          <p className="my-4 break-words border-s-2 border-primary/50 ps-3 text-sm">{live.find(theme => theme.id === closing)?.title}</p>
+          <p className="diary-quote my-4 break-words text-sm">{live.find(theme => theme.id === closing)?.title}</p>
           <Textarea aria-labelledby="topic-outcome-title" className="min-h-28 max-h-52 resize-y" value={outcome} placeholder={t("insightsPlaceholder")} onChange={event => setOutcome(event.target.value)} />
           <Button className="topic-save mt-4 h-auto min-h-11 w-full whitespace-normal" onClick={() => {
             onDiscuss(closing, true, outcome.trim());
@@ -312,7 +297,8 @@ export function SessionBacklog({
       )}
       {onRestore && removed.map(item=><div key={item.id} className="mt-2 flex items-center justify-between gap-2 text-sm"><span>{item.title}</span><Button variant="outline" onClick={()=>{onRestore(item.id,item.status);setRemoved(rows=>rows.filter(row=>row.id!==item.id))}}>{t("undoChange")}</Button></div>)}
       <form
-        className="mt-5 flex items-center gap-2 rounded-full border border-[color:var(--glass-border)] bg-background/55 p-1 ps-4 transition-[box-shadow,border-color] has-[:focus-visible]:border-primary/40 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-primary/12"
+        data-field-surface
+        className="mt-5 flex items-center gap-2 rounded-full border border-[color:var(--glass-border)] bg-background/55 p-1 ps-4 transition-[box-shadow,border-color] has-[:focus-visible]:border-ring/40 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-ring/12"
         onSubmit={(event) => {
           event.preventDefault();
           add(draft);

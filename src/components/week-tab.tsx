@@ -9,6 +9,7 @@ import { trackAnalytics } from "@/lib/analytics-client";
 import { SubscribeCheckout } from "@/components/subscribe-checkout";
 import { PremiumPaywall } from "@/components/premium-paywall";
 import { Button } from "@/components/ui/button";
+import { GlassPanel } from "@/components/ui/glass-panel";
 import {
   createWeekInvoice,
   fetchWeekAccess,
@@ -104,12 +105,12 @@ export function WeekTab({
 
   async function dismissIntro() {
     if (!access) return;
+    setAccess({ ...access, introSeen: true });
     const seen = inTelegram
       ? await postWeekAccess(initData, "seen")
       : await postSessionWeekAccess("seen", maxInitData);
     if (!alive.current) return;
-    // Hiding the introduction may be local; granting access may not.
-    publish(seen ?? { ...access, introSeen: true });
+    if (seen) publish(seen);
   }
 
   async function refreshAfterPay() {
@@ -189,32 +190,19 @@ export function WeekTab({
   return (
     <div className="space-y-4">
       {showIntro && (
-        <section className="glass flex flex-col gap-5 rounded-3xl p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+        <GlassPanel className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
           <p className="text-sm leading-relaxed text-foreground/90 sm:text-base">
             {inTelegram
               ? t("intro", { days: count(introDays, "day"), price: access.starPrice })
               : t("webWeekIntro", { days: count(introDays, "day"), price: access.rubPrice })}
           </p>
-          <Button type="button" variant="ink" className="shrink-0" onClick={() => void dismissIntro()}>
+          <Button data-confirm="" type="button" className="shrink-0" onClick={() => void dismissIntro()}>
             {t("introOk")}
           </Button>
-        </section>
+        </GlassPanel>
       )}
       {access.paused && (
         <p className="px-2 text-xs text-muted-foreground">{t("pausedLine")}</p>
-      )}
-      {access.status === "trial" && access.introSeen && (
-        <p className="px-2 text-xs text-muted-foreground">
-          {inTelegram
-            ? t("trialLine", {
-                days: count(access.daysLeft, "day"),
-                price: access.starPrice,
-              })
-            : t("webWeekTrial", {
-                days: count(access.daysLeft, "day"),
-                price: access.rubPrice,
-              })}
-        </p>
       )}
       {children}
     </div>

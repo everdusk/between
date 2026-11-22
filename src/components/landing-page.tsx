@@ -3,11 +3,11 @@
 /* Full document navigation runs the journal's surface bootstrap. */
 
 import { BrandLogo } from "./brand-logo";
-import { useRef, useState } from "react";
+import { MessagesSquare, NotebookPen } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { LanguageSwitch } from "./language-switch";
 import { SchemeSwitch, useDemoMediaDirectory } from "./scheme-switch";
 import { LocaleProvider, useI18n } from "./locale-provider";
-import { LEGAL_INN } from "@/lib/legal";
 import { trackSurvey } from "@/lib/survey-analytics";
 import "./web-theme.css";
 import "./landing-chapters.css";
@@ -64,6 +64,47 @@ export function LandingPage() {
   return <LocaleProvider publicLanguages landing><LandingContent /></LocaleProvider>;
 }
 
+function ChapterHeading({ title, clip }: { title: string; clip: string }) {
+  const [visible, setVisible] = useState(title);
+  const current = useRef(title);
+
+  useEffect(() => {
+    if (current.current === title) return;
+    const previous = current.current;
+    let length = previous.length;
+    let erasing = length > 0;
+    let timer: number;
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    function advance() {
+      if (motion.matches) {
+        current.current = title;
+      } else if (erasing) {
+        length -= 1;
+        current.current = previous.slice(0, length);
+        erasing = length > 0;
+      } else {
+        length += 1;
+        current.current = title.slice(0, length);
+      }
+      setVisible(current.current);
+      if (current.current !== title) {
+        timer = window.setTimeout(advance, erasing ? 22 : length === 0 ? 110 : 44);
+      }
+    }
+
+    timer = window.setTimeout(advance, 0);
+    return () => window.clearTimeout(timer);
+  }, [title]);
+
+  return (
+    <h1 data-chapter={clip} className="chapter-heading" aria-label={title}>
+      <span className="chapter-heading-size" aria-hidden>{title}</span>
+      <span className="chapter-heading-text" aria-hidden data-typing={visible !== title}>{visible}</span>
+    </h1>
+  );
+}
+
 function LandingContent() {
   const { locale } = useI18n();
   const en = locale === "en";
@@ -98,9 +139,9 @@ function LandingContent() {
         </header>
         <div className="chapter-hero">
           <section className="chapter-story">
-            <div key={clip} className="chapter-copy">
-              <h1 data-chapter={clip}>{title}</h1>
-              <p>{body}</p>
+            <div className="chapter-copy">
+              <ChapterHeading title={title} clip={clip} />
+              <p key={clip}>{body}</p>
             </div>
             <a className="chapter-cta" onClick={() => trackSurvey({event: "web_landing_start", placement: "hero"}, locale)} href={`/?start=1&lang=${locale}`}>{start}</a>
             <nav aria-label={en ? "Chapters" : "Главы"}>
@@ -134,19 +175,18 @@ function LandingContent() {
               aria-label={`${en ? "Between web journal" : "Веб-дневник Between"} · ${label}`} />
           </figure>
         </div>
-        <section className="chapter-audience">
-          {en ? <>
-            <h2>A mood journal for reflection<br />and therapy.</h2>
-            <p className="chapter-audience-intro">AI helps you spot what keeps coming up in your entries and brings related moments together under one topic.</p>
-            <article><h3>For personal reflection</h3><p>Group your notes by theme and explore how events and feelings show up together. Keep your insights and choose what you&apos;d like to try next.</p></article>
-            <article><h3>If you&apos;re in therapy</h3><p>Keep track of what matters between sessions. Add your session schedule and revisit your notes and questions before your next appointment.</p></article>
-          </> : <>
-          <h2>Дневник настроения для себя<br />и для терапии.</h2>
-          <p className="chapter-audience-intro">ИИ поможет заметить, что повторяется в ваших записях, и объединит похожие моменты в одну тему.</p>
-          <article><h3>Для самостоятельной рефлексии</h3><p>Собирайте записи по темам, замечайте повторения и исследуйте возможные связи между событиями и чувствами. Сохраняйте выводы и выбирайте, что попробовать дальше.</p></article>
-          <article><h3>Для тех, кто в терапии</h3><p>Сохраните важное между встречами. Добавьте расписание сеансов — и возвращайтесь к записям и вопросам перед следующей встречей.</p></article>
-          </>}
-          <details className="chapter-example">
+        <section id="audience" className="chapter-audience">
+          <h2>{en ? <>A mood journal for reflection<br />and therapy.</> : <>Дневник настроения для себя<br />и для терапии.</>}</h2>
+          <p className="chapter-audience-intro">{en ? "AI helps you spot what keeps coming up in your entries and brings related moments together under one topic." : "ИИ поможет заметить, что повторяется в ваших записях, и объединит похожие моменты в одну тему."}</p>
+          <article>
+            <h3><NotebookPen aria-hidden />{en ? "For personal reflection" : "Для самостоятельной рефлексии"}</h3>
+            <p>{en ? "Group your notes by theme and explore how events and feelings show up together. Keep your insights and choose what you'd like to try next." : "Собирайте записи по темам, замечайте повторения и исследуйте возможные связи между событиями и чувствами. Сохраняйте выводы и выбирайте, что попробовать дальше."}</p>
+          </article>
+          <article>
+            <h3><MessagesSquare aria-hidden />{en ? "If you're in therapy" : "Для тех, кто в терапии"}</h3>
+            <p>{en ? "Keep track of what matters between sessions. Add your session schedule and revisit your notes and questions before your next appointment." : "Сохраните важное между встречами. Добавьте расписание сеансов — и возвращайтесь к записям и вопросам перед следующей встречей."}</p>
+          </article>
+          <details id="first-entry" className="chapter-example">
             <summary>{en ? "How do I start an emotion journal?" : "Как начать вести дневник эмоций?"}</summary>
             {en ? <>
               <p>Pick one moment from today. Write down what happened, then mark how you felt. One line is enough.</p>
@@ -172,7 +212,7 @@ function LandingContent() {
           </nav>}
           <div>
             <a href="/privacy">{en ? "Privacy policy" : "Политика конфиденциальности"}</a> ·{" "}
-            <a href="/terms">{en ? "Terms of use" : "Условия использования"}</a> · {en ? "Tax ID" : "ИНН"} {LEGAL_INN}
+            <a href="/terms">{en ? "Terms of use" : "Условия использования"}</a>
           </div>
         </footer>
       </div>

@@ -4,7 +4,6 @@ import { BrandLogo } from "./brand-logo";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { BotConnectBanner } from "./bot-connect-banner";
-import { Smile } from "lucide-react";
 import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
 import { JournalPanel } from "@/components/journal-panel";
 import { JournalSkeleton } from "@/components/journal-skeleton";
@@ -20,7 +19,7 @@ import {
 } from "@/components/scheme-switch";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WebAccountGate } from "@/components/web-account-gate";
-import { readIntroDraft, type IntroDraft, type IntroRecord } from "@/lib/intro-record";
+import { readIntroDraft, type IntroDraft, type LegacyIntroRecord } from "@/lib/intro-record";
 import { IntroCard, IntroReflection, introDraftKey } from "./intro-reflection";
 import { Connections, ReflectionPanel } from "@/components/journal-explore";
 import { ProfileEditor } from "./journal-intro";
@@ -334,7 +333,6 @@ function TherapyShell({
   const [entryId, setEntryId] = useState("");
   const [topic, setTopic] = useState({ id: "", visit: 0 });
   const [hideBot, setHideBot] = useState(false);
-  const [moodRequest, setMoodRequest] = useState(0);
   const signInLink = useSyncExternalStore(
     subscribeLaunch,
     () => new URLSearchParams(location.search).get("login") === "1",
@@ -345,9 +343,8 @@ function TherapyShell({
     try { return readIntroDraft(JSON.parse(sessionStorage.getItem(introDraftKey) ?? "null")); }
     catch { return null; }
   });
-  // Keep the unfinished introduction for onboarding, separate from a direct sign-in.
   const intro = signInLink ? null : draft;
-  const [editingIntro, setEditingIntro] = useState<IntroRecord | null>(null);
+  const [editingIntro, setEditingIntro] = useState<LegacyIntroRecord | null>(null);
   const editorKey = "between:intro:open-editor";
   function finishIntroEditor() {
     try { sessionStorage.removeItem(editorKey); } catch { /* private browsing */ }
@@ -358,7 +355,7 @@ function TherapyShell({
     let attempt: string | null;
     try { attempt = sessionStorage.getItem(editorKey); } catch { return; }
     const saved = store.introductions?.find(r => r.attempt === attempt);
-    if (!saved || store.entries.some(e => e.id === "intro-answer-"+attempt)) return;
+    if (!saved || saved.kind === "checkin" || store.entries.some(e => e.id === "intro-answer-"+attempt)) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- restore the editor only in the authenticated owner's journal
     setEditingIntro(saved);
     setPicked("journal");
@@ -389,13 +386,13 @@ function TherapyShell({
       if (!saved) { setHandoffError(true); return; }
       setHandoffError(false);
       try {
-        if (intro.note) sessionStorage.removeItem(editorKey);
+        if (intro.kind === "checkin" || intro.note) sessionStorage.removeItem(editorKey);
         else sessionStorage.setItem(editorKey,intro.attempt);
         sessionStorage.removeItem(introDraftKey);
         sessionStorage.removeItem(introDraftKey+":owner");
       } catch { /* private browsing */ }
-      if (intro.note) {
-        setSavedIntroDate(intro.note.date);
+      if (intro.kind === "checkin" || intro.note) {
+        setSavedIntroDate(intro.note?.date ?? intro.date);
         trackAnalytics("note", "");
       } else {
         setEditingIntro(intro);
@@ -459,7 +456,7 @@ function TherapyShell({
       <IntroReflection onFinish={beginRegistration} />
     ) : (
       <div className="space-y-4">
-      {intro && <IntroCard record={intro}/>}
+      {intro && intro.kind !== "checkin" && <IntroCard record={intro}/>}
       <WebAccountGate
         key={signInLink ? "sign-in" : "onboarding"}
         surveyAttempt={intro?.attempt}
@@ -520,33 +517,16 @@ function TherapyShell({
       <WebWorkspace
         section={personal && section === "sessions" ? "topics" : section}
         onSection={selectSection}
-        tools={
-          <>
-            {!blocked && (
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label={t("howFeel")}
-                onClick={() => {
-                  selectSection("journal");
-                  setMoodRequest(n => n + 1);
-                }}
-              >
-                <Smile />
-              </Button>
-            )}
-            {accountButton}
-          </>
-        }
+        tools={accountButton}
         footer={footer}
         blocked={blocked}
         onCompose={compose}
         personal={personal}
-        name={store.profile?.name ?? ""}
         pages={{
           week: (
             <>
               <WeekTab active={section === "week"} {...accessProps}>
+                {section === "week" && hint}
                 <WeeklyPanel
                   entries={store.entries}
                   sessions={
@@ -580,8 +560,7 @@ function TherapyShell({
               firstRecord={editingIntro}
               onFirstSaved={finishIntroEditor}
               composeRequest={composeRequest}
-              moodRequest={moodRequest}
-              hint={hint}
+              hint={section === "journal" && hint}
               onReflect={reflect}
             />
           ),
@@ -623,13 +602,10 @@ function TherapyShell({
             <SessionsPanel
               sessions={store.sessions}
               plan={store.sessionPlan}
-              notify={store.notify}
               onSave={upsertSession}
               onDelete={deleteSession}
               onSavePlan={saveSessionPlan}
-              onSaveNotify={saveNotify}
               disabled={disabled}
-              notificationsDisabled={!linked}
             />
           ),
         }}

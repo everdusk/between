@@ -285,6 +285,16 @@ html[data-splash] .app-root {
   font-variant-numeric: tabular-nums;
 }
 
+@utility diary-card-title {
+  @apply text-base font-medium text-foreground;
+  font-family: inherit;
+}
+
+.diary-quote {
+  border-inline-start: 2px solid var(--quote-accent, var(--primary));
+  padding-inline-start: .75rem;
+}
+
 /* Native control overlaid on a styled trigger (date, time, language). */
 @utility native-overlay {
   position: absolute;

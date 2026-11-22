@@ -109,7 +109,7 @@ export const scenes = {
         "prompt": ["Какого отклика вам хотелось бы?", "What kind of response would feel welcome?"]
       },
       {
-        "option": ["Хочется побыть одному", "Some time alone"],
+        "option": ["Хочу побыть наедине с собой", "Some time alone"],
         "clarify": ["Чего вам сейчас хочется от времени наедине с собой?", "What do you want from time on your own?"],
         "prompt": ["Как вам хотелось бы устроить это время для себя?", "What would make that time feel right for you?"]
       },
