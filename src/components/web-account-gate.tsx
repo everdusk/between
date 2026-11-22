@@ -134,15 +134,15 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   }, [locale, surveyAttempt]);
   const [mode, setMode] = useState<GateMode>("login");
   const [creating, setCreating] = useState(() => {
-    if (!compact) return false;
+    if (!compact || initialLogin) return false;
     if (surveyAttempt) return true;
     try {
       const saved = JSON.parse(sessionStorage.getItem("between:messenger-login") ?? "null");
-      if (saved?.token && typeof saved.creating === "boolean") return saved.creating;
+      if (saved?.token) return saved.creating === true;
     } catch {
       // A fresh visit uses the requested entry point.
     }
-    return !initialLogin;
+    return true;
   });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

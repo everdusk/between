@@ -335,11 +335,18 @@ function TherapyShell({
   const [topic, setTopic] = useState({ id: "", visit: 0 });
   const [hideBot, setHideBot] = useState(false);
   const [moodRequest, setMoodRequest] = useState(0);
-  const [intro, setIntro] = useState<IntroDraft | null>(() => {
+  const signInLink = useSyncExternalStore(
+    subscribeLaunch,
+    () => new URLSearchParams(location.search).get("login") === "1",
+    () => false,
+  );
+  const [draft, setIntro] = useState<IntroDraft | null>(() => {
     if (!webFirst || typeof window === "undefined") return null;
     try { return readIntroDraft(JSON.parse(sessionStorage.getItem(introDraftKey) ?? "null")); }
     catch { return null; }
   });
+  // Keep the unfinished introduction for onboarding, separate from a direct sign-in.
+  const intro = signInLink ? null : draft;
   const [editingIntro, setEditingIntro] = useState<IntroRecord | null>(null);
   const editorKey = "between:intro:open-editor";
   function finishIntroEditor() {
@@ -399,10 +406,9 @@ function TherapyShell({
     });
     return () => { active = false; };
   }, [webFirst,intro,web.account,status,syncLabel,accessStatus,locked,importIntroduction,handoffRetry]);
-  const loginRequested = useSyncExternalStore(
+  const resumingMessenger = useSyncExternalStore(
     subscribeLaunch,
     () => {
-      if (new URLSearchParams(location.search).has("login")) return true;
       try { return Boolean(sessionStorage.getItem("between:messenger-login")); }
       catch { return false; }
     },
@@ -449,15 +455,16 @@ function TherapyShell({
   };
   const gate =
     showGate &&
-    (webFirst && !loginRequested && !intro ? (
+    (webFirst && !signInLink && !resumingMessenger && !intro ? (
       <IntroReflection onFinish={beginRegistration} />
     ) : (
       <div className="space-y-4">
       {intro && <IntroCard record={intro}/>}
       <WebAccountGate
+        key={signInLink ? "sign-in" : "onboarding"}
         surveyAttempt={intro?.attempt}
         compact
-        initialLogin={!intro && loginRequested}
+        initialLogin={signInLink}
         onSignedIn={web.setAccount}
       /></div>
     ));
