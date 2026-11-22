@@ -409,13 +409,6 @@ export function SubscribeCheckout({
                 />
               </>
             )}
-            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              <a href="/terms" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "terms", plan })}>Публичная оферта</a> ·{" "}
-              {!stars && <><a href="/privacy" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "privacy", plan })}>Политика конфиденциальности</a> · </>}ИНН {LEGAL_INN}
-            </p>
-            {stars ? null : (
-            <p className="mt-2 text-xs text-muted-foreground">Платёж через ЮKassa · чек по 54-ФЗ на почту</p>
-            )}
             {stars ? (
               starsError ? (
                 <p className="mt-3 text-sm text-destructive" role="alert">
@@ -449,6 +442,14 @@ export function SubscribeCheckout({
               {busy ? "Создаём платёж…" : "Оплатить через СБП"}
             </button>
             )}
+            <div className="mt-5 space-y-1 text-center text-xs leading-relaxed text-muted-foreground">
+              <p className="text-balance">
+                <a href="/terms" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "terms", plan })}>Публичная оферта</a>
+                {!stars && <> · <a href="/privacy" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "privacy", plan })}>Политика конфиденциальности</a></>}
+              </p>
+              <p>ИНН {LEGAL_INN}</p>
+              {!stars && <p className="text-balance">Платёж через ЮKassa · чек по 54-ФЗ на почту</p>}
+            </div>
           </GlassPanel>
         </div>
       </div>

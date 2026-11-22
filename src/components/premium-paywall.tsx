@@ -70,7 +70,7 @@ export function PremiumPaywall({
                 <Button data-confirm="" type="button" className="w-full" disabled={payingPlan !== null} onClick={() => onPay(selected)}>
                   <Star aria-hidden />{t(payingPlan ? "paying" : "payInTelegram")}
                 </Button>
-                {locale === "ru" && <p className="text-center text-xs text-muted-foreground">ИНН {LEGAL_INN}</p>}
+                {locale === "ru" && <p className="mt-5 text-center text-xs text-muted-foreground">ИНН {LEGAL_INN}</p>}
               </>)
             : showSbp ? (
                 <a data-confirm="" href="/subscribe" className={buttonVariants({ className: "w-full" })}>
