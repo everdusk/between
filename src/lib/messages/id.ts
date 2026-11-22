@@ -56,6 +56,7 @@ export const id: Catalog = {
   webHello: "Halo",
   webScheme: "Tema",
   webNight: "Malam",
+  myTheme: "Tema saya",
   webDay: "Siang",
   webKicker: "Jurnal untuk yang sedang terapi",
   webHeadline: "Terapis meminta Anda menulis jurnal.",

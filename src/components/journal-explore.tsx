@@ -4,12 +4,10 @@ import { useState } from "react";
 import { useI18n } from "./locale-provider";
 import { Button } from "./ui/button";
 import { FieldSelect } from "./ui/field-select";
-import { feelingFill } from "@/lib/spectrum";
 import { Textarea } from "./ui/textarea";
 import { formatDayLabel } from "@/lib/dates";
 import { entriesForTheme } from "@/lib/themes";
 import {
-  PICKER_FEELINGS,
   type Feeling,
   type JournalEntry,
   type TherapyStore,
@@ -163,26 +161,21 @@ export function Connections({
 type Reflection = NonNullable<JournalEntry["reflection"]>;
 export function ReflectionForm({
   entry,
-  nearby,
   personal,
   onSave,
 }: {
   entry: JournalEntry;
-  nearby?: Feeling;
   personal: boolean;
   onSave: (id: string, reflection: Reflection, topic: boolean) => boolean;
 }) {
   const { t, feeling } = useI18n();
-  const linkedFeeling = entry.reflection?.feeling ?? entry.feelings[0] ?? nearby;
-  const [picked, setPicked] = useState<Reflection["feeling"] | "">("");
-  const emotion = linkedFeeling ?? picked;
+  const emotion = entry.feelings[0] ?? "unsure";
   const [answer, setAnswer] = useState(entry.reflection?.answer ?? "");
   const previousInsight = entry.reflection?.insight ?? "";
   const [choose, setChoose] = useState(false);
   const [saved, setSaved] = useState(false);
   function save(topic: boolean) {
     if (
-      emotion &&
       answer.trim() &&
       onSave(
         entry.id,
@@ -206,38 +199,29 @@ export function ReflectionForm({
       <p className="diary-quote whitespace-pre-wrap break-words">
         {entry.body}
       </p>
-      {linkedFeeling ? (
+      {entry.feelings.length > 0 && (
         <p className="text-sm text-muted-foreground">
-          {linkedFeeling === "unsure" ? t("unsure") : feeling(linkedFeeling)}
+          {entry.feelings.map(feeling).join(", ")}
         </p>
-      ) : <div>
-        <FieldSelect<Reflection["feeling"] | ""> label={t("feelingsGroup")} showLabel required value={emotion} onChange={setPicked}
-          options={[{ value: "", label: "—" }, ...[...new Set<Feeling>([...PICKER_FEELINGS, ...entry.feelings])].map(f => ({
-            value: f, label: feeling(f), color: feelingFill(f),
-          })), { value: "unsure", label: t("unsure") }]} />
-      </div>}
-      {emotion && (
-        <>
-          <label className="block font-medium">
-            {t(reflectionQuestion(emotion))}
-            <Textarea
-              required
-              className="mt-2"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-            />
-          </label>
-          {previousInsight && (
-            <details className="text-sm">
-              <summary>{t("insights")}</summary>
-              <p className="mt-2 whitespace-pre-wrap">{previousInsight}</p>
-            </details>
-          )}
-          <Button type="submit" disabled={!answer.trim() || saved}>
-            {saved ? t("saved") : t("saveEntry")}
-          </Button>
-        </>
       )}
+      <label className="block font-medium">
+        {t(reflectionQuestion(emotion))}
+        <Textarea
+          required
+          className="mt-2"
+          value={answer}
+          onChange={(e) => setAnswer(e.target.value)}
+        />
+      </label>
+      {previousInsight && (
+        <details className="text-sm">
+          <summary>{t("insights")}</summary>
+          <p className="mt-2 whitespace-pre-wrap">{previousInsight}</p>
+        </details>
+      )}
+      <Button type="submit" disabled={!answer.trim() || saved}>
+        {saved ? t("saved") : t("saveEntry")}
+      </Button>
       {choose && (
         <dialog
           ref={(d) => {
@@ -280,23 +264,6 @@ export function ReflectionPanel({
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const entry = notes.find((n) => n.id === selected) ?? notes[0];
   if (!entry) return <p className="glass rounded-3xl p-5">{t("dayEmpty")}</p>;
-  const at = Date.parse(entry.createdAt);
-  const distance = (n: JournalEntry) => Math.abs(Date.parse(n.createdAt) - at);
-  const close = store.entries
-    .filter(
-      (n) =>
-        n.id !== entry.id &&
-        !n.body.trim() &&
-        n.date === entry.date &&
-        n.feelings.length &&
-        distance(n) <= 30 * 60000,
-    )
-    .sort((a, b) => distance(a) - distance(b));
-  const nearby = new Set(
-    close
-      .filter((n) => distance(n) === distance(close[0]))
-      .flatMap((n) => n.feelings),
-  );
   return (
     <div className="space-y-4">
       <FieldSelect label={t("note")} triggerClassName="field-select-trigger w-full" value={entry.id} onChange={onSelect}
@@ -304,7 +271,6 @@ export function ReflectionPanel({
       <ReflectionForm
         key={entry.id}
         entry={entry}
-        nearby={nearby.size === 1 ? [...nearby][0] : undefined}
         personal={store.profile?.therapy === false}
         onSave={onSave}
       />

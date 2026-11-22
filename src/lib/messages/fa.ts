@@ -56,6 +56,7 @@ export const fa: Catalog = {
   webHello: "سلام",
   webScheme: "پوسته",
   webNight: "شب",
+  myTheme: "پوستهٔ من",
   webDay: "روز",
   webKicker: "دفتری برای کسانی که در درمان‌اند",
   webHeadline: "درمانگر خواست دفتر بنویسید.",

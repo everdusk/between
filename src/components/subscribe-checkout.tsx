@@ -1,5 +1,8 @@
 "use client";
 
+import { useMaxScheme } from "@/hooks/use-max-scheme";
+import { GlassPanel } from "./ui/glass-panel";
+import "./subscribe-checkout.css";
 import { BrandLogo } from "./brand-logo";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { readMaxInitData } from "@/lib/max-webapp";
@@ -39,6 +42,7 @@ function readTelegramInitData(): string {
  */
 export function SubscribeGate({ monthly }: { monthly?: number }) {
   const [surface, setSurface] = useState<"web" | "max" | null>(null);
+  useMaxScheme(surface === "max");
   useLayoutEffect(() => {
     if (readTelegramInitData()) {
       window.location.replace("/?tab=subscribe" + window.location.hash);
@@ -80,11 +84,11 @@ const PLANS: SbpPlanId[] = ["month", "quarter", "year"];
 function SubscriptionIntro({ compact = false }: { compact?: boolean }) {
   return (
     <>
-      <p className="sub-kicker">Подписка Between</p>
+      <p className="paywall-heading sub-kicker">Подписка Between</p>
       <h1 className={compact ? "sub-display mt-3 text-[2.05rem] leading-[1.05]" : "sub-display mt-4 text-5xl leading-[1.05]"}>
         Замечайте, что <span className="sub-shift">повторяется.</span>
       </h1>
-      <p className="mt-4 max-w-md leading-relaxed text-[#a9b4ae]">
+      <p className="mt-4 max-w-md leading-relaxed text-muted-foreground">
         Записывайте, что произошло, и отмечайте, как вы себя чувствуете.
         В обзоре можно увидеть, в какое время меняется настроение и какие темы возвращаются в записях.
       </p>
@@ -280,7 +284,6 @@ export function SubscribeCheckout({
 
   return (
     <article className={embed ? "subscribe-page" : "subscribe-page fixed inset-0 z-30 overflow-y-auto"}>
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <div className={embed ? "" : `mx-auto w-full ${surface === "web" ? "max-w-6xl" : "max-w-xl"} px-5 py-6 sm:px-8 sm:py-10`}>
         {embed ? null : (
         <header className="flex items-center justify-between gap-4">
@@ -288,7 +291,7 @@ export function SubscribeCheckout({
             <BrandLogo />
           </a>
           {surface === "web" && (
-            <button type="button" className="min-h-11 rounded-full border border-white/25 px-5 text-sm hover:bg-white/10 disabled:opacity-60"
+            <button type="button" className="min-h-11 rounded-full border border-border px-5 text-sm hover:bg-secondary disabled:opacity-60"
               disabled={logoutState === "pending" || busy} onClick={logout}>
               {logoutState === "pending" ? "Выходим…" : "Выйти"}
             </button>
@@ -308,26 +311,26 @@ export function SubscribeCheckout({
             </ul>
             <div className="sub-note mt-8">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs tracking-[0.14em] text-[#8aa097] uppercase">Из обзора недели</p>
+                <p className="text-xs tracking-[0.14em] text-muted-foreground uppercase">Из обзора недели</p>
                 <span className="sub-sample">Пример</span>
               </div>
               <p className="sub-display mt-3 text-2xl">Работа после работы</p>
-              <p className="mt-2 text-sm leading-relaxed text-[#c5d0ca]">В двух вечерних записях вы возвращались к разговору с коллегой. В оба вечера вы отметили тревогу.</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">В двух вечерних записях вы возвращались к разговору с коллегой. В оба вечера вы отметили тревогу.</p>
             </div>
           </div>
           )}
 
-          <section className="sub-card">
+          <GlassPanel className="sub-card">
             <div className={embed || surface === "max" ? "" : "lg:hidden"}>
               {surface === "web" ? <SubscriptionIntro compact /> : (
                 <>
-                  <p className="sub-kicker">Подписка Between</p>
-                  <h1 className="sub-display mt-3 text-[2.05rem] leading-[1.05]">Оформление подписки.<br /><span className="sub-shift">Вы честно экономите.</span></h1>
-                  <p className="mt-4 leading-relaxed text-[#a9b4ae]">Between живёт в мессенджере: вечером бот сам спросит, как прошёл день, и к сессии соберёт из ответов готовую выкладку.</p>
+                  <p className="paywall-heading sub-kicker">Подписка Between</p>
+                  <h1 className="sub-display mt-3 text-[2.05rem] leading-[1.05]">Выберите срок подписки</h1>
+                  <p className="mt-4 leading-relaxed text-muted-foreground">Between живёт в мессенджере: вечером бот сам спросит, как прошёл день, и к сессии соберёт из ответов готовую выкладку.</p>
                 </>
               )}
             </div>
-            <h2 className={embed || surface === "max" ? "hidden" : "sub-display hidden text-2xl lg:block"}>Выберите план</h2>
+            <h2 className={embed || surface === "max" ? "hidden" : "paywall-heading sub-display hidden text-2xl lg:flex"}>Выберите план</h2>
             <fieldset className="mt-5 space-y-3">
               <legend className="sr-only">Срок подписки</legend>
               {PLANS.map((id) => {
@@ -350,13 +353,13 @@ export function SubscribeCheckout({
                         <span className="font-medium">{item.title}</span>
                         {"off" in item ? <span className="sub-off">−{item.off}%</span> : null}
                       </span>
-                      <span className="mt-1 block text-sm text-[#8aa097]">
+                      <span className="mt-1 block text-sm text-muted-foreground">
                         {id === "month" ? (
                           `${price(item.perMonth)}/мес`
                         ) : (
                           <>
                             <s className="me-2">{price(plans.month.perMonth)}</s>
-                            <span className="text-[#8FF0BC]">{price(item.perMonth)}/мес</span>
+                            <span className="text-foreground">{price(item.perMonth)}/мес</span>
                           </>
                         )}
                       </span>
@@ -367,10 +370,10 @@ export function SubscribeCheckout({
               })}
             </fieldset>
 
-            <div className="mt-5 flex items-end justify-between gap-4 border-t border-white/10 pt-4">
+            <div className="mt-5 flex items-end justify-between gap-4 border-t border-border pt-4">
               <div>
-                <p className="text-sm text-[#a9b4ae]">Итого к оплате</p>
-                <p className="text-xs text-[#74827b]">Доступ {chosen.span} · разовый платёж без автопродления</p>
+                <p className="text-sm text-muted-foreground">Итого к оплате</p>
+                <p className="text-xs text-muted-foreground">Доступ {chosen.span} · разовый платёж без автопродления</p>
               </div>
               {stars ? (
                 <p className="sub-display text-3xl leading-none whitespace-nowrap">
@@ -384,7 +387,7 @@ export function SubscribeCheckout({
 
             {stars ? null : (
               <>
-                <label className="mt-5 block text-sm text-[#a9b4ae]" htmlFor="sbp-email">
+                <label className="mt-5 block text-sm text-muted-foreground" htmlFor="sbp-email">
                   Email для чека
                 </label>
                 <input
@@ -406,26 +409,26 @@ export function SubscribeCheckout({
                 />
               </>
             )}
-            <p className="mt-3 text-xs leading-relaxed text-[#74827b]">
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
               <a href="/terms" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "terms", plan })}>Публичная оферта</a> ·{" "}
-              <a href="/privacy" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "privacy", plan })}>Политика конфиденциальности</a> · ИНН {LEGAL_INN}
+              {!stars && <><a href="/privacy" onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "privacy", plan })}>Политика конфиденциальности</a> · </>}ИНН {LEGAL_INN}
             </p>
             {stars ? null : (
-            <p className="mt-2 text-xs text-[#74827b]">Платёж через ЮKassa · чек по 54-ФЗ на почту</p>
+            <p className="mt-2 text-xs text-muted-foreground">Платёж через ЮKassa · чек по 54-ФЗ на почту</p>
             )}
             {stars ? (
               starsError ? (
-                <p className="mt-3 text-sm text-[#ffb4b0]" role="alert">
+                <p className="mt-3 text-sm text-destructive" role="alert">
                   {starsError}
                 </p>
               ) : null
             ) : error ? (
-              <p className="mt-3 text-sm text-[#ffb4b0]" role="alert">
+              <p className="mt-3 text-sm text-destructive" role="alert">
                 {error}
               </p>
             ) : null}
-            <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-4">
-              <p className="text-sm text-[#a9b4ae]">
+            <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
+              <p className="text-sm text-muted-foreground">
                 Подписка · {chosen.title.toLowerCase()}
               </p>
               <p className="text-sm">{price(chosen.rub)}</p>
@@ -446,13 +449,13 @@ export function SubscribeCheckout({
               {busy ? "Создаём платёж…" : "Оплатить через СБП"}
             </button>
             )}
-          </section>
+          </GlassPanel>
         </div>
       </div>
 
       {order ? (
         <div className="sub-modal" role="dialog" aria-modal="true" aria-labelledby="sbp-title">
-          <div className="sub-sheet">
+          <div className="sub-sheet glass-strong">
             <div className="flex items-start justify-between gap-4">
               <h2 id="sbp-title" className="sub-display text-2xl">
                 {paid ? "Оплата прошла" : "Оплата через СБП"}
@@ -470,14 +473,14 @@ export function SubscribeCheckout({
               </button>
             </div>
             {paid ? (
-              <p className="mt-4 text-sm leading-relaxed text-[#a9b4ae]">
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
                 {paid === "pending"
                   ? "Оплата прошла. Войдите в дневник с этой почтой — премиум откроется там и сам не продлится."
                   : "Подписка активирована. Она не продлевается сама. Откройте дневник и зайдите на «Неделю»."}
               </p>
             ) : (
               <>
-                <p className="mt-3 text-sm leading-relaxed text-[#a9b4ae]">
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                   Отсканируйте QR-код камерой или в приложении банка и подтвердите платёж.
                 </p>
                 <div className="sub-qr" dangerouslySetInnerHTML={{ __html: order.svg }} />
@@ -486,7 +489,7 @@ export function SubscribeCheckout({
                 </div>
                 <a
                   href={order.url}
-                  className="mt-3 block text-center text-sm text-[#8FF0BC] underline underline-offset-4"
+                  className="mt-3 block text-center text-sm text-foreground underline underline-offset-4"
                   onClick={() => captureSubscribe({ messenger: pageMessenger(), step: "bank", plan: order.plan })}
                 >
                   Открыть в приложении банка
@@ -495,19 +498,19 @@ export function SubscribeCheckout({
             )}
             <dl className="mt-5 space-y-2 text-sm">
               <div className="flex justify-between gap-4">
-                <dt className="text-[#8aa097]">К оплате</dt>
+                <dt className="text-muted-foreground">К оплате</dt>
                 <dd>{rub(order.amount)}</dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-[#8aa097]">Тариф</dt>
+                <dt className="text-muted-foreground">Тариф</dt>
                 <dd>Подписка {plans[order.plan].span}</dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-[#8aa097]">Чек придёт на</dt>
+                <dt className="text-muted-foreground">Чек придёт на</dt>
                 <dd className="truncate">{order.email}</dd>
               </div>
             </dl>
-            <p className="mt-4 text-sm leading-relaxed text-[#a9b4ae]">
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               Подписка активируется сразу после оплаты и не продлевается автоматически.
             </p>
             {paid ? (
@@ -536,34 +539,3 @@ export function SubscribeCheckout({
     </article>
   );
 }
-
-const CSS = `
-.subscribe-page{background:#07090d;color:#f3f6f4;color-scheme:only dark;font-family:var(--font-sans),ui-sans-serif,system-ui,sans-serif;font-weight:500;-webkit-font-smoothing:antialiased}
-.subscribe-page button,.subscribe-page input{font-family:inherit}
-.sub-display{font-weight:650;letter-spacing:-.03em}
-.subscribe-page a{color:inherit}
-.sub-kicker{font-size:.72rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#5ee7c5}
-.sub-points{margin-top:1.5rem;display:grid;gap:.85rem;list-style:none;padding:0}
-.sub-points li{display:flex;align-items:flex-start;gap:.65rem;color:#e4ece8;font-size:.95rem;line-height:1.45}
-.sub-points svg{flex:none;margin-top:.15rem;color:#5ee7c5}
-.sub-shift{background:linear-gradient(102deg,#5df0c6 0%,#7ee0d2 38%,#8eb6ff 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.sub-card{border:1px solid rgba(255,255,255,.1);border-radius:1.6rem;background:rgba(16,22,20,.92);padding:1.25rem;box-shadow:0 30px 80px -40px rgba(0,0,0,.8)}
-.sub-plan{display:flex;align-items:center;gap:.8rem;border:1px solid rgba(255,255,255,.12);border-radius:1rem;padding:.85rem 1rem;cursor:pointer}
-.sub-plan-on{border-color:#5ee7c5;box-shadow:inset 0 0 0 1px #5ee7c5}
-.sub-plan input{accent-color:#5ee7c5;width:1.05rem;height:1.05rem}
-.sub-badge{border-radius:999px;background:#14352c;color:#8FF0BC;font-size:.68rem;padding:.15rem .45rem}
-.sub-off{border-radius:999px;background:#12382a;color:#8FF0BC;font-size:.68rem;padding:.15rem .4rem}
-.sub-email{margin-top:.4rem;width:100%;height:3rem;border-radius:1rem;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#f3f6f4;padding:0 1rem}
-.sub-pay,.subscribe-page a.sub-pay{margin-top:.75rem;display:flex;width:100%;align-items:center;justify-content:center;gap:.7rem;height:3.4rem;border:0;border-radius:999px;background:#fff;color:#111;font-size:1rem;text-decoration:none;cursor:pointer}
-.sub-pay:disabled{opacity:.6}
-.sub-note{border:1px solid rgba(94,231,197,.28);border-radius:1.2rem;padding:1rem 1.1rem;background:rgba(94,231,197,.04)}
-.sub-sample{border-radius:999px;background:#14352c;color:#8FF0BC;font-size:.72rem;padding:.15rem .5rem}
-.sub-chip{border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:.4rem .7rem}
-.sub-modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:1.25rem;background:rgba(0,0,0,.62)}
-.sub-sheet{width:min(100%,26rem);border-radius:1.4rem;border:1px solid rgba(255,255,255,.12);background:#121816;padding:1.25rem 1.25rem 1.1rem}
-.sub-x{border:0;background:transparent;color:#d5ddd8;font-size:1.6rem;line-height:1;cursor:pointer}
-.sub-qr{margin:1rem auto 0;width:14rem;border-radius:1rem;background:#fff;padding:.6rem}
-.sub-qr svg{display:block;width:100%;height:auto}
-.sub-sbp-pill{margin:.9rem auto 0;display:flex;width:fit-content;align-items:center;justify-content:center;border-radius:999px;background:#fff;padding:10px 14px}
-.sub-cancel{margin-top:1rem;width:100%;height:3rem;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#f3f6f4;cursor:pointer}
-`;

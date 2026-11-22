@@ -56,6 +56,7 @@ export const uk: Catalog = {
   webHello: "Вітаю",
   webScheme: "Тема",
   webNight: "Ніч",
+  myTheme: "Моя тема",
   webDay: "День",
   webKicker: "Щоденник для тих, хто в терапії",
   webHeadline: "Терапевт попросив вести щоденник.",

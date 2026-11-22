@@ -54,6 +54,7 @@ export const ru = {
   webHello: "Здравствуйте",
   webScheme: "Тема",
   webNight: "Ночь",
+  myTheme: "Моя тема",
   webDay: "День",
   webKicker: "Дневник для тех, кто в терапии",
   webHeadline: "Терапевт попросил вести дневник.",

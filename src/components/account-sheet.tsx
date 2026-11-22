@@ -187,8 +187,8 @@ export function AccountSheet({
 
         <div className="mt-5 space-y-6">
           {profileEditor}
-          <div className="flex items-center gap-2">
-            <SchemeSwitch />
+          <div className="flex flex-wrap items-center gap-2">
+            <SchemeSwitch host={inTelegram ? "telegram" : inMax ? "max" : undefined} />
             <LanguageSwitch inline />
           </div>
 
@@ -256,12 +256,12 @@ export function AccountSheet({
       </section>
       {preview && access ? (
         <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-[#07090d] px-4 py-5"
+          className="fixed inset-0 z-50 overflow-y-auto bg-background text-foreground px-4 py-5"
           onClick={(event) => event.stopPropagation()}
         >
           <button
             type="button"
-            className="mb-4 text-sm text-[#a9b4ae]"
+            className="mb-4 text-sm text-muted-foreground"
             onClick={() => setPreview(false)}
           >
             {t("accountClose")}

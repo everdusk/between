@@ -56,6 +56,7 @@ export const pt: Catalog = {
   webHello: "Olá",
   webScheme: "Tema",
   webNight: "Noite",
+  myTheme: "Meu tema",
   webDay: "Dia",
   webKicker: "Um diário para quem faz terapia",
   webHeadline: "O terapeuta pediu para manter um diário.",

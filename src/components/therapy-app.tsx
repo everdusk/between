@@ -11,12 +11,8 @@ import { AccountButton, AccountSheet } from "@/components/account-sheet";
 import { LanguageSwitch } from "@/components/language-switch";
 import { LegalLinks } from "@/components/legal-links";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
-import {
-  SchemeSwitch,
-  paintPickedScheme,
-  readScheme,
-  schemeWasPicked,
-} from "@/components/scheme-switch";
+import { SchemeSwitch } from "@/components/scheme-switch";
+import { useMaxScheme } from "@/hooks/use-max-scheme";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WebAccountGate } from "@/components/web-account-gate";
 import { readIntroDraft, type IntroDraft, type LegacyIntroRecord } from "@/lib/intro-record";
@@ -32,7 +28,7 @@ import { useTelegram } from "@/hooks/use-telegram";
 import { useTherapyStore } from "@/hooks/use-therapy-store";
 import { useWebAccount } from "@/hooks/use-web-account";
 import { ru } from "@/lib/messages/ru";
-import { markSplashReady, SPLASH_READY_EVENT } from "@/lib/splash";
+import { markSplashReady } from "@/lib/splash";
 import { launchSection, type LaunchSection } from "@/lib/launch-section";
 import {
   earlyMaxLogin,
@@ -73,6 +69,7 @@ function subscribeLaunch(onChange: () => void) {
 export function TherapyApp({ webFirst = false }: { webFirst?: boolean }) {
   const telegram = useTelegram();
   const inMax = useInMax();
+  useMaxScheme(inMax && !telegram.inTelegram);
   const pathname = usePathname();
   const webEntry = pathname === "/" || pathname === "/journal" || pathname.startsWith("/journal/");
   const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
@@ -278,20 +275,6 @@ function TherapyShell({
   }
   const [accessNonce, setAccessNonce] = useState(0);
 
-  useEffect(() => {
-    if (!telegram.inTelegram) return;
-    const apply = () => {
-      if (!schemeWasPicked()) return;
-      paintPickedScheme(readScheme());
-    };
-    apply();
-    window.addEventListener("between-scheme", apply);
-    window.addEventListener(SPLASH_READY_EVENT, apply);
-    return () => {
-      window.removeEventListener("between-scheme", apply);
-      window.removeEventListener(SPLASH_READY_EVENT, apply);
-    };
-  }, [telegram.inTelegram, telegram.ready, telegram.colorScheme]);
 
   useEffect(() => {
     if (!telegram.ready || !telegram.inTelegram || !telegram.initData) return;

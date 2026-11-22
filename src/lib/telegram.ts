@@ -1,3 +1,4 @@
+import { messengerChoice } from "./messenger-scheme";
 import type { ThemeParams, WebApp, WebAppUser } from "@twa-dev/types";
 
 export type TelegramSession = {
@@ -77,7 +78,9 @@ export function applyTelegramTheme(
   options?: { scheme?: boolean },
 ) {
   const root = document.documentElement;
-  root.dataset.telegramTheme = colorScheme;
+  const scheme = schemeFromColor(theme.bg_color) ?? colorScheme;
+  root.dataset.telegramTheme = scheme;
+  root.dataset.scheme = scheme === "dark" ? "night" : "day";
   // color-scheme repaints the whole iOS WebView. Skip it while the frame is up.
   if (options?.scheme !== false) {
     const next = schemeFromColor(theme.bg_color) ?? colorScheme;
@@ -114,12 +117,16 @@ export function applyTelegramTheme(
   set("--muted-foreground", theme.hint_color);
   set("--primary", theme.button_color);
   set("--primary-foreground", theme.button_text_color);
-  set("--card", theme.section_bg_color || theme.secondary_bg_color);
+  const panel = panelColor(theme, scheme);
+  const surface = theme.section_bg_color
+    ? panelColor({ ...theme, secondary_bg_color: theme.section_bg_color }, scheme)
+    : panel || theme.bg_color;
+  set("--card", surface);
+  set("--popover", surface);
   set("--card-foreground", theme.text_color);
   set("--popover-foreground", theme.text_color);
   // Telegram replaces the panel background but not these ink colors.
   // A light --muted left over from the default theme paints "Свернуть" white-on-white.
-  const panel = panelColor(theme, colorScheme);
   set("--muted", panel);
   set("--secondary", panel);
   set("--secondary-foreground", theme.text_color);
@@ -182,15 +189,29 @@ export function releaseSplashChrome() {
   splashChromeHeld = false;
   const webApp = telegramWebApp();
   if (!webApp || !isLikelyTelegram(webApp)) return;
-  applyTelegramTheme(webApp.themeParams, webApp.colorScheme);
-  applyTelegramChrome(webApp);
+  syncTelegramAppearance(webApp);
 }
 
-export function applyTelegramChrome(webApp: WebApp) {
+export function syncTelegramAppearance(webApp: WebApp) {
+  const choice = messengerChoice("telegram");
+  if (choice === "client") {
+    applyTelegramTheme(webApp.themeParams, webApp.colorScheme, { scheme: !splashChromeHeld });
+    if (!splashChromeHeld) applyTelegramChrome(webApp);
+  } else {
+    clearTelegramPalette();
+    const root = document.documentElement;
+    root.dataset.scheme = choice;
+    root.style.colorScheme = choice === "night" ? "dark" : "light";
+    if (!splashChromeHeld) applyTelegramChrome(webApp, getComputedStyle(root).getPropertyValue("--background").trim());
+  }
+  if (splashChromeHeld) paintSplashChrome();
+}
+
+export function applyTelegramChrome(webApp: WebApp, override?: string) {
   const theme = webApp.themeParams;
-  const header = telegramChromeColor(theme?.header_bg_color, "bg_color");
-  const background = telegramChromeColor(theme?.bg_color, "bg_color");
-  const bottom = telegramChromeColor(theme?.bottom_bar_bg_color, "bg_color");
+  const header = telegramChromeColor(override ?? theme?.header_bg_color, "bg_color");
+  const background = telegramChromeColor(override ?? theme?.bg_color, "bg_color");
+  const bottom = telegramChromeColor(override ?? theme?.bottom_bar_bg_color, "bg_color");
   try {
     webApp.setHeaderColor(header);
   } catch {
@@ -387,11 +408,9 @@ export function applyTelegramSafeArea(
   writeInsets("content-safe-area", content);
 }
 
-export function clearTelegramThemeOverrides() {
+function clearTelegramPalette() {
   const root = document.documentElement;
   delete root.dataset.telegramTheme;
-  delete root.dataset.performance;
-  resetDeviceSafeBottom();
   root.style.removeProperty("color-scheme");
   const keys = [
     "--tg-bg-color",
@@ -412,6 +431,34 @@ export function clearTelegramThemeOverrides() {
     "--subtitle",
     "--accent-text",
     "--link",
+    "--background",
+    "--foreground",
+    "--muted-foreground",
+    "--primary",
+    "--primary-foreground",
+    "--card",
+    "--card-foreground",
+    "--popover",
+    "--popover-foreground",
+    "--muted",
+    "--secondary",
+    "--secondary-foreground",
+    "--accent",
+    "--accent-foreground",
+    "--border",
+    "--input",
+    "--destructive",
+    "--ring",
+  ];
+  for (const key of keys) root.style.removeProperty(key);
+}
+
+export function clearTelegramThemeOverrides() {
+  clearTelegramPalette();
+  const root = document.documentElement;
+  delete root.dataset.performance;
+  resetDeviceSafeBottom();
+  for (const key of [
     "--tg-viewport-height",
     "--tg-viewport-stable-height",
     "--vv-top",
@@ -425,23 +472,5 @@ export function clearTelegramThemeOverrides() {
     "--tg-content-safe-area-right",
     "--tg-content-safe-area-bottom",
     "--tg-content-safe-area-left",
-    "--background",
-    "--foreground",
-    "--muted-foreground",
-    "--primary",
-    "--primary-foreground",
-    "--card",
-    "--card-foreground",
-    "--popover-foreground",
-    "--muted",
-    "--secondary",
-    "--secondary-foreground",
-    "--accent",
-    "--accent-foreground",
-    "--border",
-    "--input",
-    "--destructive",
-    "--ring",
-  ];
-  for (const key of keys) root.style.removeProperty(key);
+  ]) root.style.removeProperty(key);
 }

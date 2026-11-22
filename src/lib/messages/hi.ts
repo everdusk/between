@@ -56,6 +56,7 @@ export const hi: Catalog = {
   webHello: "नमस्ते",
   webScheme: "थीम",
   webNight: "रात",
+  myTheme: "मेरी थीम",
   webDay: "दिन",
   webKicker: "थेरेपी में रहने वालों के लिए डायरी",
   webHeadline: "थेरेपिस्ट ने डायरी लिखने को कहा।",

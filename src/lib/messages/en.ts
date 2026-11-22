@@ -56,6 +56,7 @@ export const en: Catalog = {
   webHello: "Hello",
   webScheme: "Theme",
   webNight: "Night",
+  myTheme: "My theme",
   webDay: "Day",
   webKicker: "A journal for people in therapy",
   webHeadline: "Your therapist asked you to keep a journal.",
