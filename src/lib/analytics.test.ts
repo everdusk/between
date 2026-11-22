@@ -22,6 +22,7 @@ import {
   sumCountRows,
 } from "./analytics-model";
 import { posthogBrowserConfig } from "./posthog-env";
+import { surveyProperties } from "./survey-steps";
 
 function memoryRedis(): AnalyticsRedis & { keys: Map<string, number>; sets: Map<string, Set<string>> } {
   const keys = new Map<string, number>();
@@ -51,6 +52,17 @@ function memoryRedis(): AnalyticsRedis & { keys: Map<string, number>; sets: Map<
 }
 
 describe("analytics", () => {
+  it("tracks navigation on the recent feeling follow-up without the answer", () => {
+    const attempt = "00000000-0000-4000-8000-000000000001";
+    for (const action of ["view", "advance", "back"]) {
+      const properties = surveyProperties({ event: "web_survey_step", locale: "ru", attempt,
+        question: "v2_recent_reason", action, sequence: 3, recentReason: "private text" });
+      assert.deepEqual(properties, { messenger: "web", locale: "ru", survey_version: 2,
+        question_id: "v2_recent_reason", question_title: "Поделитесь?", survey_action: action,
+        attempt_id: attempt, sequence: 3 });
+    }
+  });
+
   it("counts a visit once per person per day and keeps the id out of the keys", async () => {
     const redis = memoryRedis();
     const first = await recordAnalytics(redis, {
