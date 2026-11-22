@@ -9,6 +9,7 @@ export const noteStep: Record<SurveyFeeling, string> = {
 };
 
 const stepTitles: Record<string, string> = {
+  v2_recent_reason: "Поделитесь?",
   v2_topics_demo: "Пример темы по записям",
   v2_messengers: "Мессенджеры", v2_bot_demo: "Пример чата с ботом",
   v2_therapy_first: "Терапия · первый вопрос", v2_gender_after_therapy: "Пол",
