@@ -178,6 +178,12 @@ export function JournalPanel({
   }
 
   const canSave = Boolean(body.trim() || (!firstRecord && feelings.length > 0));
+  function saveOnCtrlEnter(event: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Enter" || !event.ctrlKey || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    if (!event.repeat && !disabled && canSave) event.currentTarget.form?.requestSubmit();
+  }
+
   const isToday = date === today;
   return (
     <div className="journal-board flex flex-col gap-4">
@@ -208,6 +214,7 @@ export function JournalPanel({
                 placeholder={t("notePlaceholder")}
                 value={body}
                 onChange={event => setBody(event.target.value)}
+                onKeyDown={saveOnCtrlEnter}
                 disabled={disabled}
               />
             </div>
@@ -237,6 +244,7 @@ export function JournalPanel({
               value={body}
               disabled={disabled}
               onChange={(event) => setBody(event.target.value)}
+              onKeyDown={saveOnCtrlEnter}
               placeholder={t("notePlaceholder")}
               className="min-h-28 min-w-0 flex-1 resize-none text-[0.9375rem]"
             />
