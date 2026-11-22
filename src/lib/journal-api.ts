@@ -202,17 +202,25 @@ function mergeNotify(a: NotifyPrefs, b: NotifyPrefs): NotifyPrefs {
   return newerThan(a.updatedAt, b.updatedAt) ? a : b;
 }
 
-function mergeThemes(left: SessionTheme[] = [], right: SessionTheme[] = []): SessionTheme[] {
-  return mergeById(left, right);
-}
-
 function mergeLinks(left: ThemeLink[] = [], right: ThemeLink[] = []): ThemeLink[] {
-  const map = new Map<string, ThemeLink>();
-  for (const link of [...left, ...right]) {
-    const prev = map.get(link.entryId);
-    if (!prev || link.confidence >= prev.confidence) map.set(link.entryId, link);
+  const groups = new Map<string, ThemeLink[]>();
+  for (const snapshot of [left, right]) {
+    const incoming = new Map<string, ThemeLink[]>();
+    for (const link of snapshot) {
+      const group = incoming.get(link.entryId);
+      if (group) group.push(link);
+      else incoming.set(link.entryId, [link]);
+    }
+    for (const [entryId, group] of incoming) {
+      const prev = groups.get(entryId);
+      const date = group[0].judgedAt ?? "";
+      const prevDate = prev?.[0].judgedAt ?? "";
+      if (!prev || date > prevDate || (date === prevDate && group[0].confidence >= prev[0].confidence)) {
+        groups.set(entryId, group);
+      }
+    }
   }
-  return [...map.values()];
+  return [...groups.values()].flat();
 }
 
 /**
@@ -262,6 +270,39 @@ export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
   const droppedSessionIds = unionIds(a.droppedSessionIds, b.droppedSessionIds);
   const goneEntries = new Set(droppedEntryIds);
   const goneSessions = new Set(droppedSessionIds);
+  const themes = mergeById(a.themes ?? [], b.themes ?? []);
+  const redirects = new Map<string, string>();
+  function resolved(id: string): string {
+    while (redirects.has(id)) id = redirects.get(id)!;
+    return id;
+  }
+  // Apply recorded consolidations even if the other device still has the original topic.
+  for (const theme of [...(a.themes ?? []), ...(b.themes ?? [])]
+    .filter((item) => item.mergedIds?.length)
+    .sort((x, y) => y.updatedAt.localeCompare(x.updatedAt) || x.id.localeCompare(y.id))) {
+    for (const old of theme.mergedIds!) {
+      const keep = resolved(theme.id);
+      if (keep !== old && !redirects.has(old)) redirects.set(old, keep);
+    }
+  }
+  const aliases = new Map<string, string[]>();
+  for (const old of redirects.keys()) {
+    const keep = resolved(old);
+    const group = aliases.get(keep) ?? [];
+    group.push(old);
+    aliases.set(keep, group);
+  }
+  const links = mergeLinks(a.themeLinks, b.themeLinks).filter((link) => !goneEntries.has(link.entryId));
+  const pairs = new Map<string, ThemeLink>();
+  const classified = new Set<string>();
+  const linkCounts = new Map<string, number>();
+  for (const link of links) {
+    const themeId = resolved(link.themeId);
+    const key = JSON.stringify([link.entryId, themeId]);
+    if (!pairs.has(key)) linkCounts.set(themeId, (linkCounts.get(themeId) ?? 0) + 1);
+    if (link.judgedAt) classified.add(link.entryId);
+    pairs.set(key, themeId === link.themeId ? link : { ...link, themeId });
+  }
   const merged: TherapyStore = {
     ...(a.introductions || b.introductions ? {introductions: [...new Map([...(a.introductions ?? []), ...(b.introductions ?? [])].map(r=>[r.attempt,r])).values()]} : {}),
     profile: (a.profile?.updatedAt ?? "") > (b.profile?.updatedAt ?? "") ? a.profile : b.profile ?? a.profile,
@@ -271,8 +312,17 @@ export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
     weekPreps: mergeWeekPreps(a.weekPreps, b.weekPreps),
     sessionPlan: mergePlan(a.sessionPlan, b.sessionPlan),
     notify: mergeNotify(a.notify, b.notify),
-    themes: mergeThemes(a.themes, b.themes),
-    themeLinks: mergeLinks(a.themeLinks, b.themeLinks),
+    themes: themes.filter((theme) => !redirects.has(theme.id)).map((theme) => {
+      const mergedIds = aliases.get(theme.id);
+      const quotes = theme.quotes.filter((q) => !goneEntries.has(q.entryId) &&
+        (!classified.has(q.entryId) || pairs.has(JSON.stringify([q.entryId, theme.id]))));
+      const lost = theme.quotes.length !== quotes.length;
+      const count = linkCounts.get(theme.id) ?? 0;
+      if (!mergedIds && !lost && count <= theme.count) return theme;
+      return { ...theme, ...(mergedIds ? { mergedIds } : {}), quotes,
+        count: Math.max(count, lost ? new Set(quotes.map((q) => q.entryId)).size : theme.count, theme.manual ? 1 : 0) };
+    }),
+    themeLinks: [...pairs.values()],
     judgeSettled: [...new Set([...(a.judgeSettled ?? []), ...(b.judgeSettled ?? [])])],
   };
   if (droppedEntryIds.length) merged.droppedEntryIds = droppedEntryIds;
