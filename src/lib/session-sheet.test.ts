@@ -3,8 +3,10 @@ import { describe, it } from "node:test";
 import { buildSessionPdfModel } from "./session-pdf";
 import { applySessionSheet, prepareSessionSheet, type SessionSheetAsk } from "./session-sheet";
 import { therapyWindow } from "./session-summary";
+import { mergeStores } from "./journal-api";
+import { normalizeStore } from "./migrate";
 import { judgeStamp, patternFacts, patternKey, patternShouldRequest, pendingJudgeEntries, rankedThemes } from "./themes";
-import { emptyStore, type JournalEntry, type SessionPlan } from "./types";
+import { emptyStore, type JournalEntry, type SessionPlan, type SessionTheme } from "./types";
 
 const THURSDAY = "2026-01-08";
 const NOW = new Date(2026, 0, 8, 16, 0, 0);
@@ -34,6 +36,42 @@ function note(id: string, body: string): JournalEntry {
 }
 
 describe("session sheet without a week visit", () => {
+  it("keeps two independently evidenced topics through the API response, PDF, sync and a later edit", async () => {
+    const store = emptyStore();
+    store.sessionPlan = weekly();
+    const body = "Снова снилась погоня. Боюсь потерять связь с другом.";
+    store.entries = [note("two", body)];
+    const topic = (id: string, title: string): SessionTheme => ({
+      id, title, userId: "owner", summary: title, status: "active", reopened: false,
+      dismissed: false, firstSeen: THURSDAY, lastSeen: THURSDAY, peakIntensity: 5,
+      count: 0, confidence: 1, updatedAt: "2026-01-01T00:00:00.000Z", quotes: [],
+    });
+    store.themes = [topic("sleep", "Беспокойные сны"), topic("friend", "Страх потерять общение")];
+    const classify = (quote: string) => JSON.stringify({
+      relevant: true, match_theme: "sleep", confidence: 0.95, quote: "Снова снилась погоня",
+      secondary: { theme_id: "friend", confidence: 0.91, quote },
+    });
+    const ask: SessionSheetAsk = async ({ kind }) => {
+      assert.notEqual(kind, "dedup", "two evidenced aspects of one entry should stay separate");
+      return { text: kind === "judge" ? classify("Боюсь потерять связь с другом") : null };
+    };
+    const sheet = await prepareSessionSheet(store, "ru", THURSDAY, NOW, "owner", ask);
+    const saved = normalizeStore(applySessionSheet(store, sheet, NOW))!;
+    assert.deepEqual(saved.themeLinks.map((link) => link.themeId).sort(), ["friend", "sleep"]);
+    const pdf = buildSessionPdfModel(saved, "ru", THURSDAY, NOW);
+    assert.ok(pdf.themes.length === 2 && pdf.themes.every((theme) => theme.notes[0]?.body === body));
+    const edited = { ...saved, entries: [{ ...saved.entries[0], body: "Снова снилась погоня.", updatedAt: NOW.toISOString() }] };
+    const later = new Date(NOW.getTime() + 1000);
+    const next = await prepareSessionSheet(edited, "ru", THURSDAY, later, "owner", async ({ kind }) => ({
+      text: kind === "judge" ? classify("Боюсь потерять связь с другом") : null,
+    }));
+    const current = applySessionSheet(edited, next, later);
+    for (const synced of [mergeStores(saved, current), mergeStores(current, saved)]) {
+      assert.deepEqual(synced.themeLinks.map((link) => link.themeId), ["sleep"]);
+      assert.equal(synced.themes.find((theme) => theme.id === "friend")?.quotes.length, 0);
+    }
+  });
+
   it("builds a pattern and a backlog for the file and leaves the journal alone", async () => {
     const store = emptyStore();
     store.sessionPlan = weekly();

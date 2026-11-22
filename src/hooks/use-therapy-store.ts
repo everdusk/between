@@ -12,7 +12,7 @@ import { entryInWindow, observationWindow } from "@/lib/session-summary";
 import {
   addManualTheme,
   applyVerdict,
-  dedupFacts,
+  dedupComparison,
   fallbackVerdict,
   discussTheme,
   dismissTheme,
@@ -23,7 +23,6 @@ import {
   parseDedupHit,
   parseJudgeVerdict,
   pendingJudgeEntries,
-  themesForJudge,
 } from "@/lib/themes";
 import { applyThemePass, isTherapyTheme, sanitizeTags, splitTags } from "@/lib/tags";
 import { clearStore, loadStore, saveStore, WEB_STORAGE_KEY } from "@/lib/storage";
@@ -250,11 +249,11 @@ export function useTherapyStore(options?: {
     if (judgeRun.current === stamp) return;
     judgeRun.current = stamp;
     void (async () => {
-      const facts = judgeFacts(themesForJudge(storeRef.current.themes ?? []), entry);
+      const facts = judgeFacts(storeRef.current.themes ?? [], entry);
       const result = await requestBrief(
         initData,
         facts,
-        modelRequestStamp("j", stamp),
+        modelRequestStamp("j", stamp, 0, facts),
         locale,
         "judge",
         maxInitData,
@@ -291,28 +290,28 @@ export function useTherapyStore(options?: {
         const theme = state.themes.find(
           (item) => item.id === focus && item.status === "active" && !item.dismissed,
         );
-        const others = state.themes.filter(
-          (item) => item.id !== focus && item.status === "active" && !item.dismissed,
-        );
-        if (!theme || theme.manual || others.length === 0) break;
+        if (!theme || theme.manual) break;
+        const comparison = dedupComparison(theme, state);
+        if (comparison.candidates.length === 0) break;
         const dedup = await requestBrief(
           initData,
-          dedupFacts(theme, others),
-          modelRequestStamp("d", stamp, pass),
+          comparison.facts,
+          modelRequestStamp("d", stamp, pass, comparison.facts),
           locale,
           "dedup",
           maxInitData,
         );
         if (!judgeAlive.current || judgeRun.current !== stamp) return;
         const hit = dedup.ok && dedup.text ? parseDedupHit(dedup.text) : null;
-        if (!hit || hit.confidence < 0.85 || hit.themeId === focus) break;
+        if (!hit || hit.confidence < 0.85 || !comparison.candidates.some((candidate) => candidate.id === hit.themeId)) break;
         state = mergeThemes(state, hit.themeId, focus, hit.title);
         focus = hit.themeId;
       }
       if (!judgeAlive.current || judgeRun.current !== stamp) return;
       const latest = storeRef.current;
       judgeRun.current = null;
-      if (latest.judgeSettled.includes(stamp)) return;
+      const currentEntry = latest.entries.find((item) => item.id === entry.id);
+      if (!currentEntry || judgeStamp(currentEntry) !== stamp || latest.judgeSettled.includes(stamp)) return;
       if (latest.themes !== snapshot.themes || latest.themeLinks !== snapshot.themeLinks) {
         // A sync or edit landed during deduplication. Keep the newer topic list.
         state = applyVerdict({ themes: latest.themes, links: latest.themeLinks }, entry, verdict).state;

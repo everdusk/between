@@ -84,11 +84,12 @@ export interface ThemeQuote {
   intensity: number;
 }
 
-/** Entry↔theme link. One entry belongs to at most one theme. */
+/** Links from the same classification share a timestamp and sync as a set. */
 export interface ThemeLink {
   entryId: string;
   themeId: string;
   confidence: number;
+  judgedAt?: string;
 }
 
 /**
@@ -96,6 +97,8 @@ export interface ThemeLink {
  * the backlog is the list of these themes.
  */
 export interface SessionTheme {
+  /** Previously consolidated topics. Older snapshots can still refer to these IDs. */
+  mergedIds?: string[];
   outcome?: string;
   list?: "therapy" | "personal";
   observation?: "familiar" | "hidden";

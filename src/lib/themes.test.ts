@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { Feeling, JournalEntry, SessionTheme } from "./types";
+import { emptyStore } from "./types";
+import { mergeStores } from "./journal-api";
 import {
   addManualTheme,
   applyVerdict,
@@ -8,6 +10,7 @@ import {
   buildSessionBrief,
   clipPattern,
   fallbackVerdict,
+  dedupComparison,
   judgeFacts,
   patternAlreadyCurrent,
   patternFacts,
@@ -352,6 +355,13 @@ describe("theme judge", () => {
     assert.equal(next.themes[0].title, "конфликты с мамой из-за границ");
     assert.equal(next.themes[0].count, 2);
     assert.ok(next.links.every((link) => link.themeId === "a"));
+    const stale = { ...emptyStore(), themes: [older, younger],
+      themeLinks: [{ entryId: "old", themeId: "a", confidence: 0.9 }, { entryId: "e8", themeId: "b", confidence: 1 }] };
+    const fresh = { ...emptyStore(), themes: next.themes, themeLinks: next.links };
+    for (const synced of [mergeStores(stale, fresh), mergeStores(fresh, stale)]) {
+      assert.deepEqual(synced.themes.map((theme) => theme.id), ["a"]);
+      assert.deepEqual(synced.themeLinks.map((link) => link.themeId), ["a", "a"]);
+    }
   });
 
   it("keeps a migration of thirty notes inside seven themes", () => {
@@ -610,6 +620,15 @@ describe("session brief", () => {
     assert.ok(facts.length <= 3800);
     assert.match(facts, /Сегодня снова сорвалась/);
     assert.match(facts, /Открытые темы/);
+    const old = { ...themes[0], id: "old-relevant", title: "Требования к результату", lastSeen: "2025-01-01",
+      summary: "Сравниваю свои результаты с чужими", quotes: [] };
+    const subject = { ...old, id: "subject", title: "Сравниваю скорость обучения" };
+    const all = [...themes, old, subject];
+    const compared = dedupComparison(subject, { themes: all, links: [] });
+    assert.ok(compared.facts.length <= 3800);
+    assert.equal(compared.candidates[0].id, old.id);
+    assert.match(judgeFacts(all, entry("new", old.summary)), /old-relevant/);
+    for (const candidate of compared.candidates) assert.ok(compared.facts.includes(candidate.id + " |"));
   });
 
   it("asks for a pattern even while another note is still being judged", () => {

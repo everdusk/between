@@ -340,6 +340,8 @@ function normalizeTheme(raw: unknown): SessionTheme | null {
   if (theme.list === "personal" || theme.list === "therapy") next.list = theme.list;
   if (theme.observation === "familiar" || theme.observation === "hidden") next.observation = theme.observation;
   if (theme.manual === true) next.manual = true;
+  const mergedIds = idList(theme.mergedIds);
+  if (mergedIds.length) next.mergedIds = mergedIds;
   if (typeof theme.discussedAt === "string" && Number.isFinite(Date.parse(theme.discussedAt))) {
     next.discussedAt = theme.discussedAt;
   }
@@ -355,6 +357,7 @@ function normalizeLink(raw: unknown): ThemeLink | null {
   return {
     entryId: link.entryId,
     themeId: link.themeId,
+    ...(typeof link.judgedAt === "string" ? { judgedAt: link.judgedAt } : {}),
     confidence: Math.min(1, Math.max(0, confidence)),
   };
 }

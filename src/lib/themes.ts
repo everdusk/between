@@ -20,6 +20,7 @@ export const DISCUSSED_LINGER_MS = 7 * 24 * 60 * 60 * 1000;
 export type JudgeVerdict = {
   relevant: boolean;
   matchTheme: string | null;
+  secondary?: { themeId: string; confidence: number; quote: string };
   intensity: number;
   newTheme: string | null;
   confidence: number;
@@ -198,14 +199,6 @@ function fallbackTitle(body: string): string {
   return sentence.slice(0, 80).trim();
 }
 
-function upsertQuote(theme: SessionTheme, quote: ThemeQuote | null): ThemeQuote[] {
-  if (!quote) return theme.quotes;
-  const without = theme.quotes.filter(
-    (item) => !(item.entryId === quote.entryId && item.text === quote.text),
-  );
-  return [...without, quote].slice(-8);
-}
-
 export function applyVerdict(
   state: ThemeState,
   entry: Pick<JournalEntry, "id" | "date" | "body" | "feelings">,
@@ -238,30 +231,37 @@ export function applyVerdict(
     ? state.themes.find((theme) => theme.id === verdict.matchTheme)
     : undefined;
 
-  function attach(theme: SessionTheme): { state: ThemeState; touchedId: string } {
-    const links = state.links.some(
-      (link) => link.entryId === entry.id && link.themeId === theme.id,
-    )
-      ? state.links.map((link) =>
-          link.entryId === entry.id ? { ...link, themeId: theme.id, confidence } : link,
-        )
-      : [
-          ...state.links.filter((link) => link.entryId !== entry.id),
-          { entryId: entry.id, themeId: theme.id, confidence },
-        ];
-    const reopened = theme.status === "discussed";
+  function attach(theme: SessionTheme, pool = state.themes): { state: ThemeState; touchedId: string } {
+    const targets = new Map([[theme.id, { quote, confidence }]]);
+    const secondary = verdict.secondary;
+    if (secondary && quote && verdict.relevant && secondary.themeId !== theme.id &&
+        secondary.confidence >= MERGE_CONFIDENCE && secondary.confidence <= 1 &&
+        pool.some((item) => item.id === secondary.themeId && item.status === "active" && !item.dismissed)) {
+      const text = verbatimQuote(entry.body, secondary.quote);
+      if (text && fold(text) !== fold(quote.text)) {
+        targets.set(secondary.themeId, { quote: { ...quote, text }, confidence: secondary.confidence });
+      }
+    }
+    const links = [
+      ...state.links.filter((link) => link.entryId !== entry.id),
+      ...Array.from(targets, ([themeId, target]) => ({
+        entryId: entry.id, themeId, confidence: target.confidence, judgedAt: now,
+      })),
+    ];
     const themes = recountAll(
-      state.themes.map((item) => {
-        if (item.id !== theme.id) return item;
+      pool.map((item) => {
+        const target = targets.get(item.id);
+        const quotes = item.quotes.filter((old) => old.entryId !== entry.id);
+        if (!target) return quotes.length === item.quotes.length ? item : { ...item, quotes, updatedAt: now };
         const next: SessionTheme = {
           ...withoutCheck(item),
           status: "active",
-          reopened: item.reopened || reopened,
+          reopened: item.reopened || item.status === "discussed",
           lastSeen: entry.date > item.lastSeen ? entry.date : item.lastSeen,
           firstSeen: entry.date < item.firstSeen ? entry.date : item.firstSeen,
           peakIntensity: Math.max(item.peakIntensity, intensity),
-          confidence: Math.max(item.confidence, confidence),
-          quotes: upsertQuote(item, quote),
+          confidence: Math.max(item.confidence, target.confidence),
+          quotes: target.quote ? [...quotes, target.quote].slice(-8) : quotes,
           updatedAt: now,
         };
         if (feeling && intensity >= item.peakIntensity) next.peakFeeling = feeling;
@@ -296,10 +296,6 @@ export function applyVerdict(
   if (sameTitle) return attach(sameTitle);
 
   const id = createId();
-  const links = [
-    ...state.links.filter((link) => link.entryId !== entry.id),
-    { entryId: entry.id, themeId: id, confidence },
-  ];
   const created: SessionTheme = {
     id,
     userId,
@@ -317,10 +313,7 @@ export function applyVerdict(
     quotes: quote ? [quote] : [],
     updatedAt: now,
   };
-  return {
-    state: { themes: recountAll([...state.themes, created], links), links },
-    touchedId: id,
-  };
+  return attach(created, [...state.themes, created]);
 }
 
 export function mergeThemes(
@@ -334,14 +327,16 @@ export function mergeThemes(
   const keep = state.themes.find((theme) => theme.id === keepId);
   const drop = state.themes.find((theme) => theme.id === dropId);
   if (!keep || !drop || keep.dismissed || drop.dismissed) return state;
-  const links = state.links.map((link) =>
-    link.themeId === dropId ? { ...link, themeId: keepId } : link,
-  );
+  const movedEntries = new Set(state.links.filter((link) => link.themeId === dropId).map((link) => link.entryId));
+  const links = state.links.map((link) => movedEntries.has(link.entryId)
+    ? { ...link, judgedAt: now, themeId: link.themeId === dropId ? keepId : link.themeId }
+    : link);
   const seen = new Set<string>();
   const unique: ThemeLink[] = [];
   for (const link of links) {
-    if (seen.has(link.entryId)) continue;
-    seen.add(link.entryId);
+    const pair = JSON.stringify([link.entryId, link.themeId]);
+    if (seen.has(pair)) continue;
+    seen.add(pair);
     unique.push(link);
   }
   const quotes = [...keep.quotes];
@@ -354,6 +349,7 @@ export function mergeThemes(
   const merged: SessionTheme = recount(
     {
       ...withoutCheck(keep),
+      mergedIds: [...new Set([...(keep.mergedIds ?? []), dropId, ...(drop.mergedIds ?? [])])],
       title: nextTitle,
       summary: nextTitle,
       status: "active",
@@ -390,9 +386,7 @@ export function dedupTouched(
   for (let pass = 0; pass < 2 && focus; pass += 1) {
     const theme = current.themes.find((item) => item.id === focus && item.status === "active" && !item.dismissed);
     if (!theme || theme.manual) break;
-    const others = current.themes.filter(
-      (item) => item.id !== theme.id && item.status === "active" && !item.dismissed,
-    );
+    const { candidates: others } = dedupComparison(theme, current);
     const hit = others.length > 0 ? ask(theme, others) : null;
     if (!hit || hit.confidence < MERGE_CONFIDENCE || hit.themeId === theme.id) break;
     const other = others.find((item) => item.id === hit.themeId);
@@ -572,9 +566,9 @@ export function judgeStamp(entry: Pick<JournalEntry, "id" | "updatedAt">): strin
 }
 
 /** Short cache key. The raw id plus timestamp does not fit the brief stamp limit. */
-export function modelRequestStamp(prefix: string, entryStamp: string, pass = 0): string {
+export function modelRequestStamp(prefix: string, entryStamp: string, pass = 0, facts = ""): string {
   let hash = 5381;
-  const source = `${prefix}:${entryStamp}:${pass}`;
+  const source = `${prefix}:${entryStamp}:${pass}:${facts}`;
   for (let index = 0; index < source.length; index += 1) {
     hash = (hash * 33) ^ source.charCodeAt(index);
   }
@@ -591,13 +585,6 @@ export function pendingJudgeEntries(
   return entries
     .filter((entry) => entry.body.trim() && days.has(entry.date) && !done.has(judgeStamp(entry)))
     .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt));
-}
-
-export function themesForJudge(themes: SessionTheme[]): SessionTheme[] {
-  return themes
-    .filter((theme) => theme.status === "active" && !theme.dismissed)
-    .sort((a, b) => b.lastSeen.localeCompare(a.lastSeen))
-    .slice(0, 15);
 }
 
 function readJson(raw: string): unknown {
@@ -643,8 +630,13 @@ export function parseJudgeVerdict(raw: string): JudgeVerdict | null {
     const named = (namedSource as { title?: unknown }).title;
     if (typeof named === "string" && named.trim()) title = named.trim();
   }
+  const secondary = row.secondary as Record<string, unknown> | null;
+  const secondaryId = secondary?.theme_id ?? secondary?.themeId;
+  const secondaryConfidence = asNum(secondary?.confidence);
   return {
     relevant,
+    ...(typeof secondaryId === "string" && secondaryId.trim() && typeof secondary?.quote === "string" && secondaryConfidence !== null
+      ? { secondary: { themeId: secondaryId.trim(), quote: secondary.quote, confidence: secondaryConfidence } } : {}),
     matchTheme: match,
     intensity: asNum(row.intensity) ?? 1,
     newTheme: title,
@@ -839,32 +831,68 @@ export function briefWordLimit(): number {
   return BRIEF_WORD_LIMIT;
 }
 
-function themeLine(theme: SessionTheme): string {
-  const quotes = theme.quotes
-    .slice(-3)
-    .map((quote) => `${quote.date}: ${quote.text}`)
-    .join(" | ");
-  return `${theme.id} | ${theme.title} | ${theme.summary} | ×${theme.count} | ${theme.lastSeen}${quotes ? ` | ${quotes}` : ""}`;
+function themeEvidence(theme: SessionTheme, quotes = theme.quotes.slice(-2)): string {
+  const parts = quotes.map((quote) => quote.text.slice(0, 110));
+  if (theme.summary !== theme.title) parts.push(theme.summary.slice(0, 100));
+  return parts.map((part) => part.replace(/\s+/g, " ").trim()).filter(Boolean).join(" | ");
 }
 
 const JUDGE_FACT_LIMIT = 3800;
+
+/** Lexical overlap orders the evidence. Only the model decides whether the situations match. */
+function fitThemes(themes: SessionTheme[], context: string, budget: number) {
+  const stems = (value: string) => new Set((fold(value).match(/[\p{L}\p{N}]{3,}/gu) ?? []).map((word) => word.slice(0, 5)));
+  const wanted = stems(context);
+  function overlap(value: string): number {
+    let count = 0;
+    for (const word of stems(value)) if (wanted.has(word)) count++;
+    return count;
+  }
+  const scored = themes.map((theme) => {
+    const score = overlap([theme.title, theme.summary, ...theme.quotes.map((q) => q.text)].join(" "));
+    return { theme, score };
+  }).sort((a, b) => b.score - a.score || b.theme.lastSeen.localeCompare(a.theme.lastSeen));
+  const candidates: SessionTheme[] = [];
+  const lines: string[] = [];
+  // Reserve space for citations, while letting older topics compete on their titles too.
+  let titleBudget = Math.floor(budget * 0.6);
+  for (const { theme } of scored) {
+    const line = [theme.id, theme.title.replace(/\s+/g, " ").trim().slice(0, 80)].join(" | ");
+    if (line.length + 1 > titleBudget) continue;
+    candidates.push(theme);
+    lines.push(line);
+    titleBudget -= line.length + 1;
+    budget -= line.length + 1;
+  }
+  candidates.forEach((theme, index) => {
+    const quotes = [...theme.quotes].reverse().map((quote) => ({ quote, score: overlap(quote.text) }))
+      .sort((a, b) => b.score - a.score).slice(0, 2).map((item) => item.quote);
+    const evidence = themeEvidence(theme, quotes);
+    if (!evidence || evidence.length + 3 > budget) return;
+    lines[index] += " | " + evidence;
+    budget -= evidence.length + 3;
+  });
+  return { candidates, text: lines.join("\n") };
+}
 
 export function judgeFacts(themes: SessionTheme[], entry: Pick<JournalEntry, "id" | "date" | "body" | "feelings">): string {
   const note = [
     `Запись ${entry.date}, отметка ${entry.feelings.join(", ") || "нет"}, интенсивность по отметке ${feelingIntensity(entry.feelings)}.`,
     entry.body.trim().slice(0, 1200),
   ].join("\n\n");
-  const lines = themesForJudge(themes).map(themeLine);
-  while (lines.length > 0 && `Открытые темы:\n${lines.join("\n")}\n\n${note}`.length > JUDGE_FACT_LIMIT) {
-    lines.pop();
-  }
-  const open = lines.join("\n");
-  const text = [open ? `Открытые темы:\n${open}` : "Открытых тем нет.", note].join("\n\n");
-  return text.length > JUDGE_FACT_LIMIT ? text.slice(0, JUDGE_FACT_LIMIT) : text;
+  const header = "Открытые темы:\n";
+  const { text } = fitThemes(openThemes(themes), entry.body, JUDGE_FACT_LIMIT - note.length - header.length - 2);
+  return [text ? header + text : "Открытых тем нет.", note].join("\n\n");
 }
 
-export function dedupFacts(theme: SessionTheme, others: SessionTheme[]): string {
-  return [`Тема:\n${themeLine(theme)}`, `Другие:\n${others.map(themeLine).join("\n")}`].join("\n\n");
+export function dedupComparison(theme: SessionTheme, state: ThemeState) {
+  const entries = new Set(state.links.filter((link) => link.themeId === theme.id).map((link) => link.entryId));
+  const distinct = new Set(state.links.filter((link) => entries.has(link.entryId)).map((link) => link.themeId));
+  const others = openThemes(state.themes).filter((other) => other.id !== theme.id && !distinct.has(other.id));
+  const subject = [theme.title.slice(0, 80), themeEvidence(theme)].filter(Boolean).join(" | ");
+  const header = `Тема:\n${subject}\n\nДругие:\n`;
+  const { candidates, text } = fitThemes(others, subject, JUDGE_FACT_LIMIT - header.length);
+  return { candidates, facts: header + text };
 }
 
 const PATTERN_VERSION = "p3";

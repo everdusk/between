@@ -846,7 +846,7 @@ async function foldMaxJournal(accountId: string, maxUserId: number): Promise<voi
     hasNewItems(web.sessions, from.sessions, (item) => item.id) ||
     hasNewItems(web.weekPreps, from.weekPreps, (item) => item.weekKey) ||
     hasNewItems(web.themes ?? [], from.themes ?? [], (item) => item.id) ||
-    hasNewItems(web.themeLinks ?? [], from.themeLinks ?? [], (item) => item.entryId);
+    hasNewItems(web.themeLinks ?? [], from.themeLinks ?? [], (item) => JSON.stringify([item.entryId, item.themeId]));
   if (adds) await saveUserStore(webId, mergeStores(web, from));
   if (!(await getUserTimezone(webId))) {
     const tz = await getUserTimezone(fromId);

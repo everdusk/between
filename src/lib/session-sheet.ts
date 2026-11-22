@@ -6,7 +6,7 @@ import { entryInWindow, observationWindow } from "./session-summary";
 import {
   applyVerdict,
   clipPattern,
-  dedupFacts,
+  dedupComparison,
   fallbackVerdict,
   judgeFacts,
   judgeStamp,
@@ -21,7 +21,6 @@ import {
   patternVersionCurrent,
   pendingJudgeEntries,
   rankedThemes,
-  themesForJudge,
   type ThemeState,
 } from "./themes";
 import { emptyStore, type SessionTheme, type ThemeLink, type TherapyStore } from "./types";
@@ -97,9 +96,10 @@ export async function prepareSessionSheet(
     judgedEntryIds.push(entry.id);
     let text: string | null = null;
     try {
+      const facts = judgeFacts(state.themes, entry);
       text = (await run({
-        facts: judgeFacts(themesForJudge(state.themes), entry),
-        stamp: modelRequestStamp("j", stamp),
+        facts,
+        stamp: modelRequestStamp("j", stamp, 0, facts),
         kind: "judge",
       })).text;
     } catch {
@@ -119,22 +119,21 @@ export async function prepareSessionSheet(
       const theme = state.themes.find(
         (item) => item.id === focus && item.status === "active" && !item.dismissed,
       );
-      const others = state.themes.filter(
-        (item) => item.id !== focus && item.status === "active" && !item.dismissed,
-      );
-      if (!theme || theme.manual || others.length === 0) break;
+      if (!theme || theme.manual) break;
+      const { candidates, facts } = dedupComparison(theme, state);
+      if (candidates.length === 0) break;
       let dedupText: string | null = null;
       try {
         dedupText = (await run({
-          facts: dedupFacts(theme, others),
-          stamp: modelRequestStamp("d", stamp, pass),
+          facts,
+          stamp: modelRequestStamp("d", stamp, pass, facts),
           kind: "dedup",
         })).text;
       } catch {
         dedupText = null;
       }
       const hit = dedupText ? parseDedupHit(dedupText) : null;
-      if (!hit || hit.confidence < 0.85 || hit.themeId === focus) break;
+      if (!hit || hit.confidence < 0.85 || !candidates.some((candidate) => candidate.id === hit.themeId)) break;
       state = mergeThemes(state, hit.themeId, focus, hit.title, now.toISOString());
       focus = hit.themeId;
     }
@@ -187,9 +186,9 @@ export async function prepareSessionSheet(
 export function applySessionSheet(store: TherapyStore, sheet: SessionSheet, now: Date): TherapyStore {
   const settled = new Set(store.judgeSettled ?? []);
   const freshIds = new Set(
-    sheet.judgedEntryIds.filter((id) => {
+    sheet.judgedEntryIds.filter((id, index) => {
       const entry = store.entries.find((item) => item.id === id);
-      return Boolean(entry && !settled.has(judgeStamp(entry)));
+      return Boolean(entry && sheet.judged[index] === judgeStamp(entry) && !settled.has(judgeStamp(entry)));
     }),
   );
   const themeIds = new Set(
