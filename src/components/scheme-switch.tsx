@@ -111,7 +111,7 @@ const SCHEME_TOKENS: Record<JournalScheme, Record<string, string>> = {
 /** Telegram paints its own theme inline. A chosen day or night has to cover those variables. */
 export function paintPickedScheme(scheme: JournalScheme) {
   const root = document.documentElement;
-  if (root.hasAttribute("data-splash")) return;
+  if (root.hasAttribute("data-splash") || (root.dataset.design === "dawn" && !root.dataset.telegramTheme)) return;
   for (const [name, value] of Object.entries(SCHEME_TOKENS[scheme])) {
     root.style.setProperty(name, value);
   }

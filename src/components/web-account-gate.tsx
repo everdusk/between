@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type FormEvent } from "react";
 import { registrationReason, type AuthOperation } from "@/lib/registration-errors";
+import { normalizeEmail, passwordProblem } from "@/lib/account-validation";
 import { trackSurvey, type RegistrationMethod, type RegistrationStep } from "@/lib/survey-analytics";
-import { Bot, Check, LoaderCircle, Lock } from "lucide-react";
+import { AtSign, Bot, Check, KeyRound, LoaderCircle, Lock, LockKeyhole } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { GlassPanel } from "@/components/ui/glass-panel";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LegalAgree } from "@/components/legal-links";
@@ -15,6 +17,7 @@ import type { WebAccount } from "@/hooks/use-web-account";
 import { formatDayLabel, formatTime, toDateKey } from "@/lib/dates";
 import { readMaxInitData } from "@/lib/max-webapp";
 import { feelingFill } from "@/lib/spectrum";
+import { FeelingStripe } from "@/components/feeling-stripe";
 import type { Feeling } from "@/lib/types";
 
 const SAMPLE_NOTES: {
@@ -28,6 +31,33 @@ const SAMPLE_NOTES: {
   { hour: 8, minute: 40, feelings: ["тревожно"], body: "webSampleNote1", tag: "webSampleTag1" },
   { hour: 21, minute: 15, feelings: ["спокойно"], body: "webSampleNote2", tag: "webSampleTag2", bot: true },
 ];
+
+function EmailField({ id, autoComplete = "email", ...props }: ComponentProps<typeof Input> & { id: string }) {
+  const { t } = useI18n();
+  const label = t("webEmail");
+  return (
+    <div className="registration-field">
+      <Label className="sr-only" htmlFor={id}>{label}</Label>
+      <span className="registration-field-icon" aria-hidden><AtSign /></span>
+      <Input id={id} type="email" autoComplete={autoComplete} placeholder={label} required {...props} />
+    </div>
+  );
+}
+
+function MessengerLoginButton({ provider, disabled, onClick }: {
+  provider: "telegram" | "max";
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const { t } = useI18n();
+  const name = t(provider === "telegram" ? "webTgLogin" : "webMaxLogin");
+  return (
+    <Button type="button" variant="outline" size="lg" className={`auth-provider auth-${provider} flex-auto px-2`}
+      disabled={disabled} onClick={onClick}>
+      {t("webOAuth", { messenger: name })}
+    </Button>
+  );
+}
 
 function sampleStamp(hour: number, minute: number): string {
   const d = new Date();
@@ -54,11 +84,7 @@ function JournalPreview() {
         <ul className="mt-5 space-y-3">
           {SAMPLE_NOTES.map((note) => (
             <li key={note.body} className="glass relative overflow-hidden rounded-3xl p-4 ps-5">
-              <span
-                aria-hidden
-                className="absolute inset-y-4 start-0 w-1 rounded-e-full"
-                style={{ background: feelingFill(note.feelings[0]) }}
-              />
+              <FeelingStripe feeling={note.feelings[0]} className="inset-y-4" />
               <div className="tabular flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">
                   {formatTime(sampleStamp(note.hour, note.minute), locale)}
@@ -147,6 +173,9 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordAgain, setPasswordAgain] = useState("");
+  const [checkedFields, setCheckedFields] = useState<string[]>([]);
+  const [malformedEmail, setMalformedEmail] = useState<string | null>(null);
+  const [rejectedEmail, setRejectedEmail] = useState<{ value: string; reason: "taken" | "bad_email" } | null>(null);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -226,20 +255,19 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     return t("webCodeBad");
   }
 
-  function passwordReady(): boolean {
-    setErrorScope("register");
-    if (password !== passwordAgain) {
-      record("error", "email", "register", "password_mismatch");
-      setError(t("webPasswordMismatch"));
-      return false;
-    }
-    if (password.length < 8 || password.length > 200) {
-      record("error", "email", "register", "short_password");
-      setError(t("webPasswordShort"));
-      return false;
-    }
-    return true;
+  const fieldErrors: Record<string, string> = {
+    "web-register-email": !email.trim() ? t("registerEmailNeeded") : malformedEmail === email || !normalizeEmail(email) ? t("webBadEmail") : "",
+    "web-register-password": !password ? t("registerPasswordNeeded") : passwordProblem(password) ? t("webPasswordRule") : "",
+    "web-register-password-again": !passwordAgain ? t("registerRepeatNeeded") : passwordAgain !== password ? t("webPasswordMismatch") : "",
+  };
+  function checkField(id: string) {
+    setCheckedFields(previous => previous.includes(id) ? previous : [...previous, id]);
   }
+  function messageFor(id: string) {
+    if (id === "web-register-email" && rejectedEmail?.value === email) return formError(rejectedEmail.reason);
+    return checkedFields.includes(id) ? fieldErrors[id] : "";
+  }
+  const emailMessage = messageFor("web-register-email");
 
   function rememberLogin(kind: "max" | "telegram", token: string, expiresAt: number, url: string, vpn: boolean) {
     try {
@@ -384,6 +412,8 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   }, [onSignedIn, t]);
 
   function openMode(next: GateMode) {
+    setCheckedFields([]);
+    setRejectedEmail(null);
     setMode(next);
     setError(null);
     setErrorScope("other");
@@ -405,7 +435,17 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   async function register(event: { preventDefault: () => void }) {
     event.preventDefault();
     record("email_submitted", "email");
-    if (!passwordReady()) return;
+    if (busy) return;
+    const invalid = Object.keys(fieldErrors).find(id => fieldErrors[id]);
+    if (invalid) {
+      setError(null);
+      checkField(invalid);
+      document.getElementById(invalid)?.focus();
+      const reason = invalid === "web-register-email" ? "bad_email" : invalid === "web-register-password" ? "short_password" : "password_mismatch";
+      record("error", "email", "register", reason);
+      return;
+    }
+    setRejectedEmail(null);
     setBusy(true);
     setErrorScope("register");
     setError(null);
@@ -419,7 +459,12 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
         record("error", "email", "register", registrationReason(data.error, res.status));
-        setError(formError(data.error));
+        if (mode === "login" && (data.error === "taken" || data.error === "bad_email")) {
+          setRejectedEmail({value: email, reason: data.error});
+          document.getElementById("web-register-email")?.focus();
+        } else {
+          setError(formError(data.error));
+        }
         return;
       }
       record("code_requested", "email");
@@ -546,14 +591,14 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         <JournalPreview />
       </section>}
 
-      <section ref={formRef} className="journal-gate-form glass mt-6 scroll-mt-4 rounded-[22px] px-5 py-6 sm:px-6">
+      <GlassPanel ref={formRef} data-intro-mascot={surveyAttempt && creating && !waitingFor ? "register" : undefined} className="journal-gate-form mt-6 scroll-mt-4 rounded-[22px] px-5 py-6 sm:px-6">
         {waitingFor ? (
           <div className="grid gap-4">
             <h2 className="font-display text-2xl leading-tight">{t(waitingFor === "max" ? "webMaxLogin" : "webTgLogin")}</h2>
             <p role="status" className="leading-relaxed">{t(waitingFor === "max" ? "webMaxLoginWait" : "webTgLoginWait")}</p>
             {telegramVpn && <p className="text-sm text-muted-foreground">{t("webBotVpn")}</p>}
             {messengerUrl ? (
-              <a href={messengerUrl} target="_blank" rel="noreferrer" className={`auth-provider auth-${waitingFor} flex min-h-12 items-center justify-center rounded-full px-5 font-semibold`}>
+              <a href={messengerUrl} target="_blank" rel="noreferrer" className={`auth-provider auth-${waitingFor} flex min-h-12 items-center justify-center gap-2 rounded-full px-5 font-semibold`}>
                 {t("webOpenTab", { messenger: waitingFor === "max" ? "MAX" : "Telegram" })}
               </a>
             ) : <LoaderCircle aria-hidden className="size-5 motion-safe:animate-spin" />}
@@ -562,38 +607,24 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         ) : <>
         <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{compact && mode === "login" && creating ? t("webCreate") : title}</h2>
         {surveyAttempt && mode === "login" && (
-          <div className="mt-4 space-y-2 border-s-2 border-primary/60 ps-4 text-base leading-relaxed text-foreground">
-            <p>{locale === "en"
-              ? "Create a journal to save your reflections."
-              : "Чтобы сохранить свои размышления, создайте дневник."}</p>
-            <p>{locale === "en"
-              ? "After you sign in, we’ll automatically save what you wrote."
-              : "После входа всё, что вы написали, сохранится автоматически."}</p>
-          </div>
+          <p className="mt-4 text-base leading-relaxed text-foreground">
+            {locale === "en"
+              ? "When you create your journal, your first entry will already be there."
+              : "Когда вы создадите дневник, в нём уже будет ваша первая запись."}
+          </p>
         )}
         {compact && !surveyAttempt && mode === "login" && <div className="mt-4 flex gap-2" role="group">
           <Button type="button" size="sm" variant={creating ? "secondary" : "ghost"} aria-pressed={creating} onClick={() => { setCreating(true); setError(null); }}>{t("webCreate")}</Button>
-          <Button type="button" size="sm" variant={!creating ? "secondary" : "ghost"} aria-pressed={!creating} onClick={() => { setCreating(false); setError(null); }}>{t("webEnter")}</Button>
+          <Button type="button" size="sm" variant={!creating ? "secondary" : "ghost"} aria-pressed={!creating} onClick={() => { setCreating(false); setError(null); setCheckedFields([]); setRejectedEmail(null); }}>{t("webEnter")}</Button>
         </div>}
         {lead && mode !== "login" ? <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{lead}</p> : null}
 
         {mode === "login" ? (
           <>
             <div className="mt-5">
-              {!creating && <p className="mb-2 text-[0.6875rem] font-extrabold tracking-[0.14em] text-muted-foreground uppercase">
-                {t("webOAuth")}
-              </p>}
-              <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant="outline" size="lg" className="auth-provider auth-telegram w-full"
-                  disabled={busy}
-                  onClick={() => void loginWithMessenger("telegram")}>
-                  {t("webTgLogin")}
-                </Button>
-                <Button type="button" variant="outline" size="lg" className="auth-provider auth-max w-full"
-                  disabled={busy}
-                  onClick={() => void loginWithMessenger("max")}>
-                  {t("webMaxLogin")}
-                </Button>
+              <div className="flex flex-wrap gap-2">
+                <MessengerLoginButton provider="telegram" disabled={busy} onClick={() => void loginWithMessenger("telegram")} />
+                <MessengerLoginButton provider="max" disabled={busy} onClick={() => void loginWithMessenger("max")} />
               </div>
               {error && errorScope === "messenger" && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}
             </div>
@@ -605,19 +636,15 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
         {mode === "login" && (!compact || !creating) ? (
           <form className="space-y-4" onSubmit={passwordLogin}>
-            <div className="space-y-2">
-              <Label htmlFor="web-email">{t("webEmail")}</Label>
-              <Input
-                id="web-email"
-                type="email"
-                autoComplete="username"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </div>
+            <EmailField
+              id="web-email"
+              autoComplete="username"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
             <PasswordField
               id="web-password"
+              inlineIcon={KeyRound}
               label={t("webPassword")}
               value={password}
               onChange={setPassword}
@@ -633,7 +660,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
             </Button>
             <button
               type="button"
-              className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
+              className="text-action mx-auto block w-fit py-1 text-sm text-muted-foreground"
               onClick={() => openMode("forgot")}
             >
               {t("webForgot")}
@@ -643,21 +670,31 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
         {mode === "login" && (!compact || creating) ? (
           <details open={compact || undefined} className={compact ? undefined : "mt-5 border-t border-[color:var(--glass-border)] pt-4"}>
-            <summary hidden={compact} className="cursor-pointer text-sm text-muted-foreground">{t("webRegisterFold")}</summary>
-            <form className="mt-4 space-y-4" onInput={() => record("email_started", "email")} onSubmit={register}>
-              <div className="space-y-2">
-                <Label htmlFor="web-register-email">{t("webEmail")}</Label>
-                <Input
+            <summary hidden={compact} className="text-action w-fit cursor-pointer text-sm text-muted-foreground">{t("webRegisterFold")}</summary>
+            <form noValidate className="mt-4 space-y-4" onInput={() => {
+              record("email_started", "email");
+              if (errorScope === "register") setError(null);
+            }} onBlur={event => {
+              const input = event.target;
+              if (input instanceof HTMLInputElement && input.value && input.id in fieldErrors) checkField(input.id);
+            }} onSubmit={register}>
+              <div>
+                <EmailField
                   id="web-register-email"
-                  type="email"
-                  autoComplete="email"
+                  aria-invalid={Boolean(emailMessage) || undefined}
+                  aria-describedby={emailMessage ? "web-register-email-error" : undefined}
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  required
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setMalformedEmail(event.target.validity.typeMismatch ? event.target.value : null);
+                  }}
                 />
+                {emailMessage && <p className="registration-error" id="web-register-email-error" role="status">{emailMessage}</p>}
               </div>
               <PasswordField
                 id="web-register-password"
+                fieldError={messageFor("web-register-password")}
+                inlineIcon={KeyRound}
                 label={t("webPassword")}
                 value={password}
                 onChange={setPassword}
@@ -667,43 +704,34 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
               />
               <PasswordField
                 id="web-register-password-again"
+                fieldError={messageFor("web-register-password-again")}
+                inlineIcon={LockKeyhole}
                 label={t("webPasswordAgain")}
                 value={passwordAgain}
                 onChange={setPasswordAgain}
                 autoComplete="new-password"
                 reveal
               />
-              {passwordAgain.length > 0 && passwordAgain !== password ? (
-                <p className="text-sm text-destructive" role="status">
-                  {t("webPasswordMismatch")}
-                </p>
-              ) : null}
               {error && errorScope === "register" ? (
-                <p className="text-sm text-destructive" role="alert">
+                <p className="registration-error" role="alert">
                   {error}
                 </p>
               ) : null}
               <Button type="submit" className="w-full" size="lg" disabled={busy}>
                 {t("webCreate")}
               </Button>
-              <LegalAgree className="legal-agreement text-[0.8125rem] leading-normal text-muted-foreground" />
+              <LegalAgree className="legal-agreement text-center text-balance text-[0.8125rem] leading-normal text-muted-foreground" />
             </form>
           </details>
         ) : null}
 
         {mode === "forgot" ? (
           <form className="mt-5 space-y-4" onSubmit={forgot}>
-            <div className="space-y-2">
-              <Label htmlFor="web-email">{t("webEmail")}</Label>
-              <Input
-                id="web-email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </div>
+            <EmailField
+              id="web-email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
             {note ? <p className="text-sm leading-relaxed text-foreground">{note}</p> : null}
             {error ? (
               <p className="text-sm text-destructive" role="alert">
@@ -715,7 +743,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
             </Button>
             <button
               type="button"
-              className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
+              className="text-action mx-auto block w-fit py-1 text-sm text-muted-foreground"
               onClick={() => openMode("login")}
             >
               {t("webBackToEnter")}
@@ -751,12 +779,12 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
             <Button type="submit" className="w-full" size="lg" disabled={busy || code.length !== 6}>
               {t("webOpenJournal")}
             </Button>
-            <button type="button" className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline" onClick={register}>
+            <button type="button" className="text-action mx-auto block w-fit py-1 text-sm text-muted-foreground" onClick={register}>
               {t("webResendCode")}
             </button>
             <button
               type="button"
-              className="w-full text-sm text-muted-foreground underline-offset-4 hover:underline"
+              className="text-action mx-auto block w-fit py-1 text-sm text-muted-foreground"
               onClick={() => openMode("login")}
             >
               {t("webOtherEmail")}
@@ -764,7 +792,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
           </form>
         ) : null}
         </>}
-      </section>
+      </GlassPanel>
       </div>
     </div>
   );

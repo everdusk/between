@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Share, LoaderCircle, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Share, LoaderCircle, RotateCcw } from "lucide-react";
+import { DateNavigation } from "@/components/date-navigation";
 import { useI18n } from "@/components/locale-provider";
 import { badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -352,21 +353,23 @@ export function WeeklyPanel({
 
   return (
     <div className="space-y-4">
-      <div className="relative px-2 pt-1 pb-1">
-        <div className="min-w-0 space-y-2 pe-12">
-          <div className="flex items-center gap-2"><Button variant="ghost" size="icon-sm" aria-label={t("deskOverview")+" ←"} onClick={()=>{
-            const earlier = period.startsAfter ? new Date(period.startsAfter.getTime()-1) : parseDateKey(addDays(days[0] ?? todayKey,-1));
-            if (earlier.getTime()<now.getTime()) setHistory(prev=>[...prev,earlier]);
-          }}><ChevronLeft/></Button><span className="eyebrow">{t("weekTitle")}</span><Button variant="ghost" size="icon-sm" aria-label={t("deskOverview")+" →"} disabled={!history.length} onClick={()=>setHistory(prev=>prev.slice(0,-1))}><ChevronRight/></Button></div>
-          <h2 className="font-display text-[2.125rem] leading-[1.05] tracking-tight text-foreground sm:text-[2.5rem]">
-            {period.last && days.length === 0
-              ? t("afterSessionLead", { date: formatLongDate(period.last.date, locale) })
-              : t("weekLead", {
-                  range: formatDateSpan(days[0] ?? todayKey, days[days.length - 1] ?? todayKey, locale),
-                })}
-          </h2>
-        </div>
-        <div className="absolute end-1 top-7">
+      <DateNavigation
+        range
+        previous={{
+          label: t("deskOverview") + " ←",
+          onClick: () => {
+            const earlier = period.startsAfter
+              ? new Date(period.startsAfter.getTime() - 1)
+              : parseDateKey(addDays(days[0] ?? todayKey, -1));
+            if (earlier < now) setHistory(prev => [...prev, earlier]);
+          },
+        }}
+        next={{
+          label: t("deskOverview") + " →",
+          disabled: !history.length,
+          onClick: () => setHistory(prev => prev.slice(0, -1)),
+        }}
+        action={
           <Button
             type="button"
             variant="ghost"
@@ -384,8 +387,14 @@ export function WeeklyPanel({
           >
             {pdfState === "busy" ? <LoaderCircle aria-hidden className="animate-spin" /> : pdfState === "fail" ? <RotateCcw aria-hidden /> : <Share aria-hidden />}
           </Button>
-        </div>
-      </div>
+        }
+      >
+        <h2 className="text-balance">
+          {period.last && days.length === 0
+            ? t("afterSessionLead", { date: formatLongDate(period.last.date, locale) })
+            : formatDateSpan(days[0] ?? todayKey, days[days.length - 1] ?? todayKey, locale)}
+        </h2>
+      </DateNavigation>
 
       <WeekSpectrum
         dayKeys={days}

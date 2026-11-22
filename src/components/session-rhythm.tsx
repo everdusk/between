@@ -1,32 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Check } from "lucide-react";
 import { useI18n } from "@/components/locale-provider";
-import { Button } from "@/components/ui/button";
-import { ThemeDateInput } from "@/components/theme-date-input";
+import { EntryCalendar } from "@/components/entry-calendar";
+import { TimePicker } from "@/components/time-picker";
 import { Label } from "@/components/ui/label";
-import { NotificationSettings } from "@/components/notification-settings";
-import { formatLongDate, toDateKey, weekdayName, weekdayShort } from "@/lib/dates";
-import {
-  planPreview,
-  isSessionTime,
-  weeklySlots,
-} from "@/lib/session-plan";
-import type { NotifyPrefs, SessionPlan, SessionSlot } from "@/lib/types";
+import { toDateKey, weekdayName, weekdayShort } from "@/lib/dates";
+import { weeklySlots } from "@/lib/session-plan";
+import type { SessionPlan, SessionSlot } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface SessionRhythmProps {
-  notificationsDisabled?: boolean;
   plan: SessionPlan | null;
-  notify: NotifyPrefs;
   onSavePlan: (plan: Omit<SessionPlan, "updatedAt">) => boolean;
-  onSaveNotify: (prefs: Omit<NotifyPrefs, "updatedAt">) => boolean;
   disabled?: boolean;
-}
-
-export function SessionRhythm(props: SessionRhythmProps) {
-  return <SessionRhythmForm key={props.plan?.updatedAt ?? "new"} {...props} />;
 }
 
 const WEEKDAY_KEYS = [
@@ -39,78 +26,36 @@ const WEEKDAY_KEYS = [
   "2026-01-11",
 ];
 
-function SessionRhythmForm({
-  notificationsDisabled,
+export function SessionRhythm({
   plan,
-  notify,
   onSavePlan,
-  onSaveNotify,
   disabled,
 }: SessionRhythmProps) {
   const { t, locale } = useI18n();
-  const [mode, setMode] = useState<SessionPlan["mode"]>(plan?.mode ?? "weekly");
-  const [date, setDate] = useState(plan?.date || toDateKey());
-  const [time, setTime] = useState(plan?.time || "17:00");
-  const [slots, setSlots] = useState<SessionSlot[]>(() => editorSlots(plan));
-  const [savedFlash, setSavedFlash] = useState(false);
-  const preview = plan ? planPreview(plan, locale, t) : t("noSchedule");
-  const weeklyReady = slots.length > 0 && slots.every((slot) => isSessionTime(slot.time));
+  const [saveFailed, setSaveFailed] = useState(false);
+  const mode = plan?.mode ?? "weekly";
+  const date = plan?.date || toDateKey();
+  const time = plan?.time || "17:00";
+  const slots = plan ? weeklySlots({ ...plan, mode: "weekly" }) : [];
+  function saveOnce(nextDate: string, nextTime: string) {
+    setSaveFailed(!onSavePlan({ mode: "once", date: nextDate, time: nextTime, slots, weekday: slots[0]?.weekday ?? 3 }));
+  }
+
+  function saveWeekly(nextSlots: SessionSlot[]) {
+    const [first] = nextSlots;
+    if (!first) return;
+    setSaveFailed(!onSavePlan({ mode: "weekly", date: "", ...first, slots: nextSlots }));
+  }
 
   function toggleDay(weekday: number) {
-    setSlots((current) => {
-      if (current.some((slot) => slot.weekday === weekday)) {
-        return current.filter((slot) => slot.weekday !== weekday);
-      }
-      return [...current, { weekday, time: "17:00" }].sort((a, b) => a.weekday - b.weekday);
-    });
-  }
-
-  function setSlotTime(weekday: number, next: string) {
-    setSlots((current) =>
-      current.map((slot) => (slot.weekday === weekday ? { ...slot, time: next || slot.time } : slot)),
-    );
-  }
-
-  function handleSave(event: React.FormEvent) {
-    event.preventDefault();
-    if (mode === "once") {
-      if (!isSessionTime(time) || !date) return;
-      const ok = onSavePlan({
-        mode,
-        date,
-        time,
-        weekday: slots[0]?.weekday ?? plan?.weekday ?? 3,
-        slots,
-      });
-      if (ok) flash();
-      return;
-    }
-    if (!weeklyReady) return;
-    const ordered = [...slots].sort((a, b) => a.weekday - b.weekday);
-    const ok = onSavePlan({
-      mode,
-      date: "",
-      time: ordered[0].time,
-      weekday: ordered[0].weekday,
-      slots: ordered,
-    });
-    if (ok) flash();
-  }
-
-  function flash() {
-    setSavedFlash(true);
-    window.setTimeout(() => setSavedFlash(false), 1800);
+    const next = slots.some(slot => slot.weekday === weekday)
+      ? slots.filter(slot => slot.weekday !== weekday)
+      : [...slots, { weekday, time: "17:00" }].sort((a, b) => a.weekday - b.weekday);
+    saveWeekly(next);
   }
 
   return (
-    <>
-      <section className="glass rounded-3xl p-5 sm:p-6">
-        <div className="space-y-1.5">
-          <h3 className="font-display text-xl tracking-tight text-foreground">{t("whenSession")}</h3>
-          <p className="text-sm text-muted-foreground">{preview}</p>
-        </div>
-
-        <form onSubmit={handleSave} className="mt-5 space-y-5">
+      <section className="glass space-y-5 rounded-3xl p-5 sm:p-6">
           <div
             role="radiogroup"
             aria-label={t("whenSession")}
@@ -123,7 +68,11 @@ function SessionRhythmForm({
                 role="radio"
                 aria-checked={mode === item}
                 disabled={disabled}
-                onClick={() => setMode(item)}
+                onClick={() => {
+                  if (item === mode) return;
+                  if (item === "once") saveOnce(date, time);
+                  else saveWeekly(slots);
+                }}
                 className={cn(
                   "h-9 rounded-full text-sm font-medium transition-[background-color,color,box-shadow] duration-200 focus-visible:ring-4 focus-visible:ring-ring/25 focus-visible:outline-none",
                   mode === item
@@ -139,34 +88,30 @@ function SessionRhythmForm({
           {mode === "once" ? (
             <div className="space-y-3">
               <Label htmlFor="plan-date">{t("date")}</Label>
-              <ThemeDateInput
+              <EntryCalendar
                 id="plan-date"
-                type="date"
-                display={formatLongDate(date, locale)}
+                showDate
                 value={date}
                 disabled={disabled}
-                onChange={(event) => {
-                  if (event.target.value) setDate(event.target.value);
-                }}
-                required
+                onChange={next => saveOnce(next, time)}
               />
             </div>
           ) : (
             <div className="space-y-3">
-              <Label>{t("day")}</Label>
-              <div className="grid grid-cols-7 gap-1.5">
+              <div role="group" aria-label={t("day")} className="grid grid-cols-7 gap-1.5">
                 {WEEKDAY_KEYS.map((key, index) => {
                   const on = slots.some((slot) => slot.weekday === index);
                   return (
                     <button
                       key={key}
                       type="button"
-                      disabled={disabled}
+                      disabled={disabled || (on && slots.length === 1)}
+                      title={on && slots.length === 1 ? t("planWeeklyMissing") : undefined}
                       aria-pressed={on}
                       aria-label={weekdayName(index, locale)}
                       onClick={() => toggleDay(index)}
                       className={cn(
-                        "h-11 rounded-2xl border text-sm font-medium capitalize transition-[background-color,color,transform] duration-200 active:scale-[0.96] focus-visible:ring-4 focus-visible:ring-ring/25 focus-visible:outline-none",
+                        "session-weekday h-11 rounded-2xl border text-sm font-medium capitalize transition-[background-color,color,transform] duration-200 active:scale-[0.96] focus-visible:ring-4 focus-visible:ring-ring/25 focus-visible:outline-none",
                         on
                           ? "border-transparent bg-foreground text-background shadow-[0_10px_24px_-14px_var(--foreground)]"
                           : "border-[color:var(--glass-border)] bg-background/55 text-foreground hover:bg-background/85",
@@ -182,21 +127,16 @@ function SessionRhythmForm({
               ) : (
                 <div className="space-y-2">
                   {slots.map((slot) => (
-                    <div key={slot.weekday} className="flex items-center justify-between gap-3">
-                      <span className="text-sm capitalize text-foreground">
+                    <div key={slot.weekday} className="flex items-center justify-end gap-3">
+                      {slots.length > 1 && <span className="me-auto text-sm capitalize text-foreground">
                         {weekdayName(slot.weekday, locale)}
-                      </span>
-                      <ThemeDateInput
+                      </span>}
+                      <TimePicker
                         id={`plan-time-${slot.weekday}`}
-                        type="time"
-                        display={slot.time}
                         value={slot.time}
                         disabled={disabled}
-                        aria-label={`${t("time")} ${weekdayName(slot.weekday, locale)}`}
-                        onChange={(event) => {
-                          if (event.target.value) setSlotTime(slot.weekday, event.target.value);
-                        }}
-                        required
+                        label={`${t("time")} ${weekdayName(slot.weekday, locale)}`}
+                        onChange={time => saveWeekly(slots.map(item => item.weekday === slot.weekday ? { ...item, time } : item))}
                       />
                     </div>
                   ))}
@@ -208,50 +148,18 @@ function SessionRhythmForm({
           {mode === "once" && (
             <div className="space-y-3">
               <Label htmlFor="plan-time">{t("time")}</Label>
-              <ThemeDateInput
+              <TimePicker
                 id="plan-time"
-                type="time"
-                display={time}
+                label={t("time")}
                 value={time}
                 disabled={disabled}
-                onChange={(event) => {
-                  if (event.target.value) setTime(event.target.value);
-                }}
-                required
+                onChange={next => saveOnce(date, next)}
               />
             </div>
           )}
 
-          <div className="flex items-center gap-3 pt-1">
-            <Button
-              type="submit"
-              variant="secondary"
-              disabled={disabled || (mode === "once" ? !isSessionTime(time) : !weeklyReady)}
-            >
-              {t("saveSchedule")}
-            </Button>
-            {savedFlash && (
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-primary animate-in fade-in zoom-in-95 duration-300">
-                <Check aria-hidden className="size-4" />
-                {t("saved")}
-              </span>
-            )}
-          </div>
-        </form>
+          {saveFailed && <p role="alert" className="text-sm text-destructive">{t("storageWrite")}</p>}
       </section>
 
-      <section className="glass rounded-3xl p-5 sm:p-6">
-        <h3 className="font-display text-xl tracking-tight text-foreground">{t("botReminders")}</h3>
-        <NotificationSettings notify={notify} disabled={disabled || notificationsDisabled} onSave={onSaveNotify} />
-      </section>
-    </>
   );
-}
-
-function editorSlots(plan: SessionPlan | null): SessionSlot[] {
-  if (!plan) return [{ weekday: 3, time: "17:00" }];
-  const saved = weeklySlots({ ...plan, mode: "weekly" });
-  if (saved.length > 0) return saved;
-  const weekday = plan.weekday >= 0 && plan.weekday <= 6 ? plan.weekday : 3;
-  return [{ weekday, time: isSessionTime(plan.time) ? plan.time : "17:00" }];
 }

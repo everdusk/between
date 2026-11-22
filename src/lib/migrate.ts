@@ -247,7 +247,7 @@ function normalizePlan(raw: unknown): SessionPlan | null {
       : plan.mode === "weekly" && fallbackTime && fallbackDay !== null
         ? [{ weekday: fallbackDay, time: fallbackTime }]
         : [];
-  const time = weekly[0]?.time ?? fallbackTime;
+  const time = plan.mode === "once" && fallbackTime ? fallbackTime : weekly[0]?.time ?? fallbackTime;
   const weekday = weekly[0]?.weekday ?? fallbackDay ?? 0;
   if (!time) return null;
   const date = typeof plan.date === "string" && DATE_RE.test(plan.date) ? plan.date : "";
@@ -371,8 +371,8 @@ export function normalizeStore(value: unknown): TherapyStore | null {
   const profile = asRecord(store.profile);
   const normalized: TherapyStore = {
     ...(Array.isArray(store.introductions) ? { introductions: store.introductions.map(readIntro).filter(r => r !== null) } : {}),
-    ...(profile && typeof profile.name === "string" && typeof profile.therapy === "boolean" && typeof profile.updatedAt === "string"
-      ? {profile: { name: profile.name.slice(0, 60), therapy: profile.therapy, updatedAt: profile.updatedAt }} : {}),
+    ...(profile && typeof profile.therapy === "boolean" && typeof profile.updatedAt === "string"
+      ? {profile: { ...(typeof profile.name === "string" ? {name: profile.name.slice(0, 60)} : {}), therapy: profile.therapy, updatedAt: profile.updatedAt }} : {}),
     version: 2,
     entries: store.entries
       .map(normalizeEntry)

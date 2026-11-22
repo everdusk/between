@@ -4,7 +4,7 @@ import { BrandLogo } from "./brand-logo";
 import { useEffect, useRef, useState } from "react";
 import { trackSurvey, type SurveyAction } from "@/lib/survey-analytics";
 import { noteStep } from "@/lib/survey-steps";
-import { ArrowRight, Check, Moon, Sun, Sunrise } from "lucide-react";
+import { Check, Moon, Sun, Sunrise } from "lucide-react";
 import { useI18n } from "./locale-provider";
 import {
   branchQuestions,
@@ -12,8 +12,10 @@ import {
   questions,
   type SurveyFeeling,
 } from "@/lib/intro-questions";
-import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { IntroStepHeader } from "./intro-step-header";
+import { GlassPanel } from "./ui/glass-panel";
+import { Switch } from "./ui/switch";
 import { Textarea } from "./ui/textarea";
 import {
   PICKER_FEELINGS,
@@ -34,7 +36,6 @@ type Exploration = {
 export type IntroAnswers = {
   attempt: string;
   id: string;
-  name: string;
   therapy: boolean;
   day: DayAnswers;
   explorations: Exploration[];
@@ -92,63 +93,30 @@ export function ProfileEditor({
   onSave,
 }: {
   profile: TherapyStore["profile"];
-  onSave: (name: string, therapy: boolean) => boolean;
+  onSave: (therapy: boolean) => boolean;
 }) {
   const { t } = useI18n();
-  const [draft, setDraft] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<"saved" | "storageWrite" | null>(
     null,
   );
-  const name = draft ?? profile?.name ?? "";
   const therapy = profile?.therapy ?? true;
   function save(nextTherapy: boolean) {
-    const saved = onSave(name, nextTherapy);
-    if (saved) setDraft(null);
+    const saved = onSave(nextTherapy);
     setFeedback(saved ? "saved" : "storageWrite");
   }
   return (
-    <form
-      className="space-y-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        save(therapy);
-      }}
-    >
-      <label className="block">
-        {t("nameQuestion")}
-        <Input
-          value={name}
-          maxLength={60}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            setFeedback(null);
-          }}
-        />
-      </label>
-      <label className="block">
-        {t("therapyQuestion")}
-        <select
-          className="mt-1 block w-full rounded-xl border border-input bg-background p-2"
-          value={therapy ? "yes" : "no"}
-          onChange={(e) => save(e.target.value === "yes")}
-        >
-          <option value="yes">{t("answerYes")}</option>
-          <option value="no">{t("answerNo")}</option>
-        </select>
-      </label>
-      <Button size="sm" type="submit" disabled={draft === null}>
-        {t("saveSchedule")}
-      </Button>
+    <div>
+      <Switch label={t("therapyQuestion")} checked={therapy} onChange={event => save(event.currentTarget.checked)} />
       <span
         role="status"
-        className="ms-3 inline-flex items-center gap-1.5 text-sm font-medium"
+        className="mt-2 flex items-center gap-1.5 text-sm font-medium empty:hidden"
       >
         {feedback === "saved" && (
           <Check aria-hidden className="size-4 text-primary" />
         )}
         {feedback && t(feedback)}
       </span>
-    </form>
+    </div>
   );
 }
 
@@ -160,8 +128,7 @@ export function JournalIntro({
   const { t, locale, feeling, slot } = useI18n();
   const en = locale === "en";
   const lang = en ? 1 : 0;
-  const [step, setStep] = useState(0);
-  const [name, setName] = useState("");
+  const [step, setStep] = useState(1);
   const [therapy, setTherapy] = useState(-1);
   const [day, setDay] = useState<DayAnswers>({
     morning: [],
@@ -187,7 +154,7 @@ export function JournalIntro({
     : "";
   const current = focus ? { feeling: focus, choices } : undefined;
   const questionId = active[branchIndex] ?? (period ? `mood_${period}` :
-    ({ 0: "name", 1: "therapy", 6: "focus", 10: "another", 11: focus ? noteStep[focus] : "first_note" } as Record<number, string>)[step]);
+    ({ 1: "therapy", 6: "focus", 10: "another", 11: focus ? noteStep[focus] : "first_note" } as Record<number, string>)[step]);
   const analytics = useRef({ attempt: "", sequence: 0, visible: "" });
   function record(action: SurveyAction) {
     const run = analytics.current;
@@ -239,7 +206,7 @@ export function JournalIntro({
     else setStep(step - 1);
   }
   const nextButton = (action: () => void, disabled = false) => (
-    <Button type="button" onClick={action} disabled={disabled}>
+    <Button className="ms-auto flex w-fit" data-confirm="" type="button" onClick={action} disabled={disabled}>
       {en ? "Continue" : "Дальше"}
     </Button>
   );
@@ -265,52 +232,24 @@ export function JournalIntro({
     <h2 className="font-display text-xl">{text}</h2>
   );
   return (
-    <section className="glass space-y-5 rounded-3xl p-6">
-      <small>
-        <BrandLogo /> ·{" "}
-        {step < 3
-          ? en
-            ? "Getting to know you"
-            : "Знакомство"
-          : step < 6
+    <GlassPanel className="space-y-5 p-6">
+      <IntroStepHeader backLabel={en ? "Back" : "Назад"} onBack={step > 1 ? back : undefined}>
+          <BrandLogo /> ·{" "}
+          {step < 3
             ? en
-              ? "Your week"
-              : "Ваша неделя"
-            : en
-              ? "A closer look"
-              : "Подробнее о вас"}
-      </small>
-      {step === 0 && (
-        <>
-          <h1 className="font-display text-2xl">{t("nameQuestion")}</h1>
-          <form
-            className="flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (name.trim()) advance(1);
-            }}
-          >
-            <Input
-              aria-label={t("nameQuestion")}
-              autoComplete="given-name"
-              required
-              maxLength={60}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <Button
-              type="submit"
-              disabled={!name.trim()}
-              aria-label={t("feelingDone")}
-            >
-              <ArrowRight />
-            </Button>
-          </form>
-        </>
-      )}
+              ? "Getting to know you"
+              : "Знакомство"
+            : step < 6
+              ? en
+                ? "Your week"
+                : "Ваша неделя"
+              : en
+                ? "A closer look"
+                : "Подробнее о вас"}
+      </IntroStepHeader>
       {step === 1 && (
         <>
-          {heading(t("therapyQuestion"))}
+          <h1 className="font-display text-2xl">{t("therapyQuestion")}</h1>
           <div className="flex flex-wrap gap-2">
             {(en
               ? ["Yes, regularly", "Just starting", "Taking a break", "No"]
@@ -367,7 +306,7 @@ export function JournalIntro({
               () => toggle("unnoticed"),
             )}
           </div>
-          <Button type="button" disabled={!day[period].length}
+          <Button className="ms-auto flex w-fit" data-confirm="" type="button" disabled={!day[period].length}
             onClick={() => advance(step === 5 && !picked.length ? 11 : step + 1)}>
             {period === "morning" ? (en ? "Next: afternoon" : "Дальше — день")
               : period === "day" ? (en ? "Next: evening" : "Дальше — вечер")
@@ -444,7 +383,6 @@ export function JournalIntro({
             onFinish({
               id: crypto.randomUUID(),
               attempt: analytics.current.attempt,
-              name: name.trim(),
               therapy: therapy === 0 || therapy === 1,
               day,
               explorations: [previous, current].filter(
@@ -471,18 +409,7 @@ export function JournalIntro({
           <Button type="submit">{t("webCreate")}</Button>
         </form>
       )}
-      {step > 0 && (
-        <div>
-          <Button
-            variant="ghost"
-            aria-label={en ? "Back" : "Назад"}
-            onClick={back}
-          >
-            ←
-          </Button>
-        </div>
-      )}
-    </section>
+    </GlassPanel>
   );
 }
 
@@ -509,10 +436,9 @@ export function IntroResult({
     trackSurvey({ event: "web_registration_step", attempt: answers.attempt, source: "survey", stage: "result_view", method: "form" }, locale);
   }, [answers.attempt, locale]);
   return (
-    <section className="glass mb-5 space-y-4 rounded-3xl p-5">
+    <GlassPanel className="mb-5 space-y-4 p-5">
       <h2 className="font-display text-xl">
-        {answers.name},{" "}
-        {en ? "your first observation" : "ваше первое наблюдение"}
+        {en ? "Your first observation" : "Ваше первое наблюдение"}
       </h2>
       <dl className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
         {slots.map((period) => (
@@ -566,22 +492,22 @@ export function IntroResult({
       })}
       {answers.thought && (
         <>
-          <blockquote className="whitespace-pre-wrap border-s-2 border-primary ps-3">
+          <blockquote className="diary-quote whitespace-pre-wrap">
             {answers.thought}
           </blockquote>
-          <Button variant="outline" disabled={noteSaved} onClick={onSaveNote}>
+          <Button data-confirm="" disabled={noteSaved} onClick={onSaveNote}>
             {t(noteSaved ? "saved" : "saveEntry")}
           </Button>
         </>
       )}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={onDone}>{t("feelingDone")}</Button>
+        <Button data-confirm="" onClick={onDone}>{t("feelingDone")}</Button>
         {answers.therapy && (
           <Button variant="outline" onClick={onSchedule}>
             {t("botSessionSetup")}
           </Button>
         )}
       </div>
-    </section>
+    </GlassPanel>
   );
 }

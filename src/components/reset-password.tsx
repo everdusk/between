@@ -3,6 +3,7 @@
 import { BrandLogo } from "./brand-logo";
 import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { KeyRound, LockKeyhole } from "lucide-react";
 import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import { PasswordField } from "@/components/password-field";
@@ -93,6 +94,8 @@ function ResetForm() {
             <form className="mt-5 space-y-4" onSubmit={save}>
               <PasswordField
                 id="reset-password"
+                inlineIcon={KeyRound}
+                reveal
                 label={t("webPassword")}
                 value={password}
                 onChange={setPassword}
@@ -101,6 +104,8 @@ function ResetForm() {
               />
               <PasswordField
                 id="reset-password-again"
+                inlineIcon={LockKeyhole}
+                reveal
                 label={t("webPasswordAgain")}
                 value={passwordAgain}
                 onChange={setPasswordAgain}

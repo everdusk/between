@@ -24,11 +24,12 @@ export function ThemeDateInput({
   const Icon = type === "time" ? Clock : CalendarDays;
   return (
     <span
+      data-field-surface
       className={cn(
         "relative inline-flex h-11 items-center gap-2.5 rounded-full border pr-3.5 pl-4 text-sm transition-[box-shadow,background-color] duration-200",
         tone === "ink"
           ? "border-ink-foreground/15 bg-ink-foreground/[0.08] text-ink-foreground has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-ink-foreground/20"
-          : "border-[color:var(--glass-border)] bg-background/55 text-foreground has-[:focus-visible]:border-primary/40 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-primary/12",
+          : "border-[color:var(--glass-border)] bg-background/55 text-foreground has-[:focus-visible]:border-ring/40 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-ring/12",
         disabled && "opacity-50",
         className,
       )}

@@ -18,7 +18,7 @@ const buttonVariants = cva(
           "bg-transparent text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground aria-expanded:bg-transparent aria-expanded:text-foreground",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20",
-        link: "text-link underline-offset-4 hover:underline",
+        link: "text-action text-link underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 gap-2 px-4",
@@ -47,6 +47,8 @@ function Button({
   return (
     <ButtonPrimitive
       data-slot="button"
+      data-size={size}
+      data-confirm={props.type === "submit" && variant !== "destructive" ? "" : undefined}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     />

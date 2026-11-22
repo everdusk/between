@@ -166,7 +166,7 @@ export interface NotifyPrefs {
 
 export interface TherapyStore {
   introductions?: import("./intro-record").IntroRecord[];
-  profile?: { name: string; therapy: boolean; updatedAt: string };
+  profile?: { name?: string; therapy: boolean; updatedAt: string };
   version: 2;
   entries: JournalEntry[];
   sessions: SessionNote[];

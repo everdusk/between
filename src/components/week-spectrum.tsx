@@ -2,7 +2,7 @@
 
 import { useI18n } from "@/components/locale-provider";
 import { formatDayLabel, weekdayShort } from "@/lib/dates";
-import { buildWeekSpectrum, feelingFill, spectrumTimeSummary } from "@/lib/spectrum";
+import { buildWeekSpectrum, feelingFill, feelingGradient, spectrumTimeSummary } from "@/lib/spectrum";
 import type { JournalEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +30,7 @@ export function WeekSpectrum({
 
   return (
     <section
-      className="glass-strong relative overflow-hidden rounded-3xl p-5 sm:p-6"
+      className="glass-strong relative overflow-hidden rounded-3xl p-5 [--feeling-gradient-direction:90deg] sm:p-6"
       aria-labelledby="week-spectrum-title"
     >
       {lead && (
@@ -43,9 +43,9 @@ export function WeekSpectrum({
 
       <div className="relative space-y-6">
         <div className="space-y-2">
-          <p id="week-spectrum-title" className="eyebrow text-section-header">
+          <h2 id="week-spectrum-title" className="diary-card-title">
             {t("spectrumLabel")}
-          </p>
+          </h2>
           {title && (
             <p className="font-display text-2xl leading-tight tracking-tight text-foreground sm:text-[1.75rem]">
               {title}
@@ -65,11 +65,11 @@ export function WeekSpectrum({
               {spectrum.shares.map((share) => (
                 <div
                   key={share.feeling}
-                  className="h-full min-w-2 rounded-full"
+                  className="feeling-fill h-full min-w-2 rounded-full bg-current"
                   style={{
                     flexGrow: share.count,
                     flexBasis: 0,
-                    background: feelingFill(share.feeling),
+                    ...feelingGradient(share.feeling),
                   }}
                 />
               ))}
@@ -83,8 +83,8 @@ export function WeekSpectrum({
                   >
                     <span
                       aria-hidden
-                      className="size-2 shrink-0 rounded-full"
-                      style={{ background: feelingFill(share.feeling) }}
+                      className="feeling-fill size-2 shrink-0 rounded-full bg-current [--feeling-glow-radius:3px]"
+                      style={feelingGradient(share.feeling)}
                     />
                     <span>{feeling(share.feeling)}</span>
                     <span className="tabular text-muted-foreground">{share.count}</span>
@@ -130,12 +130,12 @@ export function WeekSpectrum({
                   )}
                 >
                   {day.slices.map((slice) => (
-                    <span key={slice.id} className="flex min-h-1.5 flex-1 overflow-hidden rounded-md">
+                    <span key={slice.id} className="flex min-h-1.5 flex-1">
                       {slice.feelings.map((item) => (
                         <span
                           key={item}
-                          className="flex-1"
-                          style={{ background: feelingFill(item) }}
+                          className="feeling-fill flex-1 bg-current first:rounded-s-md last:rounded-e-md [--feeling-glow-radius:4px]"
+                          style={feelingGradient(item)}
                         />
                       ))}
                     </span>
@@ -161,7 +161,7 @@ export function WeekSpectrum({
 
         {(patternText || patternPending) && (
           <div className="rounded-2xl bg-foreground/[0.04] px-4 py-4">
-            <p className="eyebrow text-section-header">{patternTitle}</p>
+            <h3 className="diary-card-title">{patternTitle}</h3>
             {patternText ? (
               <p className="mt-2 break-words text-sm leading-relaxed text-foreground/90">{patternText}</p>
             ) : (

@@ -4,12 +4,10 @@ import { useEffect, useId, useState } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
 import { CircleUser, X } from "lucide-react";
 import { DeleteJournal } from "@/components/delete-data";
-import { LegalLinks } from "@/components/legal-links";
 import { FeedbackForm } from "@/components/feedback-form";
 import { LanguageSwitch } from "@/components/language-switch";
 import { PasswordChange } from "@/components/password-change";
 import { SchemeSwitch } from "@/components/scheme-switch";
-import { BotConnectBanner } from "./bot-connect-banner";
 import { WebAccountCard } from "@/components/web-account-card";
 import { PremiumPaywall } from "@/components/premium-paywall";
 import { SubscribeCheckout } from "@/components/subscribe-checkout";
@@ -171,7 +169,7 @@ export function AccountSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`max-h-[min(40rem,calc(var(--vv-height,100dvh)-2.5rem))] w-full max-w-lg overflow-y-auto overscroll-contain rounded-3xl p-5 sm:p-6 ${
+        className={`account-settings max-h-[min(40rem,calc(var(--vv-height,100dvh)-2.5rem))] w-full max-w-lg overflow-y-auto overscroll-contain rounded-3xl p-5 sm:p-6 ${
           solidSheet
             ? "border border-[color:var(--glass-border)] bg-popover text-foreground shadow-[0_30px_60px_-36px_rgba(0,0,0,0.55)]"
             : "glass-strong"
@@ -189,27 +187,40 @@ export function AccountSheet({
 
         <div className="mt-5 space-y-6">
           {profileEditor}
-          <section>
-            <p className="eyebrow text-section-header">{t("webScheme")}</p>
-            <SchemeSwitch className="mt-2" />
-          </section>
+          <div className="flex items-center gap-2">
+            <SchemeSwitch />
+            <LanguageSwitch inline />
+          </div>
 
-          <section>
-            <p className="eyebrow text-section-header">{t("language")}</p>
-            <div className="mt-2">
-              <LanguageSwitch inline />
-            </div>
-          </section>
+          <div className="space-y-3">
+            <PremiumPaywall
+              access={access}
+              unavailable={accessFailed}
+              inTelegram={inTelegram}
+              inMax={inMax}
+              canSubscribe={Boolean(account) || inMax}
+              payingPlan={payingPlan}
+              payError={payError}
+              onPay={(plan) => void pay(plan)}
+            />
+            {accessFailed && (
+              <Button variant="secondary" onClick={() => setAccessRetry((value) => value + 1)}>{t("accessRetry")}</Button>
+            )}
+            {access?.previewPaywall && (
+              <Button type="button" className="w-full" onClick={() => setPreview(true)}>
+                {t("premiumMark")}
+              </Button>
+            )}
+          </div>
 
           <section>
             <h3 className="font-display text-lg tracking-tight text-foreground">{t("botReminders")}</h3>
-            {account && !inTelegram && !inMax && !account.telegramLinked && !account.maxLinked && (
-              <div className="my-3"><BotConnectBanner reminders onRefresh={onRefreshAccount}/></div>
-            )}
-            <NotificationSettings notify={notify} disabled={disabled || !(inTelegram || inMax || account?.telegramLinked || account?.maxLinked)} onSave={onSaveNotify} />
+            <NotificationSettings notify={notify} disabled={disabled || !(inTelegram || inMax || account?.telegramLinked || account?.maxLinked)} onSave={onSaveNotify}
+              onRefreshUnlinked={account && !inTelegram && !inMax && !account.telegramLinked && !account.maxLinked ? onRefreshAccount : undefined} />
           </section>
 
           <section className="space-y-3">
+            <PasswordSettings inTelegram={inTelegram} inMax={inMax} account={account} />
             {account ? (
               <WebAccountCard
                 plain
@@ -224,39 +235,13 @@ export function AccountSheet({
             )}
           </section>
 
-          <PasswordSettings
-            inTelegram={inTelegram}
-            inMax={inMax}
-            account={account}
-          />
-
           <section className="space-y-3">
             <h3 className="font-display text-lg tracking-tight text-foreground">{t("feedbackTitle")}</h3>
             <p className="text-sm leading-relaxed text-muted-foreground">{t("feedbackLead")}</p>
             <FeedbackForm initData={initData} maxInitData={maxInitData} />
           </section>
 
-          <PremiumPaywall
-            access={access}
-            unavailable={accessFailed}
-            inTelegram={inTelegram}
-            inMax={inMax}
-            canSubscribe={Boolean(account) || inMax}
-            payingPlan={payingPlan}
-            payError={payError}
-            onPay={(plan) => void pay(plan)}
-          />
-          {accessFailed ? (
-            <Button variant="secondary" onClick={() => setAccessRetry((value) => value + 1)}>{t("accessRetry")}</Button>
-          ) : null}
-          {access?.previewPaywall ? (
-            <Button type="button" className="w-full" onClick={() => setPreview(true)}>
-              {t("premiumMark")}
-            </Button>
-          ) : null}
-
-          <section className="space-y-3">
-            <LegalLinks telegram={inTelegram} className="text-sm text-muted-foreground" />
+          <section className="space-y-3 border-t border-[var(--glass-border)] pt-8">
             <h3 className="font-display text-lg tracking-tight text-foreground">{t("deleteTitle")}</h3>
             <p className="text-sm leading-relaxed text-muted-foreground">{t("deleteLead")}</p>
             {inTelegram || inMax ? (
@@ -306,6 +291,8 @@ function PasswordSettings({
   account: WebAccount | null;
 }) {
   const { t } = useI18n();
+  const [expanded, setExpanded] = useState(() => typeof window !== "undefined" && window.location.hash === "#password");
+  const fieldsId = useId();
   const kind = passwordSettingsKind({
     inTelegram,
     inMax,
@@ -332,8 +319,15 @@ function PasswordSettings({
             : null;
   return (
     <section id="password" className="space-y-3">
-      <h3 className="font-display text-lg tracking-tight text-foreground">{t("webPasswordSection")}</h3>
-      {kind === "form" ? <PasswordChange /> : <p className="text-sm leading-relaxed text-foreground">{note}</p>}
+      {kind === "form" && (
+        <Button type="button" variant="outline" aria-expanded={expanded} aria-controls={fieldsId} onClick={() => setExpanded(value => !value)}>
+          {t("webPasswordChange")}
+        </Button>
+      )}
+      <div id={fieldsId} hidden={kind === "form" && !expanded} className="space-y-3">
+        <h3 className="font-display text-lg tracking-tight text-foreground">{t("webPasswordSection")}</h3>
+        {kind === "form" ? expanded && <PasswordChange /> : <p className="text-sm leading-relaxed text-foreground">{note}</p>}
+      </div>
     </section>
   );
 }

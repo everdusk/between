@@ -1,5 +1,7 @@
 import { createHash, createHmac, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
+import { normalizeEmail, passwordProblem } from "./account-validation";
+export { normalizeEmail, passwordProblem };
 
 const scryptAsync = promisify(scrypt);
 
@@ -8,19 +10,11 @@ export const LOGIN_COOKIE = "between_login";
 export const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 export const LINK_TTL_SECONDS = 15 * 60;
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
 
 export function sessionSecret(): string | null {
   const secret = process.env.APP_SECRET?.trim() || process.env.BOT_TOKEN?.trim();
   return secret || null;
-}
-
-export function normalizeEmail(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const email = value.trim().toLowerCase();
-  if (email.length < 5 || email.length > 254 || !EMAIL_RE.test(email)) return null;
-  return email;
 }
 
 /** Site login for a reviewer. Empty or a short password means the door stays shut. */
@@ -31,13 +25,6 @@ export function reviewLoginFromEnv(
   const password = env.REVIEW_PASSWORD ?? "";
   if (!email || passwordProblem(password)) return null;
   return { email, password };
-}
-
-export function passwordProblem(value: unknown): "short" | "long" | null {
-  if (typeof value !== "string") return "short";
-  if (value.length < 8) return "short";
-  if (value.length > 200) return "long";
-  return null;
 }
 
 export async function hashPassword(password: string): Promise<{ salt: string; hash: string }> {

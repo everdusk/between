@@ -20,7 +20,7 @@ describe("legal documents", () => {
         const doc = legalDocument(kind, id);
         assert.equal(doc.sections.length, 14, `${id} ${kind}`);
         const text = textOf(kind, id);
-        assert.ok(text.includes(LEGAL_INN), `${id} ${kind} inn`);
+        assert.ok(doc.preface?.includes(translate(id, "legalInn", { inn: LEGAL_INN })), `${id} ${kind} inn`);
         assert.ok(text.includes(LEGAL_EMAIL), `${id} ${kind} email`);
         assert.ok(text.includes("Ляторовская"), `${id} ${kind} name`);
         assert.equal(/\bVK\b|Сбер|Sber|Яндекс ID|Yandex ID/.test(text), false, `${id} ${kind} oauth`);

@@ -7,7 +7,7 @@ import { LanguageSwitch } from "@/components/language-switch";
 import { LocaleProvider, useI18n } from "@/components/locale-provider";
 import "@/app/journal/theme.css";
 import { LEGAL_SURFACE_CSS } from "@/lib/landing";
-import { LEGAL_INN, legalDocument, type LegalKind } from "@/lib/legal";
+import { legalDocument, type LegalKind } from "@/lib/legal";
 import { markSplashReady } from "@/lib/splash";
 
 function LegalArticle({ kind }: { kind: LegalKind }) {
@@ -60,7 +60,6 @@ function LegalArticle({ kind }: { kind: LegalKind }) {
             </section>
           ))}
         </div>
-        <p className="mt-10 text-sm text-muted-foreground">{t("legalInn", { inn: LEGAL_INN })}</p>
       </div>
     </article>
   );

@@ -1,12 +1,15 @@
 :root {
+  --telegram-button-fill: #0077af;
+  --max-button-fill: linear-gradient(110deg, #0067da, #6742cb);
   --button-label-weight: 500;
+  --brand-coral: #ff8c7f;
+  --brand-day-stops: var(--brand-coral), #f76174;
   --brand-button-gradient: linear-gradient(100deg, #8ff0bc 0%, #34d399 42%, #5eead4 72%, #8b7cf6 110%);
   --brand-button-ink: #04130c;
   --brand-button-shadow: 0 12px 28px -12px rgba(52, 211, 153, 0.35);
 }
 
 html[data-scheme="day"]:not([data-telegram-theme]) {
-  --brand-day-stops: #ff8c7f, #f76174;
   --brand-button-gradient: linear-gradient(to right in srgb, var(--brand-day-stops));
   --brand-button-size: 112% 100%;
   --brand-button-ink: #fff;
@@ -16,12 +19,8 @@ html[data-scheme="day"]:not([data-telegram-theme]) {
 .between-brand-mark {
   flex: none;
   width: 1em;
-  aspect-ratio: 228 / 238;
-  background: url("/between-mark.svg") center / contain no-repeat;
-}
-html[data-scheme="day"]:not([data-telegram-theme]) .between-brand-mark {
-  background: linear-gradient(to bottom in srgb, var(--brand-day-stops));
-  mask: url("/between-mark.svg") center / contain no-repeat;
+  aspect-ratio: 232 / 255;
+  background: url("/between-raccoon-mark.svg") center / contain no-repeat;
 }
 
 .between-brand {

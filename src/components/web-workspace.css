@@ -64,11 +64,6 @@
   height: 18px;
   flex-shrink: 0;
 }
-.desk-name {
-  margin-top: auto;
-  padding: 16px;
-  overflow-wrap: anywhere;
-}
 .desk-content {
   grid-area: main;
   display: flex;
@@ -128,10 +123,6 @@
   font-weight: 600;
   font-display: swap;
 }
-.bot-connect-banner .font-display {
-  font-family: "Between Unbounded", sans-serif;
-  font-weight: 600;
-}
 .bot-connect-banner {
   font-family: "Between Manrope", sans-serif;
   letter-spacing: normal;
@@ -139,27 +130,27 @@
   color: var(--foreground);
 }
 .desk-frame .journal-gate-form {
-  position: static !important;
+  position: relative !important;
 }
-.journal-gate-form .auth-provider {
+.auth-provider {
   min-height: 46px;
   border: 0;
   color: white;
 }
-.bot-connect-banner :is(.auth-telegram, .auth-max) {
+:is(.auth-telegram, .auth-max) {
   color: white;
   border-color: transparent;
 }
-:is(.journal-gate-form, .bot-connect-banner) .auth-telegram {
-  background: #0077af;
+.auth-telegram {
+  background: var(--telegram-button-fill);
 }
-:is(.journal-gate-form, .bot-connect-banner) .auth-max {
-  background: linear-gradient(110deg, #0067da, #6742cb);
+.auth-max {
+  background: var(--max-button-fill);
 }
-.journal-gate-form .auth-provider:hover {
+.auth-provider:hover {
   filter: brightness(1.08);
 }
-.journal-gate-form .auth-provider:disabled {
+.auth-provider:disabled {
   opacity: .85;
 }
 @media (max-width: 760px) {
@@ -182,9 +173,6 @@
     white-space: nowrap;
     padding: 8px 12px;
     flex-shrink: 0;
-  }
-  .desk-name {
-    display: none;
   }
   .desk-page {
     padding-top: 16px;

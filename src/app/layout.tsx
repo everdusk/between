@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { Literata, Manrope, Unbounded } from "next/font/google";
+
 import { ProductAnalyticsConfig } from "@/components/product-analytics-config";
 import { SplashScreen } from "@/components/splash-screen";
 import { LandingSurface } from "@/components/landing-surface";
@@ -11,22 +11,7 @@ import { MAX_LAUNCH_BOOT_SCRIPT } from "@/lib/max-webapp";
 import { posthogBrowserConfig } from "@/lib/posthog-env";
 import "./globals.css";
 import "@/components/brand.css";
-
-const literata = Literata({
-  variable: "--font-display",
-  subsets: ["latin", "latin-ext", "cyrillic"],
-});
-
-const manrope = Manrope({
-  variable: "--font-sans",
-  subsets: ["latin", "latin-ext", "cyrillic"],
-});
-
-const unbounded = Unbounded({
-  variable: "--font-unbounded",
-  subsets: ["latin", "latin-ext", "cyrillic"],
-  weight: ["500", "600", "700"],
-});
+import "./dawn.css";
 
 export const metadata: Metadata = landingMetadata;
 
@@ -49,7 +34,7 @@ export default function RootLayout({
       lang="ru"
       translate="no"
       data-splash=""
-      className={`${literata.variable} ${manrope.variable} ${unbounded.variable} notranslate h-full antialiased`}
+      data-design="dawn" className="notranslate h-full antialiased"
       suppressHydrationWarning
     >
       <head>
@@ -60,7 +45,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: SURFACE_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: JOURNAL_SURFACE_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: YANDEX_METRIKA_SCRIPT }} />
-        <link rel="preload" href="/between-mark.svg" as="image" fetchPriority="high" />
+        <link rel="preload" href="/between-raccoon-mark.svg" as="image" fetchPriority="high" />
       </head>
       <body className="flex h-full flex-col overflow-hidden font-sans">
         <noscript dangerouslySetInnerHTML={{ __html: YANDEX_METRIKA_NOSCRIPT }} />
