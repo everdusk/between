@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import type { InvoiceStatuses } from "@twa-dev/types";
-import { CircleUser, X } from "lucide-react";
+import { CircleUser, Languages, X } from "lucide-react";
 import { DeleteJournal } from "@/components/delete-data";
 import { FeedbackForm } from "@/components/feedback-form";
 import { PasswordChange } from "@/components/password-change";
@@ -12,6 +12,7 @@ import { PremiumPaywall } from "@/components/premium-paywall";
 import { SubscribeCheckout } from "@/components/subscribe-checkout";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { NotificationSettings } from "@/components/notification-settings";
+import { FieldSelect } from "@/components/ui/field-select";
 import { useI18n } from "@/components/locale-provider";
 import type { WebAccount } from "@/hooks/use-web-account";
 import { trackAnalytics } from "@/lib/analytics-client";
@@ -83,7 +84,7 @@ export function AccountSheet({
   onLogout: () => void;
   onPremium: () => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale, chooseLanguage } = useI18n();
   const titleId = useId();
   const [access, setAccess] = useState<WeekAccessView | null>(null);
   const [payingPlan, setPayingPlan] = useState<PremiumPlan | null>(null);
@@ -136,7 +137,7 @@ export function AccountSheet({
     if (!inTelegram || !initData || payingPlan) return;
     setPayingPlan(plan);
     setPayError(null);
-    const url = await createWeekInvoice(initData, plan);
+    const url = await createWeekInvoice(initData, plan, locale);
     if (!url) {
       setPayingPlan(null);
       setPayError(t("payFail"));
@@ -188,6 +189,11 @@ export function AccountSheet({
           {profileEditor}
           <div className="flex flex-wrap items-center gap-2">
             <SchemeSwitch host={inTelegram ? "telegram" : inMax ? "max" : undefined} />
+            {inTelegram && chooseLanguage && (
+              <FieldSelect label={t("language")} value={locale} onChange={chooseLanguage}
+                options={[{ value: "ru", label: "Русский" }, { value: "en", label: "English" }]}
+                leadingIcon={<Languages aria-hidden size={16} />} triggerClassName="glass-chrome preference-control" />
+            )}
           </div>
 
           <div className="space-y-3">
