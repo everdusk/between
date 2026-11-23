@@ -71,6 +71,7 @@ export async function postSessionWeekAccess(
 export async function createWeekInvoice(
   initData: string,
   plan: PremiumPlan,
+  locale: "en" | "ru",
 ): Promise<string | null> {
   try {
     const res = await fetch("/api/week-invoice", {
@@ -79,7 +80,7 @@ export async function createWeekInvoice(
         "Content-Type": "application/json",
         "X-Telegram-Init-Data": initData,
       },
-      body: JSON.stringify({ plan }),
+      body: JSON.stringify({ plan, locale }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { ok?: boolean; url?: unknown };

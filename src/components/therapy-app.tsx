@@ -9,7 +9,7 @@ import { JournalPanel } from "@/components/journal-panel";
 import { JournalSkeleton } from "@/components/journal-skeleton";
 import { AccountButton, AccountSheet } from "@/components/account-sheet";
 import { LegalLinks } from "@/components/legal-links";
-import { useI18n } from "@/components/locale-provider";
+import { TelegramLocaleProvider, useI18n } from "@/components/locale-provider";
 import { SchemeSwitch } from "@/components/scheme-switch";
 import { useMaxScheme } from "@/hooks/use-max-scheme";
 import { SessionsPanel } from "@/components/sessions-panel";
@@ -75,8 +75,7 @@ export function TherapyApp({ webFirst = false }: { webFirst?: boolean }) {
   const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
   const [erased, setErased] = useState(false);
   const [maxLaunch, setMaxLaunch] = useState<string | null>(null);
-  if (erased) return <ErasedJournal />;
-  return (
+  const content = erased ? <ErasedJournal /> : (
     <TherapyShell
       maxLaunch={maxLaunch}
       setMaxLaunch={setMaxLaunch}
@@ -88,6 +87,11 @@ export function TherapyApp({ webFirst = false }: { webFirst?: boolean }) {
       webFirst={webFirst && !telegram.inTelegram && !inMax}
     />
   );
+  return telegram.inTelegram ? (
+    <TelegramLocaleProvider key={telegram.user?.id} languageCode={telegram.user?.language_code} initData={telegram.initData}>
+      {content}
+    </TelegramLocaleProvider>
+  ) : content;
 }
 
 function useInMax(): boolean {

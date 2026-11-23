@@ -31,8 +31,10 @@ export async function POST(req: Request) {
   }
 
   let plan: PremiumPlan = "month";
+  let locale: "en" | "ru" = /^en(?:-|$)/i.test(validated.user.language_code ?? "") ? "en" : "ru";
   try {
-    const body = (await req.json()) as { plan?: unknown };
+    const body = (await req.json()) as { plan?: unknown; locale?: unknown };
+    if (body?.locale === "en" || body?.locale === "ru") locale = body.locale;
     plan = readPlan(body?.plan);
   } catch {
     plan = "month";
@@ -40,10 +42,10 @@ export async function POST(req: Request) {
 
   const monthly = starPriceFromEnv(process.env.WEEK_STAR_PRICE);
   const amount = planPrice(monthly, plan);
-  const label = translate("ru", plan === "month" ? "payStars" : plan === "quarter" ? "payQuarter" : "payYear", { price: amount });
+  const label = translate(locale, plan === "month" ? "payStars" : plan === "quarter" ? "payQuarter" : "payYear", { price: amount });
   const created = await telegramCall<string>("createInvoiceLink", {
     title: "Between",
-    description: label + ". " + translate("ru", plan === "month" ? "starsRenewal" : "starsOnce"),
+    description: label + ". " + translate(locale, plan === "month" ? "starsRenewal" : "starsOnce"),
     payload: WEEK_PLAN_PAYLOAD[plan],
     provider_token: "",
     currency: "XTR",

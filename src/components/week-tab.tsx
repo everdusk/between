@@ -44,7 +44,7 @@ export function WeekTab({
   onAccess,
   children,
 }: WeekTabProps) {
-  const { t, count } = useI18n();
+  const { t, count, locale } = useI18n();
   const [access, setAccess] = useState<WeekAccessView | null>(null);
   const [failedOpen, setFailedOpen] = useState(false);
   const [retry, setRetry] = useState(0);
@@ -135,7 +135,7 @@ export function WeekTab({
     if (!inTelegram || !initData || payingPlan) return;
     setPayingPlan(plan);
     setPayError(null);
-    const url = await createWeekInvoice(initData, plan);
+    const url = await createWeekInvoice(initData, plan, locale);
     if (!alive.current) return;
     if (!url) {
       setPayingPlan(null);
