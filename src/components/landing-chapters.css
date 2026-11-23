@@ -61,7 +61,8 @@
   background:var(--raccoon-mascot) center / contain no-repeat;
   transform:rotate(-32deg);
 }
-.chapter-screen video { display:block; box-sizing:content-box; width:calc(var(--video-width) - 4px); height:auto; aspect-ratio: 624/866; object-fit:contain; border-radius:24px; border:2px solid #34433f; background:#080d0c; box-shadow:var(--brand-button-shadow); }
+.chapter-screen .chapter-media { display:block; box-sizing:content-box; width:calc(var(--video-width) - 4px); height:auto; aspect-ratio: 624/866; object-fit:contain; border-radius:24px; border:2px solid #34433f; background:#080d0c; box-shadow:var(--brand-button-shadow); }
+.chapter-playback { display:block; margin:6px auto 0; min-height:32px; font-size:.8rem; color:var(--muted-foreground); cursor:pointer; }
 @media (width > 1024px) {
   .chapter-page h1 { margin-top: 0; }
   .chapter-story nav button:last-child { margin-bottom: 0; }
@@ -72,7 +73,7 @@
     width:100%;
     --video-width:min(100cqw, calc((100cqh - 4px) * 624 / 866 + 4px));
   }
-  .chapter-screen video { margin-inline-start:auto; }
+  .chapter-screen .chapter-media { margin-inline-start:auto; }
 }
 .chapter-audience { border-top:1px solid #33413c; padding-top:20px; display:grid; grid-template-columns:1fr 1fr; column-gap:clamp(36px,6vw,90px); row-gap:16px; }
 .chapter-audience h2 { grid-column:1/-1; font-size:clamp(30px,3vw,44px); }
@@ -137,7 +138,7 @@ html[data-scheme="day"] .chapter-page {
 }
 [data-scheme="day"] .chapter-page :is(p, footer div, .chapter-audience-intro, .chapter-story nav small, .chapter-story nav button) { color: var(--muted-foreground); }
 [data-scheme="day"] .chapter-page :is(.chapter-story nav, .chapter-story nav button, .chapter-audience, .chapter-example) { border-color: var(--border); }
-[data-scheme="day"] .chapter-screen video { background-color: var(--background); border-color: var(--ink); }
+[data-scheme="day"] .chapter-screen .chapter-media { background-color: var(--background); border-color: var(--ink); }
 [data-scheme="day"] .chapter-story nav button[aria-pressed="true"] { border-color: var(--primary); color: var(--foreground); }
 [data-scheme="day"] .chapter-story nav button[aria-pressed="true"] span { color: var(--foreground); }
 [data-scheme="day"] .chapter-page :is(a,button):focus-visible { outline-color: var(--foreground); }

@@ -160,7 +160,7 @@ html[data-design="dawn"][data-scheme] .chapter-page .chapter-story nav button {
   }
   & span { color: inherit; }
 }
-html[data-design="dawn"][data-scheme] .chapter-screen video { border-color: var(--glass-highlight); box-shadow: var(--brand-button-shadow),0 24px 68px -38px var(--glass-shadow); }
+html[data-design="dawn"][data-scheme] .chapter-screen .chapter-media { border-color: var(--glass-highlight); box-shadow: var(--brand-button-shadow),0 24px 68px -38px var(--glass-shadow); }
 .auth-provider {
   position: relative;
   isolation: isolate;

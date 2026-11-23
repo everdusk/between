@@ -3,8 +3,9 @@
 /* Full document navigation runs the journal's surface bootstrap. */
 
 import { BrandLogo } from "./brand-logo";
+import Image from "next/image";
 import { MessagesSquare, NotebookPen } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LanguageSwitch } from "./language-switch";
 import { SchemeSwitch, useDemoMediaDirectory } from "./scheme-switch";
 import { LocaleProvider, useI18n } from "./locale-provider";
@@ -105,6 +106,25 @@ function ChapterHeading({ title, clip }: { title: string; clip: string }) {
   );
 }
 
+const mobileDemoQuery = "(max-width: 1024px), (pointer: coarse)";
+const reducedMotionQuery = "(prefers-reduced-motion: reduce)";
+function subscribeDemoMode(notify: () => void) {
+  const queries = [mobileDemoQuery, reducedMotionQuery].map(query => window.matchMedia(query));
+  queries.forEach(query => query.addEventListener("change", notify));
+  return () => queries.forEach(query => query.removeEventListener("change", notify));
+}
+function demoMode() {
+  if (!window.matchMedia(mobileDemoQuery).matches) return "video";
+  return window.matchMedia(reducedMotionQuery).matches ? "still" : "animation";
+}
+const initialDemoMode = () => "pending" as const;
+
+// Playback lengths of the six GIFs, in chapter order.
+const gifDurations = {
+  ru: [5010, 6870, 6010, 7120, 9120, 11620],
+  en: [5120, 6870, 6010, 7120, 9510, 11510],
+};
+
 function LandingContent() {
   const { locale } = useI18n();
   const en = locale === "en";
@@ -115,10 +135,35 @@ function LandingContent() {
   const journalDemo = chapter < 2;
   const feelingsAt = en ? 62 / 12 : 5;
   const videoRef = useRef<HTMLVideoElement>(null);
+  const figureRef = useRef<HTMLElement>(null);
+  const mode = useSyncExternalStore(subscribeDemoMode, demoMode, initialDemoMode);
+  const [inView, setInView] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [loadedGif, setLoadedGif] = useState<string | null>(null);
   const directory = useDemoMediaDirectory();
   const folder = directory && `${directory}/chapters/${en ? "en/" : ""}`;
   const media = folder && folder + (journalDemo ? "events" : clip);
   const mediaVersion = 8;
+  const animate = mode === "animation" && inView && !paused;
+  const imageSrc = folder && `${folder}${clip}.${animate ? "gif" : "webp"}?v=${mediaVersion}`;
+  useEffect(() => {
+    const figure = figureRef.current;
+    if (!figure || mode !== "animation") return;
+    let intersecting = false;
+    const sync = () => setInView(intersecting && !document.hidden);
+    const observer = new IntersectionObserver(([entry]) => { intersecting = entry.isIntersecting; sync(); });
+    observer.observe(figure);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", sync);
+    };
+  }, [mode]);
+  useEffect(() => {
+    if (!animate || !imageSrc || loadedGif !== imageSrc) return;
+    const timer = window.setTimeout(() => setChapter((chapter + 1) % chapters.length), gifDurations[en ? "en" : "ru"][chapter]);
+    return () => window.clearTimeout(timer);
+  }, [animate, chapter, en, imageSrc, loadedGif]);
   function selectChapter(index: number) {
     if (journalDemo && index < 2 && videoRef.current?.readyState) {
       videoRef.current.currentTime = index === 1 ? feelingsAt : 0;
@@ -153,8 +198,8 @@ function LandingContent() {
               ))}
             </nav>
           </section>
-          <figure className="chapter-screen">
-            <video key={media} ref={videoRef} muted playsInline controls preload="metadata"
+          <figure className="chapter-screen" ref={figureRef}>
+            {mode === "video" ? <video className="chapter-media" key={media} ref={videoRef} muted playsInline controls preload="metadata"
               onLoadedMetadata={event => {
                 const video = event.currentTarget;
                 if (chapter === 1) video.currentTime = feelingsAt;
@@ -173,6 +218,12 @@ function LandingContent() {
               poster={folder ? `${folder}${clip}.webp?v=${mediaVersion}` : undefined}
               src={media ? `${media}.mp4?v=${mediaVersion}` : undefined}
               aria-label={`${en ? "Between web journal" : "Веб-дневник Between"} · ${label}`} />
+              : imageSrc && <Image key={imageSrc} className="chapter-media" src={imageSrc} unoptimized
+                width={540} height={750} alt={`${en ? "Between web journal" : "Веб-дневник Between"} · ${label}`}
+                onLoad={() => setLoadedGif(animate ? imageSrc : null)} />}
+            {mode === "animation" && <button type="button" className="chapter-playback" onClick={() => setPaused(!paused)}>
+              {paused ? (en ? "Resume animation" : "Продолжить анимацию") : (en ? "Pause animation" : "Приостановить анимацию")}
+            </button>}
           </figure>
         </div>
         <section id="audience" className="chapter-audience">
