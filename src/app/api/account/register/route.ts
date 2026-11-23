@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { accountReady, accountUnavailable } from "@/lib/account-http";
 import { hashOtp, mailConfigFromEnv, newOtpCode, sendOtpMail } from "@/lib/otp-mail";
-import { accountByEmail, saveSignup, signupSendAllowed } from "@/lib/web-account-store";
+import { accountByEmail, OTP_RESEND_MS, saveSignup, signupRetryAfterSeconds } from "@/lib/web-account-store";
 import { hashPassword, normalizeEmail, passwordProblem, sessionSecret } from "@/lib/web-account";
 
 export async function POST(req: Request) {
@@ -23,13 +23,17 @@ export async function POST(req: Request) {
   }
   const secret = sessionSecret();
   if (!secret) return accountUnavailable();
-  const [existing, allowed] = await Promise.all([
+  const [existing, retryAfterSeconds] = await Promise.all([
     accountByEmail(email),
-    signupSendAllowed(email),
+    signupRetryAfterSeconds(email),
   ]);
   if (existing) return NextResponse.json({ ok: false, error: "taken" }, { status: 409 });
-  if (allowed === "soon") return NextResponse.json({ ok: false, error: "soon" }, { status: 429 });
-  if (allowed !== "ok") return accountUnavailable();
+  if (retryAfterSeconds === null) return accountUnavailable();
+  if (retryAfterSeconds > 0) {
+    return NextResponse.json({ ok: false, error: "soon", retryAfterSeconds }, {
+      status: 429, headers: { "Retry-After": String(retryAfterSeconds) },
+    });
+  }
   const code = newOtpCode();
   const passwordRecord = await hashPassword(payload.password as string);
   try {
@@ -39,5 +43,5 @@ export async function POST(req: Request) {
   }
   const saved = await saveSignup(email, passwordRecord.salt, passwordRecord.hash, hashOtp(code, secret));
   if (!saved) return accountUnavailable();
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, retryAfterSeconds: OTP_RESEND_MS / 1000 });
 }

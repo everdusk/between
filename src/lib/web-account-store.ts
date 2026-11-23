@@ -227,7 +227,7 @@ export async function createAccount(
   return account;
 }
 
-const OTP_RESEND_MS = 60_000;
+export const OTP_RESEND_MS = 60_000;
 const OTP_ATTEMPTS = 5;
 
 type OtpRow = { hash: string; attempts: number; sentAt: number };
@@ -352,13 +352,11 @@ export async function accountByEmail(email: string): Promise<AccountRecord | nul
   return loadAccount(id);
 }
 
-/** "soon" while the last signup code is less than a minute old. */
-export async function signupSendAllowed(email: string, now = Date.now()): Promise<"ok" | "soon" | null> {
+export async function signupRetryAfterSeconds(email: string, now = Date.now()): Promise<number | null> {
   const redis = getRedis();
   if (!redis) return null;
   const row = asSignup(await redis.get<unknown>(signupKey(email)));
-  if (row && now - row.sentAt < OTP_RESEND_MS) return "soon";
-  return "ok";
+  return row ? Math.max(0, Math.ceil((row.sentAt + OTP_RESEND_MS - now) / 1000)) : 0;
 }
 
 export async function saveSignup(
