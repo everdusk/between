@@ -13,6 +13,7 @@ import { Textarea } from "./ui/textarea";
 import { cn } from "@/lib/utils";
 
 interface SessionBacklogProps {
+  reviewPilot?: boolean;
   themes: SessionTheme[];
   entries: JournalEntry[];
   links: ThemeLink[];
@@ -95,6 +96,8 @@ function ThemeRow({
           className="col-span-full ms-3 mt-1 justify-self-start" onClick={onToggle}>
           <Undo2 aria-hidden className="rtl:scale-x-[-1]" />{t("backlogRestoreActive")}
         </Button>}
+        {open && theme.review?.filter(e=>e.text && e.text!==theme.outcome).map(e=>
+          <div key={e.id} className="col-span-full text-sm"><p className="text-muted-foreground">{e.question || formatDayLabel(e.at.slice(0,10),locale)}</p><p className="whitespace-pre-wrap">{e.text}</p></div>)}
         {open && theme.outcome && <p className="col-span-full whitespace-pre-wrap text-sm">{theme.outcome}</p>}
         {open && (
           <ul className="col-span-full space-y-2 pt-2">
@@ -145,7 +148,7 @@ function ThemeRow({
 }
 
 export function SessionBacklog({
-  personal, onRestore,
+  personal, onRestore, reviewPilot,
   themes,
   entries,
   links,
@@ -162,7 +165,8 @@ export function SessionBacklog({
   const [archiveOpen, setArchiveOpen] = useState(false);
   const active = themes.filter(theme => !theme.dismissed && theme.status !== "archived" && visibleTopic(theme));
   const live = active.filter(theme => theme.status === "active");
-  const archive = active.filter(theme => theme.status === "discussed");
+  const archive = [...active.filter(theme=>theme.status==="discussed"),
+    ...(reviewPilot ? themes.filter(theme=>theme.status==="archived" && visibleTopic(theme)) : [])];
   const [removed,setRemoved]=useState<SessionTheme[]>([]);
   const [closing,setClosing]=useState<string | null>(null);
   const [outcome,setOutcome]=useState("");
@@ -267,7 +271,7 @@ export function SessionBacklog({
                     noteCount={count(theme.count, "note")}
                     locale={locale}
                     feelingLabel={feeling}
-                    onToggle={() => onDiscuss(theme.id, false)}
+                    onToggle={() => theme.dismissed ? onRestore?.(theme.id,"active") : onDiscuss(theme.id,false)}
                     onExpand={() => setOpenId(openId === theme.id ? null : theme.id)}
                     onDismiss={() => remove(theme)}
                     onOpenNote={onOpenNote}

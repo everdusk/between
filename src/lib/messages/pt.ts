@@ -1,6 +1,16 @@
 import type { Catalog } from "./ru";
 
 export const pt: Catalog = {
+  reviewNoTopics: "Os temas dos seus registros aparecerão aqui.",
+  reviewThought: "O que você percebe ao ler esses registros juntos?",
+  reviewWeek: "O que ocupou seus pensamentos nesta semana",
+  reviewChange: "O que mudou",
+  reviewSeen: "Ocultar do resumo",
+  reviewStill: "«{topic}» ainda afeta você?",
+  reviewReturned: "«{topic}» surgiu de novo",
+  reviewPreviously: "Da última vez você escreveu",
+  reviewCheck: "Para retomar",
+  reviewWhatChanged: "O que mudou para você?",
   deskOverview: "Resumo",
   reflectShame: "Diante de quem sentiu vergonha?",
   reflectSad: "Por quem ou pelo que sentiu tristeza?",

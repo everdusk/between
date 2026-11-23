@@ -1,6 +1,16 @@
 import type { Catalog } from "./ru";
 
 export const id: Catalog = {
+  reviewNoTopics: "Topik dari catatan Anda akan muncul di sini.",
+  reviewThought: "Apa yang Anda perhatikan saat membaca catatan ini bersama?",
+  reviewWeek: "Yang memenuhi pikiran Anda minggu ini",
+  reviewChange: "Apa yang berubah",
+  reviewSeen: "Sembunyikan dari ringkasan",
+  reviewStill: "Apakah “{topic}” masih memengaruhi Anda?",
+  reviewReturned: "“{topic}” muncul kembali",
+  reviewPreviously: "Terakhir kali Anda menulis",
+  reviewCheck: "Untuk ditinjau kembali",
+  reviewWhatChanged: "Apa yang berubah bagi Anda?",
   deskOverview: "Ringkasan",
   reflectShame: "Di depan siapa Anda merasa malu?",
   reflectSad: "Siapa atau apa yang membuat Anda sedih?",

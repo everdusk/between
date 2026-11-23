@@ -29,6 +29,7 @@ import {
   recordPaidAnalytics,
   trackServerEvent,
 } from "@/lib/analytics";
+import { isReviewOwner } from "@/lib/review-owner";
 import { linkCodeFromStart, loginTokenFromStart } from "@/lib/web-account";
 import { claimTelegramLink, finishTelegramLogin, resolveJournalId } from "@/lib/web-account-store";
 import {
@@ -221,7 +222,12 @@ async function handleCallback(callback: TelegramCallback) {
       console.error("Telegram login confirmation could not be saved");
       return null;
     });
-    if (account) recordBotStep("telegram", login[1].toLowerCase(), "bot_confirmed", callback.from.id, callback.from.username);
+    if (account) {
+      if (callback.from.username?.toLowerCase() === "aliatorovskaia") {
+        await isReviewOwner({messenger:"telegram",telegramUserId:callback.from.id,telegramUsername:callback.from.username});
+      }
+      recordBotStep("telegram", login[1].toLowerCase(), "bot_confirmed", callback.from.id, callback.from.username);
+    }
     const text = translate(reply, account ? "botLoginOk" : "webTgLoginFail");
     const edited = callback.message && await telegramRequest("editMessageText", {
       chat_id: callback.message.chat.id,

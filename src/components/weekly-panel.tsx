@@ -7,6 +7,8 @@ import { useI18n } from "@/components/locale-provider";
 import { badgeVariants } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+import { reviewPdfText } from "@/lib/theme-review";
+import { WeeklyReview, type SaveReview } from "./weekly-review";
 import { WeekSpectrum } from "@/components/week-spectrum";
 import {
   addDays, parseDateKey,
@@ -42,6 +44,7 @@ const themeGaveUp = new Set<string>();
 const patternGaveUp = new Set<string>();
 
 interface WeeklyPanelProps {
+  review?: SaveReview;
   inMessenger: boolean;
   entries: JournalEntry[];
   sessions: SessionNote[];
@@ -51,7 +54,7 @@ interface WeeklyPanelProps {
   themeLinks: ThemeLink[];
   judgeSettled: string[];
   judgeSkipped?: string[];
-  onSavePattern: (weekKey: string, patternText: string, patternStamp: string) => boolean;
+  onSavePattern: (weekKey: string, patternText: string, patternStamp: string, pilot?: boolean) => boolean;
   onSaveThemes: (
     updates: { id: string; updatedAt: string; themes: string[] }[],
     weekKey: string,
@@ -66,6 +69,7 @@ interface WeeklyPanelProps {
 }
 
 export function WeeklyPanel({
+  review,
   inMessenger,
   entries,
   sessions,
@@ -83,6 +87,7 @@ export function WeeklyPanel({
   disabled,
 }: WeeklyPanelProps) {
   const { t, locale, feeling, slot, count } = useI18n();
+  const pilotEnabled = Boolean(review);
   const remote = Boolean(initData || maxInitData || cloud);
   const [clock, setNow] = useState(() => new Date());
   const [history, setHistory] = useState<Date[]>([]);
@@ -218,7 +223,7 @@ export function WeeklyPanel({
   const savedPatternText = prep?.patternText ?? "";
   useEffect(() => {
     if (
-      !patternShouldRequest({
+      pilotEnabled || !patternShouldRequest({
         hasInitData: remote,
         disabled: Boolean(disabled),
         judging,
@@ -253,6 +258,7 @@ export function WeeklyPanel({
     };
   }, [
     agenda.length,
+    pilotEnabled,
     disabled,
     initData,
     remote,
@@ -278,6 +284,8 @@ export function WeeklyPanel({
     patternGaveUp.has(patternStamp)
       ? t("patternThin")
       : "");
+  const pilotText = review && prep?.reviewSummary ? reviewPdfText(prep.reviewSummary.text,weekEntries,entries,t("reviewChange")) : "";
+  const pdfPattern = pilotText || shownPattern;
   const [pdfAttempt, setPdfAttempt] = useState(0);
   const [readyFor, setReadyFor] = useState<string | null>(null);
   const [failedFor, setFailedFor] = useState<string | null>(null);
@@ -287,7 +295,7 @@ export function WeeklyPanel({
     todayKey,
     days.join(","),
     weekEntries.map((entry) => `${entry.id}:${entry.updatedAt}:${entry.body}`).join(","),
-    shownPattern,
+    pdfPattern,
     agenda.map((theme) => `${theme.id}:${theme.status}:${theme.title}`).join(","),
     said.map((theme) => `${theme.id}:${theme.title}`).join(","),
     themeLinks.map((link) => `${link.entryId}:${link.themeId}`).join(","),
@@ -315,8 +323,8 @@ export function WeeklyPanel({
       spectrumTitle: spectrumTimeSummary(weekEntries, t),
       spectrumLead: "",
       axis: "",
-      patternTitle: t("briefPatternTitle"),
-      patternText: shownPattern || t("patternThin"),
+      patternTitle: t(review ? "reviewWeek" : "briefPatternTitle"),
+      patternText: pdfPattern || t("patternThin"),
       backlogTitle: t("backlogTitle"),
 
       emptyBacklog: t("backlogEmpty"),
@@ -404,9 +412,9 @@ export function WeeklyPanel({
         entries={weekEntries}
         todayKey={todayKey}
         patternTitle={t("briefPatternTitle")}
-        patternText={shownPattern}
+        patternText={review ? "" : shownPattern}
         patternPending={
-          patternBody ||
+          review || patternBody ||
           !patternWords ||
           Boolean(patternRaw) ||
           failedPatternStamp === patternStamp ||
@@ -430,6 +438,9 @@ export function WeeklyPanel({
         }
       />
 
+      {review && !disabled && <WeeklyReview key={key} entries={entries} current={weekEntries} themes={themes}
+        links={themeLinks} today={todayKey} live={!history.length} initData={initData ?? ""}
+        maxInitData={maxInitData} period={key} save={review} saved={prep?.reviewSummary} saveSummary={onSavePattern} />}
       <div className="grid grid-cols-2 gap-4">
         <div className="glass rounded-3xl p-5">
           <p className="tabular font-display text-[2rem] leading-none text-foreground">

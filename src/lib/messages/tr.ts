@@ -1,6 +1,16 @@
 import type { Catalog } from "./ru";
 
 export const tr: Catalog = {
+  reviewNoTopics: "Kayıtlarınızdaki konular burada görünecek.",
+  reviewThought: "Bu kayıtları birlikte okuyunca ne fark ediyorsunuz?",
+  reviewWeek: "Bu hafta aklınızda neler vardı",
+  reviewChange: "Neler değişti",
+  reviewSeen: "Özetten kaldır",
+  reviewStill: "“{topic}” sizi hâlâ etkiliyor mu?",
+  reviewReturned: "“{topic}” yeniden gündeme geldi",
+  reviewPreviously: "Geçen sefer şöyle yazmıştınız",
+  reviewCheck: "Yeniden ele alınacaklar",
+  reviewWhatChanged: "Sizin için ne değişti?",
   deskOverview: "Özet",
   reflectShame: "Kimin yanında utandınız?",
   reflectSad: "Kimin için veya neye üzüldünüz?",

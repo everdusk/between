@@ -1,6 +1,16 @@
 import type { Catalog } from "./ru";
 
 export const uz: Catalog = {
+  reviewNoTopics: "Qaydlaringizdagi mavzular shu yerda ko‘rinadi.",
+  reviewThought: "Bu qaydlarni birga o‘qiganda nimani payqaysiz?",
+  reviewWeek: "Bu hafta nimalar xayolingizni band qildi",
+  reviewChange: "Nima o‘zgardi",
+  reviewSeen: "Sharhdan yashirish",
+  reviewStill: "«{topic}» sizga hanuz ta’sir qiladimi?",
+  reviewReturned: "«{topic}» yana tilga olindi",
+  reviewPreviously: "O‘tgan safar shunday yozgansiz",
+  reviewCheck: "Yana bir qarash",
+  reviewWhatChanged: "Siz uchun nima o‘zgardi?",
   deskOverview: "Sharh",
   reflectShame: "Kimning oldida uyaldingiz?",
   reflectSad: "Kim yoki nima uchun xafa bo‘ldingiz?",

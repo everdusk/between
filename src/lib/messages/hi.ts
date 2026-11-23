@@ -1,6 +1,16 @@
 import type { Catalog } from "./ru";
 
 export const hi: Catalog = {
+  reviewNoTopics: "आपकी प्रविष्टियों के विषय यहाँ दिखाई देंगे।",
+  reviewThought: "इन प्रविष्टियों को साथ पढ़ने पर आप क्या देखते हैं?",
+  reviewWeek: "इस हफ़्ते आपके मन में क्या था",
+  reviewChange: "क्या बदला",
+  reviewSeen: "समीक्षा से हटाएँ",
+  reviewStill: "क्या «{topic}» अब भी आपको प्रभावित करता है?",
+  reviewReturned: "«{topic}» फिर सामने आया",
+  reviewPreviously: "पिछली बार आपने लिखा था",
+  reviewCheck: "फिर से विचार करें",
+  reviewWhatChanged: "आपके लिए क्या बदला?",
   deskOverview: "सारांश",
   reflectShame: "आपको किसके सामने शर्म महसूस हुई?",
   reflectSad: "आप किसके लिए या किस बात से उदास थे?",

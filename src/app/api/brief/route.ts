@@ -1,3 +1,5 @@
+import { REVIEW_PROMPT } from "@/lib/theme-review";
+import { isReviewOwner } from "@/lib/review-owner";
 import { NextResponse } from "next/server";
 import { parseModelBacklog } from "@/lib/brief";
 import { parseModelThemes, THERAPY_THEMES } from "@/lib/tags";
@@ -13,7 +15,7 @@ import {
 import { actorFromRequest } from "@/lib/account-actor";
 import { todayInTimeZone } from "@/lib/zoned";
 
-export type BriefKind = "brief" | "backlog" | "themes" | "judge" | "dedup" | "pattern";
+export type BriefKind = "brief" | "backlog" | "themes" | "judge" | "dedup" | "pattern" | "review" | "reviewJudge";
 
 function settlesJson(kind: BriefKind): boolean {
   return kind === "backlog" || kind === "themes" || kind === "judge" || kind === "dedup";
@@ -30,7 +32,8 @@ export function textAfterModelFailure(latest: string | null, kind: BriefKind): s
 
 /** Daily stop per kind. A cached stamp does not count. */
 export function modelBudget(kind: BriefKind): { limit: number; bucket: string } {
-  if (kind === "judge" || kind === "dedup") return { limit: 30, bucket: "judge" };
+  if (kind === "review") return {limit: 12, bucket: "review"};
+  if (kind === "reviewJudge" || kind === "judge" || kind === "dedup") return { limit: 30, bucket: "judge" };
   if (kind === "themes") return { limit: 10, bucket: "themes" };
   if (kind === "pattern") return { limit: 8, bucket: "pattern" };
   return { limit: 8, bucket: "brief" };
@@ -43,6 +46,9 @@ export function briefSystemPrompt(locale: LocaleId, kind: BriefKind = "brief"): 
     locale === "ru"
       ? "Пиши по-русски."
       : `Пиши на языке «${modelLanguageName(locale)}».`;
+  if (kind === "review") return REVIEW_PROMPT + " " + lang;
+  if (kind === "reviewJudge") return briefSystemPrompt(locale,"judge") +
+    " В отдельном списке также даны архивные темы. Если новая запись действительно описывает возвращение той же трудности, верни match_theme из архива, archiveRelation=returned, confidence от 0.85 и точную цитату. Если прямо описано улучшение по архивной теме, верни match_theme из архива, archiveRelation=improved и цитату. Простое упоминание не основание возвращать тему.";
   if (kind === "judge") {
     return [
       "Ты решаешь, относится ли одна запись дневника к подготовке к сеансу психотерапии.",
@@ -137,13 +143,19 @@ export function briefSystemPrompt(locale: LocaleId, kind: BriefKind = "brief"): 
 
 function settleModelText(raw: string | null, kind: BriefKind): string | null {
   if (!raw) return null;
+  if (kind === "review") {
+    try {
+      const value = JSON.parse(raw);
+      return value && Array.isArray(value.lines) && Array.isArray(value.changes) ? raw : null;
+    } catch { return null; }
+  }
   if (kind === "brief" || kind === "pattern") return raw;
   if (kind === "themes") {
     const parsed = parseModelThemes(raw);
     if (parsed === null) return null;
     return JSON.stringify(parsed);
   }
-  if (kind === "judge") {
+  if (kind === "judge" || kind === "reviewJudge") {
     const parsed = parseJudgeVerdict(raw);
     return parsed ? JSON.stringify(parsed) : null;
   }
@@ -217,7 +229,7 @@ async function gemini(
   limits: GenLimits,
 ): Promise<{ text: string | null; detail: string }> {
   const preferred = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
-  const json = kind === "judge" || kind === "dedup";
+  const json = kind === "judge" || kind === "dedup" || kind === "review" || kind === "reviewJudge";
   const first = await geminiOnce(
     prompt,
     apiKey,
@@ -423,7 +435,7 @@ async function aitunnelOnce(
   limits: GenLimits,
   direct: boolean,
 ): Promise<{ text: string | null; status: number; message: string }> {
-  const json = kind === "judge" || kind === "dedup";
+  const json = kind === "judge" || kind === "dedup" || kind === "review" || kind === "reviewJudge";
   const body: Record<string, unknown> = {
     model,
     temperature: limits.temperature,
@@ -513,7 +525,7 @@ export async function completeBrief(input: {
   const kind = input.kind;
   const userId = input.userId;
   const limits: GenLimits =
-    kind === "backlog"
+    kind === "review" ? {temperature:0.2, maxTokens:2400} : kind === "backlog"
       ? { temperature: 0.2, maxTokens: 700 }
       : kind === "themes"
         ? { temperature: 0.1, maxTokens: 2000 }
@@ -525,7 +537,7 @@ export async function completeBrief(input: {
               ? { temperature: 0.2, maxTokens: 350 }
               : { temperature: 0.2, maxTokens: 480 };
   const system = briefSystemPrompt(locale, kind);
-  if (!facts || facts.length > (kind === "pattern" ? PATTERN_FACTS_LIMIT : 4000) || !stamp || stamp.length > 64) {
+  if (!facts || facts.length > (kind === "review" ? 48000 : kind === "pattern" ? PATTERN_FACTS_LIMIT : 4000) || !stamp || stamp.length > 64) {
     return { text: null, reason: "invalid_brief" };
   }
 
@@ -540,7 +552,9 @@ export async function completeBrief(input: {
   if (redisConfigured()) {
     const cached = await getCachedBrief(userId, stamp);
     if (cached && (kind !== "pattern" || patternReplyUsable(cached))) {
-      return { text: cached };
+      // Redis may decode a cached JSON object into a value rather than a string.
+      return { text: (kind === "review" || kind === "reviewJudge") && typeof cached !== "string"
+        ? JSON.stringify(cached) : cached };
     }
   }
   if (!tunnelConfigured && !geminiKey && !groqKey) {
@@ -618,13 +632,15 @@ export async function POST(req: Request) {
     payload.kind === "themes" ||
     payload.kind === "judge" ||
     payload.kind === "dedup" ||
-    payload.kind === "pattern"
+    payload.kind === "review" || payload.kind === "reviewJudge" || payload.kind === "pattern"
       ? payload.kind
       : "brief";
-  if (!facts || facts.length > (kind === "pattern" ? PATTERN_FACTS_LIMIT : 4000) || !stamp || stamp.length > 64) {
+  if (!facts || facts.length > (kind === "review" ? 48000 : kind === "pattern" ? PATTERN_FACTS_LIMIT : 4000) || !stamp || stamp.length > 64) {
     return NextResponse.json({ ok: false, error: "invalid_brief" }, { status: 400 });
   }
-  const result = await completeBrief({ userId: actor.id, facts, stamp, locale, kind });
+  const pilot = kind === "review" || kind === "reviewJudge";
+  if (pilot && !await isReviewOwner(actor)) return NextResponse.json({ok:false,error:"forbidden"},{status:403});
+  const result = await completeBrief({userId:actor.id, facts, stamp:pilot ? kind + ":" + stamp : stamp, locale, kind});
   if (result.reason === "invalid_brief") {
     return NextResponse.json({ ok: false, error: "invalid_brief" }, { status: 400 });
   }

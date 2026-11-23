@@ -20,6 +20,7 @@ export const DISCUSSED_LINGER_MS = 7 * 24 * 60 * 60 * 1000;
 export type JudgeVerdict = {
   relevant: boolean;
   unreadable?: boolean;
+  archiveRelation?: "returned" | "improved";
   matchTheme: string | null;
   secondary?: { themeId: string; confidence: number; quote: string };
   intensity: number;
@@ -370,6 +371,7 @@ export function mergeThemes(
   const merged: SessionTheme = recount(
     {
       ...withoutCheck(keep),
+      ...(drop.review?.length && { review: [...(keep.review ?? []), ...drop.review] }),
       mergedIds: [...new Set([...(keep.mergedIds ?? []), dropId, ...(drop.mergedIds ?? [])])],
       title: nextTitle,
       summary: nextTitle,
@@ -660,6 +662,7 @@ export function parseJudgeVerdict(raw: string): JudgeVerdict | null {
   const secondaryConfidence = asNum(secondary?.confidence);
   return {
     relevant,
+    ...(row.archiveRelation === "returned" || row.archiveRelation === "improved" ? {archiveRelation:row.archiveRelation} : {}),
     ...(typeof secondaryId === "string" && secondaryId.trim() && typeof secondary?.quote === "string" && secondaryConfidence !== null
       ? { secondary: { themeId: secondaryId.trim(), quote: secondary.quote, confidence: secondaryConfidence } } : {}),
     matchTheme: match,
@@ -900,14 +903,16 @@ function fitThemes(themes: SessionTheme[], context: string, budget: number) {
   return { candidates, text: lines.join("\n") };
 }
 
-export function judgeFacts(themes: SessionTheme[], entry: Pick<JournalEntry, "id" | "date" | "body" | "feelings">): string {
+export function judgeFacts(themes: SessionTheme[], entry: Pick<JournalEntry, "id" | "date" | "body" | "feelings">, archived: SessionTheme[] = []): string {
   const note = [
     `Запись ${entry.date}, отметка ${entry.feelings.join(", ") || "нет"}, интенсивность по отметке ${feelingIntensity(entry.feelings)}.`,
     entry.body.trim().slice(0, 1200),
   ].join("\n\n");
   const header = "Открытые темы:\n";
-  const { text } = fitThemes(openThemes(themes), entry.body, JUDGE_FACT_LIMIT - note.length - header.length - 2);
-  return [text ? header + text : "Открытых тем нет.", note].join("\n\n");
+  const past = fitThemes(archived, entry.body, 1100).text;
+  const archiveText = past ? "\nАрхивные темы:\n" + past : "";
+  const { text } = fitThemes(openThemes(themes), entry.body, JUDGE_FACT_LIMIT - note.length - header.length - archiveText.length - 2);
+  return [(text ? header + text : "Открытых тем нет.") + archiveText, note].join("\n\n");
 }
 
 export function dedupComparison(theme: SessionTheme, state: ThemeState) {

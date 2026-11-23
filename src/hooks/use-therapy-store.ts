@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { archivedForEntry, applyReviewVerdict, recordReview, type ReviewEvent } from "@/lib/theme-review";
 import { applyIntro, type IntroDraft } from "@/lib/intro-record";
 import { createId, toDateKey, weekKey } from "@/lib/dates";
 import { isFeeling } from "@/lib/feelings";
@@ -96,6 +97,8 @@ export function useTherapyStore(options?: {
   const cloudRef = useRef(cloud);
   const storageKeyRef = useRef(storageKey);
   const cacheId = useRef("");
+  const [pilotSession, setPilotSession] = useState<{cache:string;telegram:string;max:string} | null>(null);
+  const reviewPilot = cloud && status === "ready" && pilotSession?.telegram === initData && pilotSession.max === maxInitData;
   const syncEpoch = useRef(0);
   useEffect(() => {
     storeRef.current = store;
@@ -140,6 +143,7 @@ export function useTherapyStore(options?: {
       return;
     }
     cacheId.current = remote.cacheId;
+    setPilotSession(remote.reviewPilot ? {cache:remote.cacheId,telegram:data,max:maxData} : null);
     storageKeyRef.current = `between:journal:${remote.cacheId}`;
     const local = loadStore(storageKeyRef.current);
     const localStore = local.ok ? local.data : emptyStore();
@@ -234,7 +238,7 @@ export function useTherapyStore(options?: {
     };
   }, []);
   useEffect(() => {
-    if (!hydrated || !cloud) return;
+    if (!hydrated || !cloud || status !== "ready" || !cacheId.current) return;
     const now = new Date();
     const today = toDateKey(now);
     const period = observationWindow(store.sessions, store.entries, today, now, store.profile?.therapy === false ? null : store.sessionPlan);
@@ -249,16 +253,20 @@ export function useTherapyStore(options?: {
     if (judgeRun.current === stamp) return;
     judgeRun.current = stamp;
     void (async () => {
-      const facts = judgeFacts(storeRef.current.themes ?? [], entry);
+      const journal = cacheId.current;
+      const apply = reviewPilot ? applyReviewVerdict : applyVerdict;
+      const topics = storeRef.current.themes ?? [];
+      const archives = reviewPilot ? topics.filter(t=>archivedForEntry(t,entry)) : [];
+      const facts = judgeFacts(topics, entry, archives);
       const result = await requestBrief(
         initData,
         facts,
         modelRequestStamp("j", stamp, 0, facts),
         locale,
-        "judge",
+        archives.length ? "reviewJudge" : "judge",
         maxInitData,
       );
-      if (!judgeAlive.current || judgeRun.current !== stamp) return;
+      if (!judgeAlive.current || judgeRun.current !== stamp || cacheId.current !== journal) return;
       let verdict = result.ok && result.text ? parseJudgeVerdict(result.text) : null;
       const fromModel = Boolean(verdict);
       if (!verdict) {
@@ -279,7 +287,7 @@ export function useTherapyStore(options?: {
         verdict = fallbackVerdict(entry);
       }
       const snapshot = storeRef.current;
-      const applied = applyVerdict(
+      const applied = apply(
         { themes: snapshot.themes, links: snapshot.themeLinks },
         entry,
         verdict,
@@ -301,20 +309,20 @@ export function useTherapyStore(options?: {
           "dedup",
           maxInitData,
         );
-        if (!judgeAlive.current || judgeRun.current !== stamp) return;
+        if (!judgeAlive.current || judgeRun.current !== stamp || cacheId.current !== journal) return;
         const hit = dedup.ok && dedup.text ? parseDedupHit(dedup.text) : null;
         if (!hit || hit.confidence < 0.85 || !comparison.candidates.some((candidate) => candidate.id === hit.themeId)) break;
         state = mergeThemes(state, hit.themeId, focus, hit.title);
         focus = hit.themeId;
       }
-      if (!judgeAlive.current || judgeRun.current !== stamp) return;
+      if (!judgeAlive.current || judgeRun.current !== stamp || cacheId.current !== journal) return;
       const latest = storeRef.current;
       judgeRun.current = null;
       const currentEntry = latest.entries.find((item) => item.id === entry.id);
       if (!currentEntry || judgeStamp(currentEntry) !== stamp || latest.judgeSettled.includes(stamp)) return;
       if (latest.themes !== snapshot.themes || latest.themeLinks !== snapshot.themeLinks) {
         // A sync or edit landed during deduplication. Keep the newer topic list.
-        state = applyVerdict({ themes: latest.themes, links: latest.themeLinks }, entry, verdict).state;
+        state = apply({ themes: latest.themes, links: latest.themeLinks }, entry, verdict).state;
       }
       persist({
         ...latest,
@@ -323,7 +331,7 @@ export function useTherapyStore(options?: {
         judgeSettled: [...new Set([...(latest.judgeSettled ?? []), stamp])].slice(-400),
       });
     })();
-  }, [hydrated, cloud, initData, maxInitData, judgeNudge, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions, store.profile?.therapy]);
+  }, [hydrated, cloud, status, reviewPilot, initData, maxInitData, judgeNudge, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions, store.profile?.therapy]);
 
   const resetCorrupted = useCallback(() => {
     const result = clearStore(storageKeyRef.current);
@@ -593,13 +601,12 @@ export function useTherapyStore(options?: {
   );
 
   const savePattern = useCallback(
-    (key: string, patternText: string, patternStamp: string) => {
+    (key: string, patternText: string, patternStamp: string, pilot = false) => {
       const now = new Date().toISOString();
       const current = storeRef.current;
       const existing = current.weekPreps.find((prep) => prep.weekKey === key);
-      const next: WeekPrep = existing
-        ? { ...existing, updatedAt: now, patternText, patternStamp }
-        : { weekKey: key, talkNotes: "", updatedAt: now, patternText, patternStamp };
+      const fields = pilot ? {reviewSummary:{stamp:patternStamp,text:patternText}} : {patternText,patternStamp};
+      const next: WeekPrep = {...(existing ?? {weekKey:key,talkNotes:""}),updatedAt:now,...fields};
       const weekPreps = existing
         ? current.weekPreps.map((prep) => (prep.weekKey === key ? next : prep))
         : [...current.weekPreps, next];
@@ -665,6 +672,16 @@ export function useTherapyStore(options?: {
     dismissSessionTheme,
     addSessionTheme,
     savePattern,
+    reviewPilot,
+    saveReview(id:string,event:ReviewEvent) {
+      if (!reviewPilot || cacheId.current !== pilotSession?.cache) return false;
+      const current=storeRef.current;
+      const theme=current.themes.find(t=>t.id===id);
+      if (!theme) return false;
+      const next=recordReview(theme,event);
+      if(next===theme) return false;
+      return persist({...current,themes:current.themes.map(t=>t===theme?next:t)});
+    },
     judgeSkipped: EMPTY_JUDGE_SKIPS,
     refreshCloud: syncFromCloud,
   };
