@@ -157,7 +157,7 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
     </>}
     {screen==="bot_demo" && demo && <>
       <p>{say("После регистрации можно подключить бота: отправляйте заметки сообщением и отмечайте настроение прямо в чате.", "After signing up, you can connect the bot to send notes and check in on your mood right in the chat.")}</p>
-      {directory && <Image src={`${directory}/chat-${demo}-${en ? "en" : "ru"}-v2.webp`}
+      {directory && <Image unoptimized src={`${directory}/chat-${demo}-${en ? "en" : "ru"}-v2.webp?v=3`}
         width={400} height={408} className="w-full max-w-sm rounded-2xl"
         alt={say("Переписка с Between: заметка об обеде во дворе и кнопки для отметки настроения.", "A chat with Between showing a note about lunch outside and buttons to log a mood.")}/>}
       <Button className="ms-auto flex w-fit" data-confirm="" onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
