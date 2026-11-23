@@ -684,7 +684,7 @@ export async function claimMaxLink(
   return "ok";
 }
 
-const MAX_LOGIN_TTL_SECONDS = 10 * 60;
+export const MAX_LOGIN_TTL_SECONDS = 10 * 60;
 
 function maxLoginKey(token: string): string {
   return `between:maxlogin:${token}`;

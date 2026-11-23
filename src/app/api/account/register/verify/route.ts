@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordVerifiedEmail } from "@/lib/registration-analytics-server";
 import { accountReady, accountUnavailable, withSession } from "@/lib/account-http";
 import { consumeSignup, createVerifiedAccount, toPublicAccount } from "@/lib/web-account-store";
 import { normalizeEmail, sessionSecret } from "@/lib/web-account";
@@ -23,6 +24,7 @@ export async function POST(req: Request) {
   if (result === "bad" || result === "missing") {
     return NextResponse.json({ ok: false, error: "bad" }, { status: 401 });
   }
+  recordVerifiedEmail(req);
   const created = await createVerifiedAccount(email, result.salt, result.hash);
   if (created === "taken") return NextResponse.json({ ok: false, error: "taken" }, { status: 409 });
   if (!created) return accountUnavailable();

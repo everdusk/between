@@ -7,8 +7,7 @@ import { surveyProperties } from "@/lib/survey-steps";
 import { redisConfigured } from "@/lib/redis";
 import { validateInitData } from "@/lib/telegram-auth";
 import { DEFAULT_TIME_ZONE } from "@/lib/types";
-import { sessionSecret, sessionTokenFromRequest } from "@/lib/web-account";
-import { accountFromSession } from "@/lib/web-account-store";
+import { quietWebAccount } from "@/lib/registration-analytics-server";
 import { todayInTimeZone } from "@/lib/zoned";
 
 function quiet(input: { username?: string | null; userId?: number | string | null; messenger?: "telegram" | "max" | "web" }): boolean {
@@ -17,14 +16,6 @@ function quiet(input: { username?: string | null; userId?: number | string | nul
 
 function readPlan(value: unknown): ProductPlan | undefined {
   return (PRODUCT_PLANS as readonly string[]).includes(String(value)) ? (value as ProductPlan) : undefined;
-}
-
-async function quietWebAccount(req: Request) {
-  const secret = sessionSecret();
-  const token = secret ? sessionTokenFromRequest(req) : null;
-  const account = secret && token ? await accountFromSession(token, secret) : null;
-  return account && (quiet({ username: account.telegramUsername, messenger: "web" }) ||
-    quiet({ userId: account.maxUserId, messenger: "max" }));
 }
 
 function readSubscribeStep(value: unknown): SubscribeStep | null {

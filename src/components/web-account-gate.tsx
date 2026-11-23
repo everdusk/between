@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type FormEvent } from "react";
 import { registrationReason, type AuthOperation } from "@/lib/registration-errors";
 import { normalizeEmail, passwordProblem } from "@/lib/account-validation";
-import { trackSurvey, type RegistrationMethod, type RegistrationStep } from "@/lib/survey-analytics";
+import { registrationHeaders, trackSurvey, type RegistrationMethod, type RegistrationStep } from "@/lib/survey-analytics";
 import { AtSign, Bot, Check, KeyRound, LoaderCircle, Lock, LockKeyhole } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -360,6 +360,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     try {
       const res = await fetch(kind === "max" ? "/api/account/max/start" : "/api/account/telegram/start", {
         method: "POST",
+        headers: registrationHeaders(registration.current, locale),
       });
       const data = (await res.json().catch(() => ({}))) as {
         token?: string;
@@ -377,6 +378,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         setError(data.error === "max_off" ? t("webMaxOff") : t("webServer"));
         return;
       }
+      record("messenger_link_received", kind);
       if (data.vpn) setTelegramVpn(true);
       const expiresAt = Date.now() + 10 * 60_000;
       rememberLogin(kind, data.token, expiresAt, data.url, Boolean(data.vpn));
@@ -505,7 +507,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     try {
       const res = await fetch("/api/account/register/verify", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...registrationHeaders(registration.current, locale) },
         body: JSON.stringify({ email, code }),
       });
       const data = (await res.json().catch(() => ({}))) as { account?: WebAccount; error?: string };

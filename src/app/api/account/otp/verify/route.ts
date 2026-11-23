@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordVerifiedEmail } from "@/lib/registration-analytics-server";
 import { accountReady, accountUnavailable, withSession } from "@/lib/account-http";
 import { consumeOtp, openAccountByEmail, toPublicAccount } from "@/lib/web-account-store";
 import { normalizeEmail, sessionSecret } from "@/lib/web-account";
@@ -21,6 +22,7 @@ export async function POST(req: Request) {
   const result = await consumeOtp(email, code, secret);
   if (result === null) return accountUnavailable();
   if (result !== "ok") return NextResponse.json({ ok: false, error: "bad" }, { status: 401 });
+  recordVerifiedEmail(req);
   const account = await openAccountByEmail(email);
   if (!account) return accountUnavailable();
   return withSession(

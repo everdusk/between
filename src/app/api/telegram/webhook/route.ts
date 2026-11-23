@@ -1,5 +1,6 @@
 import { notificationChoice, setNotificationChoice } from "@/lib/notification-preferences";
 import { NextResponse } from "next/server";
+import { recordBotStep } from "@/lib/registration-analytics-server";
 import { trackMessengerStart } from "@/lib/acquisition-server";
 import { localeFromTelegram, resolveBotLocale, type LocaleId } from "@/lib/i18n";
 import { addCheckin, appendBotMessageToToday } from "@/lib/journal-server";
@@ -220,6 +221,7 @@ async function handleCallback(callback: TelegramCallback) {
       console.error("Telegram login confirmation could not be saved");
       return null;
     });
+    if (account) recordBotStep("telegram", login[1].toLowerCase(), "bot_confirmed", callback.from.id, callback.from.username);
     const text = translate(reply, account ? "botLoginOk" : "webTgLoginFail");
     const edited = callback.message && await telegramRequest("editMessageText", {
       chat_id: callback.message.chat.id,
@@ -521,6 +523,7 @@ export async function POST(req: Request) {
   if (isBotCommand(text, "start") || isBotCommand(text, "help")) {
     const loginToken = loginTokenFromStart(startPayload(text) ?? "");
     if (loginToken && userId) {
+      recordBotStep("telegram", loginToken, "bot_started", userId, message.from?.username);
       await telegramRequest("sendMessage", {
         chat_id: chatId,
         text: translate(reply, "botLoginAsk"),
