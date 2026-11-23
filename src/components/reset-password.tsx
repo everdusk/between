@@ -1,5 +1,7 @@
 "use client";
 
+import { newPasswordProblem } from "@/lib/account-validation";
+
 import { BrandLogo } from "./brand-logo";
 import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -47,8 +49,8 @@ function ResetForm() {
       setError(t("webPasswordMismatch"));
       return;
     }
-    if (password.length < 8 || password.length > 200) {
-      setError(t("webPasswordShort"));
+    if (newPasswordProblem(password)) {
+      setError(t("webPasswordRule"));
       return;
     }
     setBusy(true);
@@ -61,7 +63,8 @@ function ResetForm() {
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        if (data.error === "short_password") setError(t("webPasswordShort"));
+        if (data.error === "weak_password") setError(t("webPasswordRule"));
+        else if (data.error === "short_password") setError(t("webPasswordShort"));
         else if (data.error === "server_not_configured") setError(t("webServer"));
         else setError(t("webResetBad"));
         return;
@@ -78,6 +81,8 @@ function ResetForm() {
     <article className="fixed inset-0 z-20 overflow-y-auto bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-lg flex-col px-5 pt-8 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
         <header className="flex items-center justify-between gap-4">
+          {/* This standalone screen sets its own root theme; a full navigation restores the landing shell. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/" className="font-display text-lg text-foreground">
             <BrandLogo />
           </a>

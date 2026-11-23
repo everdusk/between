@@ -14,6 +14,8 @@ export function LegalLinks({ className, telegram }: { className?: string; telegr
       <a href="/privacy" className="underline underline-offset-4">
         {t("legalPrivacy")}
       </a>
+      <span aria-hidden> · </span>
+      <a href="/personal-data" className="underline underline-offset-4">{t("legalProcessing")}</a>
     </p>
   );
 }
@@ -23,6 +25,8 @@ export function LegalAgree({ className }: { className?: string }) {
   return (
     <p className={className}>
       {t("legalAgree")}{" "}
+      <a href="/personal-data" className="underline underline-offset-4">{t("legalProcessingInline")}</a>
+      {t("legalAgreeAlso")}{" "}
       <a href="/terms" className="underline underline-offset-4">
         {t("legalTermsInline")}
       </a>{" "}

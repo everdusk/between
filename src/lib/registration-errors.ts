@@ -1,5 +1,5 @@
 const reasons = [
-  "bad_email", "taken", "short_password", "password_mismatch", "bad_login", "bad",
+  "bad_email", "taken", "short_password", "weak_password", "password_mismatch", "bad_login", "bad",
   "limited", "soon", "mail_off", "mail_fail", "server_not_configured", "bad_json",
   "max_off", "telegram_off", "bad_token", "unauthorized", "network_error",
   "server_error", "unexpected_response", "confirmation_timeout",

@@ -1,6 +1,7 @@
+import { newPasswordProblem } from "@/lib/account-validation";
 import { NextResponse } from "next/server";
 import { accountReady, accountUnavailable, withSession } from "@/lib/account-http";
-import { passwordProblem, sessionSecret, sessionTokenFromRequest } from "@/lib/web-account";
+import { sessionSecret, sessionTokenFromRequest } from "@/lib/web-account";
 import { accountFromSession, changeAccountPassword, toPublicAccount } from "@/lib/web-account-store";
 
 /** Signed-in email account replaces its password. The current one is checked, never logged. */
@@ -20,8 +21,9 @@ export async function POST(req: Request) {
   if (typeof payload.current !== "string" || payload.current.length === 0) {
     return NextResponse.json({ ok: false, error: "bad_password" }, { status: 401 });
   }
-  if (passwordProblem(payload.next)) {
-    return NextResponse.json({ ok: false, error: "short_password" }, { status: 400 });
+  const problem = newPasswordProblem(payload.next);
+  if (problem) {
+    return NextResponse.json({ ok: false, error: problem === "composition" ? "weak_password" : "short_password" }, { status: 400 });
   }
   const account = await changeAccountPassword(current.id, payload.current, payload.next as string);
   if (account === null) return accountUnavailable();

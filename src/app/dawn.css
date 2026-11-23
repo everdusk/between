@@ -603,7 +603,7 @@ html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) input[role="swi
     background-color: var(--ink-foreground);
   }
 }
-html[data-design="dawn"] :is(.text-action, summary, a[href="/terms"], a[href="/privacy"]) {
+html[data-design="dawn"] :is(.text-action, summary, a[href="/terms"], a[href="/privacy"], a[href="/personal-data"]) {
   text-decoration: none;
   @media (prefers-reduced-motion: no-preference) {
     transition: color 180ms ease-out, text-shadow 180ms ease-out;

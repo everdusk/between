@@ -54,6 +54,8 @@ describe("legal documents", () => {
   });
 
   it("recognizes the public paths", () => {
+    assert.equal(isLegalPath("/personal-data/"), true);
+    assert.equal(isQuietPath("/personal-data"), true);
     assert.equal(isLegalPath("/terms/"), true);
     assert.equal(isLegalPath("/privacy"), true);
     assert.equal(isLegalPath("/journal"), false);

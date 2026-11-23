@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { describe, it } from "node:test";
+import { newPasswordProblem } from "./account-validation";
 import { passwordSettingsKind } from "./password-settings";
 import {
   journalStorageId,
@@ -30,6 +31,16 @@ describe("web account", () => {
   it("asks for a password of at least 8 characters", () => {
     assert.equal(passwordProblem("short"), "short");
     assert.equal(passwordProblem("long-enough"), null);
+  });
+
+  it("requires a digit and symbol for new passwords while accepting legacy login passwords", () => {
+    assert.equal(passwordProblem("oldpassword"), null);
+    assert.equal(newPasswordProblem("oldpassword"), "composition");
+    assert.equal(newPasswordProblem("longpass1 "), "composition");
+    assert.equal(newPasswordProblem("longpass!"), "composition");
+    assert.equal(newPasswordProblem("a1!"), "short");
+    assert.equal(newPasswordProblem("x".repeat(199) + "1!"), "long");
+    assert.equal(newPasswordProblem("пароль٣!"), null);
   });
 
   it("offers a password change only for an email journal opened on the site", () => {

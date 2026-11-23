@@ -9,6 +9,9 @@ export const noteStep: Record<SurveyFeeling, string> = {
 };
 
 const stepTitles: Record<string, string> = {
+  v3_recent: "Чувство в последнее время", v3_spectrum: "Спектр недели", v3_recent_reason: "Поделитесь? Это анонимно",
+  v3_current: "Чувство сейчас", v3_therapy: "Терапия", v3_topics_demo: "Тема по записям",
+  v3_messengers: "Мессенджеры", v3_bot_demo: "Запись из чата", v3_observation: "Ваша первая запись",
   v2_recent_reason: "Поделитесь?",
   v2_topics_demo: "Пример темы по записям",
   v2_messengers: "Мессенджеры", v2_bot_demo: "Пример чата с ботом",
@@ -25,7 +28,8 @@ const stepTitles: Record<string, string> = {
 /** Accept only known screens and navigation actions. Never forward arbitrary properties. */
 export function surveyProperties(data: Record<string, unknown>): Record<string, unknown> | null {
   if (data.locale !== "ru" && data.locale !== "en") return null;
-  const common = { messenger: "web", locale: data.locale, survey_version: typeof data.question === "string" && data.question.startsWith("v2_") ? 2 : 1 };
+  const versionPrefix = typeof data.question === "string" ? data.question.split("_", 1)[0] : "";
+  const common = { messenger: "web", locale: data.locale, survey_version: versionPrefix === "v3" ? 3 : versionPrefix === "v2" ? 2 : 1 };
   if (data.event === "web_registration_step") {
     if (typeof data.attempt !== "string" || !/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(data.attempt) ||
         (data.source !== "direct" && data.source !== "survey") ||
@@ -46,7 +50,7 @@ export function surveyProperties(data: Record<string, unknown>): Record<string, 
       typeof data.sequence !== "number" || !Number.isSafeInteger(data.sequence) || data.sequence < 1 ||
       !["view", "advance", "back", "login", "finish"].includes(String(data.action)) || typeof data.action !== "string") return null;
   return { ...common, question_id: data.question, question_title: stepTitles[data.question],
-    ...(data.question === "v2_messengers" && data.action === "advance" && validMessengerChoices(data.messengers)
+    ...((data.question === "v2_messengers" || data.question === "v3_messengers") && data.action === "advance" && validMessengerChoices(data.messengers)
       ? { selected_messengers: data.messengers } : {}),
     survey_action: data.action, attempt_id: data.attempt, sequence: data.sequence };
 }

@@ -63,6 +63,16 @@ describe("analytics", () => {
     }
   });
 
+  it("recognises the reordered introduction without forwarding either note or mood", () => {
+    const properties = surveyProperties({ event: "web_survey_step", locale: "ru",
+      attempt: "00000000-0000-4000-8000-000000000001", sequence: 3, action: "advance",
+      question: "v3_recent_reason", recentReason: "private text", recent: "грусть" });
+    assert.equal(properties?.survey_version, 3);
+    assert.equal(properties?.question_title, "Поделитесь? Это анонимно");
+    assert.equal(properties?.recentReason, undefined);
+    assert.equal(properties?.recent, undefined);
+  });
+
   it("counts a visit once per person per day and keeps the id out of the keys", async () => {
     const redis = memoryRedis();
     const first = await recordAnalytics(redis, {

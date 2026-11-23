@@ -1,7 +1,7 @@
+import { newPasswordProblem } from "@/lib/account-validation";
 import { NextResponse } from "next/server";
 import { accountReady, accountUnavailable, withSession } from "@/lib/account-http";
 import { completeReset, toPublicAccount } from "@/lib/web-account-store";
-import { passwordProblem } from "@/lib/web-account";
 
 export async function POST(req: Request) {
   if (!accountReady()) return accountUnavailable();
@@ -16,8 +16,9 @@ export async function POST(req: Request) {
   if (!token || token.length > 200) {
     return NextResponse.json({ ok: false, error: "bad" }, { status: 400 });
   }
-  if (passwordProblem(payload.password)) {
-    return NextResponse.json({ ok: false, error: "short_password" }, { status: 400 });
+  const problem = newPasswordProblem(payload.password);
+  if (problem) {
+    return NextResponse.json({ ok: false, error: problem === "composition" ? "weak_password" : "short_password" }, { status: 400 });
   }
   const account = await completeReset(token, payload.password as string);
   if (account === null) return accountUnavailable();
