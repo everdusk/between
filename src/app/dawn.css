@@ -594,7 +594,6 @@ html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) .feeling-choice
 @media (forced-colors: active) {
   .field-select-option[data-highlighted] { outline: 2px solid Highlight; outline-offset: -2px; }
 }
-.desk-content > footer > .desk-legal-links { padding-block-end: .5rem; }
 html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) input[role="switch"]:checked {
   & ~ [data-slot="switch-track"] {
     background-image: var(--action-tint);

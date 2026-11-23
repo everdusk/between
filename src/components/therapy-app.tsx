@@ -1,7 +1,7 @@
 "use client";
 
 import { BrandLogo } from "./brand-logo";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { BotConnectBanner } from "./bot-connect-banner";
 import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
@@ -15,7 +15,7 @@ import { useMaxScheme } from "@/hooks/use-max-scheme";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WebAccountGate } from "@/components/web-account-gate";
 import { readIntroDraft, type IntroDraft, type LegacyIntroRecord } from "@/lib/intro-record";
-import { IntroCard, IntroReflection, introDraftKey, introStepCount } from "./intro-reflection";
+import { IntroCard, IntroReflection, introDraftKey } from "./intro-reflection";
 import { ThemeReflection } from "./weekly-review";
 import { ReflectionPanel } from "@/components/journal-explore";
 import { ProfileEditor } from "./journal-intro";
@@ -212,6 +212,7 @@ function TherapyShell({
     savePattern,
     saveProfile,
     importIntroduction,
+    startGuest,
     saveReflection,
     reviewPilot,
     saveReview,
@@ -220,6 +221,7 @@ function TherapyShell({
   } = useTherapyStore({
     initData: telegram.initData,
     inTelegram: telegram.inTelegram,
+    guestStorage: webEntry && !inMax && !telegram.inTelegram,
     locale,
     maxInitData: inMax && maxLaunch ? maxLaunch : "",
     // A site cookie is another person's journal until MAX says who opened the app.
@@ -315,11 +317,19 @@ function TherapyShell({
     () => false,
   );
   const [draft, setIntro] = useState<IntroDraft | null>(() => {
-    if (!webFirst || typeof window === "undefined") return null;
+    if (!webEntry || typeof window === "undefined") return null;
     try { return readIntroDraft(JSON.parse(sessionStorage.getItem(introDraftKey) ?? "null")); }
     catch { return null; }
   });
-  const intro = signInLink ? null : draft;
+  const [guestAuth, setGuestAuth] = useState<"register" | "login" | null>(() => {
+    try {
+      const mode = sessionStorage.getItem(introDraftKey + ":guest");
+      return mode === "register" || mode === "login" ? mode : null;
+    } catch { return null; }
+  });
+  const guestRecord = !inMax && !telegram.inTelegram && !web.account && syncLabel === "local"
+    ? store.introductions?.at(-1) : undefined;
+  const intro = signInLink && !web.account ? null : draft;
   const [editingIntro, setEditingIntro] = useState<LegacyIntroRecord | null>(null);
   const editorKey = "between:intro:open-editor";
   function finishIntroEditor() {
@@ -340,13 +350,45 @@ function TherapyShell({
   const [handoffError,setHandoffError] = useState(false);
   const [handoffRetry,setHandoffRetry] = useState(0);
   const [savedIntroDate, setSavedIntroDate] = useState("");
-  function beginRegistration(record: IntroDraft) {
-    try { sessionStorage.removeItem(introDraftKey+":owner"); sessionStorage.setItem(introDraftKey, JSON.stringify(record)); } catch { return false; }
-    setIntro(record);
+  function enterGuest(record: IntroDraft) {
+    if (!startGuest(record)) return false;
+    setPicked("week");
     return true;
   }
+  const openGuestAuth = useCallback((mode: "register" | "login") => {
+    if (!guestRecord) return;
+    try {
+      sessionStorage.setItem(introDraftKey + ":guest", mode);
+      sessionStorage.setItem(introDraftKey, JSON.stringify(guestRecord));
+      sessionStorage.removeItem(introDraftKey + ":owner");
+    } catch { /* The in-memory draft still works for in-page sign-in. */ }
+    setIntro(guestRecord);
+    setGuestAuth(mode);
+  }, [guestRecord]);
   useEffect(() => {
-    if (!webFirst || !intro || !web.account || status !== "ready" || syncLabel !== "cloud" || !accessStatus || locked) return;
+    if (showGate && signInLink && guestRecord && !guestAuth) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- preserve the guest transfer across external sign-in redirects
+      openGuestAuth("login");
+    }
+  }, [showGate, signInLink, guestRecord, guestAuth, openGuestAuth]);
+  function returnToGuest() {
+    try {
+      sessionStorage.removeItem(introDraftKey);
+      sessionStorage.removeItem(introDraftKey + ":owner");
+      sessionStorage.removeItem(introDraftKey + ":guest");
+      sessionStorage.removeItem("between:messenger-login");
+    } catch { /* Private browsing. */ }
+    const url = new URL(location.href);
+    url.searchParams.delete("login");
+    url.searchParams.delete("yandex");
+    url.searchParams.set("start", "1");
+    history.replaceState(history.state, "", url);
+    window.dispatchEvent(new Event("popstate"));
+    setIntro(null);
+    setGuestAuth(null);
+  }
+  useEffect(() => {
+    if (!webEntry || inMax || telegram.inTelegram || !intro || !web.account || status !== "ready" || syncLabel !== "cloud" || !accessStatus || locked) return;
     try {
       const boundOwner = sessionStorage.getItem(introDraftKey+":owner");
       if (boundOwner && boundOwner !== web.account.email) {
@@ -357,7 +399,7 @@ function TherapyShell({
       sessionStorage.setItem(introDraftKey+":owner", web.account.email);
     } catch { /* in-memory handoff */ }
     let active = true;
-    void importIntroduction(intro).then(saved => {
+    void importIntroduction(intro, Boolean(guestAuth)).then(saved => {
       if (!active) return;
       if (!saved) { setHandoffError(true); return; }
       setHandoffError(false);
@@ -366,9 +408,11 @@ function TherapyShell({
         else sessionStorage.setItem(editorKey,intro.attempt);
         sessionStorage.removeItem(introDraftKey);
         sessionStorage.removeItem(introDraftKey+":owner");
+        sessionStorage.removeItem(introDraftKey+":guest");
       } catch { /* private browsing */ }
       if (intro.kind === "checkin" || intro.note) {
-        setSavedIntroDate(intro.note?.date ?? intro.date);
+        setSavedIntroDate(guestAuth ? "" : intro.note?.date ?? intro.date);
+        setGuestAuth(null);
         trackAnalytics("note", "");
       } else {
         setEditingIntro(intro);
@@ -378,7 +422,7 @@ function TherapyShell({
       setPicked("journal");
     });
     return () => { active = false; };
-  }, [webFirst,intro,web.account,status,syncLabel,accessStatus,locked,importIntroduction,handoffRetry]);
+  }, [webEntry,inMax,telegram.inTelegram,intro,web.account,status,syncLabel,accessStatus,locked,importIntroduction,guestAuth,handoffRetry]);
   const resumingMessenger = useSyncExternalStore(
     subscribeLaunch,
     () => {
@@ -387,17 +431,23 @@ function TherapyShell({
     },
     () => false,
   );
+  const guest = Boolean(showGate && guestRecord && !intro && !guestAuth && !signInLink && !resumingMessenger);
+  const guestForm = Boolean(guestRecord && !guest);
+  const guestLogin = signInLink || guestAuth === "login";
   const personal = store.profile?.therapy === false;
   const linked =
     telegram.inTelegram ||
     inMax ||
     Boolean(web.account?.telegramLinked || web.account?.maxLinked);
   function reflect(id: string) {
+    if (guest) { openGuestAuth("register"); return; }
     setEntryId(id);
     selectSection("reflection");
   }
   const signedOutWeb = !inMax && !telegram.inTelegram && !web.account;
-  const accountButton = signedOutWeb ? (
+  const accountButton = guest ? (
+    <AccountButton solid pressed={false} onClick={() => openGuestAuth("login")} />
+  ) : signedOutWeb ? (
     <SchemeSwitch />
   ) : (
     <AccountButton
@@ -424,24 +474,22 @@ function TherapyShell({
     onAccess: onWeekAccess,
   };
   const gate =
-    showGate &&
-    (webFirst && !signInLink && !resumingMessenger && !intro ? (
-      <IntroReflection onFinish={beginRegistration} />
+    showGate && !guest &&
+    (webFirst && !signInLink && !resumingMessenger && !intro && !guestForm ? (
+      <IntroReflection onFinish={enterGuest} />
     ) : (
       <div className="space-y-4">
+      {guestForm && <Button variant="ghost" onClick={returnToGuest}>← В гостевой дневник</Button>}
       <WebAccountGate
-        key={signInLink ? "sign-in" : "onboarding"}
-        surveyAttempt={signInLink ? undefined : intro?.attempt}
-        entryPreview={intro && !signInLink && <div className="intro-screen space-y-4">
-          {intro.kind === "checkin" && <>
-            <small>Between · {locale === "en" ? "Getting to know you" : "Знакомство"} · {introStepCount}/{introStepCount}</small>
-            <h1 className="font-display text-2xl">{locale === "en" ? "Your first entry" : "Ваша первая запись"}</h1>
-          </>}
+        key={guestLogin ? "sign-in" : "onboarding"}
+        surveyAttempt={guestForm ? guestRecord?.attempt : signInLink ? undefined : intro?.attempt}
+        entryPreview={!guestForm && intro && !guestLogin && <div className="intro-screen space-y-4">
+          {intro.kind === "checkin" && <h1 className="font-display text-2xl">{locale === "en" ? "Your first entry" : "Ваша первая запись"}</h1>}
           <IntroCard record={intro}/>
         </div>}
         compact
         yandexLogin={webFirst && web.yandexLogin}
-        initialLogin={signInLink}
+        initialLogin={guestLogin}
         onSignedIn={web.setAccount}
       /></div>
     ));
@@ -467,14 +515,14 @@ function TherapyShell({
   ) : (
     gate ||
     problem ||
-    (webFirst && intro && web.account && accessStatus && !locked ? (
+    (webEntry && !inMax && !telegram.inTelegram && intro && web.account && accessStatus && !locked ? (
       <section className="glass space-y-3 rounded-3xl p-5" role="status">
         <IntroCard record={intro}/>
         {handoffError || syncLabel==="offline-cloud" ? <><p>{locale==="en"?"Your answers are here. Try saving them again.":"Ответы остались здесь. Попробуйте сохранить их ещё раз."}</p><Button onClick={()=>{setHandoffError(false);setHandoffRetry(n=>n+1);void retryCloud()}}>{t("accessRetry")}</Button></> :
           <p>{locale==="en"?"Saving your answers…":"Сохраняем ваши ответы…"}</p>}
       </section>
     ) : null) ||
-    (locked || !accessStatus ? (
+    (!guest && (locked || !accessStatus) ? (
       <WeekTab active {...accessProps}>
         {null}
       </WeekTab>
@@ -487,6 +535,14 @@ function TherapyShell({
     selectSection("journal");
     setComposeRequest((n) => n + 1);
   }
+  const overview = (
+    <WeeklyPanel review={!guest && reviewPilot ? saveReview : undefined} guest={guest} inMessenger={inMax || telegram.inTelegram}
+      entries={store.entries} sessions={store.sessionPlan && !personal ? store.sessions : []}
+      plan={personal ? null : store.sessionPlan} weekPreps={store.weekPreps} themes={store.themes}
+      themeLinks={store.themeLinks} judgeSettled={store.judgeSettled} judgeSkipped={judgeSkipped}
+      onSavePattern={savePattern} onSaveThemes={saveThemes} maxInitData={accessProps.maxInitData}
+      initData={telegram.initData} cloud={Boolean(web.account)} disabled={disabled} />
+  );
   return (
     <BotChatPermission
       ready={telegram.ready}
@@ -496,46 +552,32 @@ function TherapyShell({
     >
       <WebWorkspace
         homeHref={telegram.ready && !telegram.inTelegram && !inMax ? `/?lang=${locale}` : undefined}
-        section={personal && section === "sessions" ? "topics" : section}
+        section={guest && section !== "journal" ? "week" : personal && section === "sessions" ? "topics" : section}
         onSection={next=>{
+          if (guest && next !== "week" && next !== "journal") { openGuestAuth("register"); return; }
           if(reviewPilot && next==="reflection") setEntryId("");
           selectSection(next);
         }}
+        guestBanner={guest && <aside className="glass mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-3xl px-4 py-3">
+          <div><strong className="text-sm">Гостевой доступ</strong>
+            <p className="text-xs text-muted-foreground">Записи хранятся только в этом браузере.</p></div>
+          <Button size="sm" onClick={() => openGuestAuth("register")}>Зарегистрироваться</Button>
+        </aside>}
         tools={accountButton}
         footer={footer}
         blocked={blocked}
         onCompose={compose}
         personal={personal}
         pages={{
-          week: (
-            <>
-              <WeekTab active={section === "week"} {...accessProps}>
-                {section === "week" && hint}
-                <WeeklyPanel
-                  review={reviewPilot ? saveReview : undefined}
-                  inMessenger={inMax || telegram.inTelegram}
-                  entries={store.entries}
-                  sessions={
-                    store.sessionPlan && !personal ? store.sessions : []
-                  }
-                  plan={personal ? null : store.sessionPlan}
-                  weekPreps={store.weekPreps}
-                  themes={store.themes}
-                  themeLinks={store.themeLinks}
-                  judgeSettled={store.judgeSettled}
-                  judgeSkipped={judgeSkipped}
-                  onSavePattern={savePattern}
-                  onSaveThemes={saveThemes}
-                  maxInitData={inMax ? (maxLaunch ?? "") : ""}
-                  initData={telegram.initData}
-                  cloud={Boolean(web.account)}
-                  disabled={disabled}
-                />
-              </WeekTab>
-            </>
+          week: guest ? overview : (
+            <WeekTab active={section === "week"} {...accessProps}>
+              {section === "week" && hint}
+              {overview}
+            </WeekTab>
           ),
           journal: (
             <JournalPanel
+              guest={guest}
               initialDate={savedIntroDate}
               entries={store.entries}
               onSave={upsertEntry}
@@ -618,7 +660,7 @@ function TherapyShell({
           web.setAccount(null);
           setIntro(null);
           finishIntroEditor();
-          try { sessionStorage.removeItem(introDraftKey); sessionStorage.removeItem(introDraftKey+":owner"); } catch { /* private browsing */ }
+          try { sessionStorage.removeItem(introDraftKey); sessionStorage.removeItem(introDraftKey+":owner"); sessionStorage.removeItem(introDraftKey+":guest"); } catch { /* private browsing */ }
           closeAccount();
           window.location.reload();
         }}

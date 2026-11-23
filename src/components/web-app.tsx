@@ -4,6 +4,7 @@ import { useLayoutEffect, useSyncExternalStore } from "react";
 import { TherapyApp } from "@/components/therapy-app";
 import { WeekPriceProvider } from "@/components/week-prices";
 import { holdAppSurface, requestsBrowserJournal, surfaceFromLocation } from "@/lib/landing";
+import { GUEST_STORAGE_KEY, hasGuestJournal } from "@/lib/guest-launch";
 import "./web-theme.css";
 import "./web-workspace.css";
 
@@ -16,7 +17,7 @@ function subscribeLaunch(notify: () => void) {
 }
 
 function opensDiary() {
-  if (requestsBrowserJournal(location.search)) return true;
+  if (requestsBrowserJournal(location.search) || hasGuestJournal(GUEST_STORAGE_KEY)) return true;
   let stored: string | null = null;
   try { stored = sessionStorage.getItem("__telegram__initParams"); } catch { /* private browsing */ }
   return surfaceFromLocation(location.hash, location.search, stored) === "app";

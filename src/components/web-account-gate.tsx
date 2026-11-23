@@ -665,7 +665,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         <JournalPreview />
       </section>}
 
-      <GlassPanel ref={formRef} data-intro-mascot={surveyAttempt && creating && !waitingFor ? "register" : undefined} className="journal-gate-form mt-6 scroll-mt-4 rounded-[22px] px-5 py-6 sm:px-6">
+      <GlassPanel ref={formRef} data-intro-mascot={surveyAttempt && mode === "login" && !waitingFor ? "register" : undefined} className="journal-gate-form mt-6 scroll-mt-4 rounded-[22px] px-5 py-6 sm:px-6">
         {entryPreview}
         {waitingFor ? (
           <div className="grid gap-4">
@@ -680,7 +680,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
             <Button type="button" variant="outline" onClick={chooseAnotherMethod}>{t("webChooseMethod")}</Button>
           </div>
         ) : <>
-        {!(surveyAttempt && creating && mode === "login") && <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{compact && mode === "login" && creating ? t("webCreate") : title}</h2>}
+        {!(entryPreview && creating && mode === "login") && <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{compact && mode === "login" && creating ? t("webCreate") : title}</h2>}
         {surveyAttempt && creating && mode === "login" && (
           <p className="mt-4 text-base leading-relaxed text-foreground">
             {locale === "en"
@@ -688,7 +688,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
               : "Сохраните запись в своём приватном дневнике. Данные защищены и обезличены."}
           </p>
         )}
-        {compact && !surveyAttempt && mode === "login" && <div className="mt-4 flex gap-2" role="group">
+        {compact && !entryPreview && mode === "login" && <div className="mt-4 flex gap-2" role="group">
           <Button type="button" size="sm" variant={creating ? "secondary" : "ghost"} aria-pressed={creating} onClick={() => { setCreating(true); setError(null); }}>{t("webCreate")}</Button>
           <Button type="button" size="sm" variant={!creating ? "secondary" : "ghost"} aria-pressed={!creating} onClick={() => { setCreating(false); setError(null); setCheckedFields([]); setRejectedEmail(null); }}>{t("webEnter")}</Button>
         </div>}
@@ -697,7 +697,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         {mode === "login" ? (
           <>
             <div className="mt-5">
-              {(yandexLogin || (process.env.NODE_ENV === "development" && Boolean(entryPreview))) && (
+              {(yandexLogin || process.env.NODE_ENV === "development") && (
                 <button type="button" className="auth-provider yandex-id-button mb-2" disabled={busy} onClick={() => void loginWithYandex()}>
                   <Image src="/yandex-sign-in.png" unoptimized width={24} height={24} alt="" />
                   {locale === "ru" ? "Войти с Яндекс ID" : t("webOAuth", { messenger: "Yandex ID" })}

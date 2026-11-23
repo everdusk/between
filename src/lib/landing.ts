@@ -1,3 +1,4 @@
+import { GUEST_STORAGE_KEY, hasGuestJournal } from "./guest-launch";
 import { LANDING_ORIGIN } from "./landing-seo";
 
 /** Older landing links still arrive as `/start app_landing`. New buttons do not send it. */
@@ -102,7 +103,7 @@ export const LEGAL_SURFACE_CSS = `${APP_SURFACE_CSS}.splash-screen{display:none!
  * `/open` and `/subscribe` stay `web`: the counter starts only when `data-between` is not `app`,
  * and Metrika's button markup lists pages the counter has seen.
  */
-export const JOURNAL_SURFACE_SCRIPT = `try{var p=location.pathname||"";if(p.length>1&&p.charAt(p.length-1)==="/")p=p.slice(0,-1);var quiet=p==="/terms"||p==="/privacy"||p==="/personal-data"||p==="/reset"||p==="/delete"||p==="/open"||p==="/subscribe";var browserEntry=(${requestsBrowserJournal.toString()})(location.search);var journal=(p==="/"&&(document.documentElement.getAttribute("data-between")==="app"||browserEntry))||p==="/journal"||p.indexOf("/journal/")===0;
+export const JOURNAL_SURFACE_SCRIPT = `try{var p=location.pathname||"";if(p.length>1&&p.charAt(p.length-1)==="/")p=p.slice(0,-1);var quiet=p==="/terms"||p==="/privacy"||p==="/personal-data"||p==="/reset"||p==="/delete"||p==="/open"||p==="/subscribe";var browserEntry=(${requestsBrowserJournal.toString()})(location.search)||(p==="/"&&(${hasGuestJournal.toString()})(${JSON.stringify(GUEST_STORAGE_KEY)}));var journal=(p==="/"&&(document.documentElement.getAttribute("data-between")==="app"||browserEntry))||p==="/journal"||p.indexOf("/journal/")===0;
 var landing=!journal&&!quiet&&(p==="/"||p==="/about");
 if(landing)document.documentElement.setAttribute("data-landing-launch","");
 if((landing||journal||quiet)&&!document.documentElement.getAttribute("data-scheme")){var scheme=((quiet&&p!=="/subscribe")||document.documentElement.getAttribute("data-telegram-theme")==="dark")?"night":"day";if(!quiet||p==="/subscribe"){try{var saved=localStorage.getItem("between:scheme");if(saved==="day"||saved==="night")scheme=saved;}catch(e){}}document.documentElement.setAttribute("data-scheme",scheme);}

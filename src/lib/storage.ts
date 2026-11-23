@@ -1,6 +1,7 @@
 import { normalizeStore, storeChangedShape } from "./migrate";
 import { emptyStore, STORAGE_KEY, type TherapyStore } from "./types";
 
+export { GUEST_STORAGE_KEY } from "./guest-launch";
 export const WEB_STORAGE_KEY = "therapy-helper:web";
 
 export type StorageResult =

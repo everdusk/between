@@ -26,7 +26,7 @@ import {
   pendingJudgeEntries,
 } from "@/lib/themes";
 import { applyThemePass, isTherapyTheme, sanitizeTags, splitTags } from "@/lib/tags";
-import { clearStore, loadStore, saveStore, WEB_STORAGE_KEY } from "@/lib/storage";
+import { clearStore, loadStore, saveStore, GUEST_STORAGE_KEY, WEB_STORAGE_KEY } from "@/lib/storage";
 import {
   emptyStore,
   type Feeling,
@@ -70,13 +70,14 @@ export function useTherapyStore(options?: {
   inTelegram?: boolean;
   locale?: LocaleId;
   web?: boolean;
+  guestStorage?: boolean;
 }) {
   const initData = options?.initData ?? "";
   const maxInitData = options?.maxInitData ?? "";
   const inTelegram = Boolean(options?.inTelegram && initData);
   const web = Boolean(options?.web) || Boolean(maxInitData);
   const cloud = inTelegram || web;
-  const storageKey = web ? WEB_STORAGE_KEY : undefined;
+  const storageKey = web ? WEB_STORAGE_KEY : options?.guestStorage && !inTelegram ? GUEST_STORAGE_KEY : undefined;
   const locale = options?.locale ?? "ru";
 
   const hydrated = useSyncExternalStore(
@@ -113,7 +114,15 @@ export function useTherapyStore(options?: {
   }, [initData, maxInitData, cloud, storageKey]);
 
   const applyLocal = useCallback((next: TherapyStore) => {
-    const result = saveStore(next, storageKeyRef.current);
+    const key = storageKeyRef.current;
+    if (key === GUEST_STORAGE_KEY) {
+      const latest = loadStore(key);
+      if (!latest.ok) return false;
+      // An open guest tab can outlive a successful transfer in another tab.
+      if (storeRef.current.introductions?.length && !latest.data.introductions?.length) return false;
+      next = mergeStores(latest.data, next);
+    }
+    const result = saveStore(next, key);
     if (result.ok) {
       storeRef.current = result.data;
       setStore(result.data);
@@ -165,6 +174,7 @@ export function useTherapyStore(options?: {
     const result = loadStore(storageKey);
     if (result.ok) {
       // Local journal is only available after mount.
+      storeRef.current = result.data;
       setStore(result.data);
       setError(null);
       if (!cloud) {
@@ -213,13 +223,52 @@ export function useTherapyStore(options?: {
     [applyLocal],
   );
 
-  const importIntroduction = useCallback(async (record: IntroDraft) => {
+  useEffect(() => {
+    if (cloud || storageKey !== GUEST_STORAGE_KEY) return;
+    function refresh(event: StorageEvent) {
+      if (event.key !== GUEST_STORAGE_KEY && event.key !== null) return;
+      const latest = loadStore(GUEST_STORAGE_KEY);
+      if (latest.ok) { storeRef.current = latest.data; setStore(latest.data); }
+    }
+    window.addEventListener("storage", refresh);
+    return () => window.removeEventListener("storage", refresh);
+  }, [cloud, storageKey]);
+
+  const startGuest = useCallback((record: IntroDraft) => {
+    if (cloudRef.current || storageKeyRef.current !== GUEST_STORAGE_KEY) return false;
+    return applyLocal(applyIntro(storeRef.current, record));
+  }, [applyLocal]);
+
+  const importIntroduction = useCallback(async (record: IntroDraft, fromGuest = false) => {
     const owner = cacheId.current;
     if (!owner || !cloudRef.current) return false;
-    const imported = applyIntro(storeRef.current, record);
+    const guest = fromGuest ? loadStore(GUEST_STORAGE_KEY) : null;
+    if (guest && !guest.ok) return false;
+    const snapshot = guest?.ok ? guest.data : null;
+    const bindingKey = GUEST_STORAGE_KEY + ":owner:" + record.attempt;
+    if (fromGuest) {
+      if (!snapshot?.introductions?.some(item => item.attempt === record.attempt)) {
+        return Boolean(storeRef.current.introductions?.some(item => item.attempt === record.attempt));
+      }
+      try {
+        const bound = localStorage.getItem(bindingKey);
+        if (bound && bound !== owner) return false;
+        localStorage.setItem(bindingKey, owner);
+      } catch { return false; }
+    }
+    const imported = snapshot ? mergeStores(snapshot, storeRef.current) : applyIntro(storeRef.current, record);
+    if (snapshot && storeRef.current.profile) imported.profile = storeRef.current.profile;
     const saved = await putJournal(initDataRef.current, imported, deviceTimeZone(), undefined, maxInitRef.current, owner);
     if (!saved || cacheId.current !== owner) return false;
-    return applyLocal(mergeStores(storeRef.current, imported));
+    if (!applyLocal(mergeStores(storeRef.current, imported))) return false;
+    if (snapshot) {
+      const latest = loadStore(GUEST_STORAGE_KEY);
+      // Retry any edits made in another tab during the upload.
+      if (!latest.ok || JSON.stringify(latest.data) !== JSON.stringify(snapshot)) return false;
+      if (!clearStore(GUEST_STORAGE_KEY).ok) return false;
+      try { localStorage.removeItem(bindingKey); } catch { /* Entries were already transferred. */ }
+    }
+    return true;
   }, [applyLocal]);
 
   const judgeRun = useRef<string | null>(null);
@@ -238,7 +287,7 @@ export function useTherapyStore(options?: {
     };
   }, []);
   useEffect(() => {
-    if (!hydrated || !cloud || status !== "ready" || !cacheId.current) return;
+    if (!hydrated || !cloud || status !== "ready" || syncLabel !== "cloud" || !cacheId.current) return;
     const now = new Date();
     const today = toDateKey(now);
     const period = observationWindow(store.sessions, store.entries, today, now, store.profile?.therapy === false ? null : store.sessionPlan);
@@ -331,7 +380,7 @@ export function useTherapyStore(options?: {
         judgeSettled: [...new Set([...(latest.judgeSettled ?? []), stamp])].slice(-400),
       });
     })();
-  }, [hydrated, cloud, status, reviewPilot, initData, maxInitData, judgeNudge, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions, store.profile?.therapy]);
+  }, [hydrated, cloud, status, syncLabel, reviewPilot, initData, maxInitData, judgeNudge, locale, persist, store.entries, store.judgeSettled, store.sessionPlan, store.sessions, store.profile?.therapy]);
 
   const resetCorrupted = useCallback(() => {
     const result = clearStore(storageKeyRef.current);
@@ -633,6 +682,7 @@ export function useTherapyStore(options?: {
   return {
     store,
     importIntroduction,
+    startGuest,
     saveProfile(therapy: boolean) {
       const store = storeRef.current;
       return persist({ ...store, profile: { ...store.profile, therapy, updatedAt: new Date().toISOString() } });
