@@ -10,8 +10,10 @@ export async function POST(req: Request) {
   if (!config || !secret || !accountReady()) return accountUnavailable();
   if (req.headers.get("origin") !== config.origin) return new NextResponse(null, { status: 403 });
   const params = new URL(req.url).searchParams;
-  const login = beginYandex(config.id, config.origin, secret, params.get("from") === "survey", params.get("lang") === "en" ? "en" : "ru");
-  await rememberProviderAttempt(req, "yandex", login.state, loginTtl);
+  const survey = params.get("from") === "survey";
+  const create = params.has("intent") ? params.get("intent") === "create" : survey;
+  const login = beginYandex(config.id, config.origin, secret, survey, params.get("lang") === "en" ? "en" : "ru", create);
+  await rememberProviderAttempt(req, "yandex", login.state, 2 * loginTtl);
   const response = NextResponse.json({ url: login.url }, { headers: { "Cache-Control": "no-store" } });
   response.cookies.set(pendingCookie, login.cookie, { ...pendingOptions, maxAge: loginTtl });
   return response;
