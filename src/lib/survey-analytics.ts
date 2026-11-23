@@ -4,8 +4,8 @@ import { analyticsStaysQuiet, deviceToken } from "./analytics-client";
 import { YANDEX_METRIKA_ID } from "./landing";
 
 export type SurveyAction = "view" | "advance" | "back" | "login" | "finish";
-export type RegistrationStep = "form_view" | "email_started" | "email_submitted" | "code_requested" | "code_submitted" | "email_registered" | "messenger_started" | "messenger_link_received" | "signed_in" | "error" | "result_view";
-export type RegistrationMethod = "form" | "email" | "password" | "telegram" | "max";
+export type RegistrationStep = "form_view" | "email_started" | "email_submitted" | "code_requested" | "code_submitted" | "email_registered" | "oauth_started" | "messenger_started" | "messenger_link_received" | "signed_in" | "error" | "result_view";
+export type RegistrationMethod = "form" | "email" | "password" | "telegram" | "max" | "yandex";
 export function registrationHeaders(context: { attempt: string; source: "survey" | "direct" } | null, locale: string): Record<string, string> {
   if (!context || analyticsStaysQuiet()) return {};
   const device = deviceToken();
@@ -13,7 +13,7 @@ export function registrationHeaders(context: { attempt: string; source: "survey"
     "X-Between-Device": device,
     "X-Between-Attempt": context.attempt,
     "X-Between-Source": context.source,
-    "X-Between-Locale": locale,
+    "X-Between-Locale": locale === "en" ? "en" : "ru",
   } : {};
 }
 export type SurveyEvent =

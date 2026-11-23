@@ -21,7 +21,6 @@ import {
   newAccountId,
   newLinkCode,
   newResetToken,
-  normalizeEmail,
   passwordMatches,
   readSessionClaims,
   RESET_TTL_SECONDS,
@@ -921,68 +920,23 @@ export async function resolveMaxJournalId(maxUserId: number): Promise<string> {
   return accountId ? webStorageId(accountId) : maxStorageId(maxUserId);
 }
 
-export async function upsertOauthAccount(input: {
-  provider: OauthProvider;
-  providerUserId: string;
-  altIds?: string[];
-  email: string | null;
-}): Promise<AccountRecord | "taken" | null> {
+/** Returning users are identified by their provider subject, independently of email changes. */
+export async function openYandexAccount(identity: { id: string; email: string }): Promise<AccountRecord | "taken" | null> {
   const redis = getRedis();
   if (!redis) return null;
-  const email = input.email ? normalizeEmail(input.email) : null;
-  const ids = [input.providerUserId, ...(input.altIds ?? [])].filter(
-    (id, index, all) => id && all.indexOf(id) === index,
-  );
-  let found: AccountRecord | null = null;
-  for (const subject of ids) {
-    const accountId = await redis.get<string>(oauthKey(input.provider, subject));
-    if (typeof accountId !== "string") continue;
-    const account = await loadAccount(accountId);
-    if (!account) continue;
-    if (found && found.id !== account.id) return "taken";
-    found = account;
-  }
-  if (!found && email) {
-    const existingId = await redis.get<string>(emailKey(email));
-    if (typeof existingId === "string") found = await loadAccount(existingId);
-  }
-  if (found) {
-    const current = found.providers[input.provider];
-    if (current && !ids.includes(current)) return "taken";
-    found.providers = { ...found.providers, [input.provider]: input.providerUserId };
-    if (!found.email && email) {
-      const claimed = await redis.set(emailKey(email), found.id, { nx: true });
-      if (claimed === "OK") found.email = email;
-    }
-    await redis.set(accountKey(found.id), found);
-    for (const subject of ids) await redis.set(oauthKey(input.provider, subject), found.id);
-    return found;
-  }
-
   const id = newAccountId();
-  if (email) {
-    const claimed = await redis.set(emailKey(email), id, { nx: true });
-    if (claimed !== "OK") {
-      const winner = await redis.get<string>(emailKey(email));
-      if (typeof winner !== "string") return "taken";
-      const account = await loadAccount(winner);
-      if (!account) return "taken";
-      return upsertOauthAccount({ ...input, email });
-    }
-  }
   const account: AccountRecord = {
-    id,
-    email: email ?? "",
-    salt: "",
-    hash: "",
-    telegramUserId: null,
-    telegramUsername: null,
-    maxUserId: null,
-    maxUsername: null,
-    createdAt: new Date().toISOString(),
-    providers: { [input.provider]: input.providerUserId },
+    id, email: identity.email, salt: "", hash: "", telegramUserId: null, telegramUsername: null,
+    maxUserId: null, maxUsername: null, createdAt: new Date().toISOString(), providers: { yandex: identity.id },
   };
-  await redis.set(accountKey(id), account);
-  for (const subject of ids) await redis.set(oauthKey(input.provider, subject), id);
-  return account;
+  const result = await redis.eval<string[], string>(`
+    local existing = redis.call('GET', KEYS[1])
+    if existing then return existing end
+    if redis.call('EXISTS', KEYS[2]) == 1 then return 'taken' end
+    redis.call('MSET', KEYS[1], ARGV[1], KEYS[2], ARGV[1], KEYS[3], ARGV[2])
+    return ARGV[1]
+  `, [oauthKey("yandex", identity.id), emailKey(identity.email), accountKey(id)], [id, JSON.stringify(account)]);
+  if (result === "taken") return "taken";
+  const saved = result === id ? account : await loadAccount(result);
+  return saved?.providers.yandex === identity.id ? saved : null;
 }

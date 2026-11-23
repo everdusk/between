@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type FormEvent } from "react";
+import Image from "next/image";
 import { registrationReason, type AuthOperation } from "@/lib/registration-errors";
 import { normalizeEmail, passwordProblem } from "@/lib/account-validation";
 import { registrationHeaders, trackSurvey, type RegistrationMethod, type RegistrationStep } from "@/lib/survey-analytics";
@@ -146,7 +147,7 @@ function JournalPreview() {
 
 type GateMode = "login" | "forgot" | "code";
 
-export function WebAccountGate({ onSignedIn, compact = false, initialLogin = false, surveyAttempt }: { onSignedIn: (account: WebAccount) => void; compact?: boolean; initialLogin?: boolean; surveyAttempt?: string }) {
+export function WebAccountGate({ onSignedIn, compact = false, initialLogin = false, surveyAttempt, yandexLogin = false }: { onSignedIn: (account: WebAccount) => void; compact?: boolean; initialLogin?: boolean; surveyAttempt?: string; yandexLogin?: boolean }) {
   const { t, locale } = useI18n();
   const registration = useRef<{ attempt: string; source: "survey" | "direct" } | null>(null);
   const logged = useRef(new Set<string>());
@@ -161,6 +162,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   const [mode, setMode] = useState<GateMode>("login");
   const [creating, setCreating] = useState(() => {
     if (!compact || initialLogin) return false;
+    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("yandex") === "taken") return false;
     if (surveyAttempt) return true;
     try {
       const saved = JSON.parse(sessionStorage.getItem("between:messenger-login") ?? "null");
@@ -180,12 +182,16 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   const resendAt = useRef(0);
   const [resendSeconds, setResendSeconds] = useState(0);
   const countingDown = resendSeconds > 0;
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const result = new URLSearchParams(window.location.search).get("yandex");
+    return result === "taken" ? t("webEmailTaken") : result === "bad" ? t("webOAuthBad") : null;
+  });
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [messengerUrl, setMessengerUrl] = useState<string | null>(null);
   const [telegramVpn, setTelegramVpn] = useState(false);
-  const [errorScope, setErrorScope] = useState<"login" | "register" | "messenger" | "other">("other");
+  const [errorScope, setErrorScope] = useState<"login" | "register" | "messenger" | "other">("messenger");
   const [waitingFor, setWaitingFor] = useState<"max" | "telegram" | null>(null);
   const startingMessenger = useRef(false);
   const formRef = useRef<HTMLElement>(null);
@@ -343,6 +349,32 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     setNote(null);
     setErrorScope("messenger");
     setError(t(kind === "max" ? "webMaxLoginFail" : "webTgLoginFail"));
+  }
+
+  async function loginWithYandex() {
+    if (busy || startingMessenger.current) return;
+    record("oauth_started", "yandex");
+    setBusy(true);
+    setError(null);
+    setErrorScope("messenger");
+    try {
+      const query = new URLSearchParams({ from: surveyAttempt ? "survey" : "direct", lang: locale });
+      const res = await fetch("/api/account/oauth/yandex?" + query, {
+        method: "POST", headers: registrationHeaders(registration.current, locale),
+      });
+      if (!res.ok) {
+        record("error", "yandex", "oauth_start", registrationReason(null, res.status));
+        setError(t("webOAuthBad"));
+        return;
+      }
+      const { url } = await res.json();
+      window.location.assign(url);
+    } catch {
+      record("error", "yandex", "oauth_start", "network_error");
+      setError(t("webOAuthBad"));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function loginWithMessenger(kind: "max" | "telegram") {
@@ -643,6 +675,12 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         {mode === "login" ? (
           <>
             <div className="mt-5">
+              {yandexLogin && (
+                <button type="button" className="auth-provider yandex-id-button mb-2" disabled={busy} onClick={() => void loginWithYandex()}>
+                  <Image src="/yandex-sign-in.png" unoptimized width={24} height={24} alt="" />
+                  {locale === "ru" ? "Войти с Яндекс ID" : t("webOAuth", { messenger: "Yandex ID" })}
+                </button>
+              )}
               <div className="flex flex-wrap gap-2">
                 <MessengerLoginButton provider="telegram" disabled={busy} onClick={() => void loginWithMessenger("telegram")} />
                 <MessengerLoginButton provider="max" disabled={busy} onClick={() => void loginWithMessenger("max")} />

@@ -3,6 +3,8 @@ import { accountReady, accountUnavailable } from "@/lib/account-http";
 import { loadAccount, toPublicAccount } from "@/lib/web-account-store";
 import { readSession, sessionSecret, sessionTokenFromRequest } from "@/lib/web-account";
 
+import { yandexConfig } from "@/lib/yandex-login";
+
 export async function GET(req: Request) {
   if (!accountReady()) return accountUnavailable();
   const secret = sessionSecret();
@@ -11,6 +13,7 @@ export async function GET(req: Request) {
   const account = accountId ? await loadAccount(accountId) : null;
   return NextResponse.json({
     ok: true,
+    yandexLogin: yandexConfig()?.origin === new URL(req.url).origin,
     account: account ? toPublicAccount(account) : null,
   });
 }

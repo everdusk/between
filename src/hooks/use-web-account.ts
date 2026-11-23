@@ -16,6 +16,7 @@ type Status = "idle" | "loading" | "ready" | "unavailable";
 export function useWebAccount(active: boolean) {
   const [status, setStatus] = useState<Status>(active ? "loading" : "idle");
   const [account, setAccountState] = useState<WebAccount | null>(null);
+  const [yandexLogin, setYandexLogin] = useState(false);
   const epoch = useRef(0);
   const refreshId = useRef(0);
 
@@ -37,9 +38,10 @@ export function useWebAccount(active: boolean) {
         setStatus((current) => (current === "ready" ? current : "unavailable"));
         return;
       }
-      const data = (await res.json()) as { account?: WebAccount | null };
+      const data = (await res.json()) as { account?: WebAccount | null; yandexLogin?: boolean };
       const incoming = data.account ?? null;
       const fresh = id === refreshId.current;
+      if (fresh) setYandexLogin(data.yandexLogin === true);
       if (!incoming && !fresh) return;
       setAccountState((current) => keptAccount(current, incoming, fresh));
       setStatus("ready");
@@ -73,6 +75,7 @@ export function useWebAccount(active: boolean) {
   return {
     status: active ? (status === "idle" ? "loading" : status) : "idle",
     account: active ? account : null,
+    yandexLogin,
     refresh,
     setAccount,
   };

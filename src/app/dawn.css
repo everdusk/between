@@ -161,7 +161,7 @@ html[data-design="dawn"][data-scheme] .chapter-page .chapter-story nav button {
   & span { color: inherit; }
 }
 html[data-design="dawn"][data-scheme] .chapter-screen video { border-color: var(--glass-highlight); box-shadow: var(--brand-button-shadow),0 24px 68px -38px var(--glass-shadow); }
-.auth-provider:is(.auth-telegram, .auth-max) {
+.auth-provider {
   position: relative;
   isolation: isolate;
   background: transparent;
@@ -664,3 +664,33 @@ html[data-design="dawn"] .feeling-fill {
 .messenger-schemes .preference-control[aria-pressed="true"] { color: var(--foreground); box-shadow: var(--field-focus-shadow); border-color: var(--ring); }
 html[data-design="dawn"][data-scheme="night"]:not([data-telegram-theme]) { color-scheme: dark; }
 html[data-design="dawn"][data-scheme="day"]:not([data-telegram-theme]) { color-scheme: light; }
+.auth-provider.yandex-id-button {
+  --provider-fill: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 9999px;
+  color: #fff;
+  font: 500 16px/1.25 Arial, sans-serif;
+  cursor: pointer;
+}
+
+html[data-scheme="night"] .yandex-id-button {
+  --provider-fill: linear-gradient(180deg, #ebebee, #fff);
+  color: #000;
+}
+
+.yandex-id-button:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 3px;
+}
+
+.yandex-id-button:disabled {
+  cursor: default;
+  opacity: .6;
+}
