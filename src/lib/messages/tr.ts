@@ -182,7 +182,7 @@ export const tr: Catalog = {
   webOAuthTaken: "Bu hesap başka bir günlüğe bağlı.",
   botLinkOk: "Tamam. Bu sohbet günlüğünüze yazar.",
   botLinkBad: "Kod uymadı. Tarayıcıda, hesap kartından yenisini isteyin.",
-  botLoginAsk: "Site günlüğünüzü açmak istiyor. Sizseniz Giriş’e basın.",
+  botLoginAsk: "Between sitesinde oturum açmaya başladıysanız “Giriş” düğmesine dokunun ve tarayıcınıza dönün. Günlüğünüz orada açılacak.",
   botLoginYes: "Giriş",
   botLoginOk: "Tamam. Tarayıcıya dönün — günlük açık.",
   botLinkTaken: "Bu Telegram başka bir günlüğe bağlı.",

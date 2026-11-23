@@ -182,7 +182,7 @@ export const pt: Catalog = {
   webOAuthTaken: "Esta conta já está ligada a outro diário.",
   botLinkOk: "Pronto. Este chat escreve no seu diário.",
   botLinkBad: "O código não serviu. Peça outro no navegador, no cartão da conta.",
-  botLoginAsk: "O site pede para abrir o seu diário. Se forem vocês, toquem em Entrar.",
+  botLoginAsk: "Se começou a entrar na sua conta pelo site do Between, toque em «Entrar» e volte ao navegador. O seu diário vai abrir lá.",
   botLoginYes: "Entrar",
   botLoginOk: "Pronto. Voltem ao navegador — o diário já está aberto.",
   botLinkTaken: "Este Telegram já está ligado a outro diário.",

@@ -182,7 +182,7 @@ export const vi: Catalog = {
   webOAuthTaken: "Tài khoản này đã nối với nhật ký khác.",
   botLinkOk: "Xong. Chat này ghi vào nhật ký của bạn.",
   botLinkBad: "Mã không đúng. Hãy xin mã mới trên trình duyệt, ở thẻ tài khoản.",
-  botLoginAsk: "Trang web xin mở nhật ký của bạn. Nếu là bạn, hãy nhấn Vào.",
+  botLoginAsk: "Nếu bạn vừa đăng nhập trên trang web Between, hãy nhấn «Vào» rồi quay lại trình duyệt. Nhật ký của bạn sẽ mở ở đó.",
   botLoginYes: "Vào",
   botLoginOk: "Xong. Quay lại trình duyệt — nhật ký đã mở.",
   botLinkTaken: "Telegram này đã nối với nhật ký khác.",

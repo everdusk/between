@@ -182,7 +182,7 @@ export const uz: Catalog = {
   webOAuthTaken: "Bu hisob boshqa kundalikka ulangan.",
   botLinkOk: "Tayyor. Bu chat kundaligingizga yozadi.",
   botLinkBad: "Kod mos kelmadi. Brauzerda, hisob kartasida yangisini so‘rang.",
-  botLoginAsk: "Sayt kundaligingizni ochmoqchi. Agar bu siz bo‘lsangiz, «Kirish» ni bosing.",
+  botLoginAsk: "Agar Between saytida hisobingizga kirishni boshlagan bo‘lsangiz, «Kirish» tugmasini bosing va brauzerga qayting. Kundaligingiz o‘sha yerda ochiladi.",
   botLoginYes: "Kirish",
   botLoginOk: "Tayyor. Brauzerga qayting — kundalik ochiq.",
   botLinkTaken: "Bu Telegram boshqa kundalikka ulangan.",
