@@ -177,6 +177,9 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   const [malformedEmail, setMalformedEmail] = useState<string | null>(null);
   const [rejectedEmail, setRejectedEmail] = useState<{ value: string; reason: "taken" | "bad_email" } | null>(null);
   const [code, setCode] = useState("");
+  const resendAt = useRef(0);
+  const [resendSeconds, setResendSeconds] = useState(0);
+  const countingDown = resendSeconds > 0;
   const [error, setError] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -197,6 +200,17 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   useEffect(() => {
     if (mode === "code") codeRef.current?.focus();
   }, [mode]);
+
+  useEffect(() => {
+    if (!countingDown) return;
+    const tick = () => setResendSeconds(Math.max(0, Math.ceil((resendAt.current - Date.now()) / 1000)));
+    const timer = window.setInterval(tick, 1000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [countingDown]);
 
   useEffect(() => () => {
     maxPoll.current += 1;
@@ -434,8 +448,8 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
   async function register(event: { preventDefault: () => void }) {
     event.preventDefault();
+    if (busy || (mode === "code" && countingDown)) return;
     record("email_submitted", "email");
-    if (busy) return;
     const invalid = Object.keys(fieldErrors).find(id => fieldErrors[id]);
     if (invalid) {
       setError(null);
@@ -456,7 +470,12 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as { error?: string; retryAfterSeconds?: number };
+      if ((res.ok || data.error === "soon") && typeof data.retryAfterSeconds === "number") {
+        // eslint-disable-next-line react-hooks/purity -- start the timer on the registration response, inside the submit handler.
+        resendAt.current = Date.now() + data.retryAfterSeconds * 1000;
+        setResendSeconds(data.retryAfterSeconds);
+      }
       if (!res.ok) {
         record("error", "email", "register", registrationReason(data.error, res.status));
         if (mode === "login" && (data.error === "taken" || data.error === "bad_email")) {
@@ -677,7 +696,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
             }} onBlur={event => {
               const input = event.target;
               if (input instanceof HTMLInputElement && input.value && input.id in fieldErrors) checkField(input.id);
-            }} onSubmit={register}>
+            }} onSubmit={event => void register(event)}>
               <div>
                 <EmailField
                   id="web-register-email"
@@ -779,8 +798,9 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
             <Button type="submit" className="w-full" size="lg" disabled={busy || code.length !== 6}>
               {t("webOpenJournal")}
             </Button>
-            <button type="button" className="text-action mx-auto block w-fit py-1 text-sm text-muted-foreground" onClick={register}>
+            <button type="button" className="text-action mx-auto block w-fit py-1 text-sm text-muted-foreground disabled:cursor-default disabled:opacity-70" disabled={busy || countingDown} onClick={event => void register(event)}>
               {t("webResendCode")}
+              {countingDown && <span className="tabular-nums" dir="ltr">{` · ${Math.floor(resendSeconds / 60)}:${String(resendSeconds % 60).padStart(2, "0")}`}</span>}
             </button>
             <button
               type="button"
