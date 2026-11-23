@@ -8,6 +8,7 @@ import {
   PenLine,
   Plus,
   Waves,
+  LockKeyhole,
   Bookmark,
 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -33,7 +34,9 @@ export function WebWorkspace({
   footer,
   onCompose,
   personal,
+  guestBanner,
 }: {
+  guestBanner?: ReactNode;
   homeHref?: string;
   section: SectionId;
   onSection: (id: SectionId) => void;
@@ -95,10 +98,12 @@ export function WebWorkspace({
       {!blocked && (
         <nav className="desk-nav" aria-label={t("sections")}>
           {ids.map((id) => {
-            const Icon = sections[id][0];
+            const restricted = guestBanner && id !== "week" && id !== "journal";
+            const Icon = restricted ? LockKeyhole : sections[id][0];
             return (
               <button
                 key={id}
+                aria-label={restricted ? label(id) + " — после регистрации" : undefined}
                 aria-current={section === id ? "page" : undefined}
                 onClick={() => navigate(id)}
               >
@@ -114,7 +119,8 @@ export function WebWorkspace({
         <div className="desk-page">
           {blocked || (
             <>
-              {ids.map((id) => (
+              {guestBanner}
+              {ids.filter(id => !guestBanner || id === "week" || id === "journal").map((id) => (
                 <div key={id} className="desk-section" hidden={id !== section}>
                   {section === id && id !== "journal" && <h1 className="mb-5 font-display text-2xl sm:text-3xl">
                     {label(id)}

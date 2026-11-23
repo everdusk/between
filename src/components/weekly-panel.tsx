@@ -65,6 +65,7 @@ interface WeeklyPanelProps {
   maxInitData?: string;
   /** Browser session: the week model may run without Telegram init data. */
   cloud?: boolean;
+  guest?: boolean;
   disabled?: boolean;
 }
 
@@ -84,11 +85,12 @@ export function WeeklyPanel({
   initData,
   maxInitData = "",
   cloud,
+  guest = false,
   disabled,
 }: WeeklyPanelProps) {
   const { t, locale, feeling, slot, count } = useI18n();
   const pilotEnabled = Boolean(review);
-  const remote = Boolean(initData || maxInitData || cloud);
+  const remote = !guest && Boolean(initData || maxInitData || cloud);
   const [clock, setNow] = useState(() => new Date());
   const [history, setHistory] = useState<Date[]>([]);
   const now = history.at(-1) ?? clock;
@@ -306,6 +308,7 @@ export function WeeklyPanel({
   useEffect(() => {
     let cancelled = false;
     fileRef.current = null;
+    if (guest) return;
     const model = buildWeekPdfModel({
       todayKey,
       dayKeys: days,
@@ -352,7 +355,7 @@ export function WeeklyPanel({
     };
     // pdfSignature already names every input the sheet is built from.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pdfSignature]);
+  }, [pdfSignature, guest]);
 
   function savePdf() {
     const file = fileRef.current;
@@ -380,7 +383,7 @@ export function WeeklyPanel({
           disabled: !history.length,
           onClick: () => setHistory(prev => prev.slice(0, -1)),
         }}
-        action={
+        action={!guest &&
           <Button
             type="button"
             variant="ghost"
@@ -411,8 +414,8 @@ export function WeeklyPanel({
         dayKeys={days}
         entries={weekEntries}
         todayKey={todayKey}
-        patternTitle={t("briefPatternTitle")}
-        patternText={review ? "" : shownPattern}
+        patternTitle={guest ? "ИИ-обзор" : t("briefPatternTitle")}
+        patternText={guest ? "После регистрации, когда накопится больше записей, здесь появится ИИ-сводка. Она поможет заметить, какие чувства и ситуации повторяются." : review ? "" : shownPattern}
         patternPending={
           review || patternBody ||
           !patternWords ||
@@ -509,7 +512,7 @@ export function WeeklyPanel({
           const list = (byDate.get(day) ?? []).filter(
             (entry) => !activeTheme || shownEntryTags(entry).includes(activeTheme),
           );
-          if (activeTheme && list.length === 0) return null;
+          if ((guest || activeTheme) && list.length === 0) return null;
           const tone = list.find((entry) => entry.feelings.length > 0)?.feelings[0];
           const selected = day === selectedDay;
           return (

@@ -24,7 +24,6 @@ import { trackSurvey } from "@/lib/survey-analytics";
 export const introDraftKey = "between:intro:registration:v2";
 
 const steps = ["recent", "spectrum", "recent_reason", "current", "therapy", "topics_demo", "messengers", "bot_demo", "observation"] as const;
-export const introStepCount = steps.length + 1; // Registration follows the entry preview.
 
 const sampleDays = Array.from({length: 7}, (_, i) => "2026-11-" + String(9+i).padStart(2,"0"));
 const sampleFeelings: [time: string, mood: Feeling][][] = [
@@ -133,7 +132,7 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
     || (screen === "topics_demo" && therapy === "yes");
   return <GlassPanel className="space-y-5 p-6" data-intro-mascot={showMascot ? screen : undefined}>
     <IntroStepHeader backLabel={say("Назад", "Back")} onBack={step > 0 ? () => go(step - 1) : undefined}>
-      Between · {say("Знакомство","Getting to know you")} · {step+1}/{introStepCount}
+      Between · {say("Знакомство","Getting to know you")} · {step+1}/{steps.length}
     </IntroStepHeader>
     <div key={screen} className="intro-screen space-y-5" data-direction={direction}>
     <h1 className="font-display text-2xl">{question}</h1>

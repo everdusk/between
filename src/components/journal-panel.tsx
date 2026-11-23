@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Check, Pencil, Trash2, X } from "lucide-react";
+import { Bot, Check, LockKeyhole, Pencil, Trash2, X } from "lucide-react";
 import { DateNavigation } from "@/components/date-navigation";
 import { EntryCalendar } from "@/components/entry-calendar";
 import { FeelingPicker } from "@/components/feeling-picker";
@@ -28,6 +28,7 @@ interface JournalPanelProps {
   firstRecord?: LegacyIntroRecord | null;
   onFirstSaved?: () => void;
   hint?: React.ReactNode;
+  guest?: boolean;
   onReflect?: (id: string) => void;
   entries: JournalEntry[];
   onSave: (input: {
@@ -72,7 +73,7 @@ function dayMarks(entries: JournalEntry[]): Map<string, Feeling | null> {
 }
 
 export function JournalPanel({
-  hint, onReflect, pilotTopics,
+  hint, onReflect, guest, pilotTopics,
   entries,
   onSave,
   onDelete,
@@ -84,7 +85,11 @@ export function JournalPanel({
 }: JournalPanelProps) {
   const { t, locale, feeling: feelingLabel, slot } = useI18n();
   const today = toDateKey();
-  const [date, setDate] = useState(initialDate || today);
+  const latestDay = entries.reduce((latest, entry) =>
+    entry.date <= today && entry.date > latest ? entry.date : latest, "");
+  // Follow the imported or latest entry until the reader chooses another day.
+  const [pickedDay, setDate] = useState<string | null>(null);
+  const date = pickedDay ?? (initialDate || latestDay || today);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [feelings, setFeelings] = useState<Feeling[]>([]);
   const [body, setBody] = useState("");
@@ -165,7 +170,7 @@ export function JournalPanel({
       themeHidden: hidden,
     });
     if (ok) {
-      if (!editingId) trackAnalytics("note", initData);
+      if (!editingId && !guest) trackAnalytics("note", initData);
       setSavedFlash(true);
       window.setTimeout(() => setSavedFlash(false), 1800);
       resetForm();
@@ -272,7 +277,7 @@ export function JournalPanel({
             {dayEntries.map((entry) => {
               const linked = pilotTopics?.themes.filter(theme=>theme.quotes.some(q=>q.entryId===entry.id) ||
                 pilotTopics.links.some(l=>l.entryId===entry.id && l.themeId===theme.id)) ?? [];
-              const checkin = entry.source === "checkin" || !entry.body.trim();
+              const checkin = !entry.body.trim();
               const tone = entry.feelings[0];
               const themes = shownEntryTags(entry);
               const intro = introductions?.find(r => entry.id === "intro-answer-"+r.attempt);
@@ -361,7 +366,7 @@ export function JournalPanel({
                     </div>
                   )}
                   {linked.map(theme=><Button key={theme.id} className="mt-2 max-w-full whitespace-normal" variant="ghost" size="sm" onClick={()=>pilotTopics?.open(theme.id)}>{theme.title}</Button>)}
-                  {!linked.length && !checkin && entry.body.trim() && onReflect && <Button className="mt-2" variant="ghost" size="sm" onClick={()=>onReflect(entry.id)}>{t("deskReflection")}</Button>}
+                  {!linked.length && !checkin && entry.body.trim() && onReflect && <Button className="mt-2" variant="ghost" size="sm" onClick={()=>onReflect(entry.id)}>{guest && <LockKeyhole aria-hidden />}{t("deskReflection")}</Button>}
                 </li>
               );
             })}

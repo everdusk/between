@@ -1,3 +1,4 @@
+import { GUEST_STORAGE_KEY } from "./guest-launch";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { runInNewContext } from "node:vm";
@@ -58,14 +59,14 @@ describe("landing start mark", () => {
 });
 
 describe("landing surface", () => {
-  function boot(pathname: string, hash = "", search = "") {
+  function boot(pathname: string, hash = "", search = "", guest: string | null = null) {
     const attrs = new Map<string, string>([["data-splash", ""]]);
     const style = { textContent: WEB_SURFACE_CSS };
     let counters = 0;
     const context = {
       location: { pathname, hash, search },
       sessionStorage: { getItem: () => null },
-      localStorage: { getItem: () => "day" },
+      localStorage: { getItem: (key: string) => key === GUEST_STORAGE_KEY ? guest : "day" },
       document: {
         documentElement: {
           setAttribute: (k: string, v: string) => attrs.set(k, v),
@@ -82,6 +83,17 @@ describe("landing surface", () => {
     try { runInNewContext(YANDEX_METRIKA_SCRIPT, context); } catch { counters += 1; }
     return { attrs, style, counters };
   }
+
+  it("returns a guest to their diary at root before landing analytics run", () => {
+    const saved = JSON.stringify({ introductions: [{ attempt: "guest" }] });
+    const home = boot("/", "", "", saved);
+    assert.equal(home.attrs.get("data-journal"), "web");
+    assert.equal(home.counters, 0);
+    assert.equal(boot("/about", "", "", saved).attrs.has("data-landing-launch"), true);
+    for (const empty of [null, "invalid", '{"introductions":[]}']) {
+      assert.equal(boot("/", "", "", empty).attrs.has("data-landing-launch"), true);
+    }
+  });
 
   it("opens the branded browser workspace without enabling the landing recorder", () => {
     const { attrs, style, counters } = boot("/", "", "?start=1");
