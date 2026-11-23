@@ -3,8 +3,7 @@
 import { BrandLogo } from "./brand-logo";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LanguageSwitch } from "@/components/language-switch";
-import { LocaleProvider, useI18n } from "@/components/locale-provider";
+import { useI18n } from "@/components/locale-provider";
 import { Button, buttonVariants } from "@/components/ui/button";
 import "@/app/journal/theme.css";
 import { journalAuthHeaders } from "@/lib/journal-api";
@@ -76,7 +75,7 @@ export function DeleteJournal({
   );
 }
 
-function DeletePage() {
+export function DeleteData() {
   const { t } = useI18n();
   const [phase, setPhase] = useState<"loading" | "out" | "in" | "gone" | "down">("loading");
 
@@ -115,7 +114,6 @@ function DeletePage() {
           <a href="/" className="font-display text-lg text-foreground">
             <BrandLogo />
           </a>
-          <LanguageSwitch />
         </header>
         <section className="glass mt-8 rounded-[22px] px-5 py-6 sm:px-6">
           <h1 className="font-display text-2xl leading-tight tracking-tight">{t("deleteTitle")}</h1>
@@ -154,13 +152,5 @@ function DeletePage() {
         </section>
       </div>
     </article>
-  );
-}
-
-export function DeleteData() {
-  return (
-    <LocaleProvider telegramLanguage={null} initData="">
-      <DeletePage />
-    </LocaleProvider>
   );
 }

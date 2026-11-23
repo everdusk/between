@@ -6,15 +6,14 @@ import { BrandLogo } from "./brand-logo";
 import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound, LockKeyhole } from "lucide-react";
-import { LanguageSwitch } from "@/components/language-switch";
-import { LocaleProvider, useI18n } from "@/components/locale-provider";
+import { useI18n } from "@/components/locale-provider";
 import { PasswordField } from "@/components/password-field";
 import { Button } from "@/components/ui/button";
 import "@/app/journal/theme.css";
 import { LEGAL_SURFACE_CSS } from "@/lib/landing";
 import { markSplashReady } from "@/lib/splash";
 
-function ResetForm() {
+export function ResetPassword() {
   const { t } = useI18n();
   const router = useRouter();
   const token = useSyncExternalStore(
@@ -86,7 +85,6 @@ function ResetForm() {
           <a href="/" className="font-display text-lg text-foreground">
             <BrandLogo />
           </a>
-          <LanguageSwitch />
         </header>
         <section className="glass mt-8 rounded-[22px] px-5 py-6 sm:px-6">
           <h1 className="font-display text-2xl leading-tight tracking-tight">{t("webResetTitle")}</h1>
@@ -139,13 +137,5 @@ function ResetForm() {
         </section>
       </div>
     </article>
-  );
-}
-
-export function ResetPassword() {
-  return (
-    <LocaleProvider telegramLanguage={null} initData="">
-      <ResetForm />
-    </LocaleProvider>
   );
 }

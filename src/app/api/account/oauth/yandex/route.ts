@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   const params = new URL(req.url).searchParams;
   const survey = params.get("from") === "survey";
   const create = params.has("intent") ? params.get("intent") === "create" : survey;
-  const login = beginYandex(config.id, config.origin, secret, survey, params.get("lang") === "en" ? "en" : "ru", create);
+  const login = beginYandex(config.id, config.origin, secret, survey, "ru", create);
   await rememberProviderAttempt(req, "yandex", login.state, 2 * loginTtl);
   const response = NextResponse.json({ url: login.url }, { headers: { "Cache-Control": "no-store" } });
   response.cookies.set(pendingCookie, login.cookie, { ...pendingOptions, maxAge: loginTtl });

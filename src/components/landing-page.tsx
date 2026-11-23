@@ -6,9 +6,8 @@ import { BrandLogo } from "./brand-logo";
 import Image from "next/image";
 import { MessagesSquare, NotebookPen } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { LanguageSwitch } from "./language-switch";
 import { SchemeSwitch, useDemoMediaDirectory } from "./scheme-switch";
-import { LocaleProvider, useI18n } from "./locale-provider";
+import { useI18n } from "./locale-provider";
 import { trackSurvey } from "@/lib/survey-analytics";
 import "./web-theme.css";
 import "./landing-chapters.css";
@@ -60,10 +59,6 @@ const englishChapters = [
   { label: "Insights", title: "What stands out.", body: "What makes more sense now? What would you like to explore? Save a thought or a question while it's fresh. Come back to it on your own or at your next therapy session." },
   { label: "Changes", title: "My topics.", body: "When you know what you’d like to try, tap the checkmark beside the topic and write it down. “Next time, I’ll say I need a moment. I want to give myself time to work out what I want.”" },
 ] as const;
-
-export function LandingPage() {
-  return <LocaleProvider publicLanguages landing><LandingContent /></LocaleProvider>;
-}
 
 function ChapterHeading({ title, clip }: { title: string; clip: string }) {
   const [visible, setVisible] = useState(title);
@@ -125,7 +120,7 @@ const gifDurations = {
   en: [5120, 6870, 6010, 7120, 9510, 11510],
 };
 
-function LandingContent() {
+export function LandingPage() {
   const { locale } = useI18n();
   const en = locale === "en";
   const [chapter, setChapter] = useState(0);
@@ -185,7 +180,6 @@ function LandingContent() {
           <b><BrandLogo /></b>
           <div className="flex items-center gap-2">
             <SchemeSwitch />
-            <LanguageSwitch />
             <a className="glass-chrome preference-control" href={`/?login=1&lang=${locale}`}>{en ? "Sign in" : "Войти"}</a>
           </div>
         </header>

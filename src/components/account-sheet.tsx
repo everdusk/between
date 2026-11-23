@@ -5,7 +5,6 @@ import type { InvoiceStatuses } from "@twa-dev/types";
 import { CircleUser, X } from "lucide-react";
 import { DeleteJournal } from "@/components/delete-data";
 import { FeedbackForm } from "@/components/feedback-form";
-import { LanguageSwitch } from "@/components/language-switch";
 import { PasswordChange } from "@/components/password-change";
 import { SchemeSwitch } from "@/components/scheme-switch";
 import { WebAccountCard } from "@/components/web-account-card";
@@ -189,7 +188,6 @@ export function AccountSheet({
           {profileEditor}
           <div className="flex flex-wrap items-center gap-2">
             <SchemeSwitch host={inTelegram ? "telegram" : inMax ? "max" : undefined} />
-            <LanguageSwitch inline />
           </div>
 
           <div className="space-y-3">
