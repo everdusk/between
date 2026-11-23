@@ -694,3 +694,11 @@ html[data-scheme="night"] .yandex-id-button {
   cursor: default;
   opacity: .6;
 }
+
+@media (max-width: 760px) {
+  html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) .desk-content > footer {
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
