@@ -1,6 +1,16 @@
 import type { Catalog } from "./ru";
 
 export const fa: Catalog = {
+  reviewNoTopics: "موضوع‌های یادداشت‌هایتان اینجا نمایش داده می‌شوند.",
+  reviewThought: "وقتی این یادداشت‌ها را کنار هم می‌خوانید چه می‌بینید؟",
+  reviewWeek: "آنچه این هفته ذهنتان را مشغول کرد",
+  reviewChange: "چه چیزی تغییر کرد",
+  reviewSeen: "پنهان کردن از مرور",
+  reviewStill: "آیا «{topic}» هنوز روی شما اثر می‌گذارد؟",
+  reviewReturned: "«{topic}» دوباره مطرح شد",
+  reviewPreviously: "دفعهٔ قبل نوشتید",
+  reviewCheck: "موضوع‌هایی برای پیگیری",
+  reviewWhatChanged: "برای شما چه چیزی تغییر کرد؟",
   deskOverview: "مرور",
   reflectShame: "پیش چه کسی شرمنده بودید؟",
   reflectSad: "برای چه کسی یا چه چیزی غمگین بودید؟",

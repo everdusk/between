@@ -1,3 +1,6 @@
+import { isReviewJournal } from "./review-owner";
+import { archivedForEntry, applyReviewVerdict, reviewPdfText } from "./theme-review";
+import { translate } from "./messages";
 import { weekKey } from "./dates";
 import type { LocaleId } from "./i18n";
 import { mergeStores } from "./journal-api";
@@ -46,7 +49,7 @@ export type SessionSheet = {
 export type SessionSheetAsk = (input: {
   facts: string;
   stamp: string;
-  kind: "judge" | "dedup" | "pattern";
+  kind: "judge" | "dedup" | "pattern" | "reviewJudge";
 }) => Promise<{ text: string | null }>;
 
 async function defaultAsk(
@@ -77,6 +80,7 @@ export async function prepareSessionSheet(
   userId: string,
   ask?: SessionSheetAsk,
 ): Promise<SessionSheet> {
+  const pilot = await isReviewJournal(userId);
   const run = ask ?? ((input) => defaultAsk(userId, locale, input));
   const period = observationWindow(store.sessions, store.entries, todayKey, now, store.profile?.therapy === false ? null : store.sessionPlan);
   const weekEntries = store.entries.filter((entry) => entryInWindow(entry, period));
@@ -96,17 +100,18 @@ export async function prepareSessionSheet(
     judgedEntryIds.push(entry.id);
     let text: string | null = null;
     try {
-      const facts = judgeFacts(state.themes, entry);
+      const archived=pilot ? state.themes.filter(t=>archivedForEntry(t,entry)) : [];
+      const facts = judgeFacts(state.themes, entry, archived);
       text = (await run({
         facts,
         stamp: modelRequestStamp("j", stamp, 0, facts),
-        kind: "judge",
+        kind: archived.length ? "reviewJudge" : "judge",
       })).text;
     } catch {
       text = null;
     }
     const verdict = text ? parseJudgeVerdict(text) : null;
-    const applied = applyVerdict(
+    const applied = pilot ? applyReviewVerdict(state,entry,verdict ?? fallbackVerdict(entry)) : applyVerdict(
       state,
       entry,
       verdict ?? fallbackVerdict(entry),
@@ -156,6 +161,10 @@ export async function prepareSessionSheet(
     patternBase: { stamp: prep?.patternStamp, text: stored },
     weekKey: period.weekKey,
   };
+  if(pilot && prep?.reviewSummary){
+    const text=reviewPdfText(prep.reviewSummary.text,weekEntries,store.entries,translate(locale,"reviewChange"));
+    if(text) return {...carried,patternText:text,freshPattern:false};
+  }
   if (pending.length === 0 && prep?.patternStamp === patternStamp && patternReplyUsable(stored)) {
     return { ...carried, patternText: stored, freshPattern: false };
   }

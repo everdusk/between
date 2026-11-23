@@ -127,6 +127,10 @@ function normalizeWeekPrep(raw: unknown): WeekPrep | null {
     next.patternText = prep.patternText;
     next.patternStamp = prep.patternStamp;
   }
+  const review = asRecord(prep.reviewSummary);
+  if (review && typeof review.stamp === "string" && typeof review.text === "string" && review.text.length<=16000) {
+    next.reviewSummary = {stamp:review.stamp,text:review.text};
+  }
   const backlog = normalizeBacklog(prep);
   if (backlog) {
     next.backlog = backlog.backlog;
@@ -290,6 +294,8 @@ function normalizeQuote(raw: unknown): ThemeQuote | null {
   };
 }
 
+import { reviewEvents } from "./theme-review";
+
 function normalizeTheme(raw: unknown): SessionTheme | null {
   const theme = asRecord(raw);
   if (!theme) return null;
@@ -336,6 +342,8 @@ function normalizeTheme(raw: unknown): SessionTheme | null {
     outcome: typeof theme.outcome === "string" ? theme.outcome : undefined,
     updatedAt: typeof theme.updatedAt === "string" ? theme.updatedAt : new Date(0).toISOString(),
   };
+  const review = reviewEvents(theme.review);
+  if (review.length) next.review = review;
   if (peakFeeling) next.peakFeeling = peakFeeling;
   if (theme.list === "personal" || theme.list === "therapy") next.list = theme.list;
   if (theme.observation === "familiar" || theme.observation === "hidden") next.observation = theme.observation;

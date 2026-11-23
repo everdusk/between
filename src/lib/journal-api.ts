@@ -1,3 +1,4 @@
+import { reviewEvents } from "./theme-review";
 import type { LocaleId } from "./i18n";
 import { normalizeStore } from "./migrate";
 import {
@@ -11,7 +12,7 @@ import {
 } from "./types";
 
 export type JournalFetchResult =
-  | { ok: true; store: TherapyStore; timeZone: string | null; cacheId:string }
+  | { ok: true; store: TherapyStore; timeZone: string | null; cacheId:string; reviewPilot:boolean }
   | { ok: false; status: number; error: string };
 
 /** Headers that name whose journal this is. A MAX launch string wins over a website cookie. */
@@ -48,6 +49,7 @@ export async function fetchJournal(
       ok?: boolean;
       store?: unknown;
       cacheId?: unknown;
+      reviewPilot?: boolean;
       timeZone?: string | null;
     };
     const store = normalizeStore(data.store);
@@ -58,6 +60,7 @@ export async function fetchJournal(
       ok: true,
       store,
       cacheId:data.cacheId,
+      reviewPilot:data.reviewPilot === true,
       timeZone: data.timeZone ?? null,
     };
   } catch {
@@ -96,7 +99,7 @@ export async function requestBrief(
   facts: string,
   stamp: string,
   locale: LocaleId = "ru",
-  kind: "brief" | "backlog" | "themes" | "judge" | "dedup" | "pattern" = "brief",
+  kind: "brief" | "backlog" | "themes" | "judge" | "dedup" | "pattern" | "review" | "reviewJudge" = "brief",
   maxInitData = "",
 ): Promise<
   | { ok: true; text: string | null; reason?: string }
@@ -158,6 +161,7 @@ function mergeWeekPrep(prev: WeekPrep, item: WeekPrep): WeekPrep {
   const newer = prev.updatedAt < item.updatedAt ? item : prev;
   const older = newer === item ? prev : item;
   const next: WeekPrep = { ...newer };
+  if (!next.reviewSummary && older.reviewSummary) next.reviewSummary = older.reviewSummary;
   if (!filled(next.talkNotes) && filled(older.talkNotes)) next.talkNotes = older.talkNotes;
   if (!filled(next.briefText) && filled(older.briefText)) {
     next.briefText = older.briefText;
@@ -285,6 +289,13 @@ export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
       if (keep !== old && !redirects.has(old)) redirects.set(old, keep);
     }
   }
+  const histories = new Map<string, NonNullable<SessionTheme["review"]>>();
+  for (const theme of [...(a.themes ?? []), ...(b.themes ?? [])]) {
+    if (theme.review?.length) {
+      const id = resolved(theme.id);
+      histories.set(id, reviewEvents([...(histories.get(id) ?? []), ...theme.review]));
+    }
+  }
   const aliases = new Map<string, string[]>();
   for (const old of redirects.keys()) {
     const keep = resolved(old);
@@ -313,6 +324,8 @@ export function mergeStores(a: TherapyStore, b: TherapyStore): TherapyStore {
     sessionPlan: mergePlan(a.sessionPlan, b.sessionPlan),
     notify: mergeNotify(a.notify, b.notify),
     themes: themes.filter((theme) => !redirects.has(theme.id)).map((theme) => {
+      const review = histories.get(theme.id);
+      if (review) theme = { ...theme, review };
       const mergedIds = aliases.get(theme.id);
       const quotes = theme.quotes.filter((q) => !goneEntries.has(q.entryId) &&
         (!classified.has(q.entryId) || pairs.has(JSON.stringify([q.entryId, theme.id]))));

@@ -1,6 +1,16 @@
 import type { Catalog } from "./ru";
 
 export const uk: Catalog = {
+  reviewNoTopics: "Тут з’являться теми з ваших записів.",
+  reviewThought: "Що ви помічаєте, коли читаєте ці записи разом?",
+  reviewWeek: "Що займало ваші думки цього тижня",
+  reviewChange: "Що змінилося",
+  reviewSeen: "Прибрати з огляду",
+  reviewStill: "Тема «{topic}» досі вас зачіпає?",
+  reviewReturned: "Знову з’явилася тема «{topic}»",
+  reviewPreviously: "Минулого разу ви записали",
+  reviewCheck: "До чого повернутися",
+  reviewWhatChanged: "Що для вас змінилося?",
   deskOverview: "Огляд",
   reflectShame: "Перед ким ви відчували сором?",
   reflectSad: "За ким чи за чим ви сумували?",

@@ -1,6 +1,16 @@
 import type { Catalog } from "./ru";
 
 export const ar: Catalog = {
+  reviewNoTopics: "ستظهر هنا مواضيع من تدويناتك.",
+  reviewThought: "ماذا تلاحظ عند قراءة هذه التدوينات معًا؟",
+  reviewWeek: "ما شغل بالك هذا الأسبوع",
+  reviewChange: "ما الذي تغيّر",
+  reviewSeen: "إخفاء من الملخص",
+  reviewStill: "هل ما زال موضوع «{topic}» يؤثر فيك؟",
+  reviewReturned: "عاد موضوع «{topic}» للظهور",
+  reviewPreviously: "كتبت في المرة الماضية",
+  reviewCheck: "مواضيع للعودة إليها",
+  reviewWhatChanged: "ما الذي تغيّر بالنسبة إليك؟",
   deskOverview: "نظرة عامة",
   reflectShame: "أمام من شعرت بالخجل؟",
   reflectSad: "على من أو ماذا حزنت؟",

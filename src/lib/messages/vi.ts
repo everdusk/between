@@ -1,6 +1,16 @@
 import type { Catalog } from "./ru";
 
 export const vi: Catalog = {
+  reviewNoTopics: "Chủ đề từ các ghi chép sẽ xuất hiện ở đây.",
+  reviewThought: "Bạn nhận thấy điều gì khi đọc các ghi chép này cùng nhau?",
+  reviewWeek: "Điều bạn suy nghĩ trong tuần này",
+  reviewChange: "Điều đã thay đổi",
+  reviewSeen: "Ẩn khỏi tổng kết",
+  reviewStill: "“{topic}” vẫn còn ảnh hưởng đến bạn chứ?",
+  reviewReturned: "“{topic}” lại xuất hiện",
+  reviewPreviously: "Lần trước bạn đã viết",
+  reviewCheck: "Nhìn lại",
+  reviewWhatChanged: "Điều gì đã thay đổi với bạn?",
   deskOverview: "Tổng quan",
   reflectShame: "Bạn cảm thấy xấu hổ trước ai?",
   reflectSad: "Bạn buồn vì ai hay điều gì?",

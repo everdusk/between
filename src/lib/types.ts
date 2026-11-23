@@ -97,6 +97,7 @@ export interface ThemeLink {
  * the backlog is the list of these themes.
  */
 export interface SessionTheme {
+  review?: import("./theme-review").ReviewEvent[];
   /** Previously consolidated topics. Older snapshots can still refer to these IDs. */
   mergedIds?: string[];
   outcome?: string;
@@ -125,6 +126,7 @@ export interface SessionTheme {
 }
 
 export interface WeekPrep {
+  reviewSummary?: {stamp:string;text:string};
   weekKey: string;
   talkNotes: string;
   updatedAt: string;

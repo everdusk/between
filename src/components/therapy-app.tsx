@@ -17,6 +17,7 @@ import { SessionsPanel } from "@/components/sessions-panel";
 import { WebAccountGate } from "@/components/web-account-gate";
 import { readIntroDraft, type IntroDraft, type LegacyIntroRecord } from "@/lib/intro-record";
 import { IntroCard, IntroReflection, introDraftKey } from "./intro-reflection";
+import { ThemeReflection } from "./weekly-review";
 import { ReflectionPanel } from "@/components/journal-explore";
 import { ProfileEditor } from "./journal-intro";
 import { SessionBacklog } from "./session-backlog";
@@ -221,6 +222,8 @@ function TherapyShell({
     saveProfile,
     importIntroduction,
     saveReflection,
+    reviewPilot,
+    saveReview,
     restoreTheme,
     judgeSkipped,
   } = useTherapyStore({
@@ -313,6 +316,7 @@ function TherapyShell({
   }, [shellReady]);
 
   const [entryId, setEntryId] = useState("");
+  const [topicId,setTopicId] = useState("");
   const [hideBot, setHideBot] = useState(false);
   const signInLink = useSyncExternalStore(
     subscribeLaunch,
@@ -499,7 +503,10 @@ function TherapyShell({
       <WebWorkspace
         homeHref={telegram.ready && !telegram.inTelegram && !inMax ? `/?lang=${locale}` : undefined}
         section={personal && section === "sessions" ? "topics" : section}
-        onSection={selectSection}
+        onSection={next=>{
+          if(reviewPilot && next==="reflection") setEntryId("");
+          selectSection(next);
+        }}
         tools={accountButton}
         footer={footer}
         blocked={blocked}
@@ -511,6 +518,7 @@ function TherapyShell({
               <WeekTab active={section === "week"} {...accessProps}>
                 {section === "week" && hint}
                 <WeeklyPanel
+                  review={reviewPilot ? saveReview : undefined}
                   inMessenger={inMax || telegram.inTelegram}
                   entries={store.entries}
                   sessions={
@@ -545,10 +553,16 @@ function TherapyShell({
               onFirstSaved={finishIntroEditor}
               composeRequest={composeRequest}
               hint={section === "journal" && hint}
+              pilotTopics={reviewPilot ? {themes:store.themes,links:store.themeLinks,open:id=>{
+                setTopicId(id);setEntryId("");selectSection("reflection");
+              }} : undefined}
               onReflect={reflect}
             />
           ),
-          reflection: (
+          reflection: reviewPilot && !entryId && store.themes.length ? (
+            <ThemeReflection themes={store.themes} entries={store.entries} links={store.themeLinks}
+              save={saveReview} selected={topicId} onSelect={setTopicId}/>
+          ) : (
             <ReflectionPanel
               selected={entryId}
               store={store}
@@ -563,6 +577,7 @@ function TherapyShell({
               links={store.themeLinks}
               disabled={disabled}
               personal={personal}
+              reviewPilot={reviewPilot}
               onRestore={restoreTheme}
               onDiscuss={setThemeDiscussed}
               onDismiss={dismissSessionTheme}

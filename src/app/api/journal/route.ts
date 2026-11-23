@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isReviewOwner } from "@/lib/review-owner";
 import { actorFromRequest } from "@/lib/account-actor";
 import { trackServerEvent } from "@/lib/analytics";
 import { applyJournalWrite, entriesHeld } from "@/lib/journal-api";
@@ -50,6 +51,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     ok: true,
     cacheId,
+    reviewPilot: await isReviewOwner(actor),
     store: store ?? emptyStore(),
     timeZone,
   });
@@ -82,6 +84,9 @@ export async function PUT(req: Request) {
     );
   }
 
+  if (store.themes.some(theme=>theme.review?.length) && !await isReviewOwner(actor)) {
+    for (const theme of store.themes) delete theme.review;
+  }
   const dropIds = (value: unknown) =>
     Array.isArray(value)
       ? value

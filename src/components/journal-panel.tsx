@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { introEntryBody, introTranscript, type LegacyIntroRecord, type IntroRecord } from "@/lib/intro-record";
 
 interface JournalPanelProps {
+  pilotTopics?: {themes: import("@/lib/types").SessionTheme[]; links: import("@/lib/types").ThemeLink[]; open:(id:string)=>void};
   initialDate?: string;
   introductions?: IntroRecord[];
   firstRecord?: LegacyIntroRecord | null;
@@ -71,7 +72,7 @@ function dayMarks(entries: JournalEntry[]): Map<string, Feeling | null> {
 }
 
 export function JournalPanel({
-  hint, onReflect,
+  hint, onReflect, pilotTopics,
   entries,
   onSave,
   onDelete,
@@ -269,6 +270,8 @@ export function JournalPanel({
         ) : (
           <ul className="space-y-3">
             {dayEntries.map((entry) => {
+              const linked = pilotTopics?.themes.filter(theme=>theme.quotes.some(q=>q.entryId===entry.id) ||
+                pilotTopics.links.some(l=>l.entryId===entry.id && l.themeId===theme.id)) ?? [];
               const checkin = entry.source === "checkin" || !entry.body.trim();
               const tone = entry.feelings[0];
               const themes = shownEntryTags(entry);
@@ -357,7 +360,8 @@ export function JournalPanel({
                       ))}
                     </div>
                   )}
-                  {!checkin && entry.body.trim() && onReflect && <Button className="mt-2" variant="ghost" size="sm" onClick={()=>onReflect(entry.id)}>{t("deskReflection")}</Button>}
+                  {linked.map(theme=><Button key={theme.id} className="mt-2 max-w-full whitespace-normal" variant="ghost" size="sm" onClick={()=>pilotTopics?.open(theme.id)}>{theme.title}</Button>)}
+                  {!linked.length && !checkin && entry.body.trim() && onReflect && <Button className="mt-2" variant="ghost" size="sm" onClick={()=>onReflect(entry.id)}>{t("deskReflection")}</Button>}
                 </li>
               );
             })}
