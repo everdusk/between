@@ -8,9 +8,8 @@ import { BotChatPermission, BotChatSheet } from "@/components/bot-chat-gate";
 import { JournalPanel } from "@/components/journal-panel";
 import { JournalSkeleton } from "@/components/journal-skeleton";
 import { AccountButton, AccountSheet } from "@/components/account-sheet";
-import { LanguageSwitch } from "@/components/language-switch";
 import { LegalLinks } from "@/components/legal-links";
-import { LocaleProvider, useI18n } from "@/components/locale-provider";
+import { useI18n } from "@/components/locale-provider";
 import { SchemeSwitch } from "@/components/scheme-switch";
 import { useMaxScheme } from "@/hooks/use-max-scheme";
 import { SessionsPanel } from "@/components/sessions-panel";
@@ -76,30 +75,18 @@ export function TherapyApp({ webFirst = false }: { webFirst?: boolean }) {
   const web = useWebAccount(webEntry && telegram.ready && !telegram.inTelegram);
   const [erased, setErased] = useState(false);
   const [maxLaunch, setMaxLaunch] = useState<string | null>(null);
+  if (erased) return <ErasedJournal />;
   return (
-    <LocaleProvider
-      telegramLanguage={telegram.user?.language_code}
-      initData={telegram.inTelegram ? telegram.initData : ""}
-      maxInitData={inMax ? maxLaunch ?? "" : ""}
-      webAccount={!inMax && !telegram.inTelegram ? web.account?.email : undefined}
-      lockLocale={null}
-      publicLanguages={webFirst && !inMax && !telegram.inTelegram && !web.account}
-    >
-      {erased ? (
-        <ErasedJournal />
-      ) : (
-        <TherapyShell
-          maxLaunch={maxLaunch}
-          setMaxLaunch={setMaxLaunch}
-          web={web}
-          webEntry={webEntry}
-          onErased={() => setErased(true)}
-          telegram={telegram}
-          inMax={inMax}
-          webFirst={webFirst && !telegram.inTelegram && !inMax}
-        />
-      )}
-    </LocaleProvider>
+    <TherapyShell
+      maxLaunch={maxLaunch}
+      setMaxLaunch={setMaxLaunch}
+      web={web}
+      webEntry={webEntry}
+      onErased={() => setErased(true)}
+      telegram={telegram}
+      inMax={inMax}
+      webFirst={webFirst && !telegram.inTelegram && !inMax}
+    />
   );
 }
 
@@ -407,10 +394,7 @@ function TherapyShell({
   }
   const signedOutWeb = !inMax && !telegram.inTelegram && !web.account;
   const accountButton = signedOutWeb ? (
-    <>
-      <SchemeSwitch />
-      <LanguageSwitch />
-    </>
+    <SchemeSwitch />
   ) : (
     <AccountButton
       solid={!telegram.inTelegram}

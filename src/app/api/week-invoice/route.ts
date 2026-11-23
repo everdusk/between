@@ -9,9 +9,6 @@ import {
   type PremiumPlan,
 } from "@/lib/week-access";
 
-import { resolveJournalId } from "@/lib/web-account-store";
-import { loadUserLocale } from "@/lib/redis";
-import { resolveBotLocale } from "@/lib/i18n";
 import { translate } from "@/lib/messages";
 
 function readPlan(raw: unknown): PremiumPlan {
@@ -43,12 +40,10 @@ export async function POST(req: Request) {
 
   const monthly = starPriceFromEnv(process.env.WEEK_STAR_PRICE);
   const amount = planPrice(monthly, plan);
-  const owner = await resolveJournalId(validated.user.id);
-  const locale = resolveBotLocale(await loadUserLocale(owner), null, validated.user.language_code);
-  const label = translate(locale, plan === "month" ? "payStars" : plan === "quarter" ? "payQuarter" : "payYear", { price: amount });
+  const label = translate("ru", plan === "month" ? "payStars" : plan === "quarter" ? "payQuarter" : "payYear", { price: amount });
   const created = await telegramCall<string>("createInvoiceLink", {
     title: "Between",
-    description: label + ". " + translate(locale, plan === "month" ? "starsRenewal" : "starsOnce"),
+    description: label + ". " + translate("ru", plan === "month" ? "starsRenewal" : "starsOnce"),
     payload: WEEK_PLAN_PAYLOAD[plan],
     provider_token: "",
     currency: "XTR",

@@ -3,14 +3,13 @@
 import { BrandLogo } from "./brand-logo";
 import { useLayoutEffect } from "react";
 import Link from "next/link";
-import { LanguageSwitch } from "@/components/language-switch";
-import { LocaleProvider, useI18n } from "@/components/locale-provider";
+import { useI18n } from "@/components/locale-provider";
 import "@/app/journal/theme.css";
 import { LEGAL_SURFACE_CSS } from "@/lib/landing";
 import { legalDocument, type LegalKind } from "@/lib/legal";
 import { markSplashReady } from "@/lib/splash";
 
-function LegalArticle({ kind }: { kind: LegalKind }) {
+export function LegalDocument({ kind }: { kind: LegalKind }) {
   const { locale, t } = useI18n();
   const doc = legalDocument(kind, locale);
   const links = [["terms", "legalTerms"], ["privacy", "legalPrivacy"], ["personal-data", "legalProcessing"]] as const;
@@ -33,7 +32,6 @@ function LegalArticle({ kind }: { kind: LegalKind }) {
           <a href="/" className="font-display text-lg text-foreground">
             <BrandLogo />
           </a>
-          <LanguageSwitch />
         </header>
         <nav className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-sm">
           {links.filter(([path]) => path !== kind).map(([path, label]) =>
@@ -61,13 +59,5 @@ function LegalArticle({ kind }: { kind: LegalKind }) {
         </div>
       </div>
     </article>
-  );
-}
-
-export function LegalDocument({ kind }: { kind: LegalKind }) {
-  return (
-    <LocaleProvider telegramLanguage={null} initData="">
-      <LegalArticle kind={kind} />
-    </LocaleProvider>
   );
 }
