@@ -112,7 +112,7 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
     setMoment(markMoment());
     go(step+1);
   }
-  const topicsMedia = directory && `${directory}/quiz-topics-${therapy === "yes" ? "therapy" : "personal"}-${en ? "en" : "ru"}`;
+  const topicsScreenshot = directory && `${directory}/quiz-topics-${therapy === "yes" ? "therapy" : "personal"}-${language}.webp`;
   const question = screen === "therapy_first" ? say("Вы сейчас занимаетесь с психотерапевтом?","Are you seeing a therapist?")
     : screen === "topics_demo" ? (therapy === "yes" ? say("Что взять на следующий сеанс?","What would you like to bring to therapy?") : say("К какой мысли вы возвращаетесь?","What keeps coming up for you?"))
     : screen === "messengers" ? say("Какими мессенджерами вы пользуетесь?","Which messaging apps do you use?")
@@ -136,19 +136,11 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
     {screen==="therapy_first" && <div className="flex flex-wrap gap-2">{option(say("Да","Yes"),()=>{setTherapy("yes");go(step+1)})}{option(say("Нет","No"),()=>{setTherapy("no");go(step+1)})}</div>}
     {screen==="topics_demo" && <>
       <p>{therapy === "yes"
-        ? say("Когда в нескольких записях звучит одна и та же забота, ИИ соберёт их в тему к терапии. Перед сеансом можно открыть тему и вспомнить конкретные моменты.", "When the same concern comes up across entries, AI groups them into a topic for therapy. Open it before your session to recall the moments you want to talk about.")
+        ? say("Когда в нескольких записях звучит одна и та же проблема, ИИ соберёт их в тему к терапии. Перед сеансом можно открыть тему и вспомнить конкретные моменты.", "When the same problem comes up across entries, AI groups them into a topic for therapy. Open it before your session to recall the moments you want to talk about.")
         : say("ИИ поможет заметить, что вас волнует чаще всего. Записи о разных событиях соберутся в общую тему в разделе «На подумать». К ней можно вернуться в своём темпе.", "AI helps you spot concerns you keep coming back to. Entries about different events come together under a topic in For reflection, ready to revisit at your own pace.")}</p>
-      <figure className="space-y-2">
-        <figcaption className="text-sm text-muted-foreground">{say("Пример из дневника","Example from the journal")}</figcaption>
-        <video key={topicsMedia} className="block w-full rounded-2xl" muted playsInline controls preload="metadata"
-          poster={topicsMedia ? topicsMedia + ".webp" : undefined} src={topicsMedia ? topicsMedia + ".mp4" : undefined}
-          aria-label={say("Тема раскрывается и показывает две связанные записи", "A topic opens to show its two linked entries")}
-          onLoadedMetadata={event => {
-            if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-              void event.currentTarget.play().catch(() => {});
-            }
-          }} />
-      </figure>
+      {topicsScreenshot && <Image src={topicsScreenshot} width={582} height={455} unoptimized
+        className="block h-auto w-full rounded-2xl"
+        alt={say("Открытая тема «Почему я так быстро говорю „да“?» и две связанные записи", "An expanded topic with two related journal entries")} />}
       <Button className="ms-auto flex w-fit" data-confirm="" onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
     </>}
     {screen==="messengers" && <>
