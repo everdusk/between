@@ -444,6 +444,7 @@ function TherapyShell({
         key={signInLink ? "sign-in" : "onboarding"}
         surveyAttempt={intro?.attempt}
         compact
+        yandexLogin={webFirst && web.yandexLogin}
         initialLogin={signInLink}
         onSignedIn={web.setAccount}
       /></div>

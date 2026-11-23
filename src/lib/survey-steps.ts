@@ -29,8 +29,8 @@ export function surveyProperties(data: Record<string, unknown>): Record<string, 
   if (data.event === "web_registration_step") {
     if (typeof data.attempt !== "string" || !/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(data.attempt) ||
         (data.source !== "direct" && data.source !== "survey") ||
-        typeof data.stage !== "string" || !["form_view","email_started","email_submitted","code_requested","code_submitted","email_registered","messenger_started","messenger_link_received","signed_in","error","result_view"].includes(data.stage) ||
-        typeof data.method !== "string" || !["form","email","password","telegram","max"].includes(data.method)) return null;
+        typeof data.stage !== "string" || !["form_view","email_started","email_submitted","code_requested","code_submitted","email_registered","oauth_started","messenger_started","messenger_link_received","signed_in","error","result_view"].includes(data.stage) ||
+        typeof data.method !== "string" || !["form","email","password","telegram","max","yandex"].includes(data.method)) return null;
     return { ...common, attempt_id: data.attempt, registration_source: data.source, registration_step: data.stage, method: data.method,
       ...(data.stage === "error" && authOperations.some(op => op === data.operation)
         ? { error_operation: data.operation, error_reason: registrationReason(data.reason) } : {}),

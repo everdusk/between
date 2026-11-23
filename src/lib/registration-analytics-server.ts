@@ -34,16 +34,19 @@ async function registrationContext(req: Request): Promise<Context | null> {
   return { attempt, device, source, locale };
 }
 
-async function capture(context: Context, method: Messenger | "email", stage: string) {
+type YandexError = "provider_error" | "taken" | "server_error";
+
+async function capture(context: Context, method: Messenger | "email" | "yandex", stage: string, reason?: YandexError) {
   const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim() || process.env.APP_SECRET?.trim();
   if (pepper) await captureSurveyEvent("web_registration_step", {
     messenger: "web", survey_version: 1, locale: context.locale, attempt_id: context.attempt,
     registration_source: context.source, registration_step: stage, method,
+    ...(reason ? { error_operation: "oauth_callback", error_reason: reason } : {}),
   }, context.device, pepper);
 }
 
 // Keep attribution separate from the actual login challenge. Older clients send no context.
-export async function rememberBotAttempt(req: Request, method: Messenger, token: string, ttl: number) {
+export async function rememberProviderAttempt(req: Request, method: Messenger | "yandex", token: string, ttl: number) {
   try {
     const context = await registrationContext(req);
     if (context) await getRedis()?.set(`between:registration:${method}:${token}`, context, { ex: ttl });
@@ -56,6 +59,13 @@ export function recordBotStep(method: Messenger, token: string, stage: "bot_star
   after(async () => {
     const context = await getRedis()?.get<Context>(`between:registration:${method}:${token}`);
     if (context) await capture(context, method, stage);
+  });
+}
+
+export function recordYandexResult(state: string, stage: "signed_in" | "oauth_cancelled" | "error", reason?: YandexError) {
+  after(async () => {
+    const context = await getRedis()?.getdel<Context>(`between:registration:yandex:${state}`);
+    if (context) await capture(context, "yandex", stage, reason);
   });
 }
 

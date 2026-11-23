@@ -3,7 +3,7 @@ import { accountReady, accountUnavailable, withLoginChallenge } from "@/lib/acco
 import { ensureMaxSubscription } from "@/lib/max-bot";
 import { maxBotLoginUrl, maxBotReady, newMaxLoginToken } from "@/lib/web-account";
 import { beginMaxLogin, MAX_LOGIN_TTL_SECONDS } from "@/lib/web-account-store";
-import { rememberBotAttempt } from "@/lib/registration-analytics-server";
+import { rememberProviderAttempt } from "@/lib/registration-analytics-server";
 
 /** Ask MAX to confirm this browser. The person presses «Войти» in the bot. */
 export async function POST(req: Request) {
@@ -15,6 +15,6 @@ export async function POST(req: Request) {
   const token = newMaxLoginToken();
   const url = maxBotLoginUrl(token);
   if (!url || !(await beginMaxLogin(token))) return accountUnavailable();
-  await rememberBotAttempt(req, "max", token, MAX_LOGIN_TTL_SECONDS);
+  await rememberProviderAttempt(req, "max", token, MAX_LOGIN_TTL_SECONDS);
   return withLoginChallenge(NextResponse.json({ ok: true, token, url }), token);
 }

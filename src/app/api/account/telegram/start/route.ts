@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { accountReady, accountUnavailable, withLoginChallenge } from "@/lib/account-http";
 import { countryFromHeaders, telegramNeedsVpn } from "@/lib/request-country";
 import { beginMaxLogin, MAX_LOGIN_TTL_SECONDS } from "@/lib/web-account-store";
-import { rememberBotAttempt } from "@/lib/registration-analytics-server";
+import { rememberProviderAttempt } from "@/lib/registration-analytics-server";
 import { newMaxLoginToken, telegramBotLoginUrl } from "@/lib/web-account";
 
 /** Ask Telegram to confirm this browser. The page stays here and polls. */
@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   }
   const token = newMaxLoginToken();
   if (!(await beginMaxLogin(token))) return accountUnavailable();
-  await rememberBotAttempt(req, "telegram", token, MAX_LOGIN_TTL_SECONDS);
+  await rememberProviderAttempt(req, "telegram", token, MAX_LOGIN_TTL_SECONDS);
   const country = countryFromHeaders((name) => req.headers.get(name));
   return withLoginChallenge(
     NextResponse.json({
