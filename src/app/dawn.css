@@ -284,8 +284,10 @@ html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) :is(.chapter-ct
   outline-offset: 4px;
 }
 html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) .desk-header {
-  background: color-mix(in srgb, var(--glass-fill) 70%, transparent);
-  border-color: var(--glass-border); backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--glass-fill) var(--header-tint, 70%), transparent);
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: blur(var(--header-blur, 14px));
+  backdrop-filter: blur(var(--header-blur, 14px));
 }
 html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) :is(.desk-nav,.desk-content > footer) {
   background: color-mix(in srgb, var(--background) 60%, transparent);
@@ -324,9 +326,21 @@ html[data-design="dawn"]:is([data-scheme],[data-telegram-theme]) option { backgr
   width: clamp(7rem, 33vw, 10rem);
   inset-block-start: -.75rem;
 }
+@media (max-width: 760px) {
+  .desk-frame:has(.intro-screen) {
+    --header-tint: 40%;
+    --header-blur: 6px;
+  }
+  [data-intro-mascot]::after {
+    inset-inline-end: .25rem;
+    width: clamp(4.5rem, 21vw, 6.25rem);
+  }
+  [data-intro-mascot="bot_demo"]::after {
+    width: clamp(5rem, 23vw, 7rem);
+  }
+}
 @media (max-width: 360px) {
   [data-intro-mascot]::after {
-    inset-inline-end: .5rem;
     mask-image: linear-gradient(165deg, black 50%, transparent 94%);
   }
 }
