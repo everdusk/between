@@ -46,6 +46,7 @@ export function WebWorkspace({
 }) {
   const { t } = useI18n();
   const main = useRef<HTMLElement>(null);
+  const content = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const gated = Boolean(blocked);
   useLayoutEffect(() => {
@@ -71,6 +72,7 @@ export function WebWorkspace({
   function navigate(id: SectionId) {
     onSection(id);
     main.current?.scrollTo({ top: 0 });
+    content.current?.scrollTo({ top: 0 });
   }
   return (
     <div ref={frame} className="desk-frame" data-diary={blocked ? undefined : ""}>
@@ -107,8 +109,8 @@ export function WebWorkspace({
           })}
         </nav>
       )}
-      <div className="desk-content">
-      <main ref={main} className="desk-main" key={blocked ? "gate" : "diary"}>
+      <div ref={content} className="desk-content" key={blocked ? "gate" : "diary"}>
+      <main ref={main} className="desk-main">
         <div className="desk-page">
           {blocked || (
             <>
