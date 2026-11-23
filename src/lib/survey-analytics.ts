@@ -1,6 +1,6 @@
 import type { AuthOperation } from "./registration-errors";
 import type { MessengerChoice } from "./intro-messengers";
-import { analyticsStaysQuiet, deviceToken } from "./analytics-client";
+import { analyticsStaysQuiet, deviceToken, webDeviceHeaders } from "./analytics-client";
 import { YANDEX_METRIKA_ID } from "./landing";
 
 export type SurveyAction = "view" | "advance" | "back" | "login" | "finish";
@@ -10,7 +10,7 @@ export function registrationHeaders(context: { attempt: string; source: "survey"
   if (!context || analyticsStaysQuiet()) return {};
   const device = deviceToken();
   return device ? {
-    "X-Between-Device": device,
+    ...webDeviceHeaders(device),
     "X-Between-Attempt": context.attempt,
     "X-Between-Source": context.source,
     "X-Between-Locale": locale === "en" ? "en" : "ru",
@@ -33,7 +33,7 @@ export function trackSurvey(detail: SurveyEvent, locale: string) {
   if (!device) return;
   void fetch("/api/analytics", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "X-Between-Device": device },
+    headers: { "Content-Type": "application/json", ...webDeviceHeaders(device) },
     keepalive: true,
     body: JSON.stringify({ ...detail, locale: locale === "en" ? "en" : "ru" }),
   }).catch(() => undefined);

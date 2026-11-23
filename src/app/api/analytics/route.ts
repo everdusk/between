@@ -4,6 +4,7 @@ import { PRODUCT_PLANS, SUBSCRIBE_FAILS, SUBSCRIBE_STEPS, analyticsQuiet, type A
 import { validateMaxInitData } from "@/lib/max-auth";
 import { captureServerProduct, captureSurveyEvent } from "@/lib/product-analytics-server";
 import { surveyProperties } from "@/lib/survey-steps";
+import { funnelDevice, type FunnelDevice } from "@/lib/funnel-device";
 import { redisConfigured } from "@/lib/redis";
 import { validateInitData } from "@/lib/telegram-auth";
 import { DEFAULT_TIME_ZONE } from "@/lib/types";
@@ -38,6 +39,7 @@ async function countClientStep(
     cohort: string;
     offset: number;
     pepper: string;
+    deviceType?: FunnelDevice;
     plan?: ProductPlan;
   },
 ): Promise<void> {
@@ -56,6 +58,7 @@ async function countClientStep(
     event: input.event,
     messenger: input.messenger,
     plan: input.plan,
+    deviceType: input.deviceType,
   });
 }
 
@@ -154,7 +157,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "bad_event" }, { status: 400 });
     }
     if (await quietWebAccount(req)) return NextResponse.json({ ok: true, quiet: true });
-    const sent = await captureSurveyEvent(payload.event, properties, device, pepper);
+    const sent = await captureSurveyEvent(payload.event, { ...properties, funnel_device: funnelDevice(req) }, device, pepper);
     return NextResponse.json({ ok: sent }, { status: sent ? 200 : 503 });
   }
   if (payload.event === "subscribe") {
@@ -208,6 +211,7 @@ export async function POST(req: Request) {
     await countClientStep(redis, {
       userId: `web:${device}`,
       event: accepted.event,
+      deviceType: funnelDevice(req),
       messenger: "web",
       day: accepted.day,
       cohort: accepted.cohort,

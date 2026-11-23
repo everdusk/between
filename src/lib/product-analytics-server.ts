@@ -14,6 +14,7 @@ import {
 } from "./analytics-model";
 import { posthogBrowserConfig } from "./posthog-env";
 import { telegramCampaignSource } from "./campaign-source";
+import type { FunnelDevice } from "./funnel-device";
 
 export async function captureSurveyEvent(event: "web_landing_start" | "web_survey_step" | "web_registration_step",
   properties: Record<string, unknown>, device: string, pepper: string): Promise<boolean> {
@@ -86,6 +87,7 @@ export async function captureServerProduct(input: {
   event: AnalyticsEvent;
   userId: number | string;
   plan?: ProductPlan;
+  deviceType?: FunnelDevice;
 }): Promise<void> {
   const cfg = posthogBrowserConfig({
     key: process.env.POSTHOG_KEY,
@@ -94,6 +96,7 @@ export async function captureServerProduct(input: {
   const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim();
   if (!cfg || !pepper) return;
   const properties: Record<string, unknown> = { messenger: input.messenger, $geoip_disable: true };
+  if (input.deviceType) properties.funnel_device = input.deviceType;
   if (input.plan && (PRODUCT_PLANS as readonly string[]).includes(input.plan)) properties.plan = input.plan;
   try {
     await fetch(`${cfg.host}/capture/`, {
