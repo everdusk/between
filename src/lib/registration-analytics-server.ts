@@ -34,7 +34,7 @@ async function registrationContext(req: Request): Promise<Context | null> {
   return { attempt, device, source, locale };
 }
 
-type YandexError = "provider_error" | "taken" | "server_error";
+type YandexError = "provider_error" | "taken" | "server_error" | "account_not_found";
 
 async function capture(context: Context, method: Messenger | "email" | "yandex", stage: string, reason?: YandexError) {
   const pepper = process.env.BOT_TOKEN?.trim() || process.env.MAX_BOT_TOKEN?.trim() || process.env.APP_SECRET?.trim();

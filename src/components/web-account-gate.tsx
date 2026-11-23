@@ -145,7 +145,11 @@ function JournalPreview() {
   );
 }
 
-type GateMode = "login" | "forgot" | "code";
+type GateMode = "login" | "forgot" | "code" | "linkYandex";
+
+function yandexReturn() {
+  return typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("yandex");
+}
 
 export function WebAccountGate({ onSignedIn, compact = false, initialLogin = false, surveyAttempt, yandexLogin = false }: { onSignedIn: (account: WebAccount) => void; compact?: boolean; initialLogin?: boolean; surveyAttempt?: string; yandexLogin?: boolean }) {
   const { t, locale } = useI18n();
@@ -159,10 +163,10 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     }
     trackSurvey({event: "web_registration_step", ...registration.current, stage, method, operation, reason}, locale);
   }, [locale, surveyAttempt]);
-  const [mode, setMode] = useState<GateMode>("login");
+  const [mode, setMode] = useState<GateMode>(() => yandexReturn() === "link" ? "linkYandex" : "login");
   const [creating, setCreating] = useState(() => {
     if (!compact || initialLogin) return false;
-    if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("yandex") === "taken") return false;
+    if (yandexReturn()) return false;
     if (surveyAttempt) return true;
     try {
       const saved = JSON.parse(sessionStorage.getItem("between:messenger-login") ?? "null");
@@ -184,8 +188,9 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   const countingDown = resendSeconds > 0;
   const [error, setError] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
-    const result = new URLSearchParams(window.location.search).get("yandex");
-    return result === "taken" ? t("webEmailTaken") : result === "bad" ? t("webOAuthBad") : null;
+    const result = yandexReturn();
+    if (result === "missing") return locale === "ru" ? "Дневник для этого Яндекс ID не найден. Выберите прежний способ входа или создайте дневник." : "No journal was found for this Yandex ID. Use your original sign-in method or create a journal.";
+    return result === "taken" ? t("webOAuthTaken") : result === "bad" ? t("webOAuthBad") : null;
   });
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -358,7 +363,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     setError(null);
     setErrorScope("messenger");
     try {
-      const query = new URLSearchParams({ from: surveyAttempt ? "survey" : "direct", lang: locale });
+      const query = new URLSearchParams({ from: surveyAttempt ? "survey" : "direct", intent: creating ? "create" : "login", lang: locale });
       const res = await fetch("/api/account/oauth/yandex?" + query, {
         method: "POST", headers: registrationHeaders(registration.current, locale),
       });
@@ -460,6 +465,12 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
   }, [onSignedIn, t]);
 
   function openMode(next: GateMode) {
+    if (mode === "linkYandex") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("yandex");
+      window.history.replaceState(window.history.state, "", url);
+      setPassword("");
+    }
     setCheckedFields([]);
     setRejectedEmail(null);
     setMode(next);
@@ -560,25 +571,29 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
   async function passwordLogin(event: FormEvent) {
     event.preventDefault();
+    const linking = mode === "linkYandex";
     setBusy(true);
     setErrorScope("login");
     setError(null);
     try {
-      const res = await fetch("/api/account/login", {
+      const res = await fetch(linking ? "/api/account/oauth/yandex/link" : "/api/account/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(linking ? { password } : { email, password }),
       });
       const data = (await res.json().catch(() => ({}))) as { account?: WebAccount; error?: string };
       if (!res.ok || !data.account) {
-        record("error", "password", "password_login", registrationReason(data.error, res.status));
-        setError(formError(data.error));
+        if (!linking) record("error", "password", "password_login", registrationReason(data.error, res.status));
+        setError(linking && data.error === "expired"
+          ? (locale === "ru" ? "Время подтверждения истекло. Вернитесь и нажмите «Войти с Яндекс ID» ещё раз." : "Confirmation expired. Go back and choose Yandex ID again.")
+          : formError(data.error));
         return;
       }
-      record("signed_in", "password");
+      if (linking) openMode("login");
+      else record("signed_in", "password");
       onSignedIn(data.account);
     } catch {
-      record("error", "password", "password_login", "network_error");
+      if (!linking) record("error", "password", "password_login", "network_error");
       setError(t("webServer"));
     } finally {
       setBusy(false);
@@ -659,7 +674,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
           </div>
         ) : <>
         <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{compact && mode === "login" && creating ? t("webCreate") : title}</h2>
-        {surveyAttempt && mode === "login" && (
+        {surveyAttempt && creating && mode === "login" && (
           <p className="mt-4 text-base leading-relaxed text-foreground">
             {locale === "en"
               ? "When you create your journal, your first entry will already be there."
@@ -693,14 +708,18 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
           </>
         ) : null}
 
-        {mode === "login" && (!compact || !creating) ? (
+        {(mode === "login" && (!compact || !creating)) || mode === "linkYandex" ? (
           <form className="space-y-4" onSubmit={passwordLogin}>
-            <EmailField
+            {mode === "linkYandex" ? (
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{locale === "ru"
+                ? "Мы нашли ваш дневник. Введите пароль от Between один раз, чтобы связать его с Яндекс ID. В следующий раз хватит кнопки."
+                : "We found your journal. Enter your Between password once to link it to Yandex ID. Next time, just use the Yandex button."}</p>
+            ) : <EmailField
               id="web-email"
               autoComplete="username"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-            />
+            />}
             <PasswordField
               id="web-password"
               inlineIcon={KeyRound}
@@ -724,6 +743,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
             >
               {t("webForgot")}
             </button>
+            {mode === "linkYandex" && <button type="button" className="text-action mx-auto block w-fit py-1 text-sm text-muted-foreground" onClick={() => openMode("login")}>{t("webChooseMethod")}</button>}
           </form>
         ) : null}
 

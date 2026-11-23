@@ -4,6 +4,7 @@ import { normalizeEmail } from "./account-validation";
 export const callbackPath = "/api/account/oauth/yandex/callback";
 export const pendingCookie = "between_yandex_login";
 export const loginTtl = 600;
+export const linkCookie = "between_yandex_link";
 export const pendingOptions = {
   httpOnly: true, sameSite: "lax" as const, secure: process.env.NODE_ENV === "production", path: callbackPath,
 };
@@ -15,15 +16,16 @@ export function yandexConfig() {
   return id && secret ? { id, secret, origin } : null;
 }
 
-type Pending = { state: string; verifier: string; until: number; survey: boolean; locale: "en" | "ru" };
+export const linkOptions = { ...pendingOptions, path: "/api/account/oauth/yandex/link", maxAge: loginTtl };
+type Pending = { state: string; verifier: string; until: number; survey: boolean; create: boolean; locale: "en" | "ru" };
 function signature(payload: string, secret: string) {
   return createHmac("sha256", secret).update("yandex-login." + payload).digest("base64url");
 }
 
-export function beginYandex(id: string, origin: string, signingSecret: string, survey: boolean, locale: "en" | "ru") {
+export function beginYandex(id: string, origin: string, signingSecret: string, survey: boolean, locale: "en" | "ru", create: boolean) {
   const state = randomBytes(32).toString("base64url");
   const verifier = randomBytes(32).toString("base64url");
-  const pending: Pending = { state, verifier, survey, locale, until: Date.now() + loginTtl * 1000 };
+  const pending: Pending = { state, verifier, survey, create, locale, until: Date.now() + loginTtl * 1000 };
   const payload = Buffer.from(JSON.stringify(pending)).toString("base64url");
   const query = new URLSearchParams({
     client_id: id, response_type: "code", redirect_uri: origin + callbackPath, scope: "login:email",

@@ -2,8 +2,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { accountUnavailable, withSession } from "@/lib/account-http";
 import { recordYandexResult } from "@/lib/registration-analytics-server";
 import { sessionSecret } from "@/lib/web-account";
-import { openYandexAccount } from "@/lib/web-account-store";
-import { pendingCookie, pendingOptions, readYandexPending, yandexConfig, yandexIdentity } from "@/lib/yandex-login";
+import { openYandexAccount, prepareYandexLink } from "@/lib/web-account-store";
+import { linkCookie, linkOptions, loginTtl, pendingCookie, pendingOptions, readYandexPending, yandexConfig, yandexIdentity } from "@/lib/yandex-login";
 
 export async function GET(req: NextRequest) {
   const config = yandexConfig();
@@ -14,8 +14,8 @@ export async function GET(req: NextRequest) {
   const url = new URL("/", config.origin);
   url.searchParams.set(pending?.survey ? "start" : "login", "1");
   if (pending) url.searchParams.set("lang", pending.locale);
-  function back(error?: "bad" | "taken") {
-    if (error) url.searchParams.set("yandex", error);
+  function back(result?: "bad" | "taken" | "link" | "missing") {
+    if (result) url.searchParams.set("yandex", result);
     const response = NextResponse.redirect(url, 303);
     response.headers.set("Cache-Control", "no-store");
     response.headers.set("Referrer-Policy", "no-referrer");
@@ -34,7 +34,19 @@ export async function GET(req: NextRequest) {
   }
   try {
     const identity = await yandexIdentity(config, code, pending.verifier);
-    const account = identity && await openYandexAccount(identity);
+    const account = identity && await openYandexAccount(identity, pending.create ?? pending.survey);
+    if (account === "taken" && identity) {
+      const token = await prepareYandexLink(identity, pending.state, loginTtl);
+      if (token) {
+        const response = back("link");
+        response.cookies.set(linkCookie, token, linkOptions);
+        return response;
+      }
+    }
+    if (account === "missing") {
+      recordYandexResult(pending.state, "error", "account_not_found");
+      return back("missing");
+    }
     if (account && account !== "taken") {
       recordYandexResult(pending.state, "signed_in");
       return withSession(back(), account.id, account.sessionVersion);

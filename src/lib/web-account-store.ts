@@ -921,7 +921,7 @@ export async function resolveMaxJournalId(maxUserId: number): Promise<string> {
 }
 
 /** Returning users are identified by their provider subject, independently of email changes. */
-export async function openYandexAccount(identity: { id: string; email: string }): Promise<AccountRecord | "taken" | null> {
+export async function openYandexAccount(identity: { id: string; email: string }, create: boolean): Promise<AccountRecord | "taken" | "missing" | null> {
   const redis = getRedis();
   if (!redis) return null;
   const id = newAccountId();
@@ -933,10 +933,53 @@ export async function openYandexAccount(identity: { id: string; email: string })
     local existing = redis.call('GET', KEYS[1])
     if existing then return existing end
     if redis.call('EXISTS', KEYS[2]) == 1 then return 'taken' end
+    if ARGV[3] ~= 'create' then return 'missing' end
     redis.call('MSET', KEYS[1], ARGV[1], KEYS[2], ARGV[1], KEYS[3], ARGV[2])
     return ARGV[1]
-  `, [oauthKey("yandex", identity.id), emailKey(identity.email), accountKey(id)], [id, JSON.stringify(account)]);
-  if (result === "taken") return "taken";
+  `, [oauthKey("yandex", identity.id), emailKey(identity.email), accountKey(id)], [id, JSON.stringify(account), create ? "create" : "login"]);
+  if (result === "taken" || result === "missing") return result;
   const saved = result === id ? account : await loadAccount(result);
   return saved?.providers.yandex === identity.id ? saved : null;
+}
+
+type YandexLink = { accountId: string; email: string; subject: string; state: string };
+const yandexLinkKey = (token: string) => `between:yandex:link:${token}`;
+
+export async function prepareYandexLink(identity: { id: string; email: string }, state: string, ttl: number) {
+  const redis = getRedis();
+  const account = await accountByEmail(identity.email);
+  if (!redis || !account || account.email !== identity.email || account.providers.yandex) return null;
+  const token = newResetToken();
+  const link: YandexLink = { accountId: account.id, email: account.email, subject: identity.id, state };
+  await redis.set(yandexLinkKey(token), link, { ex: ttl });
+  return token;
+}
+
+export async function confirmYandexLink(token: string, password: string) {
+  const redis = getRedis();
+  if (!redis || !token) return "expired";
+  const key = yandexLinkKey(token);
+  const link = await redis.get<YandexLink>(key);
+  if (!link) return "expired";
+  const account = await loginForSite(link.email, password);
+  if (account === "limited") return "limited";
+  if (!account || account.id !== link.accountId) return "bad_login";
+  const linked = await redis.eval<string[], number>(`
+    if redis.call('EXISTS', KEYS[1]) == 0 or redis.call('GET', KEYS[2]) ~= ARGV[1] then return 0 end
+    local raw = redis.call('GET', KEYS[3])
+    if not raw then return 0 end
+    local account = cjson.decode(raw)
+    local owner = redis.call('GET', KEYS[4])
+    if account.id ~= ARGV[1] or account.email ~= ARGV[2] or account.hash ~= ARGV[4] or (owner and owner ~= account.id) then return 0 end
+    account.providers = account.providers or {}
+    if account.providers.yandex and account.providers.yandex ~= ARGV[3] then return 0 end
+    account.providers.yandex = ARGV[3]
+    redis.call('MSET', KEYS[3], cjson.encode(account), KEYS[4], account.id)
+    redis.call('DEL', KEYS[1])
+    return 1
+  `, [key, emailKey(link.email), accountKey(account.id), oauthKey("yandex", link.subject)],
+  [account.id, link.email, link.subject, account.hash]);
+  if (!linked) return "expired";
+  account.providers.yandex = link.subject;
+  return { account, state: link.state };
 }
