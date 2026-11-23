@@ -1,0 +1,192 @@
+{
+  "тревожно": {
+    "slug": "worry",
+    "title": [
+      "Когда ответа всё нет",
+      "When a reply takes a while"
+    ],
+    "first": [
+      "В чате уже час тихо. Перечитываю своё сообщение и ищу, что там не так.",
+      "An hour without a reply. I keep rereading my message, looking for something wrong."
+    ],
+    "second": [
+      "«Поговорим завтра» — и вот я уже придумываю весь разговор за двоих.",
+      "“Let’s talk tomorrow.” Now I’m imagining both sides of the conversation."
+    ],
+    "chat": [
+      "Жду ответа и каждые пять минут тянусь к телефону. Как же это выматывает.",
+      "Still waiting for a reply. I keep reaching for my phone. It’s exhausting."
+    ]
+  },
+  "спокойно": {
+    "slug": "calm",
+    "title": [
+      "Утро без спешки",
+      "Mornings without a rush"
+    ],
+    "first": [
+      "Есть десять минут до выхода. Допиваю чай у окна, и никуда не надо бежать.",
+      "Ten minutes before I leave. There’s time to finish my tea by the window."
+    ],
+    "second": [
+      "Телефон ещё на зарядке, а я завтракаю. Нравится такая тишина.",
+      "My phone is still charging while I eat breakfast. I like the quiet."
+    ],
+    "chat": [
+      "Сегодня утром хватило времени на чай у окна. До сих пор спокойно.",
+      "I had time for tea by the window this morning. I still feel calm."
+    ]
+  },
+  "злость": {
+    "slug": "anger",
+    "title": [
+      "Когда меня перебивают",
+      "When I get interrupted"
+    ],
+    "first": [
+      "На созвоне опять перебивают на полуслове. Да дайте же договорить!",
+      "Interrupted halfway through a sentence on the call again. Just let me finish!"
+    ],
+    "second": [
+      "За ужином начинаю рассказывать, а разговор уже уходит в сторону. Злит.",
+      "At dinner I start telling a story and the conversation moves on without me. It stings."
+    ],
+    "chat": [
+      "Снова пришлось три раза начинать одну фразу на встрече. Как же это злит.",
+      "I had to start the same sentence three times in the meeting. It’s infuriating."
+    ]
+  },
+  "грусть": {
+    "slug": "sad",
+    "title": [
+      "Скучаю по нашим прогулкам",
+      "Missing our walks"
+    ],
+    "first": [
+      "Прохожу мимо нашей кофейни. После переезда подруги там даже пахнет грустно.",
+      "I walk past our café. Since my friend moved away, even the smell makes me miss her."
+    ],
+    "second": [
+      "Хочется написать «пойдём гулять?», как раньше. А теперь до неё пять часов дороги.",
+      "I miss texting “want to go for a walk?” like we used to. Now she lives five hours away."
+    ],
+    "chat": [
+      "В кофейне играет наша песня. Хорошо бы сейчас пройтись вместе.",
+      "Our song is playing at the café. I wish we could go for a walk together."
+    ]
+  },
+  "радость": {
+    "slug": "joy",
+    "title": [
+      "Что радует меня в мастерской",
+      "The joy of making things"
+    ],
+    "first": [
+      "Из кривоватой кружки уже можно пить чай. Смотрю на неё и улыбаюсь.",
+      "My wonky mug finally holds tea. Just looking at it makes me smile."
+    ],
+    "second": [
+      "Вечером снова глина на столе. Два часа пролетают как пять минут.",
+      "Clay on the table again tonight. Two hours fly by like five minutes."
+    ],
+    "chat": [
+      "Кружка из мастерской наконец дома! Наливаю в неё чай, и так радостно.",
+      "My handmade mug is finally home! Pouring tea into it makes me so happy."
+    ]
+  },
+  "усталость": {
+    "slug": "tired",
+    "title": [
+      "День из одних созвонов",
+      "A day full of calls"
+    ],
+    "first": [
+      "Закрываю последний созвон. Даже выбрать ужин уже нет сил.",
+      "The last call is over. Even choosing dinner feels like too much."
+    ],
+    "second": [
+      "Четыре встречи подряд. До дома хочется доехать в полной тишине.",
+      "Four meetings in a row. All I want on the ride home is silence."
+    ],
+    "chat": [
+      "Весь день в наушниках. Хочется тишины хотя бы до ужина.",
+      "Headphones on all day. I’d love some quiet until dinner."
+    ]
+  },
+  "стыд": {
+    "slug": "shame",
+    "title": [
+      "Ошибки на глазах у других",
+      "Making mistakes in front of people"
+    ],
+    "first": [
+      "На экране слайд с моей опечаткой. Никто ничего не говорит, а у меня горят щёки.",
+      "My typo is up on the slide. Nobody says anything, but my cheeks are burning."
+    ],
+    "second": [
+      "В общий чат ушёл черновик. Уже есть исправление, а открыть чат всё ещё неловко.",
+      "A draft went to the group chat. The correction is there, but opening the chat still feels awkward."
+    ],
+    "chat": [
+      "На слайде опечатка. Встреча давно закончилась, а я всё ещё об этом думаю.",
+      "A typo on my slide. The meeting’s long over and I’m still thinking about it."
+    ]
+  },
+  "пусто": {
+    "slug": "empty",
+    "title": [
+      "Когда планы заканчиваются",
+      "When the plans run out"
+    ],
+    "first": [
+      "Большой проект наконец позади. Жду облегчения, а внутри пока пусто.",
+      "The big project is finally over. I expected relief, but I just feel empty."
+    ],
+    "second": [
+      "Свободная суббота. Вроде можно что угодно, а ничего не тянет начать.",
+      "Saturday with no plans. I could do anything, yet nothing appeals."
+    ],
+    "chat": [
+      "Вечер свободен, дела закончились. Странное чувство: ничего не хочется.",
+      "An empty evening and a finished to-do list. Strange how nothing appeals."
+    ]
+  },
+  "напряжение": {
+    "slug": "tense",
+    "title": [
+      "Трудно выключить рабочий день",
+      "When work follows me home"
+    ],
+    "first": [
+      "Ужин на столе, а я всё жду, что напишут по работе. Плечи аж сводит.",
+      "Dinner’s on the table and I’m still bracing for a work message. My shoulders ache."
+    ],
+    "second": [
+      "Ноутбук закрыт. Слышу уведомление и тут же стискиваю зубы.",
+      "My laptop is shut. One notification and my jaw tightens."
+    ],
+    "chat": [
+      "Рабочий день закончился два часа назад. Только сейчас замечаю, как зажаты плечи.",
+      "Work ended two hours ago. I’m only just noticing how tight my shoulders feel."
+    ]
+  },
+  "unknown": {
+    "slug": "unsure",
+    "title": [
+      "Что остаётся после шумного вечера",
+      "After a noisy evening"
+    ],
+    "first": [
+      "По дороге с вечеринки выключаю музыку. Не понимаю пока, чего хочется.",
+      "On my way home from the party I turn off the music. I can’t tell what I want yet."
+    ],
+    "second": [
+      "После встречи долго сижу на кухне. В голове обрывки разговоров, а слов для чувства нет.",
+      "I sit in the kitchen after everyone leaves. Bits of conversation keep coming back, but I can’t name the feeling."
+    ],
+    "chat": [
+      "Все разошлись. Пока трудно сказать, как мне. Запишу хотя бы этот момент.",
+      "Everyone’s gone home. I can’t quite say how I feel. I’ll jot down this moment."
+    ]
+  }
+}

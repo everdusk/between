@@ -16,7 +16,7 @@ import { useMaxScheme } from "@/hooks/use-max-scheme";
 import { SessionsPanel } from "@/components/sessions-panel";
 import { WebAccountGate } from "@/components/web-account-gate";
 import { readIntroDraft, type IntroDraft, type LegacyIntroRecord } from "@/lib/intro-record";
-import { IntroCard, IntroReflection, introDraftKey } from "./intro-reflection";
+import { IntroCard, IntroReflection, introDraftKey, introStepCount } from "./intro-reflection";
 import { ThemeReflection } from "./weekly-review";
 import { ReflectionPanel } from "@/components/journal-explore";
 import { ProfileEditor } from "./journal-intro";
@@ -441,10 +441,16 @@ function TherapyShell({
       <IntroReflection onFinish={beginRegistration} />
     ) : (
       <div className="space-y-4">
-      {intro && intro.kind !== "checkin" && <IntroCard record={intro}/>}
       <WebAccountGate
         key={signInLink ? "sign-in" : "onboarding"}
-        surveyAttempt={intro?.attempt}
+        surveyAttempt={signInLink ? undefined : intro?.attempt}
+        entryPreview={intro && !signInLink && <div className="intro-screen space-y-4">
+          {intro.kind === "checkin" && <>
+            <small>Between · {locale === "en" ? "Getting to know you" : "Знакомство"} · {introStepCount}/{introStepCount}</small>
+            <h1 className="font-display text-2xl">{locale === "en" ? "Your first entry" : "Ваша первая запись"}</h1>
+          </>}
+          <IntroCard record={intro}/>
+        </div>}
         compact
         yandexLogin={webFirst && web.yandexLogin}
         initialLogin={signInLink}

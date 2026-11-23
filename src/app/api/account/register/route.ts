@@ -1,8 +1,9 @@
+import { newPasswordProblem } from "@/lib/account-validation";
 import { NextResponse } from "next/server";
 import { accountReady, accountUnavailable } from "@/lib/account-http";
 import { hashOtp, mailConfigFromEnv, newOtpCode, sendOtpMail } from "@/lib/otp-mail";
 import { accountByEmail, OTP_RESEND_MS, saveSignup, signupRetryAfterSeconds } from "@/lib/web-account-store";
-import { hashPassword, normalizeEmail, passwordProblem, sessionSecret } from "@/lib/web-account";
+import { hashPassword, normalizeEmail, sessionSecret } from "@/lib/web-account";
 
 export async function POST(req: Request) {
   if (!accountReady()) return accountUnavailable();
@@ -18,8 +19,9 @@ export async function POST(req: Request) {
   const payload = body as { email?: unknown; password?: unknown };
   const email = normalizeEmail(payload.email);
   if (!email) return NextResponse.json({ ok: false, error: "bad_email" }, { status: 400 });
-  if (passwordProblem(payload.password)) {
-    return NextResponse.json({ ok: false, error: "short_password" }, { status: 400 });
+  const problem = newPasswordProblem(payload.password);
+  if (problem) {
+    return NextResponse.json({ ok: false, error: problem === "composition" ? "weak_password" : "short_password" }, { status: 400 });
   }
   const secret = sessionSecret();
   if (!secret) return accountUnavailable();

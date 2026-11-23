@@ -277,7 +277,8 @@ function LandingContent() {
           </nav>}
           <div>
             <a href="/privacy">{en ? "Privacy policy" : "Политика конфиденциальности"}</a> ·{" "}
-            <a href="/terms">{en ? "Terms of use" : "Условия использования"}</a>
+            <a href="/terms">{en ? "Terms of use" : "Условия использования"}</a> ·{" "}
+            <a href="/personal-data">{en ? "Personal data processing" : "Обработка персональных данных"}</a>
           </div>
         </footer>
       </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import examples from "@/lib/onboarding-examples.json";
 import Image from "next/image";
 import { Check } from "lucide-react";
 import { messengerChoices, type MessengerChoice } from "@/lib/intro-messengers";
@@ -21,6 +22,9 @@ import { feelingFill } from "@/lib/spectrum";
 import { trackSurvey } from "@/lib/survey-analytics";
 
 export const introDraftKey = "between:intro:registration:v2";
+
+const steps = ["recent", "spectrum", "recent_reason", "current", "therapy", "topics_demo", "messengers", "bot_demo", "observation"] as const;
+export const introStepCount = steps.length + 1; // Registration follows the entry preview.
 
 const sampleDays = Array.from({length: 7}, (_, i) => "2026-11-" + String(9+i).padStart(2,"0"));
 const sampleFeelings: [time: string, mood: Feeling][][] = [
@@ -85,8 +89,8 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
   });
   const [messengers, setMessengers] = useState<MessengerChoice[]>([]);
   const demo = messengers.includes("telegram") ? "telegram" : messengers.includes("max") ? "max" : null;
-  const steps = ["therapy_first", "topics_demo", "messengers", ...(demo ? ["bot_demo"] : []),
-    "recent", "recent_reason", "current", "spectrum", "observation"];
+  const example = examples[recent];
+  const index = en ? 1 : 0;
   const screen=steps[step];
   function toggleMessenger(choice: MessengerChoice) {
     setMessengers(current => {
@@ -96,10 +100,10 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
     });
   }
   useEffect(()=>{
-    trackSurvey({event:"web_survey_step",action:"view",question:"v2_"+screen,attempt,sequence:nextSequence()},locale);
+    trackSurvey({event:"web_survey_step",action:"view",question:"v3_"+screen,attempt,sequence:nextSequence()},locale);
   },[screen,attempt,locale,nextSequence]);
   function go(n:number) {
-    trackSurvey({event:"web_survey_step",action:n<step?"back":"advance",question:"v2_"+screen,attempt,sequence:nextSequence(),
+    trackSurvey({event:"web_survey_step",action:n<step?"back":"advance",question:"v3_"+screen,attempt,sequence:nextSequence(),
       ...(screen==="messengers" && n>step ? {messengers} : {})},locale);
     setDirection(n < step ? "back" : "forward");
     setStep(n);
@@ -112,16 +116,16 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
     setMoment(markMoment());
     go(step+1);
   }
-  const topicsScreenshot = directory && `${directory}/quiz-topics-${therapy === "yes" ? "therapy" : "personal"}-${language}.webp`;
-  const question = screen === "therapy_first" ? say("Вы сейчас занимаетесь с психотерапевтом?","Are you seeing a therapist?")
+  const topicsScreenshot = directory && `${directory}/onboarding/${example.slug}-${therapy === "yes" ? "therapy" : "personal"}-${language}.webp`;
+  const question = screen === "therapy" ? say("Вы сейчас занимаетесь с психотерапевтом?","Are you seeing a therapist?")
     : screen === "topics_demo" ? (therapy === "yes" ? say("Что взять на следующий сеанс?","What would you like to bring to therapy?") : say("К какой мысли вы возвращаетесь?","What keeps coming up for you?"))
     : screen === "messengers" ? say("Какими мессенджерами вы пользуетесь?","Which messaging apps do you use?")
     : screen === "bot_demo" ? say("Дневник прямо в чате","Your journal, right in the chat")
     : screen === "recent" ? say("Какое чувство вы чаще замечаете в последнее время?","Which feeling have you noticed most lately?")
-    : screen === "recent_reason" ? say("Поделитесь?", "Would you share?")
+    : screen === "recent_reason" ? say("Поделитесь? Это анонимно", "Would you share? It’s anonymous")
     : screen === "current" ? say("Что вы чувствуете прямо сейчас?", "How do you feel right now?")
     : screen === "spectrum" ? say("Почему важно наблюдать за чувствами?", "Why pay attention to your feelings?")
-    : say("Ваша первая отметка", "Your first check-in");
+    : say("Ваша первая запись", "Your first entry");
   function option(text:string,click:()=>void) {
     return <Button key={text} type="button" variant="outline" className="h-auto min-h-10 max-w-full whitespace-normal text-start" onClick={click}>{text}</Button>;
   }
@@ -129,18 +133,18 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
     || (screen === "topics_demo" && therapy === "yes");
   return <GlassPanel className="space-y-5 p-6" data-intro-mascot={showMascot ? screen : undefined}>
     <IntroStepHeader backLabel={say("Назад", "Back")} onBack={step > 0 ? () => go(step - 1) : undefined}>
-      Between · {say("Знакомство","Getting to know you")} · {step+1}/{steps.length}
+      Between · {say("Знакомство","Getting to know you")} · {step+1}/{introStepCount}
     </IntroStepHeader>
     <div key={screen} className="intro-screen space-y-5" data-direction={direction}>
     <h1 className="font-display text-2xl">{question}</h1>
-    {screen==="therapy_first" && <div className="flex flex-wrap gap-2">{option(say("Да","Yes"),()=>{setTherapy("yes");go(step+1)})}{option(say("Нет","No"),()=>{setTherapy("no");go(step+1)})}</div>}
+    {screen==="therapy" && <div className="flex flex-wrap gap-2">{option(say("Да","Yes"),()=>{setTherapy("yes");go(step+1)})}{option(say("Нет","No"),()=>{setTherapy("no");go(step+1)})}</div>}
     {screen==="topics_demo" && <>
       <p>{therapy === "yes"
-        ? say("Когда в нескольких записях звучит одна и та же проблема, ИИ соберёт их в тему к терапии. Перед сеансом можно открыть тему и вспомнить конкретные моменты.", "When the same problem comes up across entries, AI groups them into a topic for therapy. Open it before your session to recall the moments you want to talk about.")
-        : say("ИИ поможет заметить, что вас волнует чаще всего. Записи о разных событиях соберутся в общую тему в разделе «На подумать». К ней можно вернуться в своём темпе.", "AI helps you spot concerns you keep coming back to. Entries about different events come together under a topic in For reflection, ready to revisit at your own pace.")}</p>
+        ? say("Between поможет собрать похожие моменты в одну тему. Перед сеансом её можно открыть и выбрать, о чём хочется поговорить.", "Between helps bring related moments into one topic. Before a session, open it and choose what you want to talk about.")
+        : say("Between поможет заметить, к чему вы возвращаетесь. В разделе «На подумать» можно открыть тему и увидеть рядом записи за разные дни.", "Between helps you notice what keeps coming up. Open a topic in For reflection to see entries from different days together.")}</p>
       {topicsScreenshot && <Image src={topicsScreenshot} width={582} height={455} unoptimized
         className="block h-auto w-full rounded-2xl"
-        alt={say("Открытая тема «Почему я так быстро говорю „да“?» и две связанные записи", "An expanded topic with two related journal entries")} />}
+        alt={[example.title[index], example.first[index], example.second[index]].join(". ")} />}
       <Button className="ms-auto flex w-fit" data-confirm="" onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
     </>}
     {screen==="messengers" && <>
@@ -155,11 +159,11 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
         {{telegram:"Telegram",max:"MAX",whatsapp:"WhatsApp",none:say("Не пользуюсь","None")}[m]}</Button>)}</div>
       <Button className="ms-auto flex w-fit" data-confirm="" disabled={!messengers.length} onClick={()=>go(step+1)}>{say("Дальше","Continue")}</Button>
     </>}
-    {screen==="bot_demo" && demo && <>
-      <p>{say("После регистрации можно подключить бота: отправляйте заметки сообщением и отмечайте настроение прямо в чате.", "After signing up, you can connect the bot to send notes and check in on your mood right in the chat.")}</p>
-      {directory && <Image unoptimized src={`${directory}/chat-${demo}-${en ? "en" : "ru"}-v2.webp?v=3`}
+    {screen==="bot_demo" && <>
+      <p>{demo ? say("В чате с ботом можно оставить заметку, пока момент свеж в памяти. Она появится в вашем дневнике.", "Send the bot a note while the moment is fresh. It will appear in your journal.") : say("Дневник можно вести на сайте. Если когда-нибудь захочется писать из чата, вот как это выглядит в Telegram.", "You can keep your journal on the website. If you ever want to write from chat, here’s how it looks in Telegram.")}</p>
+      {directory && <Image unoptimized src={`${directory}/onboarding/${example.slug}-${demo ?? "telegram"}-${language}.webp`}
         width={400} height={408} className="w-full max-w-sm rounded-2xl"
-        alt={say("Переписка с Between: заметка об обеде во дворе и кнопки для отметки настроения.", "A chat with Between showing a note about lunch outside and buttons to log a mood.")}/>}
+        alt={(demo === "max" ? "MAX" : "Telegram") + " · " + example.chat[index]}/>}
       <Button className="ms-auto flex w-fit" data-confirm="" onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
     </>}
     {screen==="recent" && <div className="flex flex-wrap gap-2">
@@ -199,8 +203,8 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
       </div>}
     </>}
     {screen==="spectrum" && <>
-      <p>{say("Когда вы описываете свои чувства словами и перечитываете записи, легче заметить, что повторяется. Постепенно становится яснее, что придаёт вам сил, что утомляет и как вы чувствуете себя рядом с разными людьми. Так проще понять, чему уделять больше времени, а чего избегать.",
-        "Putting your feelings into words and looking back at your notes can help you spot patterns. Over time, you may see what gives you energy, what wears you out, and how you feel around different people. That makes it easier to see what to make more time for and what to avoid.")}</p>
+      <p>{say("Каждая отметка добавляет цвет в спектр недели. По нему видно, какие чувства возвращаются и в какие дни настроение меняется.",
+        "Each check-in adds a colour to your week. Look back to see which feelings recur and which days bring a change.")}</p>
       <figure className="space-y-2">
         <WeekSpectrum dayKeys={sampleDays} entries={sampleEntries} todayKey={sampleDays[6]}
           patternTitle="" patternText="" patternPending="" />
@@ -212,7 +216,7 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
       <IntroCard record={record}/>
       <Button className="ms-auto flex w-fit" data-confirm="" onClick={()=>{
         if (!onFinish(record)) { setDraftError(true); return; }
-        trackSurvey({event:"web_survey_step",action:"finish",question:"v2_observation",attempt,sequence:nextSequence()},locale);
+        trackSurvey({event:"web_survey_step",action:"finish",question:"v3_observation",attempt,sequence:nextSequence()},locale);
       }}>{say("Записать","Save entry")}</Button>
       {draftError && <p role="alert">{say("Не удалось сохранить черновик. Разрешите хранение данных и попробуйте ещё раз.","We couldn’t save the draft. Allow browser storage and try again.")}</p>}
     </>}

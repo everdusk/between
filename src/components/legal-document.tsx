@@ -13,8 +13,7 @@ import { markSplashReady } from "@/lib/splash";
 function LegalArticle({ kind }: { kind: LegalKind }) {
   const { locale, t } = useI18n();
   const doc = legalDocument(kind, locale);
-  const otherHref = kind === "terms" ? "/privacy" : "/terms";
-  const otherLabel = kind === "terms" ? t("legalPrivacy") : t("legalTerms");
+  const links = [["terms", "legalTerms"], ["privacy", "legalPrivacy"], ["personal-data", "legalProcessing"]] as const;
 
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -36,11 +35,10 @@ function LegalArticle({ kind }: { kind: LegalKind }) {
           </a>
           <LanguageSwitch />
         </header>
-        <p className="mt-8 text-sm">
-          <Link href={otherHref} className="underline underline-offset-4">
-            {otherLabel}
-          </Link>
-        </p>
+        <nav className="mt-8 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+          {links.filter(([path]) => path !== kind).map(([path, label]) =>
+            <Link key={path} href={`/${path}`} className="underline underline-offset-4">{t(label)}</Link>)}
+        </nav>
         {doc.preface?.map((line) => (
           <p key={line} className="mt-6 text-sm leading-relaxed text-muted-foreground">
             {line}
@@ -49,6 +47,7 @@ function LegalArticle({ kind }: { kind: LegalKind }) {
         <h1 className="mt-3 font-display text-3xl leading-tight tracking-tight">{doc.title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{doc.updated}</p>
         <div className="mt-8 space-y-7">
+          {doc.paragraphs?.map(paragraph => <p key={paragraph} className="text-sm leading-relaxed text-foreground/90">{paragraph}</p>)}
           {doc.sections.map((section) => (
             <section key={section.heading}>
               <h2 className="font-display text-xl leading-snug">{section.heading}</h2>

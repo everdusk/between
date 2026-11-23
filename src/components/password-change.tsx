@@ -1,5 +1,7 @@
 "use client";
 
+import { newPasswordProblem } from "@/lib/account-validation";
+
 import { useState, type FormEvent } from "react";
 import { PasswordField } from "@/components/password-field";
 import { Button } from "@/components/ui/button";
@@ -18,6 +20,7 @@ export function PasswordChange() {
   async function save(event: FormEvent) {
     event.preventDefault();
     if (mismatch || busy) return;
+    if (newPasswordProblem(next)) { setDone(false); setError(t("webPasswordRule")); return; }
     setBusy(true);
     setError(null);
     setDone(false);
@@ -29,7 +32,8 @@ export function PasswordChange() {
       });
       const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
       if (!res.ok || !data?.ok) {
-        if (data?.error === "short_password") setError(t("webPasswordShort"));
+        if (data?.error === "weak_password") setError(t("webPasswordRule"));
+        else if (data?.error === "short_password") setError(t("webPasswordShort"));
         else if (data?.error === "server_not_configured") setError(t("webServer"));
         else setError(t("webPasswordWrong"));
         return;

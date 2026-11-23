@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ComponentProps, type FormEvent, type ReactNode } from "react";
 import Image from "next/image";
 import { registrationReason, type AuthOperation } from "@/lib/registration-errors";
-import { normalizeEmail, passwordProblem } from "@/lib/account-validation";
+import { normalizeEmail, newPasswordProblem } from "@/lib/account-validation";
 import { registrationHeaders, trackSurvey, type RegistrationMethod, type RegistrationStep } from "@/lib/survey-analytics";
 import { AtSign, Bot, Check, KeyRound, LoaderCircle, Lock, LockKeyhole } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -151,7 +151,7 @@ function yandexReturn() {
   return typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("yandex");
 }
 
-export function WebAccountGate({ onSignedIn, compact = false, initialLogin = false, surveyAttempt, yandexLogin = false }: { onSignedIn: (account: WebAccount) => void; compact?: boolean; initialLogin?: boolean; surveyAttempt?: string; yandexLogin?: boolean }) {
+export function WebAccountGate({ onSignedIn, compact = false, initialLogin = false, surveyAttempt, entryPreview, yandexLogin = false }: { onSignedIn: (account: WebAccount) => void; compact?: boolean; initialLogin?: boolean; surveyAttempt?: string; entryPreview?: ReactNode; yandexLogin?: boolean }) {
   const { t, locale } = useI18n();
   const registration = useRef<{ attempt: string; source: "survey" | "direct" } | null>(null);
   const logged = useRef(new Set<string>());
@@ -274,6 +274,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
     if (value === "mail_fail") return t("webMailFail");
     if (value === "server_not_configured") return t("webServer");
     if (value === "taken") return t("webEmailTaken");
+    if (value === "weak_password") return t("webPasswordRule");
     if (value === "short_password") return t("webPasswordShort");
     if (value === "bad_login") return t("webBadLogin");
     if (value === "limited") return t("webLoginLimited");
@@ -282,7 +283,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
   const fieldErrors: Record<string, string> = {
     "web-register-email": !email.trim() ? t("registerEmailNeeded") : malformedEmail === email || !normalizeEmail(email) ? t("webBadEmail") : "",
-    "web-register-password": !password ? t("registerPasswordNeeded") : passwordProblem(password) ? t("webPasswordRule") : "",
+    "web-register-password": !password ? t("registerPasswordNeeded") : newPasswordProblem(password) ? t("webPasswordRule") : "",
     "web-register-password-again": !passwordAgain ? t("registerRepeatNeeded") : passwordAgain !== password ? t("webPasswordMismatch") : "",
   };
   function checkField(id: string) {
@@ -358,6 +359,11 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
 
   async function loginWithYandex() {
     if (busy || startingMessenger.current) return;
+    if (!yandexLogin) {
+      setErrorScope("messenger");
+      setError(locale === "ru" ? "В этом локальном предпросмотре вход через Яндекс ID не настроен." : "Yandex ID sign-in isn’t configured for this local preview.");
+      return;
+    }
     record("oauth_started", "yandex");
     setBusy(true);
     setError(null);
@@ -500,7 +506,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       setError(null);
       checkField(invalid);
       document.getElementById(invalid)?.focus();
-      const reason = invalid === "web-register-email" ? "bad_email" : invalid === "web-register-password" ? "short_password" : "password_mismatch";
+      const reason = invalid === "web-register-email" ? "bad_email" : invalid === "web-register-password" ? (newPasswordProblem(password) === "composition" ? "weak_password" : "short_password") : "password_mismatch";
       record("error", "email", "register", reason);
       return;
     }
@@ -660,6 +666,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
       </section>}
 
       <GlassPanel ref={formRef} data-intro-mascot={surveyAttempt && creating && !waitingFor ? "register" : undefined} className="journal-gate-form mt-6 scroll-mt-4 rounded-[22px] px-5 py-6 sm:px-6">
+        {entryPreview}
         {waitingFor ? (
           <div className="grid gap-4">
             <h2 className="font-display text-2xl leading-tight">{t(waitingFor === "max" ? "webMaxLogin" : "webTgLogin")}</h2>
@@ -673,12 +680,12 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
             <Button type="button" variant="outline" onClick={chooseAnotherMethod}>{t("webChooseMethod")}</Button>
           </div>
         ) : <>
-        <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{compact && mode === "login" && creating ? t("webCreate") : title}</h2>
+        {!(surveyAttempt && creating && mode === "login") && <h2 className="font-display text-2xl leading-tight tracking-tight text-foreground">{compact && mode === "login" && creating ? t("webCreate") : title}</h2>}
         {surveyAttempt && creating && mode === "login" && (
           <p className="mt-4 text-base leading-relaxed text-foreground">
             {locale === "en"
-              ? "When you create your journal, your first entry will already be there."
-              : "Когда вы создадите дневник, в нём уже будет ваша первая запись."}
+              ? "Save this entry in your private journal. Your data is protected and anonymised."
+              : "Сохраните запись в своём приватном дневнике. Данные защищены и обезличены."}
           </p>
         )}
         {compact && !surveyAttempt && mode === "login" && <div className="mt-4 flex gap-2" role="group">
@@ -690,7 +697,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
         {mode === "login" ? (
           <>
             <div className="mt-5">
-              {yandexLogin && (
+              {(yandexLogin || (process.env.NODE_ENV === "development" && Boolean(entryPreview))) && (
                 <button type="button" className="auth-provider yandex-id-button mb-2" disabled={busy} onClick={() => void loginWithYandex()}>
                   <Image src="/yandex-sign-in.png" unoptimized width={24} height={24} alt="" />
                   {locale === "ru" ? "Войти с Яндекс ID" : t("webOAuth", { messenger: "Yandex ID" })}
@@ -797,7 +804,7 @@ export function WebAccountGate({ onSignedIn, compact = false, initialLogin = fal
                 </p>
               ) : null}
               <Button type="submit" className="w-full" size="lg" disabled={busy}>
-                {t("webCreate")}
+                {surveyAttempt ? (locale === "en" ? "Save to my journal" : "Сохранить в дневнике") : t("webCreate")}
               </Button>
               <LegalAgree className="legal-agreement text-center text-balance text-[0.8125rem] leading-normal text-muted-foreground" />
             </form>

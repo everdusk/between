@@ -2,6 +2,7 @@ import { type LocaleId } from "./i18n";
 import { translate } from "./messages";
 import { WEB_PRIVACY, WEB_TERMS } from "./legal-web";
 import { ATTRIBUTION_PRIVACY } from "./legal-attribution";
+import { CONSENT } from "./legal-consent";
 
 export const LEGAL_INN = "770507475005";
 export const LEGAL_NAME = "Ляторовская Анастасия Борисовна";
@@ -10,7 +11,7 @@ export const LEGAL_PRIVACY_URL = "https://www.between-journal.ru/privacy";
 export const LEGAL_EMAIL = "help@between-journal.ru";
 export const LEGAL_DELETE_URL = "https://www.between-journal.ru/delete";
 
-export type LegalKind = "terms" | "privacy";
+export type LegalKind = "terms" | "privacy" | "personal-data";
 export const JOURNAL_PRIVACY: Record<LocaleId, string> = {
   "ru": "Дневник также сохраняет указанное вами имя, выбор режима терапии, ответы рефлексии и выводы по темам. Они удаляются вместе с дневником в настройках аккаунта.",
   "en": "Your journal also stores the name you enter, your therapy preference, reflection answers and topic conclusions. These are erased with your journal in account settings.",
@@ -26,13 +27,23 @@ export const JOURNAL_PRIVACY: Record<LocaleId, string> = {
   "uz": "Kundalik ismingiz, terapiya tanlovingiz, mulohaza javoblari va xulosalaringizni ham saqlaydi. Ular hisob sozlamalarida kundalik bilan birga o‘chiriladi."
 };
 export type LegalSection = { heading: string; paragraphs: string[] };
-export type LegalDoc = { title: string; updated: string; preface?: string[]; sections: LegalSection[] };
+export type LegalDoc = { title: string; updated: string; preface?: string[]; paragraphs?: string[]; sections: LegalSection[] };
 
 /** Site and MAX share this edition. Telegram builds its own documents inside the client. */
 export function legalDocument(kind: LegalKind, locale: LocaleId): LegalDoc {
   const book = kind === "terms" ? WEB_TERMS : WEB_PRIVACY;
   const source = book[locale] ?? book.ru;
   const doc = { ...source, preface: [...(source.preface ?? []), translate(locale, "legalInn", { inn: LEGAL_INN })] };
+  if (kind === "personal-data") {
+    const consent = CONSENT[locale];
+    return {
+      title: consent.title,
+      updated: new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" }).format(new Date("2026-11-23")),
+      preface: doc.preface,
+      paragraphs: [consent.statement, consent.scope, consent.withdrawal],
+      sections: [],
+    };
+  }
   if (kind !== "privacy") return doc;
   const attribution = ATTRIBUTION_PRIVACY[locale] ?? ATTRIBUTION_PRIVACY.ru;
   return {

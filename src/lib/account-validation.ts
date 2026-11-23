@@ -13,3 +13,11 @@ export function passwordProblem(value: unknown): "short" | "long" | null {
   if (value.length > 200) return "long";
   return null;
 }
+
+/** Applied only when a password is first set or replaced. */
+export function newPasswordProblem(value: unknown) {
+  if (typeof value !== "string") return "short";
+  const lengthProblem = passwordProblem(value);
+  if (lengthProblem) return lengthProblem;
+  return /\p{Nd}/u.test(value) && /[\p{P}\p{S}]/u.test(value) ? null : "composition";
+}
