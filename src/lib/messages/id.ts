@@ -182,7 +182,7 @@ export const id: Catalog = {
   webOAuthTaken: "Akun ini sudah terhubung ke jurnal lain.",
   botLinkOk: "Selesai. Chat ini menulis ke jurnal Anda.",
   botLinkBad: "Kode tidak cocok. Minta yang baru di peramban, pada kartu akun.",
-  botLoginAsk: "Situs meminta membuka jurnal Anda. Jika ini Anda, tekan Masuk.",
+  botLoginAsk: "Jika Anda mulai masuk melalui situs Between, ketuk “Masuk” lalu kembali ke browser. Jurnal Anda akan terbuka di sana.",
   botLoginYes: "Masuk",
   botLoginOk: "Selesai. Kembali ke peramban — jurnal sudah terbuka.",
   botLinkTaken: "Telegram ini sudah terhubung ke jurnal lain.",

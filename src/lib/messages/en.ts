@@ -182,7 +182,7 @@ export const en: Catalog = {
   webOAuthTaken: "This account is already linked to another journal.",
   botLinkOk: "Done. This chat writes to your journal.",
   botLinkBad: "That code did not work. Request a new one in the browser, on the account card.",
-  botLoginAsk: "The site asks to open your journal. If this is you, press Sign in.",
+  botLoginAsk: "If you started signing in on the Between website, tap “Sign in” and return to your browser. Your journal will open there.",
   botLoginYes: "Sign in",
   botLoginOk: "Sign-in confirmed. Return to the browser tab where you opened the bot.",
   botLinkTaken: "This Telegram is already linked to another journal.",
