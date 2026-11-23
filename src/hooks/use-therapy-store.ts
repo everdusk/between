@@ -634,10 +634,6 @@ export function useTherapyStore(options?: {
       const current = storeRef.current;
       return persist({ ...current, themes: current.themes.map(theme => theme.id === id ? { ...theme, status, dismissed: false, updatedAt: new Date().toISOString() } : theme) });
     },
-    setObservation(id:string, response?:SessionTheme["observation"]) {
-      const current=storeRef.current;
-      return persist({...current,themes:current.themes.map(theme=>theme.id===id ? {...theme, observation:response,updatedAt:new Date().toISOString()} : theme)});
-    },
     saveReflection(id: string, reflection: NonNullable<JournalEntry["reflection"]>, topic: boolean) {
       const current = storeRef.current;
       const entry = current.entries.find(note => note.id === id);

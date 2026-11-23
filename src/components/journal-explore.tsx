@@ -6,7 +6,6 @@ import { Button } from "./ui/button";
 import { FieldSelect } from "./ui/field-select";
 import { Textarea } from "./ui/textarea";
 import { formatDayLabel } from "@/lib/dates";
-import { entriesForTheme, visibleTopic } from "@/lib/themes";
 import {
   type Feeling,
   type JournalEntry,
@@ -36,127 +35,6 @@ export function reflectionQuestion(feeling: Feeling | "unsure") {
     default:
       return "reflectPrompt";
   }
-}
-
-export function Connections({
-  store,
-  onReflect,
-  onFeedback,
-  onTopic,
-}: {
-  store: TherapyStore;
-  onReflect: (id: string) => void;
-  onFeedback: (id: string, response?: "familiar" | "hidden") => void;
-  onTopic: (id: string) => void;
-}) {
-  const { t, feeling, locale, count } = useI18n();
-  const groups = store.themes
-    .filter((theme) => !theme.dismissed && visibleTopic(theme))
-    .map((theme) => ({
-      theme,
-      notes: entriesForTheme(theme, store.entries, store.themeLinks).filter(
-        (note) => note.body.trim(),
-      ),
-    }))
-    .filter((group) => new Set(group.notes.map((note) => note.date)).size >= 2);
-  if (!groups.length)
-    return <p className="glass rounded-3xl p-6">{t("patternThin")}</p>;
-  return (
-    <div className="space-y-4">
-      {groups.map(({ theme, notes }) => {
-        if (theme.observation === "hidden")
-          return (
-            <Button
-              key={theme.id}
-              variant="ghost"
-              className="max-w-full whitespace-normal"
-              onClick={() => onFeedback(theme.id)}
-            >
-              {t("undoChange")} · {theme.title}
-            </Button>
-          );
-        const feelings = [...new Set(notes.flatMap((note) => note.feelings))];
-        const lanes = feelings.map((emotion) => ({
-          label: feeling(emotion),
-          notes: notes.filter((note) => note.feelings.includes(emotion)),
-        }));
-        const unmarked = notes.filter((note) => !note.feelings.length);
-        if (unmarked.length)
-          lanes.push({ label: t("noteNoFeeling"), notes: unmarked });
-        return (
-          <section key={theme.id} className="glass space-y-4 rounded-3xl p-5">
-            <p className="eyebrow">
-              {t("backlogFromNotes")} · {count(notes.length, "note")}
-            </p>
-            <h2 className="font-display text-xl">{theme.title}</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {lanes.map((lane) => (
-                <details
-                  key={lane.label}
-                  open={lanes.length === 1 || undefined}
-                  className="min-w-0 rounded-2xl border border-border bg-background/40 p-3"
-                >
-                  <summary className="cursor-pointer font-medium">
-                    {lane.label} · {count(lane.notes.length, "note")}
-                  </summary>
-                  {lane.notes.map((note) => (
-                    <article
-                      key={note.id}
-                      className="mt-2 border-t border-border pt-3"
-                    >
-                      <small>
-                        {formatDayLabel(note.date, locale)} ·{" "}
-                        {note.feelings.map(feeling).join(", ")}
-                      </small>
-                      <p className="my-2 whitespace-pre-wrap break-words">
-                        {note.body}
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onReflect(note.id)}
-                      >
-                        {t("deskReflection")}
-                      </Button>
-                    </article>
-                  ))}
-                </details>
-              ))}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant={
-                  theme.observation === "familiar" ? "secondary" : "outline"
-                }
-                aria-pressed={theme.observation === "familiar"}
-                onClick={() =>
-                  onFeedback(
-                    theme.id,
-                    theme.observation === "familiar" ? undefined : "familiar",
-                  )
-                }
-              >
-                {t("familiar")}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => onFeedback(theme.id, "hidden")}
-              >
-                {t("hideObservation")}
-              </Button>
-              <Button variant="outline" onClick={() => onTopic(theme.id)}>
-                {t(
-                  store.profile?.therapy === false
-                    ? "deskPersonal"
-                    : "deskTherapy",
-                )}
-              </Button>
-            </div>
-          </section>
-        );
-      })}
-    </div>
-  );
 }
 
 type Reflection = NonNullable<JournalEntry["reflection"]>;
