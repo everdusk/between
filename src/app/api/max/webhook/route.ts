@@ -1,5 +1,6 @@
 import { notificationChoice, setNotificationChoice } from "@/lib/notification-preferences";
 import { NextResponse } from "next/server";
+import { recordBotStep } from "@/lib/registration-analytics-server";
 import { trackMessengerStart } from "@/lib/acquisition-server";
 import { type LocaleId } from "@/lib/i18n";
 import { addCheckinForOwner, appendBotMessageForOwner } from "@/lib/journal-server";
@@ -251,6 +252,7 @@ async function handleStart(
   await trackMessengerStart({ payload, messenger: "max", userId, username });
   const loginToken = loginTokenFromStart(payload);
   if (loginToken) {
+    recordBotStep("max", loginToken, "bot_started", userId, username);
     await say(userId, translate(reply, "botLoginAsk"), maxLoginKeyboard(loginToken, reply), chatId);
     return;
   }
@@ -285,6 +287,7 @@ export async function POST(req: Request) {
         console.error("MAX login confirmation could not be saved");
         return null;
       });
+      if (account) recordBotStep("max", login[1].toLowerCase(), "bot_confirmed", userId, maxUsername(update));
       const text = translate("ru", account ? "botLoginOk" : "webMaxLoginFail");
       if (!(await answerMaxCallback(update.callback.callback_id, text))) await say(userId, text);
     }

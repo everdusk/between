@@ -4,8 +4,18 @@ import { analyticsStaysQuiet, deviceToken } from "./analytics-client";
 import { YANDEX_METRIKA_ID } from "./landing";
 
 export type SurveyAction = "view" | "advance" | "back" | "login" | "finish";
-export type RegistrationStep = "form_view" | "email_started" | "email_submitted" | "code_requested" | "code_submitted" | "email_registered" | "messenger_started" | "signed_in" | "error" | "result_view";
+export type RegistrationStep = "form_view" | "email_started" | "email_submitted" | "code_requested" | "code_submitted" | "email_registered" | "messenger_started" | "messenger_link_received" | "signed_in" | "error" | "result_view";
 export type RegistrationMethod = "form" | "email" | "password" | "telegram" | "max";
+export function registrationHeaders(context: { attempt: string; source: "survey" | "direct" } | null, locale: string): Record<string, string> {
+  if (!context || analyticsStaysQuiet()) return {};
+  const device = deviceToken();
+  return device ? {
+    "X-Between-Device": device,
+    "X-Between-Attempt": context.attempt,
+    "X-Between-Source": context.source,
+    "X-Between-Locale": locale,
+  } : {};
+}
 export type SurveyEvent =
   | { event: "web_registration_step"; attempt: string; source: "survey" | "direct"; stage: RegistrationStep; method: RegistrationMethod; operation?: AuthOperation; reason?: string }
   | { event: "web_landing_start"; placement: "hero" | "footer" | `guide_${keyof typeof import("./guides").guides}` }
