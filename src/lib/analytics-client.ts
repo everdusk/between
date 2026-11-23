@@ -14,6 +14,15 @@ export { clientMessenger };
 const DEVICE_KEY = "between:device";
 const QUIET_KEY = "between:analytics-quiet";
 
+/** Safari on iPad can send the same user agent as a Mac. */
+export function webDeviceHeaders(device: string): Record<string, string> {
+  return {
+    "X-Between-Device": device,
+    ...(typeof navigator !== "undefined" && navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1
+      ? { "X-Between-iPadOS": "1" } : {}),
+  };
+}
+
 /** Telegram or MAX launch of the stats owner. The website learns the same fact from the server. */
 export function clientAnalyticsQuiet(telegramInit = ""): boolean {
   if (typeof window === "undefined") return false;
@@ -122,7 +131,7 @@ export function trackAnalytics(
   else {
     const device = deviceToken();
     if (!device) return;
-    headers["X-Between-Device"] = device;
+    Object.assign(headers, webDeviceHeaders(device));
   }
   void fetch("/api/analytics", { method: "POST", headers, body, keepalive: true })
     .then(rememberQuiet)

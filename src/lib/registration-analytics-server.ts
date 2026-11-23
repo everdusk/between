@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { analyticsQuiet } from "./analytics-model";
 import { captureSurveyEvent } from "./product-analytics-server";
+import { funnelDevice, type FunnelDevice } from "./funnel-device";
 import { getRedis } from "./redis";
 import { sessionSecret, sessionTokenFromRequest } from "./web-account";
 import { accountFromSession } from "./web-account-store";
@@ -9,6 +10,7 @@ type Messenger = "telegram" | "max";
 type Context = {
   attempt: string;
   device: string;
+  deviceType?: FunnelDevice;
   source: "direct" | "survey";
   locale: "ru" | "en";
 };
@@ -31,7 +33,7 @@ async function registrationContext(req: Request): Promise<Context | null> {
       !/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(attempt) ||
       (source !== "direct" && source !== "survey") || (locale !== "ru" && locale !== "en")) return null;
   if (await quietWebAccount(req)) return null;
-  return { attempt, device, source, locale };
+  return { attempt, device, source, locale, deviceType: funnelDevice(req) };
 }
 
 type YandexError = "provider_error" | "taken" | "server_error" | "account_not_found";
@@ -41,6 +43,7 @@ async function capture(context: Context, method: Messenger | "email" | "yandex",
   if (pepper) await captureSurveyEvent("web_registration_step", {
     messenger: "web", survey_version: 1, locale: context.locale, attempt_id: context.attempt,
     registration_source: context.source, registration_step: stage, method,
+    funnel_device: context.deviceType ?? "unknown",
     ...(reason ? { error_operation: "oauth_callback", error_reason: reason } : {}),
   }, context.device, pepper);
 }
