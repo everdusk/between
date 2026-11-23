@@ -17,7 +17,7 @@ import { SessionsPanel } from "@/components/sessions-panel";
 import { WebAccountGate } from "@/components/web-account-gate";
 import { readIntroDraft, type IntroDraft, type LegacyIntroRecord } from "@/lib/intro-record";
 import { IntroCard, IntroReflection, introDraftKey } from "./intro-reflection";
-import { Connections, ReflectionPanel } from "@/components/journal-explore";
+import { ReflectionPanel } from "@/components/journal-explore";
 import { ProfileEditor } from "./journal-intro";
 import { SessionBacklog } from "./session-backlog";
 import { WebWorkspace, type SectionId } from "@/components/web-workspace";
@@ -222,7 +222,6 @@ function TherapyShell({
     importIntroduction,
     saveReflection,
     restoreTheme,
-    setObservation,
     judgeSkipped,
   } = useTherapyStore({
     initData: telegram.initData,
@@ -314,7 +313,6 @@ function TherapyShell({
   }, [shellReady]);
 
   const [entryId, setEntryId] = useState("");
-  const [topic, setTopic] = useState({ id: "", visit: 0 });
   const [hideBot, setHideBot] = useState(false);
   const signInLink = useSyncExternalStore(
     subscribeLaunch,
@@ -558,21 +556,8 @@ function TherapyShell({
               onSave={saveReflection}
             />
           ),
-          connections: (
-            <Connections
-              store={store}
-              onReflect={reflect}
-              onFeedback={setObservation}
-              onTopic={(id) => {
-                setTopic((prev) => ({ id, visit: prev.visit + 1 }));
-                selectSection("topics");
-              }}
-            />
-          ),
           topics: (
             <SessionBacklog
-              key={topic.visit}
-              initialTheme={topic.id}
               themes={store.themes}
               entries={store.entries}
               links={store.themeLinks}

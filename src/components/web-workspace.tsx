@@ -4,7 +4,6 @@ import { BrandLogo } from "./brand-logo";
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import {
   CalendarDays,
-  Network,
   NotebookPen,
   PenLine,
   Plus,
@@ -19,7 +18,6 @@ export const sections = {
   week: [Waves, "deskOverview"],
   journal: [PenLine, "deskEntries"],
   reflection: [NotebookPen, "deskReflection"],
-  connections: [Network, "deskConnections"],
   topics: [Bookmark, "deskTherapy"],
   sessions: [CalendarDays, "tabSessions"],
 } as const;

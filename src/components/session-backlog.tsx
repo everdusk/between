@@ -13,7 +13,6 @@ import { Textarea } from "./ui/textarea";
 import { cn } from "@/lib/utils";
 
 interface SessionBacklogProps {
-  initialTheme?: string;
   themes: SessionTheme[];
   entries: JournalEntry[];
   links: ThemeLink[];
@@ -146,7 +145,6 @@ function ThemeRow({
 }
 
 export function SessionBacklog({
-  initialTheme,
   personal, onRestore,
   themes,
   entries,
@@ -160,8 +158,8 @@ export function SessionBacklog({
 }: SessionBacklogProps) {
   const { t, locale, count, feeling } = useI18n();
   const [draft, setDraft] = useState("");
-  const [openId, setOpenId] = useState<string | null>(initialTheme ?? null);
-  const [archiveOpen, setArchiveOpen] = useState(themes.some(theme=>theme.id===initialTheme && theme.status==="discussed"));
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const active = themes.filter(theme => !theme.dismissed && theme.status !== "archived" && visibleTopic(theme));
   const live = active.filter(theme => theme.status === "active");
   const archive = active.filter(theme => theme.status === "discussed");
