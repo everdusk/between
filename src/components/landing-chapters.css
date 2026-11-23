@@ -62,6 +62,8 @@
   transform:rotate(-32deg);
 }
 .chapter-screen .chapter-media { display:block; box-sizing:content-box; width:calc(var(--video-width) - 4px); height:auto; aspect-ratio: 624/866; object-fit:contain; border-radius:24px; border:2px solid #34433f; background:#080d0c; box-shadow:var(--brand-button-shadow); }
+.chapter-frames { display:grid; }
+.chapter-frames > img { grid-area:1 / 1; }
 .chapter-playback { display:block; margin:6px auto 0; min-height:32px; font-size:.8rem; color:var(--muted-foreground); cursor:pointer; }
 @media (width > 1024px) {
   .chapter-page h1 { margin-top: 0; }

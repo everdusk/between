@@ -139,13 +139,20 @@ function LandingContent() {
   const mode = useSyncExternalStore(subscribeDemoMode, demoMode, initialDemoMode);
   const [inView, setInView] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [loadedGif, setLoadedGif] = useState<string | null>(null);
+  const [displayedFrame, setDisplayedFrame] = useState<{src: string; alt: string} | null>(null);
+  const [failedGif, setFailedGif] = useState<string | null>(null);
   const directory = useDemoMediaDirectory();
   const folder = directory && `${directory}/chapters/${en ? "en/" : ""}`;
   const media = folder && folder + (journalDemo ? "events" : clip);
   const mediaVersion = 8;
   const animate = mode === "animation" && inView && !paused;
-  const imageSrc = folder && `${folder}${clip}.${animate ? "gif" : "webp"}?v=${mediaVersion}`;
+  const poster = folder && `${folder}${clip}.webp?v=${mediaVersion}`;
+  const gif = folder && `${folder}${clip}.gif?v=${mediaVersion}`;
+  const imageSrc = animate && gif !== failedGif ? gif : poster;
+  const alt = `${en ? "Between web journal" : "Веб-дневник Between"} · ${label}`;
+  const visibleFrame = displayedFrame ?? (poster ? {src: poster, alt} : null);
+  const frames = visibleFrame ? [visibleFrame] : [];
+  if (imageSrc && imageSrc !== visibleFrame?.src) frames.push({src: imageSrc, alt});
   useEffect(() => {
     const figure = figureRef.current;
     if (!figure || mode !== "animation") return;
@@ -160,10 +167,10 @@ function LandingContent() {
     };
   }, [mode]);
   useEffect(() => {
-    if (!animate || !imageSrc || loadedGif !== imageSrc) return;
+    if (!animate || !imageSrc || displayedFrame?.src !== imageSrc) return;
     const timer = window.setTimeout(() => setChapter((chapter + 1) % chapters.length), gifDurations[en ? "en" : "ru"][chapter]);
     return () => window.clearTimeout(timer);
-  }, [animate, chapter, en, imageSrc, loadedGif]);
+  }, [animate, chapter, en, imageSrc, displayedFrame]);
   function selectChapter(index: number) {
     if (journalDemo && index < 2 && videoRef.current?.readyState) {
       videoRef.current.currentTime = index === 1 ? feelingsAt : 0;
@@ -215,12 +222,19 @@ function LandingContent() {
                   setChapter(journalDemo ? 2 : (chapter + 1) % chapters.length);
                 }
               }}
-              poster={folder ? `${folder}${clip}.webp?v=${mediaVersion}` : undefined}
+              poster={poster ?? undefined}
               src={media ? `${media}.mp4?v=${mediaVersion}` : undefined}
-              aria-label={`${en ? "Between web journal" : "Веб-дневник Between"} · ${label}`} />
-              : imageSrc && <Image key={imageSrc} className="chapter-media" src={imageSrc} unoptimized
-                width={540} height={750} alt={`${en ? "Between web journal" : "Веб-дневник Between"} · ${label}`}
-                onLoad={() => setLoadedGif(animate ? imageSrc : null)} />}
+              aria-label={alt} />
+              : <div className="chapter-frames">
+                  {frames.map(frame => <Image key={frame.src} className="chapter-media" src={frame.src}
+                    unoptimized loading="eager" width={540} height={750} alt={frame.alt}
+                    style={{visibility: frame.src === visibleFrame?.src ? "visible" : "hidden"}}
+                    onLoad={() => {
+                      // Next Image calls onLoad after decode. Keep that same DOM node on screen.
+                      if (frame.src === imageSrc) setDisplayedFrame(frame);
+                    }}
+                    onError={() => { if (frame.src === gif && frame.src === imageSrc) setFailedGif(gif); }} />)}
+                </div>}
             {mode === "animation" && <button type="button" className="chapter-playback" onClick={() => setPaused(!paused)}>
               {paused ? (en ? "Resume animation" : "Продолжить анимацию") : (en ? "Pause animation" : "Приостановить анимацию")}
             </button>}
