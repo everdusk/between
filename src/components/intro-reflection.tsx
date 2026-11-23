@@ -157,10 +157,9 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
     </>}
     {screen==="bot_demo" && demo && <>
       <p>{say("После регистрации можно подключить бота: отправляйте заметки сообщением и отмечайте настроение прямо в чате.", "After signing up, you can connect the bot to send notes and check in on your mood right in the chat.")}</p>
-      <figure className="max-w-sm space-y-2">{directory && <Image src={`${directory}/chat-${demo}-${en ? "en" : "ru"}-v2.webp`}
-        width={400} height={408} className="w-full rounded-2xl"
-        alt={say("Пример переписки с Between: заметка об обеде во дворе, кнопка открытия дневника и девять вариантов настроения.","Example Between chat with a note about lunch outside, a button to open the journal and nine mood choices.")}/>}
-        <figcaption className="text-sm text-muted-foreground">{say("Пример переписки","Example chat")} · {demo==="max"?"MAX":"Telegram"}</figcaption></figure>
+      {directory && <Image src={`${directory}/chat-${demo}-${en ? "en" : "ru"}-v2.webp`}
+        width={400} height={408} className="w-full max-w-sm rounded-2xl"
+        alt={say("Переписка с Between: заметка об обеде во дворе и кнопки для отметки настроения.", "A chat with Between showing a note about lunch outside and buttons to log a mood.")}/>}
       <Button className="ms-auto flex w-fit" data-confirm="" onClick={()=>go(step+1)}>{say("Продолжить","Continue")}</Button>
     </>}
     {screen==="recent" && <div className="flex flex-wrap gap-2">
@@ -203,7 +202,6 @@ export function IntroReflection({onFinish}:{onFinish:(r:IntroDraft)=>boolean}) {
       <p>{say("Когда вы описываете свои чувства словами и перечитываете записи, легче заметить, что повторяется. Постепенно становится яснее, что придаёт вам сил, что утомляет и как вы чувствуете себя рядом с разными людьми. Так проще понять, чему уделять больше времени, а чего избегать.",
         "Putting your feelings into words and looking back at your notes can help you spot patterns. Over time, you may see what gives you energy, what wears you out, and how you feel around different people. That makes it easier to see what to make more time for and what to avoid.")}</p>
       <figure className="space-y-2">
-        <figcaption className="text-sm text-muted-foreground">{say("Пример из дневника · 9–15 ноября","Example journal · November 9–15")}</figcaption>
         <WeekSpectrum dayKeys={sampleDays} entries={sampleEntries} todayKey={sampleDays[6]}
           patternTitle="" patternText="" patternPending="" />
         <p className="text-sm text-muted-foreground">{say("Отмечайте чувства сколько хочется раз в день. Дни можно пропускать.","Check in as often as you like. It’s fine to skip days.")}</p>
