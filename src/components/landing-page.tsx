@@ -264,6 +264,7 @@ export function LandingPage() {
           </a>
           <p>{en ? "7 days free. No card or automatic charges." : "7 дней бесплатно. Без карты и автосписаний."}</p>
           {!en && <nav aria-label="Статьи о дневнике" className="chapter-guide-links">
+            <a href="/guides">Все статьи</a>
             <a href="/guides/dnevnik-emotsiy">Как вести дневник эмоций</a>
             <a href="/guides/mezhdu-sessiyami">Что записывать между сессиями</a>
             <a href="/guides/trevoga-pered-snom">Тревога перед сном</a>
