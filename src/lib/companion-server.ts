@@ -20,14 +20,7 @@ import { isReviewOwner } from "./review-owner";
 import { resolveJournalId } from "./web-account-store";
 
 const hello =
-  "Привет! Я ИИ-компаньон Between. Здесь можно поговорить, а важные моменты я сохраню в твоём дневнике. Иногда буду вспоминать то, о чём мы уже говорили. Как тебя называть? Можно выбрать любое имя.";
-const preferences = "Как удобнее общаться — на «ты» или на «вы»?";
-const background = (address?: string) =>
-  address?.toLowerCase().includes("ты")
-    ? "Сколько тебе лет и в каком роде к тебе обращаться? Если не хочется отвечать, можно пропустить."
-    : "Сколько вам лет и в каком роде к вам обращаться? Если не хочется отвечать, можно пропустить.";
-const discovery =
-  "Что в последнее время особенно радует или беспокоит? Можно начать с любого события.";
+  "Привет 🤍 Я ИИ-компаньон. Можно выговориться или вместе подумать над чем-то. Пиши как есть, даже если пока трудно подобрать слова.";
 const stateKey = (owner: string) => "between:user:" + owner + ":companion";
 
 async function generate(payload: object) {
@@ -121,48 +114,21 @@ export async function handleCompanion(input: {
       let current = await snapshot();
       let notes: ReturnType<typeof readCompanionReply>["notes"] = [];
       if (start) {
-        answer =
-          state.stage === "name"
-            ? hello
-            : state.stage === "address"
-              ? preferences
-              : state.stage === "background"
-                ? background(state.address)
-                : state.stage === "discovery"
-                  ? discovery
-                  : "Я здесь. О чём хочется поговорить сегодня?";
-      } else if (state.stage === "name") {
-        state.name = text.slice(0, 100);
-        state.stage = "address";
-        answer = preferences;
-      } else if (state.stage === "address") {
-        state.address = text.slice(0, 80);
-        state.stage = "background";
-        answer = background(state.address);
-      } else if (state.stage === "background") {
-        state.background = text.slice(0, 120);
-        state.stage = "discovery";
-        answer = discovery;
+        answer = state.recent.length ? "Привет 🤍 Я на связи." : hello;
       } else {
         const context = companionContext(
           current.store,
           text,
           state.recent.at(-1),
         );
-        const mode =
-          state.stage === "discovery" && state.discovery >= 2
-            ? "recap"
-            : state.stage;
         const allowed = await takeBriefAttempt(owner, date, 120, "companion");
         try {
           if (!allowed) throw new Error("daily limit");
           const asked = await redis.get<string>(key + ":asked");
           const raw = await generate({
-            mode,
             preferences: {
               name: state.name,
               address: state.address,
-              background: state.background,
             },
             diary: context,
             recent: state.recent,
@@ -172,8 +138,6 @@ export async function handleCompanion(input: {
           const result = readCompanionReply(raw, text, context);
           answer = result.reply;
           notes = result.notes;
-          if (mode === "recap") state.stage = "chat";
-          if (state.stage === "discovery") state.discovery++;
           if (
             result.followUp &&
             (!state.followUp || state.followUp.text === asked)
@@ -287,7 +251,7 @@ export async function dueCompanionQuestion(owner: string, date: string) {
   const key = stateKey(owner);
   const state = await redis.get<CompanionState>(key);
   const question = state?.followUp;
-  if (state?.stage !== "chat" || !question || question.due > date) return null;
+  if (!question || question.due > date) return null;
   const last = await redis.get<string>(key + ":asked");
   if (last === question.text) return null;
   return {
