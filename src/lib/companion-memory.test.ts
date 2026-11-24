@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { emptyStore } from "./types";
+import { askCompanion } from "./companion-model";
 import {
   applyCompanionNotes,
   companionContext,
@@ -19,6 +20,65 @@ const note: CompanionNote = {
   beforeId: "",
   question: "",
 };
+
+test("retries Luna without JSON mode after the provider rejects the format or returns no answer", async () => {
+  for (const firstResponse of [
+    new Response(null, { status: 400 }),
+    Response.json({ choices: [{ message: { content: "" } }] }),
+  ]) {
+    const calls: RequestInit[] = [];
+    const reply = await askCompanion({
+      apiKey: "test",
+      base: "https://example.test/v1",
+      payload: { message: "Тест сообщения" },
+      read: (raw) =>
+        readCompanionReply(raw, "Тест сообщения", { topics: [], notes: [] }),
+      request: async (_, init) => {
+        calls.push(init!);
+        return calls.length === 1
+          ? firstResponse
+          : Response.json({
+              choices: [
+                {
+                  message: {
+                    content:
+                      '\x60\x60\x60json\n{"reply":"Привет"}\n\x60\x60\x60',
+                  },
+                },
+              ],
+            });
+      },
+    });
+    assert.equal(reply.reply, "Привет");
+    assert.deepEqual(reply.notes, []);
+    assert.equal(calls.length, 2);
+    const [first, retry] = calls.map((call) => JSON.parse(String(call.body)));
+    assert.deepEqual(first.response_format, { type: "json_object" });
+    assert.equal(retry.response_format, undefined);
+    assert.equal(retry.model, "gpt-6-luna");
+    assert.equal(retry.max_tokens, 2048);
+    assert.deepEqual(retry.reasoning, { effort: "none" });
+    assert.equal(calls[0].signal, calls[1].signal);
+  }
+});
+
+test("does not retry an AITUNNEL permission failure", async () => {
+  let attempts = 0;
+  await assert.rejects(
+    askCompanion({
+      apiKey: "test",
+      base: "https://example.test/v1",
+      payload: {},
+      read: () => null,
+      request: async () => {
+        attempts++;
+        return new Response(null, { status: 403 });
+      },
+    }),
+    /http_403/,
+  );
+  assert.equal(attempts, 1);
+});
 test("explicit notes survive a model outage and redelivery; existing notes and settings stay intact", () => {
   const initial = emptyStore();
   const store = applyCompanionNotes(
