@@ -41,7 +41,7 @@ export function surveyProperties(data: Record<string, unknown>): Record<string, 
     };
   }
   if (data.event === "web_landing_start") {
-    return ["hero", "footer", "guide_emotions", "guide_therapy", "guide_worry", "guide_anger"].includes(String(data.placement)) && typeof data.placement === "string"
+    return ["hero", "footer", "guide_emotions", "guide_therapy", "guide_worry", "guide_anger", "guide_eq"].includes(String(data.placement)) && typeof data.placement === "string"
       ? { ...common, placement: data.placement } : null;
   }
   if (data.event !== "web_survey_step" || typeof data.question !== "string" ||
