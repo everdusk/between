@@ -30,6 +30,7 @@ import {
   trackServerEvent,
 } from "@/lib/analytics";
 import { isReviewOwner } from "@/lib/review-owner";
+import { handleCompanion } from "@/lib/companion-server";
 import { linkCodeFromStart, loginTokenFromStart } from "@/lib/web-account";
 import { claimTelegramLink, finishTelegramLogin, resolveJournalId } from "@/lib/web-account-store";
 import {
@@ -424,6 +425,7 @@ async function handleVoice(
     return false;
   }
 
+  if (await handleCompanion({userId,username:message.from?.username,messageId:message.message_id,text:body,say})) return false;
   try {
     await appendBotMessageToToday(userId, body);
     await trackServerEvent({
@@ -557,6 +559,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true });
     }
     if (userId && isBotCommand(text, "start")) {
+      const payload = startPayload(text);
+      if ((!payload || payload === "companion") && await handleCompanion({
+        userId,username:message.from?.username,messageId:message.message_id,text:"",start:true,
+        say:answer=>telegramRequest("sendMessage",{chat_id:chatId,text:answer,reply_markup:keyboard}),
+      })) return NextResponse.json({ok:true});
       await trackMessengerStart({ payload: startPayload(text), messenger: "telegram", userId, username: message.from?.username });
     }
     if (userId && isLandingStart(text)) {
@@ -720,6 +727,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   }
 
+  if (await handleCompanion({
+    userId,username:message.from?.username,messageId:message.message_id,text,
+    say:answer=>telegramRequest("sendMessage",{chat_id:chatId,text:answer,reply_markup:keyboard}),
+  })) return NextResponse.json({ok:true});
   try {
     await appendBotMessageToToday(userId, text);
     await trackServerEvent({

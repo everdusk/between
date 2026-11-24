@@ -551,6 +551,7 @@ function TherapyShell({
       initData={telegram.initData}
     >
       <WebWorkspace
+        hideReflection={reviewPilot && !guest}
         homeHref={telegram.ready && !telegram.inTelegram && !inMax ? `/?lang=${locale}` : undefined}
         section={guest && section !== "journal" ? "week" : personal && section === "sessions" ? "topics" : section}
         onSection={next=>{

@@ -43,10 +43,12 @@ export function erasurePlan(input: {
       `between:user:${id}:source`,
       `between:user:${id}:name`,
       `between:user:${id}:cache-id`,
+      `between:user:${id}:companion`,
       `between:onboard:${id}`,
     );
     patterns.push(
       `between:user:${id}:brief:*`,
+      `between:user:${id}:companion:*`,
       `between:user:${id}:brief-latest:*`,
       `between:user:${id}:brief-count:*`,
       `between:digest:${id}:*`,
