@@ -54,6 +54,7 @@ import {
   downloadTelegramFile,
   isBotCommand,
   miniAppKeyboard,
+  onboardReplyMarkup,
   sendTelegramWelcome,
   parseFeelingCallback,
   blockedTelegramUser,
@@ -171,6 +172,22 @@ export async function GET() {
 }
 
 async function handleCallback(callback: TelegramCallback) {
+  if (callback.data?.startsWith("ci:")) {
+    await telegramRequest("answerCallbackQuery", { callback_query_id: callback.id });
+    const message = callback.message;
+    if (message?.chat.type !== "private" || message.chat.id !== callback.from.id) return;
+    await handleCompanion({
+      userId: callback.from.id,
+      username: callback.from.username,
+      messageId: message.message_id,
+      action: { id: callback.id, data: callback.data },
+      text: "",
+      say: (text, rows) => telegramRequest("sendMessage", {
+        chat_id: message.chat.id, text, reply_markup: rows ? onboardReplyMarkup(rows) : undefined,
+      }),
+    });
+    return;
+  }
   if (callback.from?.id && notificationChoice(callback.data ?? "")) {
     const { reply } = await localesFor(callback.from);
     const owner = await resolveJournalId(callback.from.id);
@@ -430,7 +447,9 @@ async function handleVoice(
     username: message.from?.username,
     messageId: message.message_id,
     text: body,
-    say: text => telegramRequest("sendMessage", { chat_id: chatId, text }),
+    say: (text, rows) => telegramRequest("sendMessage", {
+      chat_id: chatId, text, reply_markup: rows ? onboardReplyMarkup(rows) : undefined,
+    }),
   })) return false;
   try {
     await appendBotMessageToToday(userId, body);
@@ -568,7 +587,7 @@ export async function POST(req: Request) {
       const payload = startPayload(text);
       if ((!payload || payload === "companion") && await handleCompanion({
         userId,username:message.from?.username,messageId:message.message_id,text:"",start:true,
-        say:answer=>telegramRequest("sendMessage",{chat_id:chatId,text:answer}),
+        say:(answer, rows)=>telegramRequest("sendMessage",{chat_id:chatId,text:answer,reply_markup:rows ? onboardReplyMarkup(rows) : undefined}),
       })) return NextResponse.json({ok:true});
       await trackMessengerStart({ payload: startPayload(text), messenger: "telegram", userId, username: message.from?.username });
     }
@@ -741,7 +760,7 @@ export async function POST(req: Request) {
 
   if (await handleCompanion({
     userId,username:message.from?.username,messageId:message.message_id,text,
-    say:answer=>telegramRequest("sendMessage",{chat_id:chatId,text:answer}),
+    say:(answer, rows)=>telegramRequest("sendMessage",{chat_id:chatId,text:answer,reply_markup:rows ? onboardReplyMarkup(rows) : undefined}),
   })) return NextResponse.json({ok:true});
   try {
     await appendBotMessageToToday(userId, text);
