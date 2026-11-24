@@ -137,7 +137,10 @@ export function readCompanionReply(
   text: string,
   context: ReturnType<typeof companionContext>,
 ) {
-  const data = JSON.parse(raw);
+  const textBlock = raw
+    .trim()
+    .match(/^\x60{3}(?:json)?\s*([\s\S]*?)\s*\x60{3}$/i);
+  const data = JSON.parse(textBlock?.[1] ?? raw);
   if (typeof data?.reply !== "string" || !data.reply.trim())
     throw new Error("empty companion reply");
   const notes: CompanionNote[] = [];

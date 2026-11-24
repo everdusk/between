@@ -6,7 +6,7 @@ import {
   readCompanionReply,
   type CompanionState,
 } from "./companion-memory";
-import { companionPrompt } from "./companion-prompt";
+import { askCompanion, CompanionModelError } from "./companion-model";
 import {
   getRedis,
   getUserTimezone,
@@ -22,43 +22,6 @@ import { resolveJournalId } from "./web-account-store";
 const hello =
   "Привет 🤍 Я ИИ-компаньон. Можно выговориться или вместе подумать над чем-то. Пиши как есть, даже если пока трудно подобрать слова.";
 const stateKey = (owner: string) => "between:user:" + owner + ":companion";
-
-async function generate(payload: object) {
-  const key = normalizeAitunnelKey(process.env.AITUNNEL_API_KEY);
-  if (!key) throw new Error("companion unavailable");
-  const base = (
-    process.env.AITUNNEL_BASE_URL?.trim() || "https://api.aitunnel.ru/v1"
-  ).replace(/\/+$/, "");
-  const response = await fetch(base + "/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: "Bearer " + key,
-      "Content-Type": "application/json",
-    },
-    signal: AbortSignal.timeout(25000),
-    cache: "no-store",
-    body: JSON.stringify({
-      model: "gpt-6-luna",
-      response_format: { type: "json_object" },
-      max_completion_tokens: 1500,
-      messages: [
-        { role: "system", content: companionPrompt },
-        { role: "user", content: JSON.stringify(payload) },
-      ],
-    }),
-  });
-  if (!response.ok) throw new Error("companion provider " + response.status);
-  const data = await response.json();
-  const usage = data.usage;
-  if (usage)
-    console.info("companion_usage", {
-      input: usage.prompt_tokens,
-      cached: usage.prompt_tokens_details?.cached_tokens,
-      output: usage.completion_tokens,
-      rub: usage.cost_rub,
-    });
-  return data.choices?.[0]?.message?.content ?? "";
-}
 
 export async function handleCompanion(input: {
   userId: number;
@@ -125,17 +88,21 @@ export async function handleCompanion(input: {
         try {
           if (!allowed) throw new Error("daily limit");
           const asked = await redis.get<string>(key + ":asked");
-          const raw = await generate({
-            preferences: {
-              name: state.name,
-              address: state.address,
+          const result = await askCompanion({
+            apiKey: normalizeAitunnelKey(process.env.AITUNNEL_API_KEY),
+            base: (
+              process.env.AITUNNEL_BASE_URL?.trim() ||
+              "https://api.aitunnel.ru/v1"
+            ).replace(/\/+$/, ""),
+            payload: {
+              preferences: { name: state.name, address: state.address },
+              diary: context,
+              recent: state.recent,
+              lastScheduledQuestion: asked,
+              message: text,
             },
-            diary: context,
-            recent: state.recent,
-            lastScheduledQuestion: asked,
-            message: text,
+            read: (raw) => readCompanionReply(raw, text, context),
           });
-          const result = readCompanionReply(raw, text, context);
           answer = result.reply;
           notes = result.notes;
           if (
@@ -153,10 +120,30 @@ export async function handleCompanion(input: {
             ...state.recent,
             { user: text.slice(0, 1500), reply: answer.slice(0, 900) },
           ].slice(-6);
-        } catch {
-          answer = allowed
-            ? "Сейчас не получается ответить. Попробуйте отправить сообщение ещё раз чуть позже."
-            : "Сегодня достигнут лимит ответов компаньона. Продолжим завтра.";
+        } catch (error) {
+          const code = !allowed
+            ? "daily_limit"
+            : error instanceof CompanionModelError
+              ? error.code
+              : error instanceof Error && error.name === "TimeoutError"
+                ? "timeout"
+                : "request_failed";
+          console.warn("companion_failed", { code });
+          if (!allowed) {
+            answer =
+              "Сегодня достигнут лимит ответов компаньона. Продолжим завтра.";
+          } else if (
+            ["missing_key", "http_401", "http_403", "http_404"].includes(code)
+          ) {
+            answer =
+              "Сейчас Luna недоступна для этого бота. Нужно проверить доступ в AI Tunnel.";
+          } else if (code === "http_402") {
+            answer =
+              "AI Tunnel отклонил запрос из-за оплаты. Нужно проверить баланс.";
+          } else {
+            answer =
+              "Сейчас не получается ответить. Попробуй отправить сообщение ещё раз чуть позже.";
+          }
         }
       }
       let noteText = start ? "" : text;
