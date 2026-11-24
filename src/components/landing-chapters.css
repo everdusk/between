@@ -33,7 +33,7 @@
   @keyframes chapter-caret { 0%, 100% { opacity:1; } 50% { opacity:0; } }
   @keyframes chapter-appear { from { opacity:.3; } to { opacity:1; } }
 }
-.chapter-cta { display:inline-flex; align-items:center; justify-content:center; min-height:56px; width:min(262px,100%); border-radius:40px; }
+.chapter-cta { min-height:56px; width:min(262px,100%); border-radius:40px; }
 .chapter-story nav { display:flex; flex-direction:column; max-width:440px; margin-top:15px; border-top:1px solid #33413c; padding-top:16px; }
 .chapter-story nav small { text-transform:uppercase; letter-spacing:.16em; font-size:10px; color:#9cafaa; margin-bottom:10px; }
 .chapter-story nav button { display:flex; align-items:center; gap:24px; color:#a0aea8; text-align:left; padding:6px 18px; margin:3px 0; border-left:2px solid #37433f; cursor:pointer; }
