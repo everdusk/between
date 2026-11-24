@@ -1,3 +1,5 @@
+import { dueCompanionQuestion } from "@/lib/companion-server";
+import { isReviewJournal } from "@/lib/review-owner";
 import { withNotificationRun } from "@/lib/notification-run";
 import { NextResponse } from "next/server";
 import { scheduleAcquisitionSync } from "@/lib/acquisition-server";
@@ -164,7 +166,21 @@ async function digestUser(
     const exact = !pollsOpen || reduced ? null : slotForHour(clock.hour);
     const due = pollsOpen && !reduced && !exact ? duePoll({ store, dateKey: clock.dateKey, hour: clock.hour }) : null;
     const slotName = exact ?? due;
-    if (!slotName) return { ...EMPTY_TALLY, skipped: 1 };
+    let companionSent = 0;
+    if (channel === "telegram" && clock.hour === 17 && pollsOpen && store.notify.moodPolls &&
+          await isReviewJournal(owner)) {
+        const question = await dueCompanionQuestion(owner,clock.dateKey);
+        if (question && await claimDigestSlot(owner,clock.dateKey,"companion-question")) {
+          const delivery = await deliverText(channel,userId,maxId,question.text,{});
+          if (delivery === "ok") { await question.delivered(); companionSent = 1; }
+          else {
+            await releaseDigestSlot(owner,clock.dateKey,"companion-question");
+            if (delivery === "blocked") await rememberBotBlocked(userId);
+          }
+        }
+    }
+    const skip = {...EMPTY_TALLY, sent:companionSent, skipped:companionSent ? 0 : 1};
+    if (!slotName) return skip;
 
     const action = exact
       ? digestAction({
@@ -176,9 +192,9 @@ async function digestUser(
       : due
         ? { type: "poll" as const, slot: due }
         : { type: "skip" as const };
-    if (action.type === "skip") return { ...EMPTY_TALLY, skipped: 1 };
+    if (action.type === "skip") return skip;
 
-    if (!await claimDigestSlot(userId, clock.dateKey, slotName)) return { ...EMPTY_TALLY, skipped: 1 };
+    if (!await claimDigestSlot(userId, clock.dateKey, slotName)) return skip;
     const delivery =
       action.type === "poll"
         ? await deliverText(channel, userId, maxId, pollText(action.slot, locale), {
@@ -192,7 +208,7 @@ async function digestUser(
       if (delivery === "blocked") await rememberBotBlocked(userId);
       return { ...EMPTY_TALLY, failed: 1 };
     }
-    return { ...EMPTY_TALLY, sent: 1 };
+    return { ...EMPTY_TALLY, sent: 1 + companionSent };
   });
   return result ?? { ...EMPTY_TALLY, skipped: 1 };
 }

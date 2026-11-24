@@ -34,6 +34,7 @@ export function WebWorkspace({
   footer,
   onCompose,
   personal,
+  hideReflection,
   guestBanner,
 }: {
   guestBanner?: ReactNode;
@@ -46,6 +47,7 @@ export function WebWorkspace({
   footer: ReactNode;
   onCompose: () => void;
   personal: boolean;
+  hideReflection?: boolean;
 }) {
   const { t } = useI18n();
   const main = useRef<HTMLElement>(null);
@@ -97,7 +99,7 @@ export function WebWorkspace({
       </header>
       {!blocked && (
         <nav className="desk-nav" aria-label={t("sections")}>
-          {ids.map((id) => {
+          {ids.filter(id => !(hideReflection && id === "reflection")).map((id) => {
             const restricted = guestBanner && id !== "week" && id !== "journal";
             const Icon = restricted ? LockKeyhole : sections[id][0];
             return (
