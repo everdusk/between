@@ -7,6 +7,7 @@ import {
   type CompanionState,
 } from "./companion-memory";
 import { askCompanion, CompanionModelError } from "./companion-model";
+import { advanceCompanionIntake, type IntakeReply } from "./companion-intake";
 import {
   getRedis,
   getUserTimezone,
@@ -19,19 +20,18 @@ import { todayInTimeZone } from "./zoned";
 import { isReviewOwner } from "./review-owner";
 import { resolveJournalId } from "./web-account-store";
 
-const hello =
-  "Привет 🤍 Я ИИ-компаньон. Можно выговориться или вместе подумать над чем-то. Пиши как есть, даже если пока трудно подобрать слова.";
 const stateKey = (owner: string) => "between:user:" + owner + ":companion";
 
 export async function handleCompanion(input: {
   userId: number;
   username?: string;
   messageId: number;
+  action?: { id: string; data: string };
   text: string;
   start?: boolean;
-  say: (reply: string) => Promise<boolean>;
+  say: (reply: string, rows?: IntakeReply["rows"]) => Promise<boolean>;
 }): Promise<boolean> {
-  const { userId, username, messageId, text, start, say } = input;
+  const { userId, username, messageId, text, start, action, say } = input;
   const redis = getRedis();
   if (
     !redis ||
@@ -46,14 +46,20 @@ export async function handleCompanion(input: {
   const key = stateKey(owner);
   if (!start && !(await redis.exists(key))) return false;
   const epoch = await journalCacheId(owner);
-  const receipt = key + ":reply:" + epoch + ":" + messageId;
+  const receipt =
+    key +
+    ":reply:" +
+    epoch +
+    ":" +
+    (action ? "callback:" + action.id : messageId);
   const lease = crypto.randomUUID();
   if (!(await redis.set(key + ":lock", lease, { nx: true, ex: 70 })))
     throw new Error("companion busy");
   try {
-    const saved = await redis.get<{ text: string; sent: boolean }>(receipt);
+    const saved = await redis.get<IntakeReply & { sent: boolean }>(receipt);
     if (saved?.sent) return true;
     let answer = saved?.text;
+    let rows = saved?.rows;
     if (!answer) {
       const previous = await redis.get<CompanionState>(key);
       if (!previous && !start) return false;
@@ -76,8 +82,18 @@ export async function handleCompanion(input: {
       };
       let current = await snapshot();
       let notes: ReturnType<typeof readCompanionReply>["notes"] = [];
-      if (start) {
-        answer = state.recent.length ? "Привет 🤍 Я на связи." : hello;
+      const urgent =
+        !action &&
+        /(?:не хочу жить|хочу умереть|хочу себя убить|поконч[уи]ть с собой|убью себя|причиню себе вред)/iu.test(
+          text,
+        );
+      const intakeReply = urgent
+        ? null
+        : advanceCompanionIntake(state, { text, start, action: action?.data });
+      if (intakeReply) {
+        if (!intakeReply.text) return true;
+        answer = intakeReply.text;
+        rows = intakeReply.rows;
       } else {
         const context = companionContext(
           current.store,
@@ -95,7 +111,17 @@ export async function handleCompanion(input: {
               "https://api.aitunnel.ru/v1"
             ).replace(/\/+$/, ""),
             payload: {
-              preferences: { name: state.name, address: state.address },
+              preferences: {
+                name: state.name,
+                address: state.address,
+                gender: state.gender,
+              },
+              ...(state.intake?.topic && {
+                introduction: {
+                  topic: state.intake.topic,
+                  rating: state.intake.rating,
+                },
+              }),
               diary: context,
               recent: state.recent,
               lastScheduledQuestion: asked,
@@ -105,6 +131,7 @@ export async function handleCompanion(input: {
           });
           answer = result.reply;
           notes = result.notes;
+          if (result.gender) state.gender = result.gender;
           if (
             result.followUp &&
             (!state.followUp || state.followUp.text === asked)
@@ -146,7 +173,7 @@ export async function handleCompanion(input: {
           }
         }
       }
-      let noteText = start ? "" : text;
+      let noteText = intakeReply ? "" : text;
       if (
         /^(?:запиши|сохрани|запомни) (?:это|моё последнее сообщение)[.!]?$/iu.test(
           noteText.trim(),
@@ -205,7 +232,7 @@ export async function handleCompanion(input: {
             JSON.stringify(state),
             epoch,
             lease,
-            JSON.stringify({ text: answer, sent: false }),
+            JSON.stringify({ text: answer, rows, sent: false }),
           ],
         );
         if (code < 0) throw new Error("journal changed");
@@ -216,10 +243,11 @@ export async function handleCompanion(input: {
       }
       if (!committed) throw new Error("retry companion");
     }
-    if (!(await say(answer))) throw new Error("companion delivery failed");
+    if (!(await say(answer, rows)))
+      throw new Error("companion delivery failed");
     await redis.set(
       receipt,
-      { text: answer, sent: true },
+      { text: answer, rows, sent: true },
       { xx: true, ex: 172800 },
     );
     return true;
@@ -238,7 +266,8 @@ export async function dueCompanionQuestion(owner: string, date: string) {
   const key = stateKey(owner);
   const state = await redis.get<CompanionState>(key);
   const question = state?.followUp;
-  if (!question || question.due > date) return null;
+  if (!question || state?.intake?.step !== "done" || question.due > date)
+    return null;
   const last = await redis.get<string>(key + ":asked");
   if (last === question.text) return null;
   return {

@@ -2,11 +2,14 @@ import { applyReviewVerdict, recordReview } from "./theme-review";
 import { judgeStamp, visibleTopic } from "./themes";
 import type { JournalEntry, TherapyStore } from "./types";
 import { PICKER_FEELINGS, type Feeling } from "./types";
+import type { Intake } from "./companion-intake";
 
 type Turn = { user: string; reply: string };
 export type CompanionState = {
   name?: string;
   address?: string;
+  gender?: "feminine" | "masculine";
+  intake?: Intake;
   recent: Turn[];
   followUp?: { text: string; due: string };
 };
@@ -178,6 +181,13 @@ export function readCompanionReply(
     reply: clean(data.reply, 3100),
     notes,
     followUp: clean(data.followUp, 250),
+    gender:
+      (data.gender === "feminine" || data.gender === "masculine") &&
+      typeof data.genderQuote === "string" &&
+      data.genderQuote.trim() &&
+      text.includes(data.genderQuote.trim())
+        ? (data.gender as CompanionState["gender"])
+        : undefined,
   };
 }
 
