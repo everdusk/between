@@ -425,7 +425,13 @@ async function handleVoice(
     return false;
   }
 
-  if (await handleCompanion({userId,username:message.from?.username,messageId:message.message_id,text:body,say})) return false;
+  if (await handleCompanion({
+    userId,
+    username: message.from?.username,
+    messageId: message.message_id,
+    text: body,
+    say: text => telegramRequest("sendMessage", { chat_id: chatId, text }),
+  })) return false;
   try {
     await appendBotMessageToToday(userId, body);
     await trackServerEvent({
@@ -562,7 +568,7 @@ export async function POST(req: Request) {
       const payload = startPayload(text);
       if ((!payload || payload === "companion") && await handleCompanion({
         userId,username:message.from?.username,messageId:message.message_id,text:"",start:true,
-        say:answer=>telegramRequest("sendMessage",{chat_id:chatId,text:answer,reply_markup:keyboard}),
+        say:answer=>telegramRequest("sendMessage",{chat_id:chatId,text:answer}),
       })) return NextResponse.json({ok:true});
       await trackMessengerStart({ payload: startPayload(text), messenger: "telegram", userId, username: message.from?.username });
     }
@@ -588,6 +594,12 @@ export async function POST(req: Request) {
       });
       await trackBotFunnel({ userId, messenger: "telegram", username: message.from?.username, choice: { step: "start" } });
     }
+    return NextResponse.json({ ok: true });
+  }
+
+  if (userId && (isBotCommand(text, "journal") || /^открой дневник[.!]?$/iu.test(text)) &&
+      await isReviewOwner({ messenger: "telegram", telegramUserId: userId, telegramUsername: message.from?.username ?? null })) {
+    await telegramRequest("sendMessage", { chat_id: chatId, text: "Вот твой дневник.", reply_markup: keyboard });
     return NextResponse.json({ ok: true });
   }
 
@@ -729,7 +741,7 @@ export async function POST(req: Request) {
 
   if (await handleCompanion({
     userId,username:message.from?.username,messageId:message.message_id,text,
-    say:answer=>telegramRequest("sendMessage",{chat_id:chatId,text:answer,reply_markup:keyboard}),
+    say:answer=>telegramRequest("sendMessage",{chat_id:chatId,text:answer}),
   })) return NextResponse.json({ok:true});
   try {
     await appendBotMessageToToday(userId, text);

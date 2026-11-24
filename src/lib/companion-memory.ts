@@ -5,11 +5,8 @@ import { PICKER_FEELINGS, type Feeling } from "./types";
 
 type Turn = { user: string; reply: string };
 export type CompanionState = {
-  stage: "name" | "address" | "background" | "discovery" | "chat";
   name?: string;
   address?: string;
-  background?: string;
-  discovery: number;
   recent: Turn[];
   followUp?: { text: string; due: string };
 };
@@ -283,5 +280,5 @@ export function applyCompanionNotes(
 }
 
 export function emptyCompanion(): CompanionState {
-  return { stage: "name", discovery: 0, recent: [] };
+  return { recent: [] };
 }
