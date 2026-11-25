@@ -689,7 +689,7 @@ export function useTherapyStore(options?: {
     },
     restoreTheme(id: string, status: SessionTheme["status"]) {
       const current = storeRef.current;
-      return persist({ ...current, themes: current.themes.map(theme => theme.id === id ? { ...theme, status, dismissed: false, updatedAt: new Date().toISOString() } : theme) });
+      return persist({ ...current, themes: current.themes.map(theme => theme.id === id ? { ...theme, status, dismissed: false, dismissedAt: undefined, updatedAt: new Date().toISOString() } : theme) });
     },
     saveReflection(id: string, reflection: NonNullable<JournalEntry["reflection"]>, topic: boolean) {
       const current = storeRef.current;

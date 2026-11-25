@@ -353,6 +353,9 @@ function normalizeTheme(raw: unknown): SessionTheme | null {
   if (typeof theme.discussedAt === "string" && Number.isFinite(Date.parse(theme.discussedAt))) {
     next.discussedAt = theme.discussedAt;
   }
+  if (next.dismissed && typeof theme.dismissedAt === "string" && Number.isFinite(Date.parse(theme.dismissedAt))) {
+    next.dismissedAt = theme.dismissedAt;
+  }
   return next;
 }
 

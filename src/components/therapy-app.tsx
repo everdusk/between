@@ -17,6 +17,7 @@ import { WebAccountGate } from "@/components/web-account-gate";
 import { readIntroDraft, type IntroDraft, type LegacyIntroRecord } from "@/lib/intro-record";
 import { IntroCard, IntroReflection, introDraftKey } from "./intro-reflection";
 import { ThemeReflection } from "./weekly-review";
+import { visiblePilotTopic } from "@/lib/theme-review";
 import { ReflectionPanel } from "@/components/journal-explore";
 import { ProfileEditor } from "./journal-intro";
 import { SessionBacklog } from "./session-backlog";
@@ -535,10 +536,11 @@ function TherapyShell({
     selectSection("journal");
     setComposeRequest((n) => n + 1);
   }
+  const visibleTopics = reviewPilot ? store.themes.filter(visiblePilotTopic) : store.themes;
   const overview = (
     <WeeklyPanel review={!guest && reviewPilot ? saveReview : undefined} guest={guest} inMessenger={inMax || telegram.inTelegram}
       entries={store.entries} sessions={store.sessionPlan && !personal ? store.sessions : []}
-      plan={personal ? null : store.sessionPlan} weekPreps={store.weekPreps} themes={store.themes}
+      plan={personal ? null : store.sessionPlan} weekPreps={store.weekPreps} themes={visibleTopics}
       themeLinks={store.themeLinks} judgeSettled={store.judgeSettled} judgeSkipped={judgeSkipped}
       onSavePattern={savePattern} onSaveThemes={saveThemes} maxInitData={accessProps.maxInitData}
       initData={telegram.initData} cloud={Boolean(web.account)} disabled={disabled} />
@@ -590,14 +592,14 @@ function TherapyShell({
               onFirstSaved={finishIntroEditor}
               composeRequest={composeRequest}
               hint={section === "journal" && hint}
-              pilotTopics={reviewPilot ? {themes:store.themes,links:store.themeLinks,open:id=>{
+              pilotTopics={reviewPilot ? {themes:visibleTopics,links:store.themeLinks,open:id=>{
                 setTopicId(id);setEntryId("");selectSection("reflection");
               }} : undefined}
               onReflect={reflect}
             />
           ),
-          reflection: reviewPilot && !entryId && store.themes.length ? (
-            <ThemeReflection themes={store.themes} entries={store.entries} links={store.themeLinks}
+          reflection: reviewPilot && !entryId && visibleTopics.length ? (
+            <ThemeReflection themes={visibleTopics} entries={store.entries} links={store.themeLinks}
               save={saveReview} selected={topicId} onSelect={setTopicId}/>
           ) : (
             <ReflectionPanel

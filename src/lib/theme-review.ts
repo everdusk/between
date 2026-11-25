@@ -107,9 +107,23 @@ export function recordReview(
 export function archivedForEntry(t: SessionTheme, e: JournalEntry) {
   return (
     (t.dismissed || t.status !== "active") &&
-    e.createdAt > (t.discussedAt ?? t.updatedAt) &&
+    e.createdAt > (t.dismissedAt ?? t.discussedAt ?? t.updatedAt) &&
     !t.quotes.some((q) => q.entryId === e.id)
   );
+}
+
+/** Legacy review resolutions stored a resolved event; legacy removals only set archived. */
+export function visibleDiscussedTopic(theme: SessionTheme, showResolved = false): boolean {
+  if (!visibleTopic(theme) || theme.dismissedAt) return false;
+  if (theme.status === "discussed") return !theme.dismissed;
+  return showResolved && theme.status === "archived" &&
+    theme.review?.some(event => event.kind === "resolved") === true;
+}
+
+export function visiblePilotTopic(theme: SessionTheme): boolean {
+  return theme.status === "archived"
+    ? visibleDiscussedTopic(theme, true)
+    : !theme.dismissed && visibleTopic(theme);
 }
 
 export function applyReviewVerdict(
@@ -165,7 +179,7 @@ export function applyReviewVerdict(
   }
   if (!verdict.relevant) return { state, touchedId: null };
   const returned = recordReview(
-    { ...theme, dismissed: false, status: "active", reopened: true },
+    { ...theme, dismissed: false, dismissedAt: undefined, status: "active", reopened: true },
     {
       kind: "returned",
       id: "return:" + entry.id,

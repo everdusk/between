@@ -3,12 +3,15 @@ import { it } from "node:test";
 import { matchReviewOwner } from "./review-owner";
 import {
   applyReviewVerdict,
+  archivedForEntry,
   checkInTopic,
   readReview,
   recordReview,
   reviewFacts,
+  visibleDiscussedTopic,
+  visiblePilotTopic,
 } from "./theme-review";
-import { addManualTheme, dismissTheme, type JudgeVerdict } from "./themes";
+import { addManualTheme, dismissTheme, discussTheme, type JudgeVerdict } from "./themes";
 import { emptyStore, type JournalEntry } from "./types";
 import { mergeStores } from "./journal-api";
 import { normalizeStore } from "./migrate";
@@ -32,6 +35,35 @@ const note = (id: string, date: string, body: string): JournalEntry => ({
 const old = note("old", "2026-10-20", "Я боялась ошибиться.");
 const fresh = note("new", "2026-11-23", "После ошибки я вернулась к задаче.");
 const other = note("other", "2026-11-23", "Мы поссорились с подругой.");
+
+it("keeps removed topics out of Discussed even when they were previously discussed or resolved", () => {
+  const closedAt = "2026-11-03T08:00:00Z";
+  const removedAt = "2026-11-24T08:00:00Z";
+  const discussed = discussTheme([theme], theme.id, true, closedAt)[0];
+  const resolved = recordReview(theme, {
+    id: "resolution",
+    kind: "resolved",
+    text: "Я поговорила с командой.",
+    at: closedAt,
+  });
+  assert.equal(visibleDiscussedTopic(discussed, true), true);
+  assert.equal(visibleDiscussedTopic(resolved, true), true);
+  assert.equal(visibleDiscussedTopic(resolved), false);
+  assert.equal(visiblePilotTopic(resolved), true);
+
+  const removed = [theme, discussed, resolved].map(item => dismissTheme([item], item.id, removedAt)[0]);
+  const persisted = normalizeStore({ ...emptyStore(), themes: removed })!.themes;
+  assert.equal(persisted.length, 3);
+  for (const item of persisted) {
+    assert.equal(item.dismissedAt, removedAt);
+    assert.equal(visibleDiscussedTopic(item, true), false);
+    assert.equal(visiblePilotTopic(item), false);
+    assert.equal(archivedForEntry(item, fresh), false);
+  }
+  const olderRemoval = { ...removed[1], dismissedAt: undefined };
+  assert.equal(visibleDiscussedTopic(olderRemoval, true), false);
+  assert.equal(visiblePilotTopic(olderRemoval), false);
+});
 it("enrols just the signed owner and keeps the original numeric identity after a handle changes", async () => {
   let id: string | null = null;
   const ledger = {
@@ -147,6 +179,7 @@ it("returns archived topics only for new, evidenced recurrences and keeps a posi
   const returned = applyReviewVerdict(state, fresh, verdict).state;
   assert.equal(returned.themes[0].status, "active");
   assert.equal(returned.themes[0].dismissed, false);
+  assert.equal(returned.themes[0].dismissedAt, undefined);
   assert.equal(returned.themes[0].review?.[0].text, state.themes[0].outcome);
 });
 it("keeps independent entries in scope and rejects a fabricated comparison or reversed chronology", () => {

@@ -515,7 +515,7 @@ export function discussTheme(themes: SessionTheme[], id: string, discussed: bool
 export function dismissTheme(themes: SessionTheme[], id: string, now = new Date().toISOString()): SessionTheme[] {
   return themes.map((theme) =>
     theme.id === id
-      ? { ...theme, dismissed: true, status: "archived", updatedAt: now }
+      ? { ...theme, dismissed: true, dismissedAt: now, status: "archived", updatedAt: now }
       : theme,
   );
 }

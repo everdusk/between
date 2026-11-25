@@ -114,6 +114,8 @@ export interface SessionTheme {
   peakFeeling?: Feeling;
   reopened: boolean;
   dismissed: boolean;
+  /** The user removed the topic with ×. Resolved topics have no dismissal timestamp. */
+  dismissedAt?: string;
   /** When the circle was checked. Absent on older rows; those use updatedAt. */
   discussedAt?: string;
   confidence: number;
