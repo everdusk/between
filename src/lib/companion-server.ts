@@ -113,7 +113,7 @@ export async function handleCompanion(input: {
               process.env.AITUNNEL_BASE_URL?.trim() ||
               "https://api.aitunnel.ru/v1"
             ).replace(/\/+$/, ""),
-            payload: {
+            context: {
               preferences: {
                 name: state.name,
                 address: state.address,
@@ -128,8 +128,8 @@ export async function handleCompanion(input: {
               diary: context,
               recent: state.recent,
               lastScheduledQuestion: asked,
-              message: text,
             },
+            message: text,
             read: (raw) => readCompanionReply(raw, text, context),
           });
           answer = result.reply;

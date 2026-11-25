@@ -30,7 +30,8 @@ test("retries Luna without JSON mode after the provider rejects the format or re
     const reply = await askCompanion({
       apiKey: "test",
       base: "https://example.test/v1",
-      payload: { message: "Тест сообщения" },
+      context: { recent: [] },
+      message: "Тест сообщения",
       read: (raw) =>
         readCompanionReply(raw, "Тест сообщения", { topics: [], notes: [] }),
       request: async (_, init) => {
@@ -54,6 +55,11 @@ test("retries Luna without JSON mode after the provider rejects the format or re
     assert.equal(calls.length, 2);
     const [first, retry] = calls.map((call) => JSON.parse(String(call.body)));
     assert.deepEqual(first.response_format, { type: "json_object" });
+    assert.deepEqual(first.messages.slice(1), [
+      { role: "user", content: JSON.stringify({ recent: [] }) },
+      { role: "user", content: "Тест сообщения" },
+    ]);
+    assert.deepEqual(retry.messages, first.messages);
     assert.equal(retry.response_format, undefined);
     assert.equal(retry.model, "gpt-6-luna");
     assert.equal(retry.max_tokens, 4096);
@@ -69,7 +75,8 @@ test("does not retry an AITUNNEL permission failure", async () => {
     askCompanion({
       apiKey: "test",
       base: "https://example.test/v1",
-      payload: {},
+      context: {},
+      message: "Тест сообщения",
       read: () => null,
       request: async () => {
         attempts++;
