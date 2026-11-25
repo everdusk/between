@@ -3,13 +3,15 @@ import { judgeStamp, visibleTopic } from "./themes";
 import type { JournalEntry, TherapyStore } from "./types";
 import { PICKER_FEELINGS, type Feeling } from "./types";
 import type { Intake } from "./companion-intake";
+import { hasAddressEvidence, type AddressGender } from "./companion-address";
 
 type Turn = { user: string; reply: string };
 type ConversationNote = Pick<JournalEntry, "id" | "updatedAt">;
 export type CompanionState = {
   name?: string;
   address?: string;
-  gender?: "feminine" | "masculine";
+  gender?: AddressGender;
+  genderSource?: "request" | "self";
   intake?: Intake;
   recent: Turn[];
   followUp?: { text: string; due: string };
@@ -210,7 +212,7 @@ export function readCompanionReply(
       (data.gender === "feminine" || data.gender === "masculine") &&
       typeof data.genderQuote === "string" &&
       data.genderQuote.trim() &&
-      text.includes(data.genderQuote.trim())
+      hasAddressEvidence(text, data.genderQuote.trim())
         ? (data.gender as CompanionState["gender"])
         : undefined,
   };
