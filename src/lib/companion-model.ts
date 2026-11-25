@@ -1,4 +1,5 @@
 import { companionPrompt } from "./companion-prompt";
+import { findPractice } from "./companion-practices";
 
 export class CompanionModelError extends Error {
   constructor(readonly code: string) {
@@ -11,6 +12,8 @@ export async function askCompanion<T>({
   base,
   context,
   message,
+  previousReply,
+  urgent = false,
   read,
   request = fetch,
 }: {
@@ -18,14 +21,22 @@ export async function askCompanion<T>({
   base: string;
   context: object;
   message: string;
+  previousReply?: string;
+  urgent?: boolean;
   read: (text: string) => T;
   request?: typeof fetch;
 }): Promise<T> {
   if (!apiKey) throw new CompanionModelError("missing_key");
 
   const signal = AbortSignal.timeout(25_000);
+  const practice = urgent ? undefined : findPractice(message, previousReply);
   const messages = [
-    { role: "system", content: companionPrompt },
+    {
+      role: "system",
+      content: practice
+        ? companionPrompt + "\nПодсказка для этой реплики: " + practice.guidance
+        : companionPrompt,
+    },
     { role: "user", content: JSON.stringify(context) },
     { role: "user", content: message },
   ];
