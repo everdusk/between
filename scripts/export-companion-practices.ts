@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { practices } from "../src/lib/companion-practices";
 
@@ -40,7 +40,14 @@ async function main() {
       "utf8",
     );
   }
-  console.log(practices.length + " practice files exported");
+  const books = join(__dirname, "../knowledge/companion/books");
+  const files = (await readdir(books)).filter((name) =>
+    /^(mi|cbt|act)-[a-z-]+\.md$/.test(name),
+  );
+  for (const name of files) {
+    await copyFile(join(books, name), join(directory, name));
+  }
+  console.log(practices.length + files.length + " practice files exported");
 }
 
 void main();
