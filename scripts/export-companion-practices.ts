@@ -40,14 +40,18 @@ async function main() {
       "utf8",
     );
   }
-  const books = join(__dirname, "../knowledge/companion/books");
-  const files = (await readdir(books)).filter((name) =>
-    /^(mi|cbt|act)-[a-z-]+\.md$/.test(name),
-  );
-  for (const name of files) {
-    await copyFile(join(books, name), join(directory, name));
+  const exported = new Set(practices.map((practice) => practice.id + ".md"));
+  for (const collection of ["books", "skills"]) {
+    const source = join(__dirname, "../knowledge/companion", collection);
+    for (const file of await readdir(source, { withFileTypes: true })) {
+      if (!file.isFile() || !/^[a-z]+(?:-[a-z]+)+\.md$/.test(file.name)) continue;
+      if (exported.has(file.name))
+        throw new Error("Duplicate companion practice: " + file.name);
+      exported.add(file.name);
+      await copyFile(join(source, file.name), join(directory, file.name));
+    }
   }
-  console.log(practices.length + files.length + " practice files exported");
+  console.log(exported.size + " practice files exported");
 }
 
 void main();
