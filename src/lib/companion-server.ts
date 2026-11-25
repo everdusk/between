@@ -19,6 +19,7 @@ import { emptyStore } from "./types";
 import { todayInTimeZone } from "./zoned";
 import { isReviewOwner } from "./review-owner";
 import { resolveJournalId } from "./web-account-store";
+import { startTelegramTyping } from "./telegram-bot";
 
 const stateKey = (owner: string) => "between:user:" + owner + ":companion";
 
@@ -55,6 +56,7 @@ export async function handleCompanion(input: {
   const lease = crypto.randomUUID();
   if (!(await redis.set(key + ":lock", lease, { nx: true, ex: 70 })))
     throw new Error("companion busy");
+  let stopTyping: (() => void) | undefined;
   try {
     const saved = await redis.get<IntakeReply & { sent: boolean }>(receipt);
     if (saved?.sent) return true;
@@ -103,6 +105,7 @@ export async function handleCompanion(input: {
         const allowed = await takeBriefAttempt(owner, date, 120, "companion");
         try {
           if (!allowed) throw new Error("daily limit");
+          stopTyping = startTelegramTyping(userId);
           const asked = await redis.get<string>(key + ":asked");
           const result = await askCompanion({
             apiKey: normalizeAitunnelKey(process.env.AITUNNEL_API_KEY),
@@ -243,6 +246,8 @@ export async function handleCompanion(input: {
       }
       if (!committed) throw new Error("retry companion");
     }
+    stopTyping?.();
+    stopTyping = undefined;
     if (!(await say(answer, rows)))
       throw new Error("companion delivery failed");
     await redis.set(
@@ -252,6 +257,7 @@ export async function handleCompanion(input: {
     );
     return true;
   } finally {
+    stopTyping?.();
     await redis.eval(
       "if redis.call('GET',KEYS[1])==ARGV[1] then return redis.call('DEL',KEYS[1]) end return 0",
       [key + ":lock"],

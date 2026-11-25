@@ -175,6 +175,7 @@ export async function publishBotCommands(): Promise<void> {
 export async function telegramCall<T>(
   method: string,
   body: Record<string, unknown>,
+  signal?: AbortSignal,
 ): Promise<{ ok: true; result: T } | { ok: false; description: string }> {
   const token = process.env.BOT_TOKEN?.trim();
   if (!token) return { ok: false, description: "no_token" };
@@ -183,6 +184,7 @@ export async function telegramCall<T>(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      signal,
     });
     const data = (await res.json()) as {
       ok?: boolean;
@@ -202,6 +204,24 @@ export async function telegramRequest(
 ): Promise<boolean> {
   const result = await telegramCall<unknown>(method, body);
   return result.ok;
+}
+
+/** Telegram clears the indicator after five seconds or when a reply arrives. */
+export function startTelegramTyping(chatId: number): () => void {
+  const stop = new AbortController();
+  const refresh = () => {
+    void telegramCall<boolean>(
+      "sendChatAction",
+      { chat_id: chatId, action: "typing" },
+      AbortSignal.any([stop.signal, AbortSignal.timeout(3000)]),
+    );
+  };
+  refresh();
+  const timer = setInterval(refresh, 4000);
+  return () => {
+    clearInterval(timer);
+    stop.abort();
+  };
 }
 
 /** Welcome with the flow picture. The quiz that follows asks about the session. Text follows if the picture cannot go out. */
