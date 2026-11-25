@@ -4,6 +4,55 @@ import { askCompanion } from "./companion-model";
 import { companionPrompt } from "./companion-prompt";
 import { findPractice } from "./companion-practices";
 
+test("uses hosted retrieval once, with structured output and a local fallback if the tool is rejected", async () => {
+  for (const rejectTool of [false, true]) {
+    let calls = 0;
+    await askCompanion({
+      apiKey: "test",
+      base: "https://example.test",
+      knowledgeBaseId: "kb_test",
+      message: "Помоги написать ему сообщение",
+      context: {},
+      read: JSON.parse,
+      request: async (_, init) => {
+        const body = JSON.parse(String(init?.body));
+        assert.deepEqual(body.response_format, { type: "json_object" });
+        if (++calls === 1) {
+          assert.deepEqual(body.tools, [
+            {
+              type: "aitunnel:file_search",
+              parameters: {
+                knowledge_base_ids: ["kb_test"],
+                max_results: 2,
+                max_uses: 1,
+                rerank: false,
+              },
+            },
+          ]);
+          assert.equal(
+            body.messages[0].content.includes("Подсказка для этой реплики"),
+            false,
+          );
+          if (rejectTool) return new Response(null, { status: 400 });
+        } else {
+          assert.equal(body.tools, undefined);
+          assert.match(body.messages[0].content, /Подсказка для этой реплики/);
+        }
+        return Response.json({
+          choices: [
+            {
+              message: {
+                content: '{"reply":"Привет","notes":[],"followUp":""}',
+              },
+            },
+          ],
+        });
+      },
+    });
+    assert.equal(calls, rejectTool ? 2 : 1);
+  }
+});
+
 test("chooses a practice from the current intent, using the previous question for a short answer", () => {
   const previous = "Есть кто-то конкретный, чьей реакции ты опасаешься?";
   const cases = [
