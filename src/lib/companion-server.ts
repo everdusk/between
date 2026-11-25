@@ -2,8 +2,11 @@ import { normalizeAitunnelKey } from "@/app/api/brief/route";
 import {
   applyCompanionNotes,
   companionContext,
+  companionEntryPatch,
   emptyCompanion,
+  explicitNote,
   readCompanionReply,
+  recentCompanionNotes,
   type CompanionState,
 } from "./companion-memory";
 import { askCompanion, CompanionModelError } from "./companion-model";
@@ -15,7 +18,7 @@ import {
   takeBriefAttempt,
 } from "./redis";
 import { normalizeStore } from "./migrate";
-import { emptyStore } from "./types";
+import { emptyStore, type JournalEntry } from "./types";
 import { todayInTimeZone } from "./zoned";
 import { isReviewOwner } from "./review-owner";
 import { resolveJournalId } from "./web-account-store";
@@ -69,6 +72,7 @@ export async function handleCompanion(input: {
       const priorUserText = state.recent.at(-1)?.user;
       const date = todayInTimeZone(await getUserTimezone(owner));
       const at = new Date().toISOString();
+      const conversationNotes = recentCompanionNotes(state, at);
       const storeKey = "between:user:" + owner + ":store";
       const snapshot = async () => {
         const [stamp, value] = await redis.eval<string[], [string, unknown]>(
@@ -101,6 +105,7 @@ export async function handleCompanion(input: {
           current.store,
           text,
           state.recent.at(-1),
+          conversationNotes,
         );
         const allowed = await takeBriefAttempt(owner, date, 120, "companion");
         try {
@@ -196,7 +201,47 @@ export async function handleCompanion(input: {
           messageId,
           date,
           at,
+          conversationNotes,
         );
+        const entryChanges = companionEntryPatch(
+          current.store.entries,
+          next.entries,
+        );
+        const byId = new Map(entryChanges.map((entry) => [entry.id, entry]));
+        const existing = entryChanges.length
+          ? current.original.entries.map((raw: JournalEntry | null) => {
+              const updated = raw && byId.get(raw.id);
+              if (!updated) return raw;
+              byId.delete(updated.id);
+              return {
+                ...raw,
+                body: updated.body,
+                feelings: updated.feelings,
+                updatedAt: updated.updatedAt,
+              };
+            })
+          : current.original.entries;
+        const nextConversation = new Map(
+          conversationNotes.map((entry) => [entry.id, entry]),
+        );
+        if (!explicitNote(noteText)) {
+          for (const entry of entryChanges) {
+            nextConversation.delete(entry.id);
+            nextConversation.set(entry.id, {
+              id: entry.id,
+              updatedAt: entry.updatedAt,
+            });
+          }
+        }
+        const nextState = intakeReply
+          ? state
+          : {
+              ...state,
+              conversation: {
+                lastTurnAt: at,
+                notes: [...nextConversation.values()].slice(-6),
+              },
+            };
         const code = await redis.eval<string[], number>(
           `if redis.call('GET',KEYS[4])~=ARGV[4] or redis.call('GET',KEYS[5])~=ARGV[5] then return -1 end
           if redis.sha1hex(redis.call('GET',KEYS[1]) or '')~=ARGV[1] then return 0 end
@@ -215,18 +260,12 @@ export async function handleCompanion(input: {
               ? ""
               : JSON.stringify({
                   ...current.original,
-                  entries: [
-                    ...next.entries.slice(
-                      0,
-                      next.entries.length - current.store.entries.length,
-                    ),
-                    ...current.original.entries,
-                  ],
+                  entries: [...byId.values(), ...existing],
                   themes: next.themes,
                   themeLinks: next.themeLinks,
                   judgeSettled: next.judgeSettled,
                 }),
-            JSON.stringify(state),
+            JSON.stringify(nextState),
             epoch,
             lease,
             JSON.stringify({ text: answer, rows, sent: false }),

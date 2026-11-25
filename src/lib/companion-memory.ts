@@ -5,6 +5,7 @@ import { PICKER_FEELINGS, type Feeling } from "./types";
 import type { Intake } from "./companion-intake";
 
 type Turn = { user: string; reply: string };
+type ConversationNote = Pick<JournalEntry, "id" | "updatedAt">;
 export type CompanionState = {
   name?: string;
   address?: string;
@@ -12,7 +13,19 @@ export type CompanionState = {
   intake?: Intake;
   recent: Turn[];
   followUp?: { text: string; due: string };
+  conversation?: { lastTurnAt: string; notes: ConversationNote[] };
 };
+
+export function recentCompanionNotes(
+  state: CompanionState,
+  at: string,
+): ConversationNote[] {
+  const conversation = state.conversation;
+  return conversation &&
+    Date.parse(at) - Date.parse(conversation.lastTurnAt) < 30 * 60_000
+    ? conversation.notes
+    : [];
+}
 
 function words(text: string) {
   return new Set(
@@ -42,6 +55,7 @@ export function companionContext(
   store: TherapyStore,
   text: string,
   previous?: Turn,
+  currentNotes: ConversationNote[] = [],
 ) {
   const query = words(text);
   if (/^(?:да|нет|точно|угу|спасибо|ага|понятно)[.! ]*$/iu.test(text.trim()))
@@ -59,6 +73,7 @@ export function companionContext(
   const entries = store.entries.filter(
     (e) => e.body.trim() && !store.droppedEntryIds?.includes(e.id),
   );
+  const currentIds = new Set(currentNotes.map((note) => note.id));
   const ranked = entries
     .map((e) => ({
       e,
@@ -73,6 +88,7 @@ export function companionContext(
       .slice(0, 4)
       .map((r) => r.e.id),
   );
+  for (const id of currentIds) hits.add(id);
   const topics = store.themes
     .filter(visibleTopic)
     .map((t) => ({
@@ -97,6 +113,9 @@ export function companionContext(
         .map((e) => e.text!.slice(0, 220)),
     }));
   const chosen = new Map<string, JournalEntry>();
+  for (const entry of entries) {
+    if (currentIds.has(entry.id)) chosen.set(entry.id, entry);
+  }
   for (const r of ranked.filter((item) => recall || item.rank > 0).slice(0, 3))
     chosen.set(r.e.id, r.e);
   for (const t of topics.slice(0, 3)) {
@@ -111,6 +130,7 @@ export function companionContext(
       id: e.id,
       date: e.date,
       text: e.body.slice(0, 650),
+      ...(currentIds.has(e.id) && { currentConversation: true }),
       feelings: e.feelings,
       reflection: e.reflection?.insight.slice(0, 180),
     })),
@@ -198,6 +218,7 @@ export function applyCompanionNotes(
   msgId: number,
   date: string,
   at: string,
+  currentNotes: ConversationNote[] = [],
 ) {
   const direct = explicitNote(text);
   if (
@@ -219,6 +240,63 @@ export function applyCompanionNotes(
       continue;
     if (!direct && next.entries.some((e) => e.date === date && e.body === body))
       continue;
+    const continued =
+      !direct && n.kind === "development"
+        ? currentNotes.find((note) => note.id === n.beforeId)
+        : undefined;
+    if (continued) {
+      const previous = next.entries.find((entry) => entry.id === continued.id);
+      const original = store.entries.find((entry) => entry.id === continued.id);
+      // An edit or deletion in the journal takes priority over an automatic append.
+      if (
+        !previous ||
+        original?.updatedAt !== continued.updatedAt ||
+        previous.body.split("\n\n").includes(body)
+      )
+        continue;
+      const linked = next.themes.filter(
+        (theme) =>
+          theme.quotes.some((quote) => quote.entryId === previous.id) ||
+          next.themeLinks.some(
+            (link) => link.entryId === previous.id && link.themeId === theme.id,
+          ),
+      );
+      if (
+        n.topicId &&
+        linked.length &&
+        !linked.some((theme) => theme.id === n.topicId)
+      )
+        continue;
+      const updated = {
+        ...previous,
+        body: previous.body + "\n\n" + body,
+        updatedAt: at,
+        feelings: n.feeling
+          ? [...new Set([...previous.feelings, n.feeling])]
+          : previous.feelings,
+      };
+      next = {
+        ...next,
+        entries: next.entries.map((entry) =>
+          entry.id === previous.id ? updated : entry,
+        ),
+        judgeSettled: linked.length
+          ? [...next.judgeSettled, judgeStamp(updated)]
+          : next.judgeSettled,
+        themes: next.themes.map((theme) =>
+          linked.includes(theme) && !theme.dismissed
+            ? recordReview(theme, {
+                id: "detail:" + id,
+                at,
+                kind: "note",
+                entryId: previous.id,
+                text: n.detail || body,
+              })
+            : theme,
+        ),
+      };
+      continue;
+    }
     const entry: JournalEntry = {
       id,
       date,
@@ -290,6 +368,15 @@ export function applyCompanionNotes(
     };
   }
   return next;
+}
+
+/** Only entries written by this companion turn, including appends. */
+export function companionEntryPatch(
+  previous: JournalEntry[],
+  next: JournalEntry[],
+) {
+  const byId = new Map(previous.map((entry) => [entry.id, entry]));
+  return next.filter((entry) => byId.get(entry.id) !== entry);
 }
 
 export function emptyCompanion(): CompanionState {
