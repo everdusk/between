@@ -14,7 +14,7 @@ const sources = {
 type Practice = { id: string; source: string; cue: RegExp; guidance: string };
 
 // Specific conversational requests precede topic cues if both match.
-const practices: Practice[] = [
+export const practices: Practice[] = [
   {
     id: "repair",
     source: sources.repair,

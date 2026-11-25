@@ -136,6 +136,11 @@ export async function handleCompanion(input: {
             },
             message: text,
             previousReply: state.recent.at(-1)?.reply,
+            knowledgeBaseId:
+              process.env.COMPANION_KNOWLEDGE_BASE_ID ??
+              (process.env.VERCEL_ENV === "production"
+                ? "kb_between-priemy-obscheniya-sjsakm"
+                : undefined),
             urgent,
             read: (raw) => readCompanionReply(raw, text, context),
           });
