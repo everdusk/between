@@ -5,7 +5,10 @@ import { askCompanion } from "./companion-model";
 import {
   applyCompanionNotes,
   companionContext,
+  companionEntryPatch,
+  emptyCompanion,
   readCompanionReply,
+  recentCompanionNotes,
   type CompanionNote,
 } from "./companion-memory";
 
@@ -20,6 +23,99 @@ const note: CompanionNote = {
   beforeId: "",
   question: "",
 };
+
+test("appends a development to the same recent companion note without duplicating it", () => {
+  const added = applyCompanionNotes(
+    emptyStore(),
+    note.quote,
+    [note],
+    1,
+    date,
+    at,
+  );
+  const entry = added.entries[0];
+  const later = "2026-11-25T10:20:00Z";
+  const tracked = [{ id: entry.id, updatedAt: entry.updatedAt }];
+  const state = {
+    ...emptyCompanion(),
+    conversation: { lastTurnAt: at, notes: tracked },
+  };
+  assert.deepEqual(recentCompanionNotes(state, later), tracked);
+  assert.deepEqual(recentCompanionNotes(state, "2026-11-25T11:00:00Z"), []);
+  assert.equal(
+    companionContext(added, "Сегодня спала плохо", undefined, tracked).notes[0]
+      .id,
+    entry.id,
+  );
+
+  const followUp = "Сегодня мне предложили взять ещё один проект";
+  const development = {
+    ...note,
+    kind: "development",
+    quote: followUp,
+    beforeId: entry.id,
+    topicId: added.themes[0].id,
+  };
+  const updated = applyCompanionNotes(
+    added,
+    followUp,
+    [development],
+    2,
+    date,
+    later,
+    tracked,
+  );
+  assert.equal(updated.entries.length, 1);
+  assert.equal(updated.entries[0].id, entry.id);
+  assert.equal(updated.entries[0].body, entry.body + "\n\n" + followUp);
+  assert.deepEqual(
+    companionEntryPatch(added.entries, updated.entries),
+    updated.entries,
+  );
+  assert.deepEqual(updated.themeLinks, added.themeLinks);
+  assert.equal(updated.themes[0].count, added.themes[0].count);
+  assert.equal(
+    applyCompanionNotes(
+      updated,
+      followUp,
+      [development],
+      2,
+      date,
+      later,
+      tracked,
+    ),
+    updated,
+  );
+  const removed = { ...added, entries: [], droppedEntryIds: [entry.id] };
+  assert.equal(
+    applyCompanionNotes(
+      removed,
+      followUp,
+      [development],
+      2,
+      date,
+      later,
+      tracked,
+    ),
+    removed,
+  );
+  const edited = {
+    ...added,
+    entries: [{ ...entry, body: "Исправлено вручную", updatedAt: later }],
+  };
+  assert.equal(
+    applyCompanionNotes(
+      edited,
+      followUp,
+      [development],
+      2,
+      date,
+      later,
+      tracked,
+    ),
+    edited,
+  );
+});
 
 test("retries Luna without JSON mode after the provider rejects the format or returns no answer", async () => {
   for (const firstResponse of [
