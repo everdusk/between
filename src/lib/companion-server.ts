@@ -186,7 +186,6 @@ export async function handleCompanion(input: {
         notes = [];
         if (!priorUserText) answer = "Что именно сохранить в дневнике?";
       }
-      const baseAnswer = answer;
       let committed = false;
       for (let attempt = 0; attempt < 4; attempt++) {
         if (attempt) current = await snapshot();
@@ -198,11 +197,6 @@ export async function handleCompanion(input: {
           date,
           at,
         );
-        answer =
-          baseAnswer +
-          (next.entries.length > current.store.entries.length
-            ? "\n\n✓ Сохранено в дневнике."
-            : "");
         const code = await redis.eval<string[], number>(
           `if redis.call('GET',KEYS[4])~=ARGV[4] or redis.call('GET',KEYS[5])~=ARGV[5] then return -1 end
           if redis.sha1hex(redis.call('GET',KEYS[1]) or '')~=ARGV[1] then return 0 end

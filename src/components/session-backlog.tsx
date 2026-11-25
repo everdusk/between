@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatDayLabel } from "@/lib/dates";
 import { discussedDateKey, entriesForTheme, visibleTopic } from "@/lib/themes";
+import { visibleDiscussedTopic } from "@/lib/theme-review";
 import type { JournalEntry, SessionTheme, ThemeLink } from "@/lib/types";
 import { reflectionQuestion } from "./journal-explore";
 import { Textarea } from "./ui/textarea";
@@ -163,14 +164,17 @@ export function SessionBacklog({
   const [draft, setDraft] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
-  const active = themes.filter(theme => !theme.dismissed && theme.status !== "archived" && visibleTopic(theme));
-  const live = active.filter(theme => theme.status === "active");
-  const archive = [...active.filter(theme=>theme.status==="discussed"),
-    ...(reviewPilot ? themes.filter(theme=>theme.status==="archived" && visibleTopic(theme)) : [])];
-  const [removed,setRemoved]=useState<SessionTheme[]>([]);
+  const live = themes.filter(theme => theme.status === "active" && !theme.dismissed && visibleTopic(theme));
+  const archive = themes
+    .filter(theme => visibleDiscussedTopic(theme, reviewPilot))
+    .sort((a, b) => Number(a.status === "archived") - Number(b.status === "archived"));
+  const [removed, setRemoved] = useState<SessionTheme | null>(null);
   const [closing,setClosing]=useState<string | null>(null);
   const [outcome,setOutcome]=useState("");
-  function remove(theme:SessionTheme){onDismiss(theme.id);setRemoved(list=>[...list,theme])}
+  function remove(theme: SessionTheme) {
+    onDismiss(theme.id);
+    if (onRestore) setRemoved(theme);
+  }
 
   function add(text: string) {
     const clean = text.trim();
@@ -214,7 +218,7 @@ export function SessionBacklog({
             <ThemeRow
               key={theme.id}
               theme={theme}
-              said={theme.status === "discussed"}
+              said={false}
               when={formatDayLabel(theme.lastSeen, locale)}
               open={openId === theme.id}
               notes={entriesForTheme(theme, entries, links)}
@@ -305,7 +309,19 @@ export function SessionBacklog({
           }}>{t(outcome.trim() ? "saveSession" : "topicFinishEmpty")}</Button>
         </dialog>
       )}
-      {onRestore && removed.map(item=><div key={item.id} className="mt-2 flex items-center justify-between gap-2 text-sm"><span>{item.title}</span><Button variant="outline" onClick={()=>{onRestore(item.id,item.status);setRemoved(rows=>rows.filter(row=>row.id!==item.id))}}>{t("undoChange")}</Button></div>)}
+      {onRestore && removed && (
+        <Button
+          className="mt-2"
+          variant="outline"
+          aria-label={`${t("undoChange")} — ${removed.title}`}
+          onClick={() => {
+            onRestore(removed.id, removed.status);
+            setRemoved(null);
+          }}
+        >
+          {t("undoChange")}
+        </Button>
+      )}
       <form
         data-field-surface
         className="mt-5 flex items-center gap-2 rounded-full border border-[color:var(--glass-border)] bg-background/55 p-1 ps-4 transition-[box-shadow,border-color] has-[:focus-visible]:border-ring/40 has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-ring/12"
