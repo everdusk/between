@@ -161,6 +161,7 @@ export function readCompanionReply(
   raw: string,
   text: string,
   context: ReturnType<typeof companionContext>,
+  noteSource = explicitNote(text) || text,
 ) {
   const textBlock = raw
     .trim()
@@ -180,7 +181,7 @@ export function readCompanionReply(
     const quote = clean(value?.quote, 1200);
     if (
       !quote ||
-      !text.includes(quote) ||
+      !noteSource.includes(quote) ||
       !["situation", "development", "progress"].includes(value.kind)
     )
       continue;

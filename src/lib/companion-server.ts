@@ -98,6 +98,11 @@ export async function handleCompanion(input: {
       const intakeReply = urgent
         ? null
         : advanceCompanionIntake(state, { text, start, action: action?.data });
+      const savePreviousMessage =
+        !intakeReply &&
+        /^(?:запиши|сохрани|запомни) (?:это|мо[её] последнее сообщение)[.!]?$/iu.test(
+          text.trim(),
+        );
       if (intakeReply) {
         if (!intakeReply.text) return true;
         answer = intakeReply.text;
@@ -134,6 +139,7 @@ export async function handleCompanion(input: {
               }),
               diary: context,
               recent: state.recent,
+              ...(savePreviousMessage && { savePreviousMessage: true }),
               lastScheduledQuestion: asked,
             },
             message: text,
@@ -145,7 +151,13 @@ export async function handleCompanion(input: {
                 ? "kb_between-priemy-obscheniya-sjsakm"
                 : undefined),
             urgent,
-            read: (raw) => readCompanionReply(raw, text, context),
+            read: (raw) =>
+              readCompanionReply(
+                raw,
+                text,
+                context,
+                savePreviousMessage ? (priorUserText ?? "") : undefined,
+              ),
           });
           answer = result.reply;
           notes = result.notes;
@@ -192,13 +204,8 @@ export async function handleCompanion(input: {
         }
       }
       let noteText = intakeReply ? "" : text;
-      if (
-        /^(?:запиши|сохрани|запомни) (?:это|моё последнее сообщение)[.!]?$/iu.test(
-          noteText.trim(),
-        )
-      ) {
+      if (savePreviousMessage) {
         noteText = priorUserText ? "Запиши: " + priorUserText : "";
-        notes = [];
         if (!priorUserText) answer = "Что именно сохранить в дневнике?";
       }
       let committed = false;

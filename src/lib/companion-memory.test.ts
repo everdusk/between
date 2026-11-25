@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { emptyStore } from "./types";
+import { buildWeekSpectrum } from "./spectrum";
 import { askCompanion } from "./companion-model";
 import {
   applyCompanionNotes,
@@ -44,6 +45,47 @@ const note: CompanionNote = {
   beforeId: "",
   question: "",
 };
+
+test("attaches the inferred feeling to its own entry and counts it once in the spectrum", () => {
+  const quote = "Лежу и перебираю всё, что завтра может пойти не так.";
+  const other = "На пятницу назначили встречу.";
+  const text = quote + " " + other;
+  const context = { topics: [], notes: [] };
+  const raw = JSON.stringify({
+    reply: "Как давно это началось?",
+    notes: [
+      { ...note, quote, feeling: "тревожно", feelingQuote: "перебираю всё, что завтра может пойти не так" },
+      { ...note, quote: other, feeling: "тревожно", feelingQuote: "перебираю всё" },
+    ],
+  });
+  const { notes } = readCompanionReply(raw, text, context);
+  const saved = applyCompanionNotes(emptyStore(), text, notes, 12, date, at);
+  assert.deepEqual(saved.entries.find((e) => e.body === quote)?.feelings, ["тревожно"]);
+  assert.deepEqual(saved.entries.find((e) => e.body === other)?.feelings, []);
+  assert.equal(saved.entries.length, 2);
+  assert.deepEqual(buildWeekSpectrum([date], saved.entries).shares, [
+    { feeling: "тревожно", count: 1 },
+  ]);
+});
+
+test("explicit saves can attach a feeling grounded in the requested text, including the previous turn", () => {
+  const body = "Получилось! Весь вечер хожу улыбаюсь.";
+  const raw = JSON.stringify({
+    reply: "🤍",
+    notes: [{ ...note, quote: body, feeling: "радость", feelingQuote: "хожу улыбаюсь" }],
+  });
+  const direct = "Запиши: " + body;
+  const context = { topics: [], notes: [] };
+  for (const parsed of [
+    readCompanionReply(raw, direct, context),
+    readCompanionReply(raw, "запиши это", context, body),
+  ]) {
+    const saved = applyCompanionNotes(emptyStore(), direct, parsed.notes, 13, date, at);
+    assert.equal(saved.entries[0].body, body);
+    assert.deepEqual(saved.entries[0].feelings, ["радость"]);
+  }
+  assert.deepEqual(readCompanionReply(raw, "запиши это", context, "").notes, []);
+});
 
 test("appends a development to the same recent companion note without duplicating it", () => {
   const added = applyCompanionNotes(
