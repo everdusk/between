@@ -9,13 +9,15 @@ export class CompanionModelError extends Error {
 export async function askCompanion<T>({
   apiKey,
   base,
-  payload,
+  context,
+  message,
   read,
   request = fetch,
 }: {
   apiKey: string;
   base: string;
-  payload: object;
+  context: object;
+  message: string;
   read: (text: string) => T;
   request?: typeof fetch;
 }): Promise<T> {
@@ -24,7 +26,8 @@ export async function askCompanion<T>({
   const signal = AbortSignal.timeout(25_000);
   const messages = [
     { role: "system", content: companionPrompt },
-    { role: "user", content: JSON.stringify(payload) },
+    { role: "user", content: JSON.stringify(context) },
+    { role: "user", content: message },
   ];
   for (const structured of [true, false]) {
     const response = await request(base + "/chat/completions", {
