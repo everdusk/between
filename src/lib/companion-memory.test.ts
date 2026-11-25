@@ -14,6 +14,27 @@ import {
 
 const at = "2026-11-25T10:00:00Z",
   date = "2026-11-25";
+
+test("reads the JSON envelope returned by a live Luna file search and validates proposed notes", () => {
+  const inner = {
+    reply: "Как всё прошло?",
+    notes: ["Недостоверная запись"],
+    followUp: "",
+  };
+  const response = readCompanionReply(
+    JSON.stringify({ answer: JSON.stringify(inner) }),
+    "Всё получилось",
+    { topics: [], notes: [] },
+  );
+  assert.equal(response.reply, inner.reply);
+  assert.deepEqual(response.notes, []);
+  assert.throws(() =>
+    readCompanionReply('{"answer":"just text"}', "тест", {
+      topics: [],
+      notes: [],
+    }),
+  );
+});
 const note: CompanionNote = {
   quote: "Боюсь отказать коллегам и снова беру чужую работу",
   detail: "Трудно отказаться от чужой работы",

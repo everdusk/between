@@ -163,7 +163,12 @@ export function readCompanionReply(
   const textBlock = raw
     .trim()
     .match(/^\x60{3}(?:json)?\s*([\s\S]*?)\s*\x60{3}$/i);
-  const data = JSON.parse(textBlock?.[1] ?? raw);
+  const parsed = JSON.parse(textBlock?.[1] ?? raw);
+  // AI Tunnel can wrap the final JSON after a server-side file search.
+  const data =
+    parsed?.reply === undefined && typeof parsed?.answer === "string"
+      ? JSON.parse(parsed.answer)
+      : parsed;
   if (typeof data?.reply !== "string" || !data.reply.trim())
     throw new Error("empty companion reply");
   const notes: CompanionNote[] = [];
