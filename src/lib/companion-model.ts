@@ -37,8 +37,8 @@ export async function askCompanion<T>({
       cache: "no-store",
       body: JSON.stringify({
         model: "gpt-6-luna",
-        max_tokens: 2048,
-        reasoning: { effort: "none" },
+        max_tokens: 4096,
+        reasoning: { effort: "medium", exclude: true },
         ...(structured && { response_format: { type: "json_object" } }),
         messages,
       }),
@@ -58,6 +58,7 @@ export async function askCompanion<T>({
         input: usage.prompt_tokens,
         cached: usage.prompt_tokens_details?.cached_tokens,
         output: usage.completion_tokens,
+        reasoning: usage.completion_tokens_details?.reasoning_tokens,
         rub: usage.cost_rub,
       });
 

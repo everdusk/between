@@ -56,8 +56,9 @@ test("retries Luna without JSON mode after the provider rejects the format or re
     assert.deepEqual(first.response_format, { type: "json_object" });
     assert.equal(retry.response_format, undefined);
     assert.equal(retry.model, "gpt-6-luna");
-    assert.equal(retry.max_tokens, 2048);
-    assert.deepEqual(retry.reasoning, { effort: "none" });
+    assert.equal(retry.max_tokens, 4096);
+    assert.deepEqual(first.reasoning, { effort: "medium", exclude: true });
+    assert.deepEqual(retry.reasoning, first.reasoning);
     assert.equal(calls[0].signal, calls[1].signal);
   }
 });
