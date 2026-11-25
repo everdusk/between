@@ -1,5 +1,6 @@
 import { companionPrompt } from "./companion-prompt";
 import { findPractice } from "./companion-practices";
+import type { AddressGender } from "./companion-address";
 
 export class CompanionModelError extends Error {
   constructor(readonly code: string) {
@@ -12,6 +13,7 @@ export async function askCompanion<T>({
   base,
   context,
   message,
+  gender,
   previousReply,
   knowledgeBaseId,
   urgent = false,
@@ -22,6 +24,7 @@ export async function askCompanion<T>({
   base: string;
   context: object;
   message: string;
+  gender?: AddressGender;
   previousReply?: string;
   knowledgeBaseId?: string;
   urgent?: boolean;
@@ -33,6 +36,12 @@ export async function askCompanion<T>({
   const useSearch = !urgent && Boolean(knowledgeBaseId?.trim());
   const signal = AbortSignal.timeout(useSearch ? 40_000 : 25_000);
   const practice = urgent ? undefined : findPractice(message, previousReply);
+  const addressInstruction =
+    gender === "feminine"
+      ? "\nОбращайся к собеседнице в женском роде («ты решила», «ты готова»). Сохраняй выбранное ты/вы. Это правило относится к собеседнице, а не к компаньону."
+      : gender === "masculine"
+        ? "\nОбращайся к собеседнику в мужском роде («ты решил», «ты готов»). Сохраняй выбранное ты/вы. Это правило относится к собеседнику, а не к компаньону."
+        : "";
   const attempts = useSearch ? ["search", "json", "plain"] : ["json", "plain"];
   for (const attempt of attempts) {
     const search = attempt === "search";
@@ -40,14 +49,15 @@ export async function askCompanion<T>({
     const messages = [
       {
         role: "system",
-        content: search
-          ? companionPrompt +
-            "\nЕсли для продолжения беседы пригодится приём, поищи в базе практик по смыслу текущей ситуации с учётом последних реплик. Задай один короткий обезличенный поисковый запрос без имён, идентификаторов и цитат из дневника. Учти, случилось ли это, лишь ожидается или уже стало легче. Для обычной беседы поиск необязателен. Карточки содержат методические примеры, а не факты о собеседнике. Верни обычный JSON."
-          : practice
+        content:
+          (search
             ? companionPrompt +
-              "\nПодсказка для этой реплики: " +
-              practice.guidance
-            : companionPrompt,
+              "\nЕсли для продолжения беседы пригодится приём, поищи в базе практик по смыслу текущей ситуации с учётом последних реплик. Задай один короткий обезличенный поисковый запрос без имён, идентификаторов и цитат из дневника. Учти, случилось ли это, лишь ожидается или уже стало легче. Для обычной беседы поиск необязателен. Карточки содержат методические примеры, а не факты о собеседнике. Верни обычный JSON."
+            : practice
+              ? companionPrompt +
+                "\nПодсказка для этой реплики: " +
+                practice.guidance
+              : companionPrompt) + addressInstruction,
       },
       { role: "user", content: JSON.stringify(context) },
       { role: "user", content: message },

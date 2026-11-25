@@ -10,6 +10,7 @@ import {
   type CompanionState,
 } from "./companion-memory";
 import { askCompanion, CompanionModelError } from "./companion-model";
+import { rememberAddress } from "./companion-address";
 import { advanceCompanionIntake, type IntakeReply } from "./companion-intake";
 import {
   getRedis,
@@ -69,6 +70,7 @@ export async function handleCompanion(input: {
       const previous = await redis.get<CompanionState>(key);
       if (!previous && !start) return false;
       const state = previous ?? emptyCompanion();
+      rememberAddress(state, action || start ? "" : text);
       const priorUserText = state.recent.at(-1)?.user;
       const date = todayInTimeZone(await getUserTimezone(owner));
       const at = new Date().toISOString();
@@ -135,6 +137,7 @@ export async function handleCompanion(input: {
               lastScheduledQuestion: asked,
             },
             message: text,
+            gender: state.gender,
             previousReply: state.recent.at(-1)?.reply,
             knowledgeBaseId:
               process.env.COMPANION_KNOWLEDGE_BASE_ID ??
@@ -146,7 +149,7 @@ export async function handleCompanion(input: {
           });
           answer = result.reply;
           notes = result.notes;
-          if (result.gender) state.gender = result.gender;
+          if (!state.gender && result.gender) state.gender = result.gender;
           if (
             result.followUp &&
             (!state.followUp || state.followUp.text === asked)
