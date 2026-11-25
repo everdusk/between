@@ -135,6 +135,8 @@ export async function handleCompanion(input: {
               lastScheduledQuestion: asked,
             },
             message: text,
+            previousReply: state.recent.at(-1)?.reply,
+            urgent,
             read: (raw) => readCompanionReply(raw, text, context),
           });
           answer = result.reply;
