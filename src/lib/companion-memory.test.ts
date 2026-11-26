@@ -10,11 +10,23 @@ import {
   emptyCompanion,
   readCompanionReply,
   recentCompanionNotes,
+  recentMoodCheckin,
   type CompanionNote,
 } from "./companion-memory";
 
 const at = "2026-11-25T10:00:00Z",
   date = "2026-11-25";
+
+test("a fresh mood selection gives context only to the next nearby turn", () => {
+  const store = applyCompanionNotes(emptyStore(), "Запиши: встреча", [], 42, date, at);
+  store.entries[0] = { ...store.entries[0], source: "checkin", feelings: ["напряжение"], body: "" };
+  const next = "2026-11-25T10:05:00Z";
+  assert.equal(recentMoodCheckin(store, emptyCompanion(), next), "напряжение");
+  assert.equal(recentMoodCheckin(store, emptyCompanion(), "2026-11-25T15:00:00Z"), undefined);
+  assert.equal(recentMoodCheckin(store, {
+    ...emptyCompanion(), conversation: { lastTurnAt: next, notes: [] },
+  }, next), undefined);
+});
 
 test("reads the JSON envelope returned by a live Luna file search and validates proposed notes", () => {
   const inner = {

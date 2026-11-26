@@ -19,6 +19,7 @@ import {
 import { reviewLoginFromEnv } from "./web-account";
 import { catalogsShareKeys, countPhrase, feelingLabel, formatPremiumStatus, translate } from "./messages";
 import { pollText } from "./digest";
+import { moodCheckinReply } from "./mood-checkin";
 import { blockedTelegramUser, feelingKeyboard, isBotCommand, parseFeelingCallback } from "./telegram-bot";
 import { buildWeekSpectrum, spectrumHeadline } from "./spectrum";
 import { digestAction, duePoll } from "./digest";
@@ -1589,10 +1590,17 @@ describe("languages", () => {
     assert.match(translate("ru", "botPaySupport"), /Stars/);
     assert.match(translate("ru", "botPaySupport"), /возврат/);
     assert.match(translate("en", "botPaySupport"), /refund/);
-    assert.match(pollText("morning"), /Утро/);
-    assert.match(pollText("morning", "en"), /Morning/);
+    assert.match(pollText("morning"), /утро/i);
+    assert.match(pollText("morning", "en"), /morning/i);
     const board = feelingKeyboard("morning", "en");
-    assert.equal(board.inline_keyboard[0][0].text, "anxious");
+    assert.equal(board.inline_keyboard[0][0].text, "😟 anxious");
+    for (const button of board.inline_keyboard.flat()) {
+      const parsed = parseFeelingCallback(button.callback_data)!;
+      assert.match(button.text, /^\p{Extended_Pictographic}/u);
+      assert.ok(moodCheckinReply("en", parsed.feeling).startsWith(button.text + "\n\n"));
+    }
+    assert.match(moodCheckinReply("ru", "грусть"), /Хочется рассказать, что случилось\?/);
+    assert.doesNotMatch(moodCheckinReply("ru", "радость"), /\?/);
     assert.equal(board.inline_keyboard[0][0].callback_data, "c:m:0");
     assert.equal(parseFeelingCallback("c:m:0")?.feeling, "тревожно");
     assert.deepEqual(

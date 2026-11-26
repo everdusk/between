@@ -1,6 +1,7 @@
 import type { LocaleId } from "./i18n";
 import { sessionTabUrl, subscribeTabUrl, weekTabUrl } from "./launch-section";
-import { feelingLabel, translate } from "./messages";
+import { translate } from "./messages";
+import { moodButtonLabel } from "./mood-checkin";
 import { PICKER_FEELINGS, type CheckinSlot } from "./types";
 
 const SLOT_CODE: Record<CheckinSlot, string> = {
@@ -21,7 +22,7 @@ export function feelingKeyboard(slot: CheckinSlot, locale: LocaleId = "ru") {
   for (let index = 0; index < PICKER_FEELINGS.length; index += 3) {
     rows.push(
       PICKER_FEELINGS.slice(index, index + 3).map((feeling, offset) => ({
-        text: feelingLabel(locale, feeling),
+        text: moodButtonLabel(locale, feeling),
         callback_data: `c:${code}:${index + offset}`,
       })),
     );

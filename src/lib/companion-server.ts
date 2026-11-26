@@ -7,6 +7,7 @@ import {
   explicitNote,
   readCompanionReply,
   recentCompanionNotes,
+  recentMoodCheckin,
   type CompanionState,
 } from "./companion-memory";
 import { askCompanion, CompanionModelError } from "./companion-model";
@@ -138,6 +139,7 @@ export async function handleCompanion(input: {
                 },
               }),
               diary: context,
+              recentMoodCheckin: recentMoodCheckin(current.store, state, at),
               recent: state.recent,
               ...(savePreviousMessage && { savePreviousMessage: true }),
               lastScheduledQuestion: asked,

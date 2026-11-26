@@ -29,6 +29,19 @@ export function recentCompanionNotes(
     : [];
 }
 
+/** The first turn after a check-in can be a short answer to the mood prompt. */
+export function recentMoodCheckin(store: TherapyStore, state: CompanionState, at: string) {
+  const now = Date.parse(at);
+  const since = Math.max(now - 30 * 60_000, Date.parse(state.conversation?.lastTurnAt ?? "") || 0);
+  let latest: JournalEntry | undefined;
+  for (const entry of store.entries) {
+    if (entry.source !== "checkin" || !entry.feelings.length || store.droppedEntryIds?.includes(entry.id)) continue;
+    const updated = Date.parse(entry.updatedAt);
+    if (updated > since && updated <= now && (!latest || updated > Date.parse(latest.updatedAt))) latest = entry;
+  }
+  return latest?.feelings[0];
+}
+
 function words(text: string) {
   return new Set(
     (
