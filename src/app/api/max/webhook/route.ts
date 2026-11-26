@@ -4,7 +4,8 @@ import { recordBotStep } from "@/lib/registration-analytics-server";
 import { trackMessengerStart } from "@/lib/acquisition-server";
 import { type LocaleId } from "@/lib/i18n";
 import { addCheckinForOwner, appendBotMessageForOwner } from "@/lib/journal-server";
-import { feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
+import { formatPremiumStatus, translate } from "@/lib/messages";
+import { moodCheckinReply } from "@/lib/mood-checkin";
 import {
   forgetBotBlocked,
   getUserTimezone,
@@ -145,7 +146,7 @@ async function handleCallback(update: MaxUpdate, userId: number) {
     await trackServerEvent({ userId, event: "mood", messenger: "max" });
     await answerMaxCallback(
       callbackId,
-      translate(reply, "botCheckinSaved", { feeling: feelingLabel(reply, parsed.feeling) }),
+      moodCheckinReply(reply, parsed.feeling),
     );
   } catch {
     await answerMaxCallback(callbackId, translate(reply, "botCheckinFail"));

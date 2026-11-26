@@ -4,7 +4,8 @@ import { recordBotStep } from "@/lib/registration-analytics-server";
 import { trackMessengerStart } from "@/lib/acquisition-server";
 import { localeFromTelegram, resolveBotLocale, type LocaleId } from "@/lib/i18n";
 import { addCheckin, appendBotMessageToToday } from "@/lib/journal-server";
-import { feelingLabel, formatPremiumStatus, translate } from "@/lib/messages";
+import { formatPremiumStatus, translate } from "@/lib/messages";
+import { moodCheckinReply } from "@/lib/mood-checkin";
 import {
   forgetBotBlocked,
   getRedis,
@@ -300,9 +301,7 @@ async function handleCallback(callback: TelegramCallback) {
       await telegramRequest("editMessageText", {
         chat_id: callback.message.chat.id,
         message_id: callback.message.message_id,
-        text: translate(reply, "botCheckinSaved", {
-          feeling: feelingLabel(reply, parsed.feeling),
-        }),
+        text: moodCheckinReply(reply, parsed.feeling),
       });
     }
   } catch {
