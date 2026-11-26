@@ -21,5 +21,7 @@ export function moodButtonLabel(locale: LocaleId, feeling: PickerFeeling) {
 }
 
 export function moodCheckinReply(locale: LocaleId, feeling: PickerFeeling) {
-  return moodButtonLabel(locale, feeling) + "\n\n" + translate(locale, checkins[feeling].reply);
+  const { emoji, reply } = checkins[feeling];
+  const saved = translate(locale, "botMoodRecorded", { feeling: feelingLabel(locale, feeling) });
+  return emoji + " " + saved + "\n\n" + translate(locale, reply);
 }
