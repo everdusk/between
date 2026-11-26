@@ -1597,10 +1597,12 @@ describe("languages", () => {
     for (const button of board.inline_keyboard.flat()) {
       const parsed = parseFeelingCallback(button.callback_data)!;
       assert.match(button.text, /^\p{Extended_Pictographic}/u);
-      assert.ok(moodCheckinReply("en", parsed.feeling).startsWith(button.text + "\n\n"));
+      const emoji = button.text.split(" ")[0];
+      const feeling = feelingLabel("en", parsed.feeling);
+      assert.ok(moodCheckinReply("en", parsed.feeling).startsWith(emoji + " Saved “" + feeling + "” in your journal.\n\n"));
     }
     assert.match(moodCheckinReply("ru", "грусть"), /Хочется рассказать, что случилось\?/);
-    assert.doesNotMatch(moodCheckinReply("ru", "радость"), /\?/);
+    assert.equal(moodCheckinReply("ru", "радость"), "😊 Записал «радость» в дневник.\n\nКак приятно это слышать! Хочется рассказать, что порадовало?");
     assert.equal(board.inline_keyboard[0][0].callback_data, "c:m:0");
     assert.equal(parseFeelingCallback("c:m:0")?.feeling, "тревожно");
     assert.deepEqual(
