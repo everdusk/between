@@ -94,6 +94,27 @@ test("recognises lack of support without pathologising independence or overridin
   assert.equal(findPractice("Просто хочу выговориться. На него нельзя рассчитывать")?.id, "listen");
 });
 
+test("a repeated handoff reaches the answer prompt even when the index finds nothing", async () => {
+  const message = "С бытом так же. Прошу забрать заказ, а он забывает, и я весь день держу это в голове.";
+  const card = findPractice(message);
+  assert.equal(card?.id, "task-follow-through");
+  assert.equal(findPractice("Просто послушай. " + message)?.id, "listen");
+  assert.notEqual(findPractice("Приходится напоминать себе делать перерывы")?.id, card.id);
+  let checked = false;
+  await askCompanion({
+    apiKey: "test", base: "https://example.test", knowledgeBaseId: "test", context: {}, message,
+    request: async (url, init) => {
+      if (String(url).endsWith("/search")) return Response.json({ data: [{ results: [] }] });
+      const body = JSON.parse(String(init?.body));
+      assert.ok(body.messages[0].content.includes(card.guidance));
+      checked = true;
+      return Response.json({ choices: [{ message: { content: JSON.stringify({ reply: "test", usedCards: [card.id] }) } }] });
+    },
+    read: (_, cards) => cards,
+  });
+  assert.ok(checked);
+});
+
 test("chooses a practice from the current intent, using the previous question for a short answer", () => {
   const previous = "Есть кто-то конкретный, чьей реакции ты опасаешься?";
   const cases = [
