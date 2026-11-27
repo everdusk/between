@@ -86,6 +86,14 @@ test("the search runs even if the model skips or rejects the requested tool call
   }
 });
 
+test("recognises lack of support without pathologising independence or overriding a request to listen", () => {
+  for (const line of ["Не на кого положиться", "Всё на мне, могу рассчитывать только на себя", "На него нельзя рассчитывать"]) {
+    assert.equal(findPractice(line)?.id, "relying-on-others");
+  }
+  assert.notEqual(findPractice("Я люблю делать это сама")?.id, "relying-on-others");
+  assert.equal(findPractice("Просто хочу выговориться. На него нельзя рассчитывать")?.id, "listen");
+});
+
 test("chooses a practice from the current intent, using the previous question for a short answer", () => {
   const previous = "Есть кто-то конкретный, чьей реакции ты опасаешься?";
   const cases = [
