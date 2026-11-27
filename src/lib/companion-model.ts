@@ -2,7 +2,7 @@ import type { CompanionReplyTarget } from "./companion-reply";
 import { companionPrompt } from "./companion-prompt";
 import { dialogueCards } from "./companion-dialogue-cards";
 import { comparesSelf, comparisonQuery, continuesComparison, findPractice, practiceTitles, practices } from "./companion-practices";
-import { practiceDecision, practiceSearchTool, searchPracticeCards, type PracticeCard, type PracticeSearchStatus } from "./companion-search";
+import { practiceDecision, PracticeSearchHttpError, practiceSearchTool, searchPracticeCards, type PracticeCard, type PracticeSearchStatus } from "./companion-search";
 import { companionEnvelope, type CompanionState } from "./companion-memory";
 import type { AddressGender } from "./companion-address";
 
@@ -55,6 +55,7 @@ export async function askCompanion<T>({
     (acknowledgment && !previousReply?.includes("?"));
   const useSearch = !urgent && !skip && Boolean(knowledgeBaseId?.trim());
   // A slow optional lookup must not consume the time reserved for the reply.
+  const lookupStarted = performance.now();
   const lookupSignal = AbortSignal.timeout(18_000);
   let replySignal: AbortSignal | undefined;
   const subject = retry?.original ?? message;
@@ -64,15 +65,36 @@ export async function askCompanion<T>({
   const local = practice && { id: practice.id, title: practiceTitles[practice.id], text: practice.guidance };
   let cards: PracticeCard[] = local ? [local] : [];
   let searchStatus: PracticeSearchStatus = "skipped";
-  async function retrieve(query: string) {
+  function logPreparation(result: "failed" | "skipped", reason: string, httpStatus?: number) {
+    console.info("companion_practice_search", {
+      stage: "prepare", result, reason, prepareMs: Math.round(performance.now() - lookupStarted),
+      databaseMs: 0, ...(httpStatus !== undefined && { httpStatus }),
+    });
+  }
+  async function retrieve(query: string, prepareHttpStatus?: number) {
+    const databaseStarted = performance.now();
+    const databaseDeadline = AbortSignal.timeout(6000);
+    const signal = AbortSignal.any([lookupSignal, databaseDeadline]);
+    let reason = "ok";
+    let httpStatus: number | undefined;
     try {
-      const found = await searchPracticeCards(base, apiKey, knowledgeBaseId!.trim(), query, lookupSignal, request);
+      signal.throwIfAborted();
+      const found = await searchPracticeCards(base, apiKey, knowledgeBaseId!.trim(), query, signal, request);
       searchStatus = found.length;
       cards = [...cards, ...found.filter(c => !cards.some(existing => existing.id === c.id))];
-    } catch {
+    } catch (error) {
       searchStatus = "failed";
+      if (signal.aborted) reason = signal.reason === lookupSignal.reason ? "lookup_timeout" : "database_timeout";
+      else if (error instanceof PracticeSearchHttpError) {
+        reason = "http_error";
+        httpStatus = error.status;
+      } else reason = error instanceof SyntaxError ? "invalid_json" : "request_error";
     }
-    console.info("companion_practice_search", { result: searchStatus });
+    console.info("companion_practice_search", {
+      stage: "database", result: searchStatus, reason, prepareMs: Math.round(databaseStarted - lookupStarted),
+      databaseMs: Math.round(performance.now() - databaseStarted),
+      ...(httpStatus !== undefined && { httpStatus }), ...(prepareHttpStatus !== undefined && { prepareHttpStatus }),
+    });
   }
   const directQuery = comparison && (!practice || practice.id === "self-judgment")
     ? comparisonQuery : local?.title;
@@ -135,10 +157,12 @@ export async function askCompanion<T>({
       }),
     }).catch((error: unknown) => {
       if (search && (signal.aborted || (error instanceof Error && error.name === "TimeoutError"))) return null;
+      if (search) logPreparation("failed", "request_error");
       throw error;
     });
     if (!response) {
       searchStatus = "failed";
+      logPreparation("failed", "lookup_timeout");
       continue;
     }
     if (!response.ok) {
@@ -147,9 +171,10 @@ export async function askCompanion<T>({
         (search && [403, 404].includes(response.status))
       ) {
         await response.body?.cancel();
-        if (search) await retrieve(genericQuery);
+        if (search) await retrieve(genericQuery, response.status);
         continue;
       }
+      if (search) logPreparation("failed", "http_error", response.status);
       throw new CompanionModelError("http_" + response.status);
     }
 
@@ -173,7 +198,10 @@ export async function askCompanion<T>({
       if (tool?.name === "search_practices") {
         try {
           const args = JSON.parse(tool.arguments);
-          if (args.dialogueCard === "plain") continue;
+          if (args.dialogueCard === "plain") {
+            logPreparation("skipped", "plain_reply");
+            continue;
+          }
           const selected = dialogueCards.find(card => card.id === args.dialogueCard);
           if (selected) {
             cards.push({ id: selected.id, title: selected.title, text: selected.text });

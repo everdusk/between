@@ -87,7 +87,8 @@ test("the search runs even if the model skips or rejects the requested tool call
   }
 });
 
-test("an optional Gemma lookup timeout leaves a fresh deadline for the actual reply", async () => {
+test("an optional Gemma lookup timeout leaves a fresh deadline for the actual reply", async t => {
+  const info = t.mock.method(console, "info", () => {});
   let lookupSignal: AbortSignal | null | undefined;
   const result = await askCompanion({
     apiKey: "test", base: "https://example.test", knowledgeBaseId: "kb_test",
@@ -111,6 +112,51 @@ test("an optional Gemma lookup timeout leaves a fresh deadline for the actual re
   });
   assert.equal(JSON.parse(result.raw).reply, "Я слушаю");
   assert.equal(result.status, "failed");
+  const event = info.mock.calls.find(c => c.arguments[0] === "companion_practice_search")?.arguments[1];
+  assert.equal(event?.stage, "prepare");
+  assert.equal(event.reason, "lookup_timeout");
+  assert.equal(event.databaseMs, 0);
+});
+
+test("practice diagnostics distinguish both deadlines, HTTP and unreadable responses without logging chat text", async t => {
+  const deadlines = new Map<number, AbortController>();
+  t.mock.method(AbortSignal, "timeout", (ms: number) => {
+    const controller = new AbortController();
+    deadlines.set(ms, controller);
+    return controller.signal;
+  });
+  const events: Record<string, unknown>[] = [];
+  t.mock.method(console, "info", (key: string, fields: Record<string, unknown>) => {
+    if (key === "companion_practice_search") events.push(fields);
+  });
+  const message = "На него нельзя рассчитывать";
+  for (const reason of ["lookup_timeout", "database_timeout", "http_error", "request_error", "invalid_json", "ok"]) {
+    const status = await askCompanion({
+      apiKey: "test", base: "https://example.test", knowledgeBaseId: "test", message, context: {},
+      read: (_, __, status) => status,
+      request: async (url, init) => {
+        if (!String(url).endsWith("/search")) return Response.json({ choices: [{ message: { content:
+          JSON.stringify({ reply: "Я слушаю", usedCards: [], noCardReason: "support" }) } }] });
+        if (reason.endsWith("_timeout")) {
+          deadlines.get(reason === "lookup_timeout" ? 18000 : 6000)!.abort(new DOMException("timeout", "TimeoutError"));
+          init!.signal!.throwIfAborted();
+        }
+        if (reason === "http_error") return new Response(null, { status: 429 });
+        if (reason === "request_error") throw new TypeError(message);
+        if (reason === "invalid_json") return new Response(message);
+        return Response.json({ data: [{ results: [] }] });
+      },
+    });
+    assert.equal(events.length, 1);
+    const event = events.pop()!;
+    assert.equal(event.stage, "database");
+    assert.equal(event.result, status);
+    assert.equal(event.reason, reason);
+    assert.equal(event.httpStatus, reason === "http_error" ? 429 : undefined);
+    assert.ok(typeof event.prepareMs === "number" && event.prepareMs >= 0);
+    assert.ok(typeof event.databaseMs === "number" && event.databaseMs >= 0);
+    assert.ok(!JSON.stringify(event).includes(message));
+  }
 });
 
 test("recognises lack of support without pathologising independence or overriding a request to listen", () => {
