@@ -12,7 +12,7 @@ import {
 } from "./companion-memory";
 import { askCompanion, CompanionModelError } from "./companion-model";
 import { practiceFooter } from "./companion-search";
-import { retryContext, type CompanionReplyTarget } from "./companion-reply";
+import { companionDisplayText, retryContext, type CompanionReplyTarget } from "./companion-reply";
 import { rememberAddress } from "./companion-address";
 import { applyTesterEdit, proposeTesterRule, testerEdit } from "./companion-training";
 import { advanceCompanionIntake, type IntakeReply } from "./companion-intake";
@@ -348,7 +348,7 @@ export async function handleCompanion(input: {
     }
     stopTyping?.();
     stopTyping = undefined;
-    if (!(await say(answer, rows)))
+    if (!(await say(companionDisplayText(answer), rows)))
       throw new Error("companion delivery failed");
     await redis.set(
       receipt,
@@ -377,7 +377,7 @@ export async function dueCompanionQuestion(owner: string, date: string) {
   const last = await redis.get<string>(key + ":asked");
   if (last === question.text) return null;
   return {
-    text: question.text,
+    text: companionDisplayText(question.text),
     delivered: () => redis.set(key + ":asked", question.text),
   };
 }

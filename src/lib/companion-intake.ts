@@ -53,7 +53,7 @@ function choiceQuestion(intake: Intake): IntakeReply {
 
 function ratingQuestion(): IntakeReply {
   return {
-    text: "Давай начнём с малого. Как ты сейчас по шкале от 1 до 10? 1 — очень тяжело, 10 — хорошо.",
+    text: "Давай начнём с малого. Как ты сейчас по шкале от 1 до 10? Выбери 1, если очень тяжело, и 10, если хорошо.",
     rows: [ratingButtons.slice(0, 5), ratingButtons.slice(5)],
   };
 }

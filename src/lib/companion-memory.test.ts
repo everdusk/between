@@ -372,3 +372,13 @@ test("discard invented quotations, unknown source IDs and unsupported actions", 
   assert.equal(parsed.notes[0].topicId, "");
   assert.equal(parsed.notes[0].beforeId, "");
 });
+test("companion replies and follow-ups omit em dashes while diary quotes keep their punctuation", () => {
+  const text = "Планы — это важно";
+  const parsed = readCompanionReply(JSON.stringify({
+    reply: "Понимаю — это важно.", followUp: "Как ты — получилось отдохнуть?",
+    notes: [{ kind: "situation", quote: text }],
+  }), text, { topics: [], notes: [] });
+  assert.ok(!parsed.reply.includes("—"));
+  assert.ok(!parsed.followUp.includes("—"));
+  assert.equal(parsed.notes[0].quote, text);
+});
