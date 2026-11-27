@@ -33,6 +33,8 @@ export const practiceTitles: Record<string, string> = {
 type Practice = { id: string; source: string; cue: RegExp; guidance: string };
 
 const comparisonCues = [
+  /(?:столько же|одинаков[а-я]*|такое же) (?:времен[ия]|усили[йя]).{0,45}(?:результат.{0,12}хуже|получается хуже)/u,
+  /(?:разрыв|разница|разницы) в результатах|(?:сравниваешь|сравнивать) себя с людьми/u,
   /(?:сравн(?:ива|ева)[а-я]* с[еи]бя с|сравнение себя с|сравниваю с (?:другими|ровесниками|подругами))/u,
   /у (?:всех|остальных|других|них|нее|него) (?:уже |все )?(?:вышло|получилось|получается)[, .—–-]*(?:а |но )?(?:у меня (?:нет|не )|я (?:нет|не могу|не смог))/u,
   /(?:они|остальные|другие|ровесники|все) (?:уже |намного |гораздо )?(?:успешнее|лучше|быстрее|умнее) меня/u,
@@ -42,6 +44,14 @@ const comparisonCues = [
 export function comparesSelf(message: string) {
   const text = message.toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ");
   return comparisonCues.some(cue => cue.test(text));
+}
+
+export function continuesComparison(message: string, priorUser = "", priorReply = "") {
+  const shortAnswer = /^(?:ну\s+)?(?:да|нет|точно|наверное|факт разницы)[.!… ]*$/iu.test(message.trim());
+  const aboutComparison = /(?:предыдущ(?:ий|его) опыт|условия (?:полностью )?одинаковы|разрыв в результатах|столько же времени)/iu.test(message);
+  if (!shortAnswer && !aboutComparison) return false;
+  return [priorUser, priorReply].some(s => comparesSelf(s) ||
+    /(?:разрыв|разниц[а-я]*).{0,65}(?:результат|талант|способност)|(?:похожий|одинаковый) старт|предыдущий опыт.{0,100}одинаковое время/iu.test(s));
 }
 
 export const comparisonQuery = "Сравнение себя с другими, чужие успехи, чувство отставания, самокритика: у других получилось, у меня пока нет. Как узнать, что это значит для человека";

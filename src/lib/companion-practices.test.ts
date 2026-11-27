@@ -5,26 +5,30 @@ import { companionPrompt } from "./companion-prompt";
 import { findPractice } from "./companion-practices";
 import { practiceFooter } from "./companion-search";
 
-test("uses hosted retrieval once, with structured output and a local fallback if the tool is rejected", async () => {
+test("the search runs even if the model skips or rejects the requested tool call", async () => {
   for (const rejectTool of [false, true]) {
     let calls = 0;
     await askCompanion({
       apiKey: "test",
       base: "https://example.test",
       knowledgeBaseId: "kb_test",
-      message: "Помоги написать ему сообщение",
+      message: "Мне трудно решить, как к этому относиться",
       context: {},
       read: raw => JSON.parse(raw),
-      request: async (_, init) => {
+      request: async (url, init) => {
         const body = JSON.parse(String(init?.body));
-        assert.deepEqual(body.response_format, { type: "json_object" });
+        if (String(url).endsWith("/search")) {
+          assert.equal(++calls, 2);
+          return Response.json({data: [{results: []}]});
+        }
         if (++calls === 1) {
           assert.equal(body.tools[0].function.name, "search_practices");
-          assert.match(body.messages[0].content, /Подсказка для этой реплики/);
+          assert.equal(body.tool_choice.function.name, "search_practices");
           if (rejectTool) return new Response(null, { status: 400 });
         } else {
+          assert.deepEqual(body.response_format, { type: "json_object" });
           assert.equal(body.tools, undefined);
-          assert.match(body.messages[0].content, /Подсказка для этой реплики/);
+          assert.equal(calls, 3);
         }
         return Response.json({
           choices: [
@@ -37,7 +41,7 @@ test("uses hosted retrieval once, with structured output and a local fallback if
         });
       },
     });
-    assert.equal(calls, rejectTool ? 2 : 1);
+    assert.equal(calls, 3);
   }
 });
 
@@ -95,7 +99,52 @@ test("recognises comparisons and attributes only cited sources from the actual g
     });
     assert.equal(searches, 1);
     assert.equal(generations, 1);
-    assert.equal(footer, "Карточки ответа · Двойной стандарт");
+    assert.equal(footer, "Карточки ответа · Двойной стандарт (из базы получено 1)");
+  }
+});
+
+test("the comparison conversation consults the index on each continuation, including a one-word answer", async () => {
+  const turns = [
+    ["Когда я вроде трачу столько же времени а результат хуже", "Что для тебя значит разрыв в результатах?"],
+    ["Странный вопрос. Разрыв в результатах приводит к выводу", "Что делает вывод о таланте убедительным в этом разрыве результатов?"],
+    ["Ну факт разницы", "Ты сравниваешь себя с людьми, у которых был похожий старт?"],
+    ["Да", "В первую очередь предыдущий опыт или одинаковое время?"],
+    ["Если есть предыдущий опыт, то легче. Если условия полностью одинаковые, то сложно", "Спасибо"],
+  ];
+  for (const [i, [message]] of turns.entries()) {
+    const [previousMessage, previousReply] = turns[i - 1] ?? [];
+    const calls: string[] = [];
+    const status = await askCompanion({
+      apiKey: "test", base: "https://example.test", knowledgeBaseId: "kb_test",
+      context: {}, message, previousMessage, previousReply,
+      read: (_, __, status) => status,
+      request: async (url, init) => {
+        calls.push(String(url).split("/").at(-1)!);
+        const body = JSON.parse(String(init?.body));
+        if (String(url).endsWith("/search")) {
+          assert.match(body.query, /сравнение себя/i);
+          return Response.json({data: [{results: []}]});
+        }
+        assert.equal(body.tools, undefined);
+        return Response.json({choices: [{message: {content: "{}"}}]});
+      },
+    });
+    assert.equal(status, 0);
+    assert.deepEqual(calls, ["search", "completions"], message);
+  }
+});
+
+test("closing, saving, or an urgent turn does not inherit the previous comparison search", async () => {
+  for (const [message, urgent] of [["Спасибо!", false], ["Запиши: про работу", false], ["Да", true]] as const) {
+    await askCompanion({apiKey: "test", base: "https://example.test", knowledgeBaseId: "kb_test",
+      context: {}, previousReply: "Ты сравниваешь себя с людьми?", message, urgent,
+      read: (_, cards, status) => { assert.deepEqual(cards, []); assert.equal(status, "skipped"); },
+      request: async (url, init) => {
+        assert.ok(String(url).endsWith("/completions"));
+        assert.equal(JSON.parse(String(init?.body)).tools, undefined);
+        return Response.json({choices: [{message: {content: "{}"}}]});
+      },
+    });
   }
 });
 
@@ -106,11 +155,11 @@ test("an unavailable index still allows a grounded local source or a candid empt
     request: async url => String(url).endsWith("/search") ? new Response(null, {status: 503}) :
       Response.json({ choices: [{message: {content: "{}"}}] }),
     read: (_, cards, failed) => {
-      assert.equal(failed, true);
+      assert.equal(failed, "failed");
       assert.match(practiceFooter(["self-judgment"], cards, failed), /Самокритика/);
       assert.match(practiceFooter(["unknown"], cards, failed), /поиск недоступен/);
-      assert.equal(practiceFooter([], cards, false), "Ответ без карточек");
-      assert.match(practiceFooter(undefined, cards, false), /не подтверждён/);
+      assert.equal(practiceFooter([], cards, 2), "Карточки · из базы получено 2, ответ без карточек");
+      assert.match(practiceFooter(undefined, cards, "skipped"), /не подтверждён/);
     },
   });
 });

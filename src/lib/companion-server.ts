@@ -168,20 +168,21 @@ export async function handleCompanion(input: {
             gender: state.gender,
             testerRules: state.testerInstructions?.rules.map(rule => rule.text),
             previousReply: state.recent.at(-1)?.reply,
+            previousMessage: priorUserText,
             knowledgeBaseId:
               process.env.COMPANION_KNOWLEDGE_BASE_ID ??
               (process.env.VERCEL_ENV === "production"
                 ? "kb_between-priemy-obscheniya-sjsakm"
                 : undefined),
             urgent,
-            read: (raw, cards, failed) => {
+            read: (raw, cards, searchStatus) => {
               const parsed = readCompanionReply(
                 raw,
                 text,
                 context,
                 savePreviousMessage ? (priorUserText ?? "") : undefined,
               );
-              return { ...parsed, footer: practiceFooter(parsed.usedCards, cards, failed) };
+              return { ...parsed, footer: practiceFooter(parsed.usedCards, cards, searchStatus) };
             },
           });
           answer = result.reply;
