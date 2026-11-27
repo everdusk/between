@@ -35,11 +35,14 @@ export async function searchPracticeCards(base: string, apiKey: string, kb: stri
   return cards;
 }
 
-export function practiceFooter(cited: unknown, cards: PracticeCard[], failed: boolean) {
+export type PracticeSearchStatus = "skipped" | "failed" | number; // Number of distinct cards returned by the index.
+
+export function practiceFooter(cited: unknown, cards: PracticeCard[], status: PracticeSearchStatus) {
   const ids = Array.isArray(cited) ? cited : [];
   const titles = cards.filter(c => ids.includes(c.id)).map(c => c.title);
-  if (titles.length) return "Карточки ответа · " + titles.join(" · ");
-  if (failed) return "Карточки · поиск недоступен, источник ответа не указан";
-  if (cards.length && (!Array.isArray(cited) || ids.length)) return "Карточки · источник ответа не подтверждён";
-  return "Ответ без карточек";
+  const lookup = typeof status === "number" ? "из базы получено " + status
+    : status === "failed" ? "поиск недоступен" : "без поиска в базе";
+  if (titles.length) return "Карточки ответа · " + titles.join(" · ") + " (" + lookup + ")";
+  if (cards.length && (!Array.isArray(cited) || ids.length)) return "Карточки · " + lookup + ", источник ответа не подтверждён";
+  return "Карточки · " + lookup + ", ответ без карточек";
 }

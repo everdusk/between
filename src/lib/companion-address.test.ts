@@ -68,14 +68,15 @@ test("every hosted-search and fallback request carries the persisted address", a
   let calls = 0;
   await askCompanion({
     gender: "feminine",
-    message: "Привет",
+    message: "Не знаю, как относиться к этому разговору",
     previousReply: "Как дела?",
     context: { recent: [] },
     knowledgeBaseId: "test",
     apiKey: "test",
     base: "https://example.test",
     read: raw => JSON.parse(raw),
-    request: async (_, init) => {
+    request: async (url, init) => {
+      if (String(url).endsWith("/search")) return Response.json({data: [{results: []}]});
       const { messages } = JSON.parse(String(init?.body));
       assert.match(messages[0].content, /в женском роде/);
       assert.equal(messages[0].role, "system");

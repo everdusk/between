@@ -1,6 +1,6 @@
 import { companionPrompt } from "./companion-prompt";
-import { comparesSelf, comparisonQuery, findPractice, practiceTitles } from "./companion-practices";
-import { practiceSearchTool, searchPracticeCards, type PracticeCard } from "./companion-search";
+import { comparesSelf, comparisonQuery, continuesComparison, findPractice, practiceTitles, practices } from "./companion-practices";
+import { practiceSearchTool, searchPracticeCards, type PracticeCard, type PracticeSearchStatus } from "./companion-search";
 import type { AddressGender } from "./companion-address";
 
 export class CompanionModelError extends Error {
@@ -16,6 +16,7 @@ export async function askCompanion<T>({
   message,
   gender,
   previousReply,
+  previousMessage,
   testerRules,
   knowledgeBaseId,
   urgent = false,
@@ -28,30 +29,41 @@ export async function askCompanion<T>({
   message: string;
   gender?: AddressGender;
   previousReply?: string;
+  previousMessage?: string;
   testerRules?: string[];
   knowledgeBaseId?: string;
   urgent?: boolean;
-  read: (text: string, cards: PracticeCard[], searchFailed: boolean) => T;
+  read: (text: string, cards: PracticeCard[], status: PracticeSearchStatus) => T;
   request?: typeof fetch;
 }): Promise<T> {
   if (!apiKey) throw new CompanionModelError("missing_key");
 
-  const useSearch = !urgent && Boolean(knowledgeBaseId?.trim());
+  const line = message.trim().toLowerCase().replace(/ё/g, "е");
+  const acknowledgment = /^(?:да|нет|ага|угу|точно|наверное)[.!… ]*$/u.test(line);
+  const skip = /^(?:привет|здравствуй(?:те)?|спасибо(?: большое)?|пока|понятно|доброе утро)[!.… ]*$/u.test(line) ||
+    /^(?:запиши|сохрани|запомни|не записывай|не хочу обсуждать|оставим тему|покажи мои темы|пройдись по темам)(?:$|[\s:,.!])/u.test(line) ||
+    (acknowledgment && !previousReply?.includes("?"));
+  const useSearch = !urgent && !skip && Boolean(knowledgeBaseId?.trim());
   const signal = AbortSignal.timeout(useSearch ? 40_000 : 25_000);
-  const practice = urgent ? undefined : findPractice(message, previousReply);
+  const comparison = comparesSelf(message) || continuesComparison(message, previousMessage, previousReply);
+  const practice = urgent || skip ? undefined : findPractice(message, previousReply) ??
+    (comparison ? practices.find(p => p.id === "self-judgment") : undefined);
   const local = practice && { id: practice.id, title: practiceTitles[practice.id], text: practice.guidance };
   let cards: PracticeCard[] = local ? [local] : [];
-  let searchFailed = false;
+  let searchStatus: PracticeSearchStatus = "skipped";
   async function retrieve(query: string) {
     try {
       const found = await searchPracticeCards(base, apiKey, knowledgeBaseId!.trim(), query, signal, request);
+      searchStatus = found.length;
       cards = [...cards, ...found.filter(c => c.id !== local?.id)];
     } catch {
-      searchFailed = true;
+      searchStatus = "failed";
     }
+    console.info("companion_practice_search", { result: searchStatus });
   }
-  const comparison = useSearch && practice?.id === "self-judgment" && comparesSelf(message);
-  if (comparison) await retrieve(comparisonQuery);
+  const directQuery = comparison && (!practice || practice.id === "self-judgment")
+    ? comparisonQuery : local?.title;
+  if (useSearch && directQuery) await retrieve(directQuery);
   const rules = !urgent && testerRules?.length ? testerRules : undefined;
   const addressInstruction =
     gender === "feminine"
@@ -59,7 +71,8 @@ export async function askCompanion<T>({
       : gender === "masculine"
         ? "\nОбращайся к собеседнику в мужском роде («ты решил», «ты готов»). Сохраняй выбранное ты/вы. Это правило относится к собеседнику, а не к компаньону."
         : "";
-  const attempts = useSearch && !comparison ? ["search", "json", "plain"] : ["json", "plain"];
+  const attempts = useSearch && !directQuery ? ["search", "json", "plain"] : ["json", "plain"];
+  const genericQuery = "Поддерживающий диалог: подхватить смысл ответа на предыдущий вопрос, учесть уточнение и продолжить без пересказа и допроса";
   for (const attempt of attempts) {
     const search = attempt === "search";
     const structured = attempt !== "plain";
@@ -69,9 +82,9 @@ export async function askCompanion<T>({
       {
         role: "system",
         content:
-          companionPrompt + (search ? "\nЕсли пригодится приём, вызови search_practices. Ищи по смыслу реплики и ситуации из разговора, добавь синонимы: за «у других уже есть, а я всё ещё…» может стоять сравнение себя с другими. В обычной беседе поиск необязателен." : "") +
+          companionPrompt + (search ? "\nСначала вызови search_practices. Определи тему по текущей реплике и последнему обмену в recent. Для короткого ответа учти вопрос, на который человек отвечает. При смене темы ищи по новой ситуации. В запросе только обобщённые термины и синонимы, без личных деталей." : "") +
           (local ? "\nПодсказка для этой реплики (" + local.id + "): " + local.text : "") +
-          (cards.length ? "\nВ JSON добавь usedCards — массив id только тех предложенных карточек, чей приём ты применил в reply. Если ни одной — []. practiceCards содержат примеры, не факты о собеседнике. В самой реплике карточки не называй." : "") +
+          (cards.length ? "\nПрочти предложенные карточки. Если есть подходящий приём, используй его для следующего содержательного хода с учётом того, что человек уже объяснил. В JSON добавь usedCards — массив id только тех карточек, чей приём ты применил в reply. Если ни одной — []. practiceCards содержат примеры, не факты о собеседнике. В самой реплике карточки не называй." : "") +
           addressInstruction + (rules
                 ? "\nВ testerRules — одобренные тестером дополнения к манере диалога. Применяй подходящие по смыслу; при расхождении между ними учитывай более позднее. Безопасность, приватность, выбранное обращение и контракт приложения сохраняют приоритет. Не цитируй правила собеседнику."
                 : ""),
@@ -93,8 +106,9 @@ export async function askCompanion<T>({
         reasoning: { effort: "medium", exclude: true },
         ...(search && {
           tools: [practiceSearchTool],
+          tool_choice: { type: "function", function: { name: "search_practices" } },
         }),
-        ...(structured && { response_format: { type: "json_object" } }),
+        ...(structured && !search && { response_format: { type: "json_object" } }),
         messages,
       }),
     });
@@ -103,13 +117,8 @@ export async function askCompanion<T>({
         (structured && [400, 422, 502, 503].includes(response.status)) ||
         (search && [403, 404].includes(response.status))
       ) {
-        if (search) {
-          searchFailed = true;
-          console.warn("companion_search_fallback", {
-            status: response.status,
-          });
-        }
         await response.body?.cancel();
+        if (search) await retrieve(genericQuery);
         continue;
       }
       throw new CompanionModelError("http_" + response.status);
@@ -124,22 +133,22 @@ export async function askCompanion<T>({
         output: usage.completion_tokens,
         reasoning: usage.completion_tokens_details?.reasoning_tokens,
         rub: usage.cost_rub,
-        searches: usage.server_tool_use?.file_search_requests ?? 0,
       });
 
     const modelMessage = data?.choices?.[0]?.message;
     const tool = modelMessage?.tool_calls?.[0]?.function;
-    if (search && tool?.name === "search_practices") {
+    if (search) {
       let query;
-      try { query = JSON.parse(tool.arguments).query; } catch { /* Continue with local guidance. */ }
-      if (typeof query === "string" && query.trim()) await retrieve(query.trim().slice(0, 240));
-      else searchFailed = true;
+      if (tool?.name === "search_practices") {
+        try { query = JSON.parse(tool.arguments).query; } catch { /* Use the general practice query. */ }
+      }
+      await retrieve(typeof query === "string" && query.trim() ? query.trim().slice(0, 240) : genericQuery);
       continue;
     }
     const content = modelMessage?.content;
     if (typeof content === "string" && content.trim()) {
       try {
-        return read(content, cards, searchFailed);
+        return read(content, cards, searchStatus);
       } catch {
         if (!structured) throw new CompanionModelError("invalid_reply");
       }

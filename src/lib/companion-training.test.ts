@@ -62,9 +62,10 @@ test("tester preferences reach hosted search and fallback, while urgent and ordi
   for (const [urgent, enabled] of [[false, true], [true, true], [false, false]]) {
     let calls = 0;
     await askCompanion({
-      apiKey: "test", base: "https://example.test", context: {}, message: "Привет",
+      apiKey: "test", base: "https://example.test", context: {}, message: "Мне трудно об этом думать",
       testerRules: enabled ? [rule] : undefined, urgent, knowledgeBaseId: "test", read: raw => JSON.parse(raw),
-      request: async (_, init) => {
+      request: async (url, init) => {
+        if (String(url).endsWith("/search")) return Response.json({data: [{results: []}]});
         const body = JSON.parse(String(init?.body));
         assert.deepEqual(JSON.parse(body.messages[1].content).testerRules, enabled && !urgent ? [rule] : undefined);
         assert.ok(!body.messages[0].content.includes(rule));
