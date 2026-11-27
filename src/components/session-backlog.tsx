@@ -14,6 +14,7 @@ import { Textarea } from "./ui/textarea";
 import { cn } from "@/lib/utils";
 
 interface SessionBacklogProps {
+  inMessenger?: boolean;
   reviewPilot?: boolean;
   themes: SessionTheme[];
   entries: JournalEntry[];
@@ -149,6 +150,7 @@ function ThemeRow({
 }
 
 export function SessionBacklog({
+  inMessenger,
   personal, onRestore, reviewPilot,
   themes,
   entries,
@@ -191,7 +193,7 @@ export function SessionBacklog({
             id="session-backlog-title"
             className="font-display text-xl tracking-tight text-foreground"
           >
-            {t(personal?"deskPersonal":"deskTherapy")}
+            {t(inMessenger ? "themes" : personal ? "deskPersonal" : "deskTherapy")}
           </h3>
 
         </div>

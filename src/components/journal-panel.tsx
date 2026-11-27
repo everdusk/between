@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { introEntryBody, introTranscript, type LegacyIntroRecord, type IntroRecord } from "@/lib/intro-record";
 
 interface JournalPanelProps {
+  inMessenger?: boolean;
   pilotTopics?: {themes: import("@/lib/types").SessionTheme[]; links: import("@/lib/types").ThemeLink[]; open:(id:string)=>void};
   initialDate?: string;
   introductions?: IntroRecord[];
@@ -73,6 +74,7 @@ function dayMarks(entries: JournalEntry[]): Map<string, Feeling | null> {
 }
 
 export function JournalPanel({
+  inMessenger,
   hint, onReflect, guest, pilotTopics,
   entries,
   onSave,
@@ -194,7 +196,7 @@ export function JournalPanel({
   return (
     <div className="journal-board flex flex-col gap-4">
       <header>
-        <h1 className="mb-4 font-display text-2xl leading-[1.15] tracking-[-.035em] sm:text-3xl">{t("deskEntries")}</h1>
+        <h1 className={inMessenger ? "sr-only" : "mb-4 font-display text-2xl leading-[1.15] tracking-[-.035em] sm:text-3xl"}>{t("deskEntries")}</h1>
         <DateNavigation
           previous={{ label: t("journalPrevDay"), disabled, onClick: () => changeDate(addDays(date, -1)) }}
           next={{ label: t("journalNextDay"), disabled: disabled || isToday, onClick: () => changeDate(addDays(date, 1)) }}

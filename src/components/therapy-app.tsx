@@ -537,8 +537,9 @@ function TherapyShell({
     setComposeRequest((n) => n + 1);
   }
   const visibleTopics = reviewPilot ? store.themes.filter(visiblePilotTopic) : store.themes;
+  const inMessenger = inMax || telegram.inTelegram;
   const overview = (
-    <WeeklyPanel review={!guest && reviewPilot ? saveReview : undefined} guest={guest} inMessenger={inMax || telegram.inTelegram}
+    <WeeklyPanel review={!guest && reviewPilot ? saveReview : undefined} guest={guest} inMessenger={inMessenger}
       entries={store.entries} sessions={store.sessionPlan && !personal ? store.sessions : []}
       plan={personal ? null : store.sessionPlan} weekPreps={store.weekPreps} themes={visibleTopics}
       themeLinks={store.themeLinks} judgeSettled={store.judgeSettled} judgeSkipped={judgeSkipped}
@@ -553,6 +554,7 @@ function TherapyShell({
       initData={telegram.initData}
     >
       <WebWorkspace
+        inMessenger={inMessenger}
         hideReflection={reviewPilot && !guest}
         homeHref={telegram.ready && !telegram.inTelegram && !inMax ? `/?lang=${locale}` : undefined}
         section={guest && section !== "journal" ? "week" : personal && section === "sessions" ? "topics" : section}
@@ -580,6 +582,7 @@ function TherapyShell({
           ),
           journal: (
             <JournalPanel
+              inMessenger={inMessenger}
               guest={guest}
               initialDate={savedIntroDate}
               entries={store.entries}
@@ -611,6 +614,7 @@ function TherapyShell({
           ),
           topics: (
             <SessionBacklog
+              inMessenger={inMessenger}
               themes={store.themes}
               entries={store.entries}
               links={store.themeLinks}
