@@ -66,6 +66,16 @@ test("chooses a practice from the current intent, using the previous question fo
     ["Ровесники уже нашли квартиру", undefined],
     ["У всех вышло обновление, а у меня нет", undefined],
     ["Без советов. У всех вышло, а у меня нет", "listen"],
+    ["Ничего, я просто рассуждаю", "mi-thinking-aloud"],
+    ["Давай вместе подумаем, почему так выходит", "mi-thinking-aloud"],
+    ["Я логически понимаю, что у встречи могло быть другое время, но всё равно", "cbt-head-and-heart"],
+    ["Думаю вслух: умом я понимаю, что люди заняты, а мне всё равно обидно", "cbt-head-and-heart"],
+    ["Я просто рассуждаю, просто послушай", "listen"],
+    ["Запиши: я думаю вслух", undefined],
+    ["Сегодня на занятии были пространственные задачи", undefined],
+    ["Я логически понимаю объяснение", undefined],
+    ["Головой понимаю, что далеко, но всё равно поеду", undefined],
+    ["Не хочу порассуждать об этом", undefined],
   ] as const;
   for (const [message, expected] of cases) {
     assert.equal(findPractice(message, previous)?.id, expected, message);
