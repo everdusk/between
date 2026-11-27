@@ -6,6 +6,8 @@ import { practiceDecision, practiceSearchTool, searchPracticeCards, type Practic
 import { companionEnvelope, type CompanionState } from "./companion-memory";
 import type { AddressGender } from "./companion-address";
 
+export const companionModelId = "gemma-4-31b-it";
+
 export class CompanionModelError extends Error {
   constructor(readonly code: string) {
     super(code);
@@ -118,12 +120,12 @@ export async function askCompanion<T>({
       signal,
       cache: "no-store",
       body: JSON.stringify({
-        model: "gpt-6-luna",
+        model: companionModelId,
         max_tokens: 4096,
-        reasoning: { effort: "medium", exclude: true },
+        reasoning_effort: "medium",
         ...(search && {
           tools: [practiceSearchTool],
-          tool_choice: { type: "function", function: { name: "search_practices" } },
+          tool_choice: "required",
         }),
         ...(structured && !search && { response_format: { type: "json_object" } }),
         messages,
@@ -145,6 +147,7 @@ export async function askCompanion<T>({
     const usage = data?.usage;
     if (usage)
       console.info("companion_usage", {
+        model: data.model ?? companionModelId,
         input: usage.prompt_tokens,
         cached: usage.prompt_tokens_details?.cached_tokens,
         output: usage.completion_tokens,
@@ -184,7 +187,7 @@ export async function askCompanion<T>({
             method: "POST", headers, cache: "no-store",
             signal: AbortSignal.any([signal, AbortSignal.timeout(9000)]),
             body: JSON.stringify({
-              model: "gpt-6-luna", max_tokens: 1600, reasoning: { effort: "low", exclude: true },
+              model: companionModelId, max_tokens: 1600, reasoning_effort: "low",
               ...(structured && { response_format: { type: "json_object" } }),
               messages: [...messages, { role: "assistant", content: JSON.stringify({ reply: draft.reply }) }, {
                 role: "user",

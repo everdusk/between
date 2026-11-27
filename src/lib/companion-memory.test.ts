@@ -273,7 +273,7 @@ test("appends a development to the same recent companion note without duplicatin
   );
 });
 
-test("retries Luna without JSON mode after the provider rejects the format or returns no answer", async () => {
+test("retries Gemma without JSON mode after the provider rejects the format or returns no answer", async () => {
   for (const firstResponse of [
     new Response(null, { status: 400 }),
     Response.json({ choices: [{ message: { content: "" } }] }),
@@ -313,10 +313,10 @@ test("retries Luna without JSON mode after the provider rejects the format or re
     ]);
     assert.deepEqual(retry.messages, first.messages);
     assert.equal(retry.response_format, undefined);
-    assert.equal(retry.model, "gpt-6-luna");
+    assert.equal(retry.model, "gemma-4-31b-it");
     assert.equal(retry.max_tokens, 4096);
-    assert.deepEqual(first.reasoning, { effort: "medium", exclude: true });
-    assert.deepEqual(retry.reasoning, first.reasoning);
+    assert.equal(first.reasoning_effort, "medium");
+    assert.equal(retry.reasoning_effort, first.reasoning_effort);
     assert.equal(calls[0].signal, calls[1].signal);
   }
 });

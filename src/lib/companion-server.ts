@@ -245,7 +245,7 @@ export async function handleCompanion(input: {
             ["missing_key", "http_401", "http_403", "http_404"].includes(code)
           ) {
             answer =
-              "Сейчас Luna недоступна для этого бота. Нужно проверить доступ в AI Tunnel.";
+              "Сейчас Gemma недоступна для этого бота. Нужно проверить доступ в AI Tunnel.";
           } else if (code === "http_402") {
             answer =
               "AI Tunnel отклонил запрос из-за оплаты. Нужно проверить баланс.";
@@ -275,7 +275,7 @@ export async function handleCompanion(input: {
           at,
           conversationNotes,
         );
-        // If either topic changed while Luna was answering, defer this verdict to a later turn.
+        // If either topic changed while the companion was answering, defer this verdict to a later turn.
         const sameTopics = topicMerge && (current === modelSnapshot || [topicMerge.left, topicMerge.right].every(w =>
           current.store.themes.find(t => t.id === w.topicId)?.updatedAt ===
           modelSnapshot.store.themes.find(t => t.id === w.topicId)?.updatedAt));

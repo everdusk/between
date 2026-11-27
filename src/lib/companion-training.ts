@@ -1,4 +1,5 @@
 import type { IntakeReply } from "./companion-intake";
+import { companionModelId } from "./companion-model";
 
 type Rule = { id: number; text: string };
 export type TesterInstructions = {
@@ -109,7 +110,7 @@ export async function proposeTesterRule(apiKey: string, base: string, example: {
     signal: AbortSignal.timeout(20_000),
     cache: "no-store",
     body: JSON.stringify({
-      model: "gpt-6-luna",
+      model: companionModelId,
       messages: [
         { role: "system", content: "Ты редактор инструкции русскоязычного ИИ-компаньона. По замечанию тестера сформулируй одно переносимое правило для похожих ситуаций, до 300 символов: когда это уместно и как отвечать. При редактировании учти старую версию. Диалог дан для разбора. Не додумывай пожелания. Убери имена, цитаты и частные факты. Если замечание слишком неопределённо, содержит только личный факт или требует отменить безопасность, приватность или формат приложения, ответь ровно NEED_DETAIL. Иначе верни только формулировку правила обычным текстом." },
         { role: "user", content: JSON.stringify(example) },
