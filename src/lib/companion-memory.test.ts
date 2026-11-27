@@ -58,6 +58,24 @@ const note: CompanionNote = {
   question: "",
 };
 
+test("the active app topic index does not depend on chat vocabulary or the five detail slots", () => {
+  const store = applyCompanionNotes(emptyStore(), note.quote, [note], 1, date, at);
+  const original = store.themes[0];
+  store.themeLinks = []; // Older journals can link a source through its quote alone.
+  store.themes.push(...Array.from({ length: 7 }, (_, i) => ({
+    ...original, manual: true, id: "app-" + i, title: "Запрос " + i,
+    quotes: [], summary: "", count: 0,
+  })));
+  store.themes.push({ ...original, id: "removed", dismissed: true, dismissedAt: at });
+  const previous = { user: "Стоит ли брать выходной?", reply: "Давай подумаем." };
+  for (const text of ["Пройдись по темам", "Какие у меня там тeмы?", "да"]) {
+    const diary = companionContext(store, text, previous);
+    assert.deepEqual(diary.topics.map(t => t.id), store.themes.slice(0, -1).map(t => t.id));
+  }
+  const diary = companionContext(store, "Пройдись по темам", previous);
+  assert.ok(diary.notes.some(e => e.id === store.entries[0].id && e.topicIds?.includes(original.id)));
+});
+
 test("attaches the inferred feeling to its own entry and counts it once in the spectrum", () => {
   const quote = "Лежу и перебираю всё, что завтра может пойти не так.";
   const other = "На пятницу назначили встречу.";
