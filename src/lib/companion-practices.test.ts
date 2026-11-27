@@ -24,7 +24,7 @@ test("search can retrieve one bundled dialogue card, use the book index, or leav
           assert.equal(body.query, "одиночество и повседневное общение");
           return Response.json({ data: [{ results: [] }] });
         }
-        assert.equal(body.model, "gpt-6-luna");
+        assert.equal(body.model, "gemma-4-31b-it");
         assert.deepEqual(body.messages.slice(-3).map((m: { content: string }) => m.content),
           [recent[1].user, recent[1].reply, "Просто чтоб ктото за компанию пошёл"]);
         if (body.tools) {
@@ -64,7 +64,8 @@ test("the search runs even if the model skips or rejects the requested tool call
         }
         if (++calls === 1) {
           assert.equal(body.tools[0].function.name, "search_practices");
-          assert.equal(body.tool_choice.function.name, "search_practices");
+          assert.equal(body.tool_choice, "required");
+          assert.equal(body.tools[0].function.name, "search_practices");
           if (rejectTool) return new Response(null, { status: 400 });
         } else {
           assert.deepEqual(body.response_format, { type: "json_object" });
