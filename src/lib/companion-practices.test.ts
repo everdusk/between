@@ -87,6 +87,32 @@ test("the search runs even if the model skips or rejects the requested tool call
   }
 });
 
+test("an optional Gemma lookup timeout leaves a fresh deadline for the actual reply", async () => {
+  let lookupSignal: AbortSignal | null | undefined;
+  const result = await askCompanion({
+    apiKey: "test", base: "https://example.test", knowledgeBaseId: "kb_test",
+    message: "Мне трудно решить, как к этому относиться", context: {},
+    read: (raw, _, status) => ({ raw, status }),
+    request: async (_, init) => {
+      const body = JSON.parse(String(init?.body));
+      if (body.tools) {
+        lookupSignal = init?.signal;
+        assert.equal(body.reasoning_effort, "low");
+        assert.ok(!body.messages[0].content.includes(companionPrompt));
+        throw new DOMException("simulated lookup timeout", "TimeoutError");
+      }
+      assert.ok(lookupSignal);
+      assert.notEqual(init?.signal, lookupSignal);
+      assert.equal(init?.signal?.aborted, false);
+      assert.equal(body.reasoning_effort, "medium");
+      assert.ok(body.messages[0].content.startsWith(companionPrompt));
+      return Response.json({choices: [{message: {content: '{"reply":"Я слушаю"}'}}]});
+    },
+  });
+  assert.equal(JSON.parse(result.raw).reply, "Я слушаю");
+  assert.equal(result.status, "failed");
+});
+
 test("recognises lack of support without pathologising independence or overriding a request to listen", () => {
   for (const line of ["Не на кого положиться", "Всё на мне, могу рассчитывать только на себя", "На него нельзя рассчитывать"]) {
     assert.equal(findPractice(line)?.id, "relying-on-others");

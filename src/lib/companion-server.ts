@@ -64,7 +64,7 @@ export async function handleCompanion(input: {
     ":" +
     (action ? "callback:" + action.id : messageId);
   const lease = crypto.randomUUID();
-  if (!(await redis.set(key + ":lock", lease, { nx: true, ex: 70 })))
+  if (!(await redis.set(key + ":lock", lease, { nx: true, ex: 150 })))
     throw new Error("companion busy");
   let stopTyping: (() => void) | undefined;
   try {

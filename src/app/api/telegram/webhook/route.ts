@@ -166,6 +166,8 @@ async function localesFor(user: TelegramUser | undefined): Promise<{
 
 
 
+export const maxDuration = 180;
+
 export async function GET() {
   return NextResponse.json({
     ok: true,
