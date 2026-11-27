@@ -12,7 +12,7 @@ import {
 } from "./companion-memory";
 import { askCompanion, CompanionModelError } from "./companion-model";
 import { practiceFooter } from "./companion-search";
-import type { CompanionReplyTarget } from "./companion-reply";
+import { retryContext, type CompanionReplyTarget } from "./companion-reply";
 import { rememberAddress } from "./companion-address";
 import { applyTesterEdit, proposeTesterRule, testerEdit } from "./companion-training";
 import { advanceCompanionIntake, type IntakeReply } from "./companion-intake";
@@ -89,6 +89,7 @@ export async function handleCompanion(input: {
       const focus = replyTo?.quote ?? replyTo?.text;
       const priorUserText = replyTo?.author === "user" ? focus : turn?.user;
       const priorReply = replyTo?.author === "assistant" ? focus : turn?.reply;
+      const retry = retryContext(text, replyTo, turn);
       const date = todayInTimeZone(await getUserTimezone(owner));
       const at = new Date().toISOString();
       const conversationNotes = recentCompanionNotes(state, at);
@@ -148,7 +149,7 @@ export async function handleCompanion(input: {
       } else {
         const context = companionContext(
           current.store,
-          text,
+          retry?.original ?? text,
           replyTo ? { user: focus ?? "", reply: "" } : turn,
           conversationNotes,
         );
@@ -182,6 +183,7 @@ export async function handleCompanion(input: {
             gender: state.gender,
             testerRules: state.testerInstructions?.rules.map(rule => rule.text),
             replyTo,
+            retry,
             previousReply: priorReply,
             previousMessage: priorUserText,
             knowledgeBaseId:
@@ -201,10 +203,10 @@ export async function handleCompanion(input: {
             },
           });
           answer = result.reply;
-          notes = result.notes;
+          notes = retry ? [] : result.notes;
           if (!state.gender && result.gender) state.gender = result.gender;
           if (
-            result.followUp &&
+            !retry && result.followUp &&
             (!state.followUp || state.followUp.text === asked)
           ) {
             const later = new Date(at);
@@ -217,6 +219,7 @@ export async function handleCompanion(input: {
           state.recent = [
             ...state.recent,
             { messageId, user: text.slice(0, 1500), reply: result.reply.slice(0, 900),
+              ...(retry?.original && { retryOf: retry.original.slice(0, 1500) }),
               ...(replyTo && focus && { replyTo: { author: replyTo.author, text: focus.slice(0, 300) } }),
             },
           ].slice(-6);
