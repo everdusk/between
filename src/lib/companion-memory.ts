@@ -3,11 +3,13 @@ import { judgeStamp, visibleTopic } from "./themes";
 import type { JournalEntry, TherapyStore } from "./types";
 import { PICKER_FEELINGS, type Feeling } from "./types";
 import type { Intake } from "./companion-intake";
+import type { TesterInstructions } from "./companion-training";
 import { hasAddressEvidence, type AddressGender } from "./companion-address";
 
 type Turn = { user: string; reply: string };
 type ConversationNote = Pick<JournalEntry, "id" | "updatedAt">;
 export type CompanionState = {
+  testerInstructions?: TesterInstructions;
   name?: string;
   address?: string;
   gender?: AddressGender;

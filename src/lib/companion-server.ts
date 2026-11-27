@@ -12,6 +12,7 @@ import {
 } from "./companion-memory";
 import { askCompanion, CompanionModelError } from "./companion-model";
 import { rememberAddress } from "./companion-address";
+import { applyTesterEdit, proposeTesterRule, testerEdit } from "./companion-training";
 import { advanceCompanionIntake, type IntakeReply } from "./companion-intake";
 import {
   getRedis,
@@ -34,6 +35,7 @@ export async function handleCompanion(input: {
   messageId: number;
   action?: { id: string; data: string };
   text: string;
+  repliedBotText?: string;
   start?: boolean;
   say: (reply: string, rows?: IntakeReply["rows"]) => Promise<boolean>;
 }): Promise<boolean> {
@@ -71,7 +73,8 @@ export async function handleCompanion(input: {
       const previous = await redis.get<CompanionState>(key);
       if (!previous && !start) return false;
       const state = previous ?? emptyCompanion();
-      rememberAddress(state, action || start ? "" : text);
+      const edit = !start && testerEdit(text, action?.data);
+      if (!edit) rememberAddress(state, action || start ? "" : text);
       const priorUserText = state.recent.at(-1)?.user;
       const date = todayInTimeZone(await getUserTimezone(owner));
       const at = new Date().toISOString();
@@ -96,9 +99,28 @@ export async function handleCompanion(input: {
         /(?:не хочу жить|хочу умереть|хочу себя убить|поконч[уи]ть с собой|убью себя|причиню себе вред)/iu.test(
           text,
         );
-      const intakeReply = urgent
-        ? null
-        : advanceCompanionIntake(state, { text, start, action: action?.data });
+      const apiKey = normalizeAitunnelKey(process.env.AITUNNEL_API_KEY);
+      const base = (process.env.AITUNNEL_BASE_URL?.trim() || "https://api.aitunnel.ru/v1").replace(/\/+$/, "");
+      let intakeReply: IntakeReply | null;
+      if (edit) {
+        const instructions = state.testerInstructions ??= { rules: [], nextId: 1 };
+        try {
+          intakeReply = await applyTesterEdit(instructions, edit, messageId, async (feedback, oldRule) => {
+            if (!(await takeBriefAttempt(owner, date, 120, "companion"))) throw new Error("daily limit");
+            stopTyping = startTelegramTyping(userId);
+            const turn = input.repliedBotText
+              ? state.recent.findLast(t => t.reply === input.repliedBotText?.slice(0, 900))
+              : state.recent.at(-1);
+            return proposeTesterRule(apiKey, base, {
+              feedback, oldRule, userMessage: turn?.user, reply: input.repliedBotText ?? turn?.reply,
+            });
+          });
+        } catch {
+          intakeReply = { text: "Не удалось подготовить правило. Попробуй отправить правку чуть позже." };
+        }
+      } else {
+        intakeReply = urgent ? null : advanceCompanionIntake(state, { text, start, action: action?.data });
+      }
       const savePreviousMessage =
         !intakeReply &&
         /^(?:запиши|сохрани|запомни) (?:это|мо[её] последнее сообщение)[.!]?$/iu.test(
@@ -121,11 +143,8 @@ export async function handleCompanion(input: {
           stopTyping = startTelegramTyping(userId);
           const asked = await redis.get<string>(key + ":asked");
           const result = await askCompanion({
-            apiKey: normalizeAitunnelKey(process.env.AITUNNEL_API_KEY),
-            base: (
-              process.env.AITUNNEL_BASE_URL?.trim() ||
-              "https://api.aitunnel.ru/v1"
-            ).replace(/\/+$/, ""),
+            apiKey,
+            base,
             context: {
               preferences: {
                 name: state.name,
@@ -146,6 +165,7 @@ export async function handleCompanion(input: {
             },
             message: text,
             gender: state.gender,
+            testerRules: state.testerInstructions?.rules.map(rule => rule.text),
             previousReply: state.recent.at(-1)?.reply,
             knowledgeBaseId:
               process.env.COMPANION_KNOWLEDGE_BASE_ID ??

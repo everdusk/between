@@ -102,6 +102,7 @@ type TelegramMedia = {
 };
 type TelegramMessage = {
   message_id: number;
+  reply_to_message?: { text?: string; from?: { is_bot?: boolean }; forward_origin?: unknown };
   text?: string;
   caption?: string;
   voice?: TelegramMedia;
@@ -170,6 +171,11 @@ export async function GET() {
     redis: redisConfigured(),
     botToken: Boolean(botToken()),
   });
+}
+
+function repliedBotText(message: TelegramMessage) {
+  const target = message.reply_to_message;
+  return target?.from?.is_bot && !target.forward_origin ? target.text?.slice(0, 3100) : undefined;
 }
 
 async function handleCallback(callback: TelegramCallback) {
@@ -446,6 +452,7 @@ async function handleVoice(
     username: message.from?.username,
     messageId: message.message_id,
     text: body,
+    repliedBotText: repliedBotText(message),
     say: (text, rows) => telegramRequest("sendMessage", {
       chat_id: chatId, text, reply_markup: rows ? onboardReplyMarkup(rows) : undefined,
     }),
@@ -759,6 +766,7 @@ export async function POST(req: Request) {
 
   if (await handleCompanion({
     userId,username:message.from?.username,messageId:message.message_id,text,
+    repliedBotText: repliedBotText(message),
     say:(answer, rows)=>telegramRequest("sendMessage",{chat_id:chatId,text:answer,reply_markup:rows ? onboardReplyMarkup(rows) : undefined}),
   })) return NextResponse.json({ok:true});
   try {
