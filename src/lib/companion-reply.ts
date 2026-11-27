@@ -3,6 +3,15 @@ export function companionDisplayText(text: string) {
   return text.replaceAll("—", "–");
 }
 
+// Gemma occasionally repeats the tail of a Russian noun inside a single word.
+// Restrict the repair to long suffixes; deliberate repetitions like «еле-еле» are valid.
+export function cleanGeneratedReply(text: string, userText: string) {
+  return companionDisplayText(text).replace(
+    /(?<![\p{L}\p{N}_])([а-яё]+?)([а-яё]?[ае]ни(?:е|я|ю|ем|и|й|ям|ями|ях))\2(?![\p{L}\p{N}_])/giu,
+    (word, stem: string, ending: string) => userText.includes(word) ? word : stem + ending,
+  );
+}
+
 export type TelegramReplyMessage = {
   message_id: number;
   chat: { id: number };

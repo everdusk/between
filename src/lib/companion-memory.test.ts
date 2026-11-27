@@ -18,6 +18,17 @@ import {
 const at = "2026-11-25T10:00:00Z",
   date = "2026-11-25";
 
+test("repairs duplicated noun endings in generated prose without editing diary evidence", () => {
+  const text = "После сообщениящения я еле-еле успокоилась.";
+  const raw = JSON.stringify({
+    reply: "У этого ожиданиядания есть конец. Ты сказала «сообщениящения». Еле-еле, ожидания, понимание.",
+    notes: [{ kind: "situation", quote: text, detail: text }],
+  });
+  const answer = readCompanionReply(raw, text, { topics: [], notes: [] });
+  assert.equal(answer.reply, "У этого ожидания есть конец. Ты сказала «сообщениящения». Еле-еле, ожидания, понимание.");
+  assert.equal(answer.notes[0].quote, text);
+});
+
 test("grounds a chat merge in two linked notes and the new message, including turns with no new note", () => {
   const texts = ["Беру чужие смены, боюсь подвести коллег", "Делаю отчёт за коллег, боюсь подвести отдел"];
   const store: TherapyStore = emptyStore();
