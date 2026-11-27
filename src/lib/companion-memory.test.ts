@@ -382,3 +382,34 @@ test("companion replies and follow-ups omit em dashes while diary quotes keep th
   assert.ok(!parsed.followUp.includes("—"));
   assert.equal(parsed.notes[0].quote, text);
 });
+
+test("moving to the next saved topic loads linked entries and keeps them on a short follow-up", () => {
+  const store = applyCompanionNotes(emptyStore(), note.quote, [note], 19, date, at);
+  const old = store.themes[0];
+  const focus = { ...old, id: "delivery", title: "Первый заказ", quotes: [], summary: "Заказ пришёл вовремя", manual: true };
+  const bodies = ["Договорились на пятницу", "На встрече было спокойно", "В следующий раз попрошу образец"];
+  const entries = bodies.map((body, i) => ({...store.entries[0], id: "source-" + i, body}));
+  store.entries.push(...entries);
+  store.themes.push({ ...old, id: "hidden", dismissed: true }, focus);
+  store.themeLinks.push(...entries.slice(0, 2).map(e => ({...store.themeLinks[0], themeId: focus.id, entryId: e.id})));
+  store.themes[2].quotes = [{...old.quotes[0], entryId: entries[2].id}];
+  const turn = {user: "Что дальше?", reply: "Поговорим про " + old.title + "?"};
+  const next = companionContext(store, "Не знаю. Давай к следующей теме перейдём", turn);
+  assert.equal(next.discussionTopicId, focus.id);
+  for (const entry of entries) assert.ok(next.notes.some(n => n.text === entry.body && n.topicIds?.includes(focus.id)));
+  const parsed = readCompanionReply(JSON.stringify({ reply: "Как прошло в пятницу?", discussionTopicId: focus.id }), "давай", next);
+  const following = { user: "давай", reply: parsed.reply, topicId: parsed.topicId };
+  store.droppedEntryIds = [entries[0].id];
+  const yes = companionContext(store, "да", following);
+  assert.equal(yes.discussionTopicId, focus.id);
+  const legacy = companionContext(store, "И вчера тоже", { user: "Да, помню", reply: "Как это было?" }, [],
+    [{ user: "Давай дальше", reply: "Следующая тема: Первый заказ. Расскажешь?" }]);
+  assert.equal(legacy.discussionTopicId, focus.id);
+  assert.ok(legacy.notes.some(n => n.topicIds?.includes(focus.id)));
+  assert.equal(yes.notes.filter(n => n.topicIds?.includes(focus.id)).length, 2);
+  assert.ok(yes.notes.every(n => n.id !== entries[0].id));
+  assert.equal(companionContext(store, "Перейдём к следующей", following).endOfTopics, true);
+  assert.equal(companionContext(store, "Поговорим о другом", following).discussionTopicId, undefined);
+  assert.equal(companionContext(store, "Покажи мои темы", following).discussionTopicId, undefined);
+  assert.equal(companionContext(store, "Точно", { ...following, topicId: null }).discussionTopicId, undefined);
+});

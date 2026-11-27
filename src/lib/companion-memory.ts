@@ -1,13 +1,13 @@
 import { applyReviewVerdict, recordReview, visiblePilotTopic } from "./theme-review";
 import { entriesForTheme, judgeStamp } from "./themes";
-import type { JournalEntry, TherapyStore } from "./types";
+import type { JournalEntry, SessionTheme, TherapyStore } from "./types";
 import { PICKER_FEELINGS, type Feeling } from "./types";
 import type { Intake } from "./companion-intake";
 import type { TesterInstructions } from "./companion-training";
 import { hasAddressEvidence, type AddressGender } from "./companion-address";
 import { companionDisplayText } from "./companion-reply";
 
-type Turn = { user: string; reply: string; messageId?: number; retryOf?: string; replyTo?: { author: "assistant" | "user"; text: string } };
+type Turn = { user: string; reply: string; topicId?: string | null; messageId?: number; retryOf?: string; replyTo?: { author: "assistant" | "user"; text: string } };
 type ConversationNote = Pick<JournalEntry, "id" | "updatedAt">;
 export type CompanionState = {
   testerInstructions?: TesterInstructions;
@@ -69,11 +69,46 @@ function words(text: string) {
   );
 }
 
+function topicText(text: string) {
+  return " " + text.toLowerCase().replace(/ё/g, "е").replace(/[^\p{L}\d]+/gu, " ").trim() + " ";
+}
+
+function namedTopics(text: string, active: SessionTheme[]) {
+  const line = topicText(text);
+  return active.filter(t => line.includes(topicText(t.title)));
+}
+
+function discussionTopic(active: SessionTheme[], text: string, previous?: Turn) {
+  const line = topicText(text);
+  const named = namedTopics(text, active);
+  const previousNames = previous ? namedTopics(previous.reply, active) : [];
+  const last = previous?.topicId !== undefined ? active.find(t => t.id === previous.topicId)
+    : previousNames.length === 1 ? previousNames[0] : undefined;
+  if (/оставим (?:эту )?тему|сменим тему|поговорим о другом|не хочу (?:это |е[её] )?обсуждать/u.test(line)) return {};
+  if (named.length === 1) return { topic: named[0] };
+  if (/следующ[а-я]* тем|дальше по тем|друг[а-я]* тем[а-я]* из списка/u.test(line)
+    || (last && /^(?:давай |перейдем )?к следующей$/u.test(line.trim()))) {
+    const next = active[last ? active.indexOf(last) + 1 : 0];
+    return { topic: next, endOfTopics: !next };
+  }
+  if (named.length || /(?:мои |по |все |список |какие )(?:темы|темам|тем )/u.test(line)) return {};
+  if (/обсуди|поговори|вернемся к|про тему|к теме/u.test(line)) {
+    const mentioned = words(text);
+    const candidates = active.filter(t => {
+      const title = [...words(t.title)];
+      return title.length > 0 && title.every(w => mentioned.has(w));
+    });
+    return { topic: candidates.length === 1 ? candidates[0] : undefined };
+  }
+  return { topic: last };
+}
+
 export function companionContext(
   store: TherapyStore,
   text: string,
   previous?: Turn,
   currentNotes: ConversationNote[] = [],
+  earlierTurns: Turn[] = [],
 ) {
   const query = words(text);
   const visible = store.themes.filter(visiblePilotTopic);
@@ -81,7 +116,19 @@ export function companionContext(
     id: t.id, title: t.title.slice(0, 160), status: t.status,
   });
   const active = visible.filter(t => t.status === "active");
-  if (/^(?:да|нет|точно|угу|спасибо|ага|понятно)[.! ]*$/iu.test(text.trim()))
+  // Restore the subject of chats already in progress before topic IDs were stored.
+  if (previous && previous.topicId === undefined && earlierTurns.length) {
+    let prior: Turn | undefined;
+    for (const turn of [...earlierTurns, previous]) {
+      const named = namedTopics(turn.reply, active);
+      const inferred = named.length === 1 ? named[0] : !named.length
+        ? discussionTopic(active, turn.user, prior).topic : undefined;
+      prior = { ...turn, topicId: turn.topicId === undefined ? inferred?.id ?? null : turn.topicId };
+    }
+    previous = prior;
+  }
+  const { topic: focused, endOfTopics } = discussionTopic(active, text, previous);
+  if (!focused && /^(?:да|нет|точно|угу|спасибо|ага|понятно)[.! ]*$/iu.test(text.trim()))
     return { topics: active.map(compactTopic), notes: [] };
   const browse = /(?:^|[^а-яё])(?:тем(?:ы|ам|ами|ах|у)|к терапии|на подумать)(?![а-яё])/iu.test(text);
   const recall =
@@ -126,6 +173,7 @@ export function companionContext(
     .sort((a, b) => b.rank - a.rank || b.t.lastSeen.localeCompare(a.t.lastSeen))
     .slice(0, 5);
   const detailed = new Set(matches.map(({ t }) => t.id));
+  if (focused) detailed.add(focused.id);
   // Include the active index even when the request is colloquial or misspelled.
   const topics = visible
     .filter(t => browse || t.status === "active" || detailed.has(t.id))
@@ -149,16 +197,19 @@ export function companionContext(
     ? [...matches.map(m => m.t), ...active.filter(t => !detailed.has(t.id))]
     : matches.map(m => m.t);
   const sourceTopics = new Map<string, string[]>();
-  for (const t of sourceThemes.slice(0, 5)) {
+  const sources = focused ? [focused, ...sourceThemes.filter(t => t.id !== focused.id)] : sourceThemes;
+  for (const t of sources.slice(0, 5)) {
     const linked = entriesForTheme(t, entries, store.themeLinks);
     const ids = new Set(linked.map(e => e.id));
-    const entry = ranked.find(r => ids.has(r.e.id))?.e;
-    if (entry) {
+    const selected = ranked.filter(r => ids.has(r.e.id)).slice(0, t.id === focused?.id ? 6 : 1);
+    for (const { e: entry } of selected) {
       chosen.set(entry.id, entry);
       sourceTopics.set(entry.id, [...(sourceTopics.get(entry.id) ?? []), t.id]);
     }
   }
   return {
+    ...(focused && { discussionTopicId: focused.id }),
+    ...(endOfTopics && { endOfTopics: true }),
     topics,
     notes: [...chosen.values()].map((e) => ({
       id: e.id,
@@ -244,6 +295,9 @@ export function readCompanionReply(
   }
   return {
     reply: companionDisplayText(clean(data.reply, 3100)),
+    topicId: data.discussionTopicId === null ? null
+      : context.topics.find(t => t.status === "active" && t.id === data.discussionTopicId)?.id
+        ?? context.discussionTopicId,
     usedCards: data.usedCards as unknown,
     noCardReason: data.noCardReason as unknown,
     notes,

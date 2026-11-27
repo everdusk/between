@@ -150,8 +150,9 @@ export async function handleCompanion(input: {
         const context = companionContext(
           current.store,
           retry?.original ?? text,
-          replyTo ? { user: focus ?? "", reply: "" } : turn,
+          replyTo ? { ...turn, user: focus ?? "", reply: replyTo.author === "assistant" ? focus ?? "" : turn?.reply ?? "" } : turn,
           conversationNotes,
+          turn ? state.recent.slice(0, state.recent.indexOf(turn)) : [],
         );
         const allowed = await takeBriefAttempt(owner, date, 120, "companion");
         try {
@@ -218,7 +219,7 @@ export async function handleCompanion(input: {
           }
           state.recent = [
             ...state.recent,
-            { messageId, user: text.slice(0, 1500), reply: result.reply.slice(0, 900),
+            { messageId, topicId: result.topicId, user: text.slice(0, 1500), reply: result.reply.slice(0, 900),
               ...(retry?.original && { retryOf: retry.original.slice(0, 1500) }),
               ...(replyTo && focus && { replyTo: { author: replyTo.author, text: focus.slice(0, 300) } }),
             },
