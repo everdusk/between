@@ -49,7 +49,11 @@ test("both search and generation receive the selected old message and exact exce
       ++requests;
       const { messages } = JSON.parse(String(init?.body));
       assert.deepEqual(JSON.parse(messages[1].content).replyTo, replyTo);
-      assert.equal(messages[2].content, "Вот про это");
+      assert.deepEqual(messages.slice(2), [
+        { role: "user", content: "Как прошёл экзамен?" },
+        { role: "assistant", content: "Уже есть оценки?" },
+        { role: "user", content: "Вот про это" },
+      ]);
       assert.ok(!messages[0].content.includes("о переезде?"));
       return Response.json({ choices: [{message: {content: '{"reply":"Хорошо"}'}}] });
     },

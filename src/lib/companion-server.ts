@@ -1,6 +1,7 @@
 import { normalizeAitunnelKey } from "@/app/api/brief/route";
 import {
   applyCompanionNotes,
+  applyCompanionMerge,
   companionContext,
   companionEntryPatch,
   emptyCompanion,
@@ -107,7 +108,9 @@ export async function handleCompanion(input: {
         return { stamp, store, original: raw || store };
       };
       let current = await snapshot();
+      const modelSnapshot = current;
       let notes: ReturnType<typeof readCompanionReply>["notes"] = [];
+      let topicMerge: ReturnType<typeof readCompanionReply>["merge"];
       const urgent =
         !action &&
         /(?:не хочу жить|хочу умереть|хочу себя убить|поконч[уи]ть с собой|убью себя|причиню себе вред)/iu.test(
@@ -205,6 +208,7 @@ export async function handleCompanion(input: {
           });
           answer = result.reply;
           notes = retry ? [] : result.notes;
+          if (!retry && !urgent && !savePreviousMessage) topicMerge = result.merge;
           if (!state.gender && result.gender) state.gender = result.gender;
           if (
             !retry && result.followUp &&
@@ -262,7 +266,7 @@ export async function handleCompanion(input: {
       let committed = false;
       for (let attempt = 0; attempt < 4; attempt++) {
         if (attempt) current = await snapshot();
-        const next = applyCompanionNotes(
+        const withNotes = applyCompanionNotes(
           current.store,
           noteText,
           notes,
@@ -271,6 +275,11 @@ export async function handleCompanion(input: {
           at,
           conversationNotes,
         );
+        // If either topic changed while Luna was answering, defer this verdict to a later turn.
+        const sameTopics = topicMerge && (current === modelSnapshot || [topicMerge.left, topicMerge.right].every(w =>
+          current.store.themes.find(t => t.id === w.topicId)?.updatedAt ===
+          modelSnapshot.store.themes.find(t => t.id === w.topicId)?.updatedAt));
+        const next = sameTopics ? applyCompanionMerge(withNotes, topicMerge, at) : withNotes;
         const entryChanges = companionEntryPatch(
           current.store.entries,
           next.entries,

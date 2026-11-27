@@ -1,4 +1,5 @@
 import { practiceTitles } from "./companion-practices";
+import { dialogueCards } from "./companion-dialogue-cards";
 
 export type PracticeCard = { id: string; title: string; text: string };
 
@@ -7,7 +8,19 @@ export const practiceSearchTool = {
   function: {
     name: "search_practices",
     description: "Найти приём для текущей реплики. Передай один обезличенный запрос: ситуация, её разговорные синонимы и подход. Без имён, цитат пользователя и текста дневника.",
-    parameters: { type: "object", properties: { query: { type: "string" } }, required: ["query"] },
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string" },
+        dialogueCard: {
+          type: "string",
+          description: "Необязательно. Выбери один подход к текущей просьбе с учётом предыдущего обмена. Для простого отклика, паузы, бытового пояснения или смены темы укажи plain. Если полезнее поиск книжного приёма, опусти поле. " +
+            dialogueCards.map(card => card.id + ": " + card.title).join(". "),
+          enum: ["plain", ...dialogueCards.map(card => card.id)],
+        },
+      },
+      required: ["query"],
+    },
   },
 };
 

@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { emptyStore } from "./types";
+import { emptyStore, type SessionTheme, type TherapyStore } from "./types";
 import { buildWeekSpectrum } from "./spectrum";
 import { askCompanion } from "./companion-model";
 import {
   applyCompanionNotes,
+  applyCompanionMerge,
   companionContext,
   companionEntryPatch,
   emptyCompanion,
@@ -16,6 +17,68 @@ import {
 
 const at = "2026-11-25T10:00:00Z",
   date = "2026-11-25";
+
+test("grounds a chat merge in two linked notes and the new message, including turns with no new note", () => {
+  const texts = ["Беру чужие смены, боюсь подвести коллег", "Делаю отчёт за коллег, боюсь подвести отдел"];
+  const store: TherapyStore = emptyStore();
+  for (const [i, body] of texts.entries()) {
+    const entryId = "note-" + i, topicId = "topic-" + i;
+    store.entries.push({ id: entryId, date, createdAt: at, updatedAt: at, source: "app", body, feelings: [], tags: [] });
+    const theme: SessionTheme = {
+      id: topicId, userId: "local", title: i ? "Чужие отчёты" : "Лишние смены", summary: "",
+      status: "active", count: 1, confidence: 1, firstSeen: date, lastSeen: date, peakIntensity: 5,
+      reopened: false, dismissed: false, quotes: [], updatedAt: at,
+      review: [{ id: "review-" + i, kind: "note", text: body, at }],
+    };
+    store.themes.push(theme);
+    store.themeLinks.push({ entryId, themeId: topicId, confidence: 1 });
+  }
+  const signal = "И со сменами, и с отчётами боюсь подвести коллег";
+  const context = companionContext(store, signal);
+  const raw = {
+    relation: "same_pattern", confidence: 0.92, signal,
+    left: { topicId: "topic-0", entryId: "note-0", quote: texts[0] },
+    right: { topicId: "topic-1", entryId: "note-1", quote: texts[1] },
+  };
+  const proposal = (topicMerge = raw, text = signal) =>
+    readCompanionReply(JSON.stringify({ reply: "Понимаю", topicMerge }), text, context).merge;
+  const merge = proposal();
+  assert.ok(merge);
+  const after = applyCompanionMerge(store, merge, at);
+  assert.equal(after.entries, store.entries);
+  assert.equal(after.themes.length, 1);
+  assert.equal(after.themes[0].count, 2);
+  assert.equal(after.themes[0].review?.length, 2);
+  assert.deepEqual(after.themes[0].mergedIds, ["topic-1"]);
+  assert.ok(after.themeLinks.every(l => l.themeId === "topic-0"));
+  assert.equal(companionContext(after, "Да", { user: "", reply: "", topicId: "topic-1" }).discussionTopicId, "topic-0");
+  assert.equal(applyCompanionMerge(after, merge, at), after);
+  const legacy: TherapyStore = {
+    ...store, themeLinks: [],
+    themes: store.themes.map((t, i) => ({
+      ...t, manual: i === 1, quotes: [{ entryId: "note-" + i, date, intensity: 5, text: texts[i] }],
+    })),
+  };
+  const keptManual = applyCompanionMerge(legacy, merge, at);
+  assert.deepEqual(keptManual.themes.map(t => t.title), [legacy.themes[1].title]);
+  assert.deepEqual(keptManual.themeLinks.map(l => l.themeId), ["topic-1", "topic-1"]);
+  assert.equal(keptManual.themes[0].count, 2);
+  assert.equal(proposal({ ...raw, right: { ...raw.right, quote: "вымышленная деталь" } }), undefined);
+  assert.equal(proposal({ ...raw, right: { ...raw.right, entryId: "note-0" } }), undefined);
+  assert.equal(proposal({ ...raw, relation: "same_emotion" }), undefined);
+  assert.equal(proposal({ ...raw, confidence: 0.6 }), undefined);
+  assert.equal(proposal(raw, "Это другая история"), undefined);
+  assert.equal(proposal(raw, signal + ", но не объединяй темы"), undefined);
+  for (const changed of [
+    { ...store, droppedEntryIds: ["note-0"] },
+    { ...store, entries: store.entries.filter(e => e.id !== "note-0") },
+    { ...store, themeLinks: [] },
+    { ...store, themes: store.themes.map(t => ({ ...t, manual: true })) },
+    { ...store, themes: store.themes.map(t => ({ ...t, status: "discussed" as const })) },
+    { ...store, themes: store.themes.map(t => ({ ...t, dismissed: true })) },
+    { ...store, themes: store.themes.map((t, i) => ({ ...t, list: i ? "therapy" as const : "personal" as const })) },
+  ]) assert.equal(applyCompanionMerge(changed, merge, at), changed);
+});
 
 test("a fresh mood selection gives context only to the next nearby turn", () => {
   const store = applyCompanionNotes(emptyStore(), "Запиши: встреча", [], 42, date, at);
@@ -245,7 +308,7 @@ test("retries Luna without JSON mode after the provider rejects the format or re
     const [first, retry] = calls.map((call) => JSON.parse(String(call.body)));
     assert.deepEqual(first.response_format, { type: "json_object" });
     assert.deepEqual(first.messages.slice(1), [
-      { role: "user", content: JSON.stringify({ recent: [] }) },
+      { role: "user", content: "{}" },
       { role: "user", content: "Тест сообщения" },
     ]);
     assert.deepEqual(retry.messages, first.messages);

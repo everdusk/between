@@ -1,5 +1,5 @@
 import { applyReviewVerdict, recordReview, visiblePilotTopic } from "./theme-review";
-import { entriesForTheme, judgeStamp } from "./themes";
+import { entriesForTheme, judgeStamp, mergeThemes } from "./themes";
 import type { JournalEntry, SessionTheme, TherapyStore } from "./types";
 import { PICKER_FEELINGS, type Feeling } from "./types";
 import type { Intake } from "./companion-intake";
@@ -82,7 +82,7 @@ function discussionTopic(active: SessionTheme[], text: string, previous?: Turn) 
   const line = topicText(text);
   const named = namedTopics(text, active);
   const previousNames = previous ? namedTopics(previous.reply, active) : [];
-  const last = previous?.topicId !== undefined ? active.find(t => t.id === previous.topicId)
+  const last = previous?.topicId !== undefined ? active.find(t => t.id === previous.topicId || (previous.topicId && t.mergedIds?.includes(previous.topicId)))
     : previousNames.length === 1 ? previousNames[0] : undefined;
   if (/оставим (?:эту )?тему|сменим тему|поговорим о другом|не хочу (?:это |е[её] )?обсуждать/u.test(line)) return {};
   if (named.length === 1) return { topic: named[0] };
@@ -193,7 +193,7 @@ export function companionContext(
   }
   for (const r of ranked.filter((item) => recall || item.rank > 0).slice(0, 3))
     chosen.set(r.e.id, r.e);
-  const sourceThemes = browse
+  const sourceThemes = browse || focused
     ? [...matches.map(m => m.t), ...active.filter(t => !detailed.has(t.id))]
     : matches.map(m => m.t);
   const sourceTopics = new Map<string, string[]>();
@@ -253,6 +253,45 @@ export function companionEnvelope(raw: string) {
       : parsed);
 }
 
+type MergeWitness = { topicId: string; entryId: string; quote: string };
+type CompanionMerge = { left: MergeWitness; right: MergeWitness };
+
+function mergeFromReply(raw: unknown, text: string, context: ReturnType<typeof companionContext>): CompanionMerge | undefined {
+  if (!raw || typeof raw !== "object") return;
+  const value = raw as Record<string, unknown>;
+  if (value.relation !== "same_pattern" || typeof value.signal !== "string" || !value.signal.trim() ||
+      !text.includes(value.signal) || typeof value.confidence !== "number" ||
+      !(value.confidence >= 0.85 && value.confidence <= 1)) return;
+  if (/не (?:надо |нужно |хочу )?(?:объедин|слива|соедин|записыва|сохраня)|остав[ьи].{0,35}(?:отдельно|раздельно)|не для дневника/iu.test(text)) return;
+  function witness(raw: unknown): MergeWitness | undefined {
+    if (!raw || typeof raw !== "object") return;
+    const { topicId, entryId, quote } = raw as Record<string, unknown>;
+    if (typeof topicId !== "string" || typeof entryId !== "string" || typeof quote !== "string" ||
+        !quote.trim() || !context.topics.some(t => t.id === topicId && t.status === "active")) return;
+    if (context.notes.some(n => n.id === entryId && n.topicIds?.includes(topicId) && n.text.includes(quote))) {
+      return { topicId, entryId, quote };
+    }
+  }
+  const left = witness(value.left), right = witness(value.right);
+  if (left && right && left.topicId !== right.topicId && left.entryId !== right.entryId) return { left, right };
+}
+
+export function applyCompanionMerge(store: TherapyStore, proposal: CompanionMerge | undefined, at: string): TherapyStore {
+  if (!proposal) return store;
+  const topics = [proposal.left, proposal.right].map(w => {
+    const topic = store.themes.find(t => t.id === w.topicId && t.status === "active" && !t.dismissed);
+    if (!topic || store.droppedEntryIds?.includes(w.entryId)) return;
+    if (entriesForTheme(topic, store.entries, store.themeLinks).some(e => e.id === w.entryId && e.body.includes(w.quote))) return topic;
+  });
+  const [a, b] = topics;
+  if (!a || !b) return store;
+  const [keep, drop] = [a, b].sort((x, y) => Number(!!y.manual) - Number(!!x.manual) ||
+    x.firstSeen.localeCompare(y.firstSeen) || x.id.localeCompare(y.id));
+  const merged = mergeThemes({ themes: store.themes, links: store.themeLinks }, keep.id, drop.id, undefined, at);
+  if (merged.themes === store.themes) return store;
+  return { ...store, themes: merged.themes, themeLinks: merged.links };
+}
+
 export function readCompanionReply(
   raw: string,
   text: string,
@@ -301,6 +340,7 @@ export function readCompanionReply(
     usedCards: data.usedCards as unknown,
     noCardReason: data.noCardReason as unknown,
     notes,
+    merge: mergeFromReply(data.topicMerge, text, context),
     followUp: companionDisplayText(clean(data.followUp, 250)),
     gender:
       (data.gender === "feminine" || data.gender === "masculine") &&
