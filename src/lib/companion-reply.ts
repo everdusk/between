@@ -14,6 +14,25 @@ export type CompanionReplyTarget = {
   quote?: string;
 };
 
+type PreviousTurn = {
+  user: string;
+  reply: string;
+  retryOf?: string;
+  replyTo?: { author: "user" | "assistant"; text: string };
+};
+
+export function retryContext(text: string, target?: CompanionReplyTarget, turn?: PreviousTurn) {
+  const line = text.toLowerCase().replace(/ё/g, "е").trim().replace(/[.!?…]+$/u, "").trim();
+  if (!/^(?:и |ну )?(?:пожалуйста[, ]+)?(?:попробуй(?:те)? (?:ответить )?еще раз(?: (?:на этот вопрос ответить|ответить на этот вопрос|ответить))?|еще раз попробуй(?:те)?(?: ответить)?|ответь(?:те)? (?:еще раз|заново|по-другому)(?: на этот вопрос)?)(?:[, ]+пожалуйста)?$/u.test(line)) return;
+  const selected = target?.quote ?? target?.text;
+  const original = target?.author === "user" ? selected
+    : turn?.retryOf ?? (turn?.replyTo?.author === "user" ? turn.replyTo.text : turn?.user);
+  return {
+    original,
+    previousAnswer: target?.author === "assistant" ? selected : turn?.reply,
+  };
+}
+
 export function telegramReplyTarget(message: {
   chat: { id: number };
   from?: { id: number };
