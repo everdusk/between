@@ -96,7 +96,7 @@ export async function applyTesterEdit(
   if (duplicate) return { text: "Такая формулировка уже есть в правиле №" + duplicate.id + "." };
   const id = draft.replace ?? state.nextId++;
   state.rules = [...state.rules.filter(r => r.id !== id), { id, text: draft.text }];
-  return { text: "Применил правило №" + id + ". Учту его в следующем ответе. Весь список — «Мои правила»." };
+  return { text: "Применил правило №" + id + ". Учту его в следующем ответе. Весь список можно посмотреть по команде «Мои правила»." };
 }
 
 export async function proposeTesterRule(apiKey: string, base: string, example: {

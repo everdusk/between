@@ -1,3 +1,8 @@
+// Fallback for generated text, including messages queued before the style change.
+export function companionDisplayText(text: string) {
+  return text.replaceAll("—", "–");
+}
+
 export type TelegramReplyMessage = {
   message_id: number;
   chat: { id: number };

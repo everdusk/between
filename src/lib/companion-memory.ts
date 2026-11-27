@@ -5,6 +5,7 @@ import { PICKER_FEELINGS, type Feeling } from "./types";
 import type { Intake } from "./companion-intake";
 import type { TesterInstructions } from "./companion-training";
 import { hasAddressEvidence, type AddressGender } from "./companion-address";
+import { companionDisplayText } from "./companion-reply";
 
 type Turn = { user: string; reply: string; messageId?: number; retryOf?: string; replyTo?: { author: "assistant" | "user"; text: string } };
 type ConversationNote = Pick<JournalEntry, "id" | "updatedAt">;
@@ -242,11 +243,11 @@ export function readCompanionReply(
     });
   }
   return {
-    reply: clean(data.reply, 3100),
+    reply: companionDisplayText(clean(data.reply, 3100)),
     usedCards: data.usedCards as unknown,
     noCardReason: data.noCardReason as unknown,
     notes,
-    followUp: clean(data.followUp, 250),
+    followUp: companionDisplayText(clean(data.followUp, 250)),
     gender:
       (data.gender === "feminine" || data.gender === "masculine") &&
       typeof data.genderQuote === "string" &&
