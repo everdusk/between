@@ -6,7 +6,7 @@ import type { Intake } from "./companion-intake";
 import type { TesterInstructions } from "./companion-training";
 import { hasAddressEvidence, type AddressGender } from "./companion-address";
 
-type Turn = { user: string; reply: string };
+type Turn = { user: string; reply: string; messageId?: number; replyTo?: { author: "assistant" | "user"; text: string } };
 type ConversationNote = Pick<JournalEntry, "id" | "updatedAt">;
 export type CompanionState = {
   testerInstructions?: TesterInstructions;

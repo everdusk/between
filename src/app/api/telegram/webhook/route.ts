@@ -31,6 +31,7 @@ import {
   trackServerEvent,
 } from "@/lib/analytics";
 import { isReviewOwner } from "@/lib/review-owner";
+import { telegramReplyTarget, type TelegramReplyMessage } from "@/lib/companion-reply";
 import { handleCompanion } from "@/lib/companion-server";
 import { linkCodeFromStart, loginTokenFromStart } from "@/lib/web-account";
 import { claimTelegramLink, finishTelegramLogin, resolveJournalId } from "@/lib/web-account-store";
@@ -102,7 +103,8 @@ type TelegramMedia = {
 };
 type TelegramMessage = {
   message_id: number;
-  reply_to_message?: { text?: string; from?: { is_bot?: boolean }; forward_origin?: unknown };
+  reply_to_message?: TelegramReplyMessage;
+  quote?: { text: string; is_manual?: boolean };
   text?: string;
   caption?: string;
   voice?: TelegramMedia;
@@ -171,13 +173,6 @@ export async function GET() {
     redis: redisConfigured(),
     botToken: Boolean(botToken()),
   });
-}
-
-function repliedBotText(message: TelegramMessage) {
-  const target = message.reply_to_message;
-  return target?.from?.is_bot && !target.forward_origin
-    ? target.text?.replace(/\n\n(?:Карточки(?: ответа)? · [^\n]+|Ответ без карточек)$/u, "").slice(0, 3100)
-    : undefined;
 }
 
 async function handleCallback(callback: TelegramCallback) {
@@ -454,7 +449,7 @@ async function handleVoice(
     username: message.from?.username,
     messageId: message.message_id,
     text: body,
-    repliedBotText: repliedBotText(message),
+    replyTo: telegramReplyTarget(message),
     say: (text, rows) => telegramRequest("sendMessage", {
       chat_id: chatId, text, reply_markup: rows ? onboardReplyMarkup(rows) : undefined,
     }),
@@ -768,7 +763,7 @@ export async function POST(req: Request) {
 
   if (await handleCompanion({
     userId,username:message.from?.username,messageId:message.message_id,text,
-    repliedBotText: repliedBotText(message),
+    replyTo: telegramReplyTarget(message),
     say:(answer, rows)=>telegramRequest("sendMessage",{chat_id:chatId,text:answer,reply_markup:rows ? onboardReplyMarkup(rows) : undefined}),
   })) return NextResponse.json({ok:true});
   try {

@@ -12,6 +12,7 @@ import {
 } from "./companion-memory";
 import { askCompanion, CompanionModelError } from "./companion-model";
 import { practiceFooter } from "./companion-search";
+import type { CompanionReplyTarget } from "./companion-reply";
 import { rememberAddress } from "./companion-address";
 import { applyTesterEdit, proposeTesterRule, testerEdit } from "./companion-training";
 import { advanceCompanionIntake, type IntakeReply } from "./companion-intake";
@@ -36,7 +37,7 @@ export async function handleCompanion(input: {
   messageId: number;
   action?: { id: string; data: string };
   text: string;
-  repliedBotText?: string;
+  replyTo?: CompanionReplyTarget;
   start?: boolean;
   say: (reply: string, rows?: IntakeReply["rows"]) => Promise<boolean>;
 }): Promise<boolean> {
@@ -76,7 +77,18 @@ export async function handleCompanion(input: {
       const state = previous ?? emptyCompanion();
       const edit = !start && testerEdit(text, action?.data);
       if (!edit) rememberAddress(state, action || start ? "" : text);
-      const priorUserText = state.recent.at(-1)?.user;
+      const target = input.replyTo;
+      const turn = target
+        ? state.recent.findLast(t => target.author === "user"
+          ? t.messageId === target.messageId
+          : Boolean(target.text) && t.reply === target.text?.slice(0, 900))
+        : state.recent.at(-1);
+      // Telegram omits the transcript when someone replies to a voice message.
+      const replyTo = target?.author === "user" && !target.text && turn
+        ? { ...target, text: turn.user } : target;
+      const focus = replyTo?.quote ?? replyTo?.text;
+      const priorUserText = replyTo?.author === "user" ? focus : turn?.user;
+      const priorReply = replyTo?.author === "assistant" ? focus : turn?.reply;
       const date = todayInTimeZone(await getUserTimezone(owner));
       const at = new Date().toISOString();
       const conversationNotes = recentCompanionNotes(state, at);
@@ -109,11 +121,9 @@ export async function handleCompanion(input: {
           intakeReply = await applyTesterEdit(instructions, edit, messageId, async (feedback, oldRule) => {
             if (!(await takeBriefAttempt(owner, date, 120, "companion"))) throw new Error("daily limit");
             stopTyping = startTelegramTyping(userId);
-            const turn = input.repliedBotText
-              ? state.recent.findLast(t => t.reply === input.repliedBotText?.slice(0, 900))
-              : state.recent.at(-1);
             return proposeTesterRule(apiKey, base, {
-              feedback, oldRule, userMessage: turn?.user, reply: input.repliedBotText ?? turn?.reply,
+              feedback, oldRule, userMessage: replyTo?.author === "user" ? replyTo.text : turn?.user,
+              reply: replyTo?.author === "assistant" ? replyTo.text : turn?.reply, selectedQuote: replyTo?.quote,
             });
           });
         } catch {
@@ -127,6 +137,10 @@ export async function handleCompanion(input: {
         /^(?:запиши|сохрани|запомни) (?:это|мо[её] последнее сообщение)[.!]?$/iu.test(
           text.trim(),
         );
+      const saveFromReply = savePreviousMessage && replyTo && / это[.!]?$/iu.test(text.trim());
+      const saveSource = saveFromReply
+        ? (replyTo.author === "user" ? focus : undefined)
+        : state.recent.at(-1)?.user;
       if (intakeReply) {
         if (!intakeReply.text) return true;
         answer = intakeReply.text;
@@ -135,7 +149,7 @@ export async function handleCompanion(input: {
         const context = companionContext(
           current.store,
           text,
-          state.recent.at(-1),
+          replyTo ? { user: focus ?? "", reply: "" } : turn,
           conversationNotes,
         );
         const allowed = await takeBriefAttempt(owner, date, 120, "companion");
@@ -161,13 +175,14 @@ export async function handleCompanion(input: {
               diary: context,
               recentMoodCheckin: recentMoodCheckin(current.store, state, at),
               recent: state.recent,
-              ...(savePreviousMessage && { savePreviousMessage: true }),
+              ...(savePreviousMessage && { savePreviousMessage: true, saveSource }),
               lastScheduledQuestion: asked,
             },
             message: text,
             gender: state.gender,
             testerRules: state.testerInstructions?.rules.map(rule => rule.text),
-            previousReply: state.recent.at(-1)?.reply,
+            replyTo,
+            previousReply: priorReply,
             previousMessage: priorUserText,
             knowledgeBaseId:
               process.env.COMPANION_KNOWLEDGE_BASE_ID ??
@@ -180,7 +195,7 @@ export async function handleCompanion(input: {
                 raw,
                 text,
                 context,
-                savePreviousMessage ? (priorUserText ?? "") : undefined,
+                savePreviousMessage ? (saveSource ?? "") : undefined,
               );
               return { ...parsed, footer: practiceFooter(parsed.usedCards, cards, searchStatus, parsed.noCardReason) };
             },
@@ -201,7 +216,9 @@ export async function handleCompanion(input: {
           }
           state.recent = [
             ...state.recent,
-            { user: text.slice(0, 1500), reply: result.reply.slice(0, 900) },
+            { messageId, user: text.slice(0, 1500), reply: result.reply.slice(0, 900),
+              ...(replyTo && focus && { replyTo: { author: replyTo.author, text: focus.slice(0, 300) } }),
+            },
           ].slice(-6);
           if (!urgent) answer += "\n\n" + result.footer;
         } catch (error) {
@@ -232,8 +249,11 @@ export async function handleCompanion(input: {
       }
       let noteText = intakeReply ? "" : text;
       if (savePreviousMessage) {
-        noteText = priorUserText ? "Запиши: " + priorUserText : "";
-        if (!priorUserText) answer = "Что именно сохранить в дневнике?";
+        noteText = saveSource ? "Запиши: " + saveSource : "";
+        if (!saveSource) {
+          notes = [];
+          answer = "Что именно сохранить в дневнике?";
+        }
       }
       let committed = false;
       for (let attempt = 0; attempt < 4; attempt++) {

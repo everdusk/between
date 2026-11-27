@@ -100,7 +100,7 @@ export async function applyTesterEdit(
 }
 
 export async function proposeTesterRule(apiKey: string, base: string, example: {
-  feedback: string; userMessage?: string; reply?: string; oldRule?: string;
+  feedback: string; userMessage?: string; reply?: string; oldRule?: string; selectedQuote?: string;
 }, request: typeof fetch = fetch) {
   if (!apiKey) throw new Error("missing model credential");
   const result = await request(base + "/chat/completions", {
