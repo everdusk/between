@@ -193,19 +193,20 @@ export function JournalPanel({
   }
 
   const isToday = date === today;
+  const dayNavigation = (
+    <DateNavigation
+      previous={{ label: t("journalPrevDay"), disabled, onClick: () => changeDate(addDays(date, -1)) }}
+      next={{ label: t("journalNextDay"), disabled: disabled || isToday, onClick: () => changeDate(addDays(date, 1)) }}
+      action={<EntryCalendar id="journal-date" value={date} max={today} marks={marks} disabled={disabled} onChange={changeDate} />}
+    >
+      <time dateTime={date}>{isToday ? t("todayTitle") : formatDayLabel(date, locale)}</time>
+    </DateNavigation>
+  );
   return (
     <div className="journal-board flex flex-col gap-4">
-      <header>
-        <h1 className={inMessenger ? "sr-only" : "mb-4 font-display text-2xl leading-[1.15] tracking-[-.035em] sm:text-3xl"}>{t("deskEntries")}</h1>
-        <DateNavigation
-          previous={{ label: t("journalPrevDay"), disabled, onClick: () => changeDate(addDays(date, -1)) }}
-          next={{ label: t("journalNextDay"), disabled: disabled || isToday, onClick: () => changeDate(addDays(date, 1)) }}
-          action={<EntryCalendar id="journal-date" value={date} max={today} marks={marks} disabled={disabled} onChange={changeDate} />}
-        >
-          <time dateTime={date}>
-            {isToday ? t("todayTitle") : formatDayLabel(date, locale)}
-          </time>
-        </DateNavigation>
+      <header className={inMessenger ? "sr-only" : undefined}>
+        <h1 className="mb-4 font-display text-2xl leading-[1.15] tracking-[-.035em] sm:text-3xl">{t("deskEntries")}</h1>
+        {!inMessenger && dayNavigation}
       </header>
       <span className="sr-only" role="status">{savedFlash ? t("saved") : ""}</span>
 
@@ -269,6 +270,7 @@ export function JournalPanel({
       </GlassPanel>}
 
       {hint}
+      {inMessenger && dayNavigation}
       <section className="px-1">
         {dayEntries.length === 0 ? (
           <p className="rounded-3xl border border-dashed border-[color:var(--glass-border)] px-5 py-6 text-center text-sm text-muted-foreground">
