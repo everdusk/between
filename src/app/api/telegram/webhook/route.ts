@@ -175,7 +175,9 @@ export async function GET() {
 
 function repliedBotText(message: TelegramMessage) {
   const target = message.reply_to_message;
-  return target?.from?.is_bot && !target.forward_origin ? target.text?.slice(0, 3100) : undefined;
+  return target?.from?.is_bot && !target.forward_origin
+    ? target.text?.replace(/\n\n(?:Карточки(?: ответа)? · [^\n]+|Ответ без карточек)$/u, "").slice(0, 3100)
+    : undefined;
 }
 
 async function handleCallback(callback: TelegramCallback) {

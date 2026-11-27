@@ -74,7 +74,7 @@ test("every hosted-search and fallback request carries the persisted address", a
     knowledgeBaseId: "test",
     apiKey: "test",
     base: "https://example.test",
-    read: JSON.parse,
+    read: raw => JSON.parse(raw),
     request: async (_, init) => {
       const { messages } = JSON.parse(String(init?.body));
       assert.match(messages[0].content, /в женском роде/);

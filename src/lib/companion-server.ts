@@ -11,6 +11,7 @@ import {
   type CompanionState,
 } from "./companion-memory";
 import { askCompanion, CompanionModelError } from "./companion-model";
+import { practiceFooter } from "./companion-search";
 import { rememberAddress } from "./companion-address";
 import { applyTesterEdit, proposeTesterRule, testerEdit } from "./companion-training";
 import { advanceCompanionIntake, type IntakeReply } from "./companion-intake";
@@ -173,13 +174,15 @@ export async function handleCompanion(input: {
                 ? "kb_between-priemy-obscheniya-sjsakm"
                 : undefined),
             urgent,
-            read: (raw) =>
-              readCompanionReply(
+            read: (raw, cards, failed) => {
+              const parsed = readCompanionReply(
                 raw,
                 text,
                 context,
                 savePreviousMessage ? (priorUserText ?? "") : undefined,
-              ),
+              );
+              return { ...parsed, footer: practiceFooter(parsed.usedCards, cards, failed) };
+            },
           });
           answer = result.reply;
           notes = result.notes;
@@ -197,8 +200,9 @@ export async function handleCompanion(input: {
           }
           state.recent = [
             ...state.recent,
-            { user: text.slice(0, 1500), reply: answer.slice(0, 900) },
+            { user: text.slice(0, 1500), reply: result.reply.slice(0, 900) },
           ].slice(-6);
+          if (!urgent) answer += "\n\n" + result.footer;
         } catch (error) {
           const code = !allowed
             ? "daily_limit"

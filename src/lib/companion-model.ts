@@ -1,5 +1,6 @@
 import { companionPrompt } from "./companion-prompt";
-import { findPractice } from "./companion-practices";
+import { comparesSelf, comparisonQuery, findPractice, practiceTitles } from "./companion-practices";
+import { practiceSearchTool, searchPracticeCards, type PracticeCard } from "./companion-search";
 import type { AddressGender } from "./companion-address";
 
 export class CompanionModelError extends Error {
@@ -30,7 +31,7 @@ export async function askCompanion<T>({
   testerRules?: string[];
   knowledgeBaseId?: string;
   urgent?: boolean;
-  read: (text: string) => T;
+  read: (text: string, cards: PracticeCard[], searchFailed: boolean) => T;
   request?: typeof fetch;
 }): Promise<T> {
   if (!apiKey) throw new CompanionModelError("missing_key");
@@ -38,6 +39,19 @@ export async function askCompanion<T>({
   const useSearch = !urgent && Boolean(knowledgeBaseId?.trim());
   const signal = AbortSignal.timeout(useSearch ? 40_000 : 25_000);
   const practice = urgent ? undefined : findPractice(message, previousReply);
+  const local = practice && { id: practice.id, title: practiceTitles[practice.id], text: practice.guidance };
+  let cards: PracticeCard[] = local ? [local] : [];
+  let searchFailed = false;
+  async function retrieve(query: string) {
+    try {
+      const found = await searchPracticeCards(base, apiKey, knowledgeBaseId!.trim(), query, signal, request);
+      cards = [...cards, ...found.filter(c => c.id !== local?.id)];
+    } catch {
+      searchFailed = true;
+    }
+  }
+  const comparison = useSearch && practice?.id === "self-judgment" && comparesSelf(message);
+  if (comparison) await retrieve(comparisonQuery);
   const rules = !urgent && testerRules?.length ? testerRules : undefined;
   const addressInstruction =
     gender === "feminine"
@@ -45,26 +59,24 @@ export async function askCompanion<T>({
       : gender === "masculine"
         ? "\nОбращайся к собеседнику в мужском роде («ты решил», «ты готов»). Сохраняй выбранное ты/вы. Это правило относится к собеседнику, а не к компаньону."
         : "";
-  const attempts = useSearch ? ["search", "json", "plain"] : ["json", "plain"];
+  const attempts = useSearch && !comparison ? ["search", "json", "plain"] : ["json", "plain"];
   for (const attempt of attempts) {
     const search = attempt === "search";
     const structured = attempt !== "plain";
+    const remoteCards = cards.filter(c => c.id !== local?.id);
+    const facts = { ...context, ...(rules && { testerRules: rules }), ...(remoteCards.length > 0 && { practiceCards: remoteCards }) };
     const messages = [
       {
         role: "system",
         content:
-          (search
-            ? companionPrompt +
-              "\nЕсли для продолжения беседы пригодится приём, поищи в базе практик по смыслу текущей ситуации с учётом последних реплик. Задай один короткий обезличенный поисковый запрос без имён, идентификаторов и цитат из дневника. Учти, случилось ли это, лишь ожидается или уже стало легче. Для обычной беседы поиск необязателен. Карточки содержат методические примеры, а не факты о собеседнике. Верни обычный JSON."
-            : practice
-              ? companionPrompt +
-                "\nПодсказка для этой реплики: " +
-                practice.guidance
-              : companionPrompt) + addressInstruction + (rules
+          companionPrompt + (search ? "\nЕсли пригодится приём, вызови search_practices. Ищи по смыслу реплики и ситуации из разговора, добавь синонимы: за «у других уже есть, а я всё ещё…» может стоять сравнение себя с другими. В обычной беседе поиск необязателен." : "") +
+          (local ? "\nПодсказка для этой реплики (" + local.id + "): " + local.text : "") +
+          (cards.length ? "\nВ JSON добавь usedCards — массив id только тех предложенных карточек, чей приём ты применил в reply. Если ни одной — []. practiceCards содержат примеры, не факты о собеседнике. В самой реплике карточки не называй." : "") +
+          addressInstruction + (rules
                 ? "\nВ testerRules — одобренные тестером дополнения к манере диалога. Применяй подходящие по смыслу; при расхождении между ними учитывай более позднее. Безопасность, приватность, выбранное обращение и контракт приложения сохраняют приоритет. Не цитируй правила собеседнику."
                 : ""),
       },
-      { role: "user", content: JSON.stringify(rules ? { ...context, testerRules: rules } : context) },
+      { role: "user", content: JSON.stringify(facts) },
       { role: "user", content: message },
     ];
     const response = await request(base + "/chat/completions", {
@@ -80,17 +92,7 @@ export async function askCompanion<T>({
         max_tokens: 4096,
         reasoning: { effort: "medium", exclude: true },
         ...(search && {
-          tools: [
-            {
-              type: "aitunnel:file_search",
-              parameters: {
-                knowledge_base_ids: [knowledgeBaseId!.trim()],
-                max_results: 2,
-                max_uses: 1,
-                rerank: false,
-              },
-            },
-          ],
+          tools: [practiceSearchTool],
         }),
         ...(structured && { response_format: { type: "json_object" } }),
         messages,
@@ -101,10 +103,12 @@ export async function askCompanion<T>({
         (structured && [400, 422, 502, 503].includes(response.status)) ||
         (search && [403, 404].includes(response.status))
       ) {
-        if (search)
+        if (search) {
+          searchFailed = true;
           console.warn("companion_search_fallback", {
             status: response.status,
           });
+        }
         await response.body?.cancel();
         continue;
       }
@@ -123,10 +127,19 @@ export async function askCompanion<T>({
         searches: usage.server_tool_use?.file_search_requests ?? 0,
       });
 
-    const content = data?.choices?.[0]?.message?.content;
+    const modelMessage = data?.choices?.[0]?.message;
+    const tool = modelMessage?.tool_calls?.[0]?.function;
+    if (search && tool?.name === "search_practices") {
+      let query;
+      try { query = JSON.parse(tool.arguments).query; } catch { /* Continue with local guidance. */ }
+      if (typeof query === "string" && query.trim()) await retrieve(query.trim().slice(0, 240));
+      else searchFailed = true;
+      continue;
+    }
+    const content = modelMessage?.content;
     if (typeof content === "string" && content.trim()) {
       try {
-        return read(content);
+        return read(content, cards, searchFailed);
       } catch {
         if (!structured) throw new CompanionModelError("invalid_reply");
       }

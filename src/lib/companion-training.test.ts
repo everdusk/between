@@ -63,7 +63,7 @@ test("tester preferences reach hosted search and fallback, while urgent and ordi
     let calls = 0;
     await askCompanion({
       apiKey: "test", base: "https://example.test", context: {}, message: "Привет",
-      testerRules: enabled ? [rule] : undefined, urgent, knowledgeBaseId: "test", read: JSON.parse,
+      testerRules: enabled ? [rule] : undefined, urgent, knowledgeBaseId: "test", read: raw => JSON.parse(raw),
       request: async (_, init) => {
         const body = JSON.parse(String(init?.body));
         assert.deepEqual(JSON.parse(body.messages[1].content).testerRules, enabled && !urgent ? [rule] : undefined);

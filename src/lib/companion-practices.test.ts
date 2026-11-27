@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { askCompanion } from "./companion-model";
 import { companionPrompt } from "./companion-prompt";
 import { findPractice } from "./companion-practices";
+import { practiceFooter } from "./companion-search";
 
 test("uses hosted retrieval once, with structured output and a local fallback if the tool is rejected", async () => {
   for (const rejectTool of [false, true]) {
@@ -13,26 +14,13 @@ test("uses hosted retrieval once, with structured output and a local fallback if
       knowledgeBaseId: "kb_test",
       message: "Помоги написать ему сообщение",
       context: {},
-      read: JSON.parse,
+      read: raw => JSON.parse(raw),
       request: async (_, init) => {
         const body = JSON.parse(String(init?.body));
         assert.deepEqual(body.response_format, { type: "json_object" });
         if (++calls === 1) {
-          assert.deepEqual(body.tools, [
-            {
-              type: "aitunnel:file_search",
-              parameters: {
-                knowledge_base_ids: ["kb_test"],
-                max_results: 2,
-                max_uses: 1,
-                rerank: false,
-              },
-            },
-          ]);
-          assert.equal(
-            body.messages[0].content.includes("Подсказка для этой реплики"),
-            false,
-          );
+          assert.equal(body.tools[0].function.name, "search_practices");
+          assert.match(body.messages[0].content, /Подсказка для этой реплики/);
           if (rejectTool) return new Response(null, { status: 400 });
         } else {
           assert.equal(body.tools, undefined);
@@ -66,11 +54,65 @@ test("chooses a practice from the current intent, using the previous question fo
     ["Да", undefined],
     ["Мама купила цветы", undefined],
     ["Запиши: я опять себя накручиваю", undefined],
+    ["У всех вышло, а у меня нет", "self-judgment"],
+    ["у других получилось а у меня нет", "self-judgment"],
+    ["Сравниваю себя с однокурсниками", "self-judgment"],
+    ["Я сравневаю себя с другими", "self-judgment"],
+    ["Мои ровесники уже открыли студии, а я всё ещё учусь", "self-judgment"],
+    ["Ровесники уже нашли квартиру", undefined],
+    ["У всех вышло обновление, а у меня нет", undefined],
+    ["Без советов. У всех вышло, а у меня нет", "listen"],
   ] as const;
   for (const [message, expected] of cases) {
     assert.equal(findPractice(message, previous)?.id, expected, message);
   }
   assert.equal(findPractice("Мама")?.id, undefined);
+});
+
+test("recognises comparisons and attributes only cited sources from the actual generation request", async () => {
+  for (const explicit of [true, false]) {
+    let searches = 0, generations = 0;
+    const footer = await askCompanion({
+      apiKey: "test", base: "https://example.test", knowledgeBaseId: "kb_test",
+      context: {}, message: explicit ? "У всех вышло, а у меня нет" : "Как смотреть на это по-другому?",
+      read: (raw, cards, failed) => practiceFooter(JSON.parse(raw).usedCards, cards, failed),
+      request: async (url, init) => {
+        const body = JSON.parse(String(init?.body));
+        if (String(url).endsWith("/kb_test/search")) {
+          searches++;
+          assert.match(body.query, /сравнение себя/i);
+          return Response.json({data: [{ results: [
+            { path: "books/cbt-double-standard.md", text: "books/cbt-double-standard.md — Двойной стандарт\n\nТекст карточки" },
+          ] }]});
+        }
+        if (body.tools) return Response.json({choices: [{message: {tool_calls: [{function: {
+          name: "search_practices", arguments: JSON.stringify({query: "сравнение себя с ровесниками"}),
+        }}]}}]});
+        generations++;
+        assert.equal(JSON.parse(body.messages[1].content).practiceCards[0].id, "cbt-double-standard");
+        return Response.json({choices: [{message: {content: '{"reply":"Отклик","usedCards":["cbt-double-standard","invented"]}'}}]});
+      },
+    });
+    assert.equal(searches, 1);
+    assert.equal(generations, 1);
+    assert.equal(footer, "Карточки ответа · Двойной стандарт");
+  }
+});
+
+test("an unavailable index still allows a grounded local source or a candid empty trace", async () => {
+  await askCompanion({
+    apiKey: "test", base: "https://example.test", knowledgeBaseId: "kb_test",
+    context: {}, message: "У всех вышло, а у меня нет",
+    request: async url => String(url).endsWith("/search") ? new Response(null, {status: 503}) :
+      Response.json({ choices: [{message: {content: "{}"}}] }),
+    read: (_, cards, failed) => {
+      assert.equal(failed, true);
+      assert.match(practiceFooter(["self-judgment"], cards, failed), /Самокритика/);
+      assert.match(practiceFooter(["unknown"], cards, failed), /поиск недоступен/);
+      assert.equal(practiceFooter([], cards, false), "Ответ без карточек");
+      assert.match(practiceFooter(undefined, cards, false), /не подтверждён/);
+    },
+  });
 });
 
 test("adds only the retrieved guidance to the model prompt and leaves diary context in user data", async () => {
@@ -85,7 +127,7 @@ test("adds only the retrieved guidance to the model prompt and leaves diary cont
       message,
       context,
       urgent,
-      read: JSON.parse,
+      read: raw => JSON.parse(raw),
       request: async (_, init) => {
         const { messages } = JSON.parse(String(init?.body));
         assert.equal(messages[0].content.startsWith(companionPrompt), true);
