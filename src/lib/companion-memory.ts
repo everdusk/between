@@ -5,7 +5,7 @@ import { PICKER_FEELINGS, type Feeling } from "./types";
 import type { Intake } from "./companion-intake";
 import type { TesterInstructions } from "./companion-training";
 import { hasAddressEvidence, type AddressGender } from "./companion-address";
-import { companionDisplayText } from "./companion-reply";
+import { cleanGeneratedReply, companionDisplayText } from "./companion-reply";
 
 type Turn = { user: string; reply: string; topicId?: string | null; messageId?: number; retryOf?: string; replyTo?: { author: "assistant" | "user"; text: string } };
 type ConversationNote = Pick<JournalEntry, "id" | "updatedAt">;
@@ -333,7 +333,7 @@ export function readCompanionReply(
     });
   }
   return {
-    reply: companionDisplayText(clean(data.reply, 3100)),
+    reply: cleanGeneratedReply(clean(data.reply, 3100), text),
     topicId: data.discussionTopicId === null ? null
       : context.topics.find(t => t.status === "active" && t.id === data.discussionTopicId)?.id
         ?? context.discussionTopicId,
