@@ -182,7 +182,7 @@ export async function handleCompanion(input: {
                 context,
                 savePreviousMessage ? (priorUserText ?? "") : undefined,
               );
-              return { ...parsed, footer: practiceFooter(parsed.usedCards, cards, searchStatus) };
+              return { ...parsed, footer: practiceFooter(parsed.usedCards, cards, searchStatus, parsed.noCardReason) };
             },
           });
           answer = result.reply;

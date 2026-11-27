@@ -37,12 +37,20 @@ export async function searchPracticeCards(base: string, apiKey: string, kb: stri
 
 export type PracticeSearchStatus = "skipped" | "failed" | number; // Number of distinct cards returned by the index.
 
-export function practiceFooter(cited: unknown, cards: PracticeCard[], status: PracticeSearchStatus) {
-  const ids = Array.isArray(cited) ? cited : [];
-  const titles = cards.filter(c => ids.includes(c.id)).map(c => c.title);
+export function practiceDecision(cited: unknown, reason: unknown, cards: PracticeCard[]) {
+  const used = cards.filter(c => Array.isArray(cited) && cited.includes(c.id));
+  const baseOnly = Array.isArray(cited) && cited.length === 0 &&
+    (reason === "support" || reason === "not_applicable");
+  return { used, baseOnly, confirmed: used.length > 0 || baseOnly };
+}
+
+export function practiceFooter(cited: unknown, cards: PracticeCard[], status: PracticeSearchStatus, reason?: unknown) {
+  const { used, baseOnly } = practiceDecision(cited, reason, cards);
+  const titles = used.map(c => c.title);
   const lookup = typeof status === "number" ? "из базы получено " + status
     : status === "failed" ? "поиск недоступен" : "без поиска в базе";
   if (titles.length) return "Карточки ответа · " + titles.join(" · ") + " (" + lookup + ")";
-  if (cards.length && (!Array.isArray(cited) || ids.length)) return "Карточки · " + lookup + ", источник ответа не подтверждён";
+  if (cards.length && !baseOnly) return "Карточки · " + lookup + ", бот не указал источник";
+  if (baseOnly) return "Карточки · " + lookup + (reason === "support" ? ", поддержка без отдельного приёма" : ", подходящего приёма не нашлось");
   return "Карточки · " + lookup + ", ответ без карточек";
 }
