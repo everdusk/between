@@ -1,18 +1,22 @@
 import { copyFile, mkdir, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { practices, practiceTitles } from "../src/lib/companion-practices";
+import { dialogueCards } from "../src/lib/companion-dialogue-cards";
 
 async function main() {
   const directory = process.argv[2];
   if (!directory)
     throw new Error("Pass the output directory for practice Markdown files");
   await mkdir(directory, { recursive: true });
-  for (const practice of practices) {
-    const title = practiceTitles[practice.id];
+  const bundled = [...practices.map(p => ({
+    id: p.id, title: practiceTitles[p.id], text: p.guidance, source: p.source,
+  })), ...dialogueCards];
+  for (const practice of bundled) {
+    const title = practice.title;
     if (!title) throw new Error("Missing practice title: " + practice.id);
     const body = [
       "# " + title,
-      practice.guidance,
+      practice.text,
       "Источник подхода: " + practice.source,
     ];
     await writeFile(
@@ -28,7 +32,7 @@ async function main() {
   for (const name of files) {
     await copyFile(join(books, name), join(directory, name));
   }
-  console.log(practices.length + files.length + " practice files exported");
+  console.log(bundled.length + files.length + " practice files exported");
 }
 
 void main();

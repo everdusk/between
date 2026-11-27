@@ -338,6 +338,12 @@ export function applyVerdict(
   return attach(created, [...state.themes, created]);
 }
 
+function compatibleTopics(keep: SessionTheme, drop: SessionTheme) {
+  return keep.status === "active" && drop.status === "active" && !keep.dismissed && !drop.dismissed &&
+    !drop.manual && !(keep.list && drop.list && keep.list !== drop.list) &&
+    !(keep.outcome && drop.outcome && keep.outcome !== drop.outcome);
+}
+
 export function mergeThemes(
   state: ThemeState,
   keepId: string,
@@ -348,11 +354,16 @@ export function mergeThemes(
   if (keepId === dropId) return state;
   const keep = state.themes.find((theme) => theme.id === keepId);
   const drop = state.themes.find((theme) => theme.id === dropId);
-  if (!keep || !drop || keep.dismissed || drop.dismissed) return state;
+  if (!keep || !drop || !compatibleTopics(keep, drop)) return state;
   const movedEntries = new Set(state.links.filter((link) => link.themeId === dropId).map((link) => link.entryId));
+  // Older stores sometimes record membership only in quotes. Preserve those entries past the quote cap.
+  const members = new Set(state.links.filter(l => l.themeId === keepId || l.themeId === dropId).map(l => l.entryId));
+  const quoteOnly = [...new Set([...keep.quotes, ...drop.quotes].map(q => q.entryId))].filter(id => !members.has(id));
+  for (const id of quoteOnly) movedEntries.add(id);
   const links = state.links.map((link) => movedEntries.has(link.entryId)
     ? { ...link, judgedAt: now, themeId: link.themeId === dropId ? keepId : link.themeId }
     : link);
+  for (const entryId of quoteOnly) links.push({ entryId, themeId: keepId, judgedAt: now, confidence: Math.max(keep.confidence, drop.confidence) });
   const seen = new Set<string>();
   const unique: ThemeLink[] = [];
   for (const link of links) {
@@ -367,14 +378,17 @@ export function mergeThemes(
       quotes.push(quote);
     }
   }
-  const nextTitle = (title?.replace(/\s+/g, " ").trim() || keep.title).slice(0, 80);
+  const nextTitle = (keep.manual ? keep.title : title?.replace(/\s+/g, " ").trim() || keep.title).slice(0, 80);
   const merged: SessionTheme = recount(
     {
       ...withoutCheck(keep),
-      ...(drop.review?.length && { review: [...(keep.review ?? []), ...drop.review] }),
+      ...(drop.review?.length && { review: [...new Map([...drop.review, ...(keep.review ?? [])].map(e => [e.id, e])).values()]
+        .sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id)) }),
+      ...(drop.outcome && !keep.outcome && { outcome: drop.outcome }),
+      ...(drop.list && !keep.list && { list: drop.list }),
       mergedIds: [...new Set([...(keep.mergedIds ?? []), dropId, ...(drop.mergedIds ?? [])])],
       title: nextTitle,
-      summary: nextTitle,
+      summary: keep.summary && keep.summary !== keep.title ? keep.summary : nextTitle,
       status: "active",
       reopened: keep.reopened || drop.reopened,
       dismissed: false,
@@ -918,7 +932,7 @@ export function judgeFacts(themes: SessionTheme[], entry: Pick<JournalEntry, "id
 export function dedupComparison(theme: SessionTheme, state: ThemeState) {
   const entries = new Set(state.links.filter((link) => link.themeId === theme.id).map((link) => link.entryId));
   const distinct = new Set(state.links.filter((link) => entries.has(link.entryId)).map((link) => link.themeId));
-  const others = openThemes(state.themes).filter((other) => other.id !== theme.id && !distinct.has(other.id));
+  const others = openThemes(state.themes).filter((other) => other.id !== theme.id && !distinct.has(other.id) && compatibleTopics(other, theme));
   const subject = [theme.title.slice(0, 80), themeEvidence(theme)].filter(Boolean).join(" | ");
   const header = `Тема:\n${subject}\n\nДругие:\n`;
   const { candidates, text } = fitThemes(others, subject, JUDGE_FACT_LIMIT - header.length);

@@ -2,8 +2,49 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { askCompanion } from "./companion-model";
 import { companionPrompt } from "./companion-prompt";
+import { dialogueCards } from "./companion-dialogue-cards";
 import { findPractice } from "./companion-practices";
 import { practiceFooter } from "./companion-search";
+
+test("search can retrieve one bundled dialogue card, use the book index, or leave a simple exchange alone", async () => {
+  const recent = [
+    { user: "На выходных было тоскливо", reply: "В какой момент особенно?" },
+    { user: "Когда шла за покупками", reply: "Чего тебе тогда хотелось?" },
+  ];
+  for (const choice of ["lonely-company", "plain", "unknown-id"]) {
+    let searches = 0;
+    const reply = await askCompanion({
+      apiKey: "test", base: "https://example.test", knowledgeBaseId: "test",
+      context: { recent }, message: "Просто чтоб ктото за компанию пошёл",
+      read: (raw, cards, status) => ({ raw, ids: cards.map(c => c.id), status }),
+      request: async (url, init) => {
+        const body = JSON.parse(String(init?.body));
+        if (String(url).endsWith("/search")) {
+          searches++;
+          assert.equal(body.query, "одиночество и повседневное общение");
+          return Response.json({ data: [{ results: [] }] });
+        }
+        assert.equal(body.model, "gpt-6-luna");
+        assert.deepEqual(body.messages.slice(-3).map((m: { content: string }) => m.content),
+          [recent[1].user, recent[1].reply, "Просто чтоб ктото за компанию пошёл"]);
+        if (body.tools) {
+          assert.ok(body.tools[0].function.parameters.properties.dialogueCard.enum.includes("lonely-company"));
+          return Response.json({ choices: [{ message: { tool_calls: [{ function: { name: "search_practices",
+            arguments: JSON.stringify({ dialogueCard: choice, query: "одиночество и повседневное общение" }) } }] } }] });
+        }
+        const chosen = choice === "lonely-company";
+        const supplied = JSON.parse(body.messages[1].content).practiceCards ?? [];
+        assert.deepEqual(supplied.map((card: { id: string }) => card.id), chosen ? [choice] : []);
+        assert.ok(!JSON.stringify(body.messages).includes(dialogueCards[0].text));
+        return Response.json({ choices: [{ message: { content: JSON.stringify({
+          reply: "Вдвоём и по магазинам веселее.", usedCards: chosen ? [choice] : [], noCardReason: "support",
+        }) } }] });
+      },
+    });
+    assert.equal(searches, choice === "plain" ? 0 : 1);
+    assert.deepEqual(reply.ids, choice === "lonely-company" ? [choice] : []);
+  }
+});
 
 test("the search runs even if the model skips or rejects the requested tool call", async () => {
   for (const rejectTool of [false, true]) {
@@ -151,7 +192,7 @@ test("the comparison conversation consults the index on each continuation, inclu
 });
 
 test("closing, saving, or an urgent turn does not inherit the previous comparison search", async () => {
-  for (const [message, urgent] of [["Спасибо!", false], ["Запиши: про работу", false], ["Да", true]] as const) {
+  for (const [message, urgent] of [["Спасибо!", false], ["Давай другую тему", false], ["На сегодня хватит", false], ["Запиши: про работу", false], ["Да", true]] as const) {
     await askCompanion({apiKey: "test", base: "https://example.test", knowledgeBaseId: "kb_test",
       context: {}, previousReply: "Ты сравниваешь себя с людьми?", message, urgent,
       read: (_, cards, status) => { assert.deepEqual(cards, []); assert.equal(status, "skipped"); },
@@ -210,6 +251,7 @@ test("the pilot corrects an unexplained empty attribution once without re-search
     assert.equal(searches, 1);
     assert.deepEqual(answer.notes, original.notes);
     assert.equal(answer.followUp, original.followUp);
+    assert.equal(answer.reply, original.reply);
     assert.match(answer.footer, /из базы получено 3/);
     if (outcome === "source") assert.match(answer.footer, /Карточка two/);
     else if (outcome === "support") assert.match(answer.footer, /поддержка без отдельного приёма/);
@@ -236,7 +278,7 @@ test("adds only the retrieved guidance to the model prompt and leaves diary cont
         assert.equal(messages[0].content.includes(card.guidance), !urgent);
         assert.equal(messages[0].content.includes("Старая запись"), false);
         assert.deepEqual(messages.slice(1), [
-          { role: "user", content: JSON.stringify(context) },
+          { role: "user", content: JSON.stringify({ diary: context.diary }) },
           { role: "user", content: message },
         ]);
         return Response.json({ choices: [{ message: { content: "{}" } }] });
