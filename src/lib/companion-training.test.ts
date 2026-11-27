@@ -35,6 +35,28 @@ test("drafts need confirmation, stale clicks cannot overwrite a rule and approve
   assert.doesNotMatch((await edit("Мои правила", 18)).text, /Новая версия/);
 });
 
+test("bulk clear is opt-in, invalidates drafts, and stale buttons cannot clear new rules", async () => {
+  const state: TesterInstructions = { rules: [{ id: 1, text: "Первое" }], nextId: 2 };
+  const edit = (text: string, id: number, action?: string) =>
+    applyTesterEdit(state, testerEdit(text, action)!, id, async feedback => feedback);
+  const list = await edit("Мои правила", 1);
+  const prompt = await edit("", 2, list.rows![0][0].data);
+  await edit("", 3, prompt.rows![0][1].data);
+  assert.equal(state.rules.length, 1);
+  const old = await edit("Очистить мои правила", 4);
+  const draft = await edit("Правка: Второе", 5);
+  await edit("", 6, old.rows![0][0].data);
+  assert.equal(state.rules.length, 1);
+  const current = await edit("Очистить мои правила", 7);
+  await edit("", 8, current.rows![0][0].data);
+  await edit("", 9, draft.rows![0][0].data);
+  assert.deepEqual(state.rules, []);
+  const fresh = await edit("Правка: Новое", 10);
+  await edit("", 11, fresh.rows![0][0].data);
+  await edit("", 12, current.rows![0][0].data);
+  assert.deepEqual(state.rules, [{ id: 2, text: "Новое" }]);
+});
+
 test("tester preferences reach hosted search and fallback, while urgent and ordinary accounts omit them", async () => {
   const rule = "При просьбе привести пример дай одну конкретную фразу.";
   for (const [urgent, enabled] of [[false, true], [true, true], [false, false]]) {

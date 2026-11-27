@@ -1,5 +1,5 @@
-import { applyReviewVerdict, recordReview } from "./theme-review";
-import { judgeStamp, visibleTopic } from "./themes";
+import { applyReviewVerdict, recordReview, visiblePilotTopic } from "./theme-review";
+import { entriesForTheme, judgeStamp } from "./themes";
 import type { JournalEntry, TherapyStore } from "./types";
 import { PICKER_FEELINGS, type Feeling } from "./types";
 import type { Intake } from "./companion-intake";
@@ -75,8 +75,14 @@ export function companionContext(
   currentNotes: ConversationNote[] = [],
 ) {
   const query = words(text);
+  const visible = store.themes.filter(visiblePilotTopic);
+  const compactTopic = (t: (typeof visible)[number]) => ({
+    id: t.id, title: t.title.slice(0, 160), status: t.status,
+  });
+  const active = visible.filter(t => t.status === "active");
   if (/^(?:да|нет|точно|угу|спасибо|ага|понятно)[.! ]*$/iu.test(text.trim()))
-    return { topics: [], notes: [] };
+    return { topics: active.map(compactTopic), notes: [] };
+  const browse = /(?:^|[^а-яё])(?:тем(?:ы|ам|ами|ах|у)|к терапии|на подумать)(?![а-яё])/iu.test(text);
   const recall =
     /(?:вспомни|что я (?:писал|рассказывал)|мои (?:записи|темы)|мы обсуждали)/iu.test(
       text,
@@ -106,8 +112,7 @@ export function companionContext(
       .map((r) => r.e.id),
   );
   for (const id of currentIds) hits.add(id);
-  const topics = store.themes
-    .filter(visibleTopic)
+  const matches = visible
     .map((t) => ({
       t,
       rank:
@@ -118,34 +123,46 @@ export function companionContext(
     }))
     .filter((item) => recall || item.rank > 0)
     .sort((a, b) => b.rank - a.rank || b.t.lastSeen.localeCompare(a.t.lastSeen))
-    .slice(0, 5)
-    .map(({ t }) => ({
-      id: t.id,
-      title: t.title.slice(0, 100),
-      status: t.status,
-      outcome: t.outcome?.slice(0, 200),
-      history: t.review
-        ?.filter((e) => e.text)
-        .slice(-2)
-        .map((e) => e.text!.slice(0, 220)),
-    }));
+    .slice(0, 5);
+  const detailed = new Set(matches.map(({ t }) => t.id));
+  // Include the active index even when the request is colloquial or misspelled.
+  const topics = visible
+    .filter(t => browse || t.status === "active" || detailed.has(t.id))
+    .map(t => {
+      const topic = compactTopic(t);
+      if (!browse && !detailed.has(t.id)) return topic;
+      return {
+        ...topic,
+        summary: t.summary !== t.title ? t.summary.slice(0, 220) : undefined,
+        outcome: t.outcome?.slice(0, 200),
+        history: t.review?.filter(e => e.text).slice(-2).map(e => e.text!.slice(0, 220)),
+      };
+    });
   const chosen = new Map<string, JournalEntry>();
   for (const entry of entries) {
     if (currentIds.has(entry.id)) chosen.set(entry.id, entry);
   }
   for (const r of ranked.filter((item) => recall || item.rank > 0).slice(0, 3))
     chosen.set(r.e.id, r.e);
-  for (const t of topics.slice(0, 3)) {
-    const entry = ranked.find((r) =>
-      store.themeLinks.some((l) => l.themeId === t.id && l.entryId === r.e.id),
-    );
-    if (entry) chosen.set(entry.e.id, entry.e);
+  const sourceThemes = browse
+    ? [...matches.map(m => m.t), ...active.filter(t => !detailed.has(t.id))]
+    : matches.map(m => m.t);
+  const sourceTopics = new Map<string, string[]>();
+  for (const t of sourceThemes.slice(0, 5)) {
+    const linked = entriesForTheme(t, entries, store.themeLinks);
+    const ids = new Set(linked.map(e => e.id));
+    const entry = ranked.find(r => ids.has(r.e.id))?.e;
+    if (entry) {
+      chosen.set(entry.id, entry);
+      sourceTopics.set(entry.id, [...(sourceTopics.get(entry.id) ?? []), t.id]);
+    }
   }
   return {
     topics,
     notes: [...chosen.values()].map((e) => ({
       id: e.id,
       date: e.date,
+      topicIds: sourceTopics.get(e.id),
       text: e.body.slice(0, 650),
       ...(currentIds.has(e.id) && { currentConversation: true }),
       feelings: e.feelings,

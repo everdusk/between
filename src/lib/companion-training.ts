@@ -4,23 +4,30 @@ type Rule = { id: number; text: string };
 export type TesterInstructions = {
   rules: Rule[];
   nextId: number;
+  clearRequest?: number;
   draft?: { messageId: number; text: string; replace?: number };
 };
 
 type Edit =
   | { kind: "propose"; feedback: string; replace?: number }
   | { kind: "list" }
+  | { kind: "clear" }
+  | { kind: "clearConfirmed" | "keep"; messageId: number }
   | { kind: "remove"; id: number }
   | { kind: "accept" | "cancel"; messageId: number };
 
 export function testerEdit(text: string, action?: string): Edit | undefined {
   if (action) {
+    if (action === "ci:rule:clear") return { kind: "clear" };
+    const clear = /^ci:rule:(clearConfirmed|keep):(\d+)$/.exec(action);
+    if (clear) return { kind: clear[1] === "keep" ? "keep" : "clearConfirmed", messageId: Number(clear[2]) };
     const click = /^ci:rule:(accept|cancel):(\d+)$/.exec(action);
     if (click) return { kind: click[1] === "accept" ? "accept" : "cancel", messageId: Number(click[2]) };
     return;
   }
   const line = text.trim();
   if (/^мои правила[.!?]?$/iu.test(line)) return { kind: "list" };
+  if (/^(?:очисти(?:ть)?|удали(?:ть)?) (?:все )?(?:мои |личные )?правила[.!]?$/iu.test(line)) return { kind: "clear" };
   const remove = /^удали правило\s+№?\s*(\d+)[.!]?$/iu.exec(line);
   if (remove) return { kind: "remove", id: Number(remove[1]) };
   const change = /^измени правило\s+№?\s*(\d+)\s*[:,—-]\s*([\s\S]+)$/iu.exec(line);
@@ -41,11 +48,29 @@ export async function applyTesterEdit(
   if (edit.kind === "list") {
     return { text: state.rules.length
       ? "Мои правила\n\n" + state.rules.map(r => r.id + ". " + r.text).join("\n\n")
-      : "Пока правил нет. Напиши «Правка: …» и опиши, как лучше ответить." };
+      : "Пока правил нет. Напиши «Правка: …» и опиши, как лучше ответить.",
+      ...(state.rules.length || state.draft ? { rows: [[{ text: "Очистить мои правила", data: "ci:rule:clear" }]] } : {}) };
+  }
+  if (edit.kind === "clear") {
+    if (!state.rules.length && !state.draft) return { text: "Личных правил пока нет." };
+    state.clearRequest = messageId;
+    return {
+      text: "Удалить все личные правила и их черновик? Базовая инструкция продолжит действовать.",
+      rows: [[{ text: "Удалить", data: "ci:rule:clearConfirmed:" + messageId }, { text: "Отмена", data: "ci:rule:keep:" + messageId }]],
+    };
+  }
+  if (edit.kind === "clearConfirmed" || edit.kind === "keep") {
+    if (state.clearRequest !== edit.messageId) return { text: "Этот запрос уже закрыт. Открой «Мои правила», чтобы увидеть текущий список." };
+    delete state.clearRequest;
+    if (edit.kind === "keep") return { text: "Личные правила сохранены." };
+    state.rules = [];
+    delete state.draft;
+    return { text: "Личные правила очищены." };
   }
   if (edit.kind === "remove") {
     if (!state.rules.some(r => r.id === edit.id)) return { text: "Такого правила нет. Список можно посмотреть через «Мои правила»." };
     state.rules = state.rules.filter(r => r.id !== edit.id);
+    delete state.clearRequest;
     if (state.draft?.replace === edit.id) delete state.draft;
     return { text: "Убрал правило №" + edit.id + "." };
   }
@@ -56,6 +81,7 @@ export async function applyTesterEdit(
     const text = (await propose(edit.feedback, old?.text))?.trim();
     if (!text || text.length > maxLength) return { text: "Пока неясно, что именно изменить. Напиши «Правка: …» и добавь пример желаемого ответа." };
     state.draft = { messageId, text, replace: edit.replace };
+    delete state.clearRequest;
     return {
       text: (old ? "Новая редакция правила №" + old.id : "Предлагаю такое правило") + "\n\n" + text,
       rows: [[{ text: "Применить", data: "ci:rule:accept:" + messageId }, { text: "Отмена", data: "ci:rule:cancel:" + messageId }]],
@@ -64,6 +90,7 @@ export async function applyTesterEdit(
   const draft = state.draft;
   if (!draft || draft.messageId !== edit.messageId) return { text: "Этот черновик уже закрыт." };
   delete state.draft;
+  delete state.clearRequest;
   if (edit.kind === "cancel") return { text: "Черновик отменён." };
   const duplicate = state.rules.find(r => r.id !== draft.replace && r.text === draft.text);
   if (duplicate) return { text: "Такая формулировка уже есть в правиле №" + duplicate.id + "." };
