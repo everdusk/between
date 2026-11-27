@@ -24,16 +24,20 @@ export const practiceSearchTool = {
   },
 };
 
+export class PracticeSearchHttpError extends Error {
+  constructor(readonly status: number) { super("practice search HTTP error"); }
+}
+
 export async function searchPracticeCards(base: string, apiKey: string, kb: string, query: string, signal: AbortSignal, request: typeof fetch): Promise<PracticeCard[]> {
   const response = await request(base + "/knowledge-bases/" + encodeURIComponent(kb) + "/search", {
     method: "POST", cache: "no-store",
     headers: { Authorization: "Bearer " + apiKey, "Content-Type": "application/json" },
     body: JSON.stringify({ query, max_results: 3, rerank: false }),
-    signal: AbortSignal.any([signal, AbortSignal.timeout(6000)]),
+    signal,
   });
   if (!response.ok) {
     await response.body?.cancel();
-    throw new Error("practice search unavailable");
+    throw new PracticeSearchHttpError(response.status);
   }
   const data = await response.json();
   const cards: PracticeCard[] = [];
