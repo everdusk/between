@@ -189,21 +189,25 @@ export function explicitNote(text: string) {
   return match?.[1].trim() ?? "";
 }
 
+export function companionEnvelope(raw: string) {
+  const textBlock = raw
+    .trim()
+    .match(/^\x60{3}(?:json)?\s*([\s\S]*?)\s*\x60{3}$/i);
+  const parsed = JSON.parse(textBlock?.[1] ?? raw);
+  // AI Tunnel can wrap the final JSON after a server-side file search.
+  return (
+    parsed?.reply === undefined && typeof parsed?.answer === "string"
+      ? JSON.parse(parsed.answer)
+      : parsed);
+}
+
 export function readCompanionReply(
   raw: string,
   text: string,
   context: ReturnType<typeof companionContext>,
   noteSource = explicitNote(text) || text,
 ) {
-  const textBlock = raw
-    .trim()
-    .match(/^\x60{3}(?:json)?\s*([\s\S]*?)\s*\x60{3}$/i);
-  const parsed = JSON.parse(textBlock?.[1] ?? raw);
-  // AI Tunnel can wrap the final JSON after a server-side file search.
-  const data =
-    parsed?.reply === undefined && typeof parsed?.answer === "string"
-      ? JSON.parse(parsed.answer)
-      : parsed;
+  const data = companionEnvelope(raw);
   if (typeof data?.reply !== "string" || !data.reply.trim())
     throw new Error("empty companion reply");
   const notes: CompanionNote[] = [];
@@ -240,6 +244,7 @@ export function readCompanionReply(
   return {
     reply: clean(data.reply, 3100),
     usedCards: data.usedCards as unknown,
+    noCardReason: data.noCardReason as unknown,
     notes,
     followUp: clean(data.followUp, 250),
     gender:

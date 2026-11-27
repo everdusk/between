@@ -158,10 +158,47 @@ test("an unavailable index still allows a grounded local source or a candid empt
       assert.equal(failed, "failed");
       assert.match(practiceFooter(["self-judgment"], cards, failed), /Самокритика/);
       assert.match(practiceFooter(["unknown"], cards, failed), /поиск недоступен/);
-      assert.equal(practiceFooter([], cards, 2), "Карточки · из базы получено 2, ответ без карточек");
-      assert.match(practiceFooter(undefined, cards, "skipped"), /не подтверждён/);
+      assert.match(practiceFooter([], cards, 2), /бот не указал источник/);
+      assert.match(practiceFooter(undefined, cards, "skipped"), /бот не указал источник/);
     },
   });
+});
+
+test("the pilot corrects an unexplained empty attribution once without re-searching or altering diary writes", async () => {
+  const original = { reply: "Давай подумаем.", usedCards: [], notes: [{ detail: "Первая заметка" }], followUp: "Как прошла встреча?" };
+  for (const outcome of ["source", "support", "invalid", "timeout"]) {
+    let searches = 0, calls = 0;
+    const answer = await askCompanion({
+      apiKey: "test", base: "https://example.test", knowledgeBaseId: "kb_test", context: {},
+      message: "У всех вышло, а у меня нет",
+      read: (raw, cards, status) => {
+        const result = JSON.parse(raw);
+        return { ...result, footer: practiceFooter(result.usedCards, cards, status, result.noCardReason) };
+      },
+      request: async (url, init) => {
+        if (String(url).endsWith("/search")) {
+          searches++;
+          return Response.json({data:[{results:["one","two","three"].map(id => ({path:id+".md",text:id+" — Карточка "+id}))}]});
+        }
+        calls++;
+        const body = JSON.parse(String(init?.body));
+        assert.match(body.messages[0].content, /Доступные id карточек/);
+        if (calls === 2 && outcome === "timeout") throw new Error("timeout");
+        const revision = outcome === "support"
+          ? {reply: original.reply, usedCards: [], noCardReason: "support"}
+          : {reply: "Что ты тогда подумала о себе?", usedCards: [outcome === "source" ? "two" : "invented"], notes: [], followUp: ""};
+        return Response.json({choices:[{message:{content:JSON.stringify(calls === 1 ? original : revision)}}]});
+      },
+    });
+    assert.equal(calls, 2);
+    assert.equal(searches, 1);
+    assert.deepEqual(answer.notes, original.notes);
+    assert.equal(answer.followUp, original.followUp);
+    assert.match(answer.footer, /из базы получено 3/);
+    if (outcome === "source") assert.match(answer.footer, /Карточка two/);
+    else if (outcome === "support") assert.match(answer.footer, /поддержка без отдельного приёма/);
+    else { assert.match(answer.footer, /бот не указал источник/); assert.equal(answer.reply, original.reply); }
+  }
 });
 
 test("adds only the retrieved guidance to the model prompt and leaves diary context in user data", async () => {

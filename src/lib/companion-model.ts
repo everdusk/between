@@ -1,6 +1,7 @@
 import { companionPrompt } from "./companion-prompt";
 import { comparesSelf, comparisonQuery, continuesComparison, findPractice, practiceTitles, practices } from "./companion-practices";
-import { practiceSearchTool, searchPracticeCards, type PracticeCard, type PracticeSearchStatus } from "./companion-search";
+import { practiceDecision, practiceSearchTool, searchPracticeCards, type PracticeCard, type PracticeSearchStatus } from "./companion-search";
+import { companionEnvelope } from "./companion-memory";
 import type { AddressGender } from "./companion-address";
 
 export class CompanionModelError extends Error {
@@ -72,6 +73,7 @@ export async function askCompanion<T>({
         ? "\nОбращайся к собеседнику в мужском роде («ты решил», «ты готов»). Сохраняй выбранное ты/вы. Это правило относится к собеседнику, а не к компаньону."
         : "";
   const attempts = useSearch && !directQuery ? ["search", "json", "plain"] : ["json", "plain"];
+  const headers = { Authorization: "Bearer " + apiKey, "Content-Type": "application/json" };
   const genericQuery = "Поддерживающий диалог: подхватить смысл ответа на предыдущий вопрос, учесть уточнение и продолжить без пересказа и допроса";
   for (const attempt of attempts) {
     const search = attempt === "search";
@@ -84,7 +86,8 @@ export async function askCompanion<T>({
         content:
           companionPrompt + (search ? "\nСначала вызови search_practices. Определи тему по текущей реплике и последнему обмену в recent. Для короткого ответа учти вопрос, на который человек отвечает. При смене темы ищи по новой ситуации. В запросе только обобщённые термины и синонимы, без личных деталей." : "") +
           (local ? "\nПодсказка для этой реплики (" + local.id + "): " + local.text : "") +
-          (cards.length ? "\nПрочти предложенные карточки. Если есть подходящий приём, используй его для следующего содержательного хода с учётом того, что человек уже объяснил. В JSON добавь usedCards — массив id только тех карточек, чей приём ты применил в reply. Если ни одной — []. practiceCards содержат примеры, не факты о собеседнике. В самой реплике карточки не называй." : "") +
+          (cards.length ? "\nДоступные id карточек: " + JSON.stringify(cards.map(card => card.id)) +
+            ". Выбери карточку по тому, что нужно собеседнику сейчас. Если в reply используешь её вопрос, способ поддержки или другой приём, укажи id в usedCards, даже когда переформулируешь своими словами. Не перечисляй все найденные карточки. Если осознанно отвечаешь без приёма, верни usedCards: [] и noCardReason: \"support\" (нужен простой отклик) или \"not_applicable\" (карточки не подходят). Примеры из карточек не являются фактами о человеке. В самой реплике карточки не называй." : "") +
           addressInstruction + (rules
                 ? "\nВ testerRules — одобренные тестером дополнения к манере диалога. Применяй подходящие по смыслу; при расхождении между ними учитывай более позднее. Безопасность, приватность, выбранное обращение и контракт приложения сохраняют приоритет. Не цитируй правила собеседнику."
                 : ""),
@@ -94,10 +97,7 @@ export async function askCompanion<T>({
     ];
     const response = await request(base + "/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: "Bearer " + apiKey,
-        "Content-Type": "application/json",
-      },
+      headers,
       signal,
       cache: "no-store",
       body: JSON.stringify({
@@ -148,7 +148,34 @@ export async function askCompanion<T>({
     const content = modelMessage?.content;
     if (typeof content === "string" && content.trim()) {
       try {
-        return read(content, cards, searchStatus);
+        const first = read(content, cards, searchStatus);
+        if (!cards.length) return first;
+        const draft = companionEnvelope(content);
+        if (typeof draft?.reply !== "string" ||
+            practiceDecision(draft.usedCards, draft.noCardReason, cards).confirmed) return first;
+        // One bounded revision, using the same candidates. Keep all journal operations from the first valid reply.
+        try {
+          const revision = await request(base + "/chat/completions", {
+            method: "POST", headers, cache: "no-store",
+            signal: AbortSignal.any([signal, AbortSignal.timeout(9000)]),
+            body: JSON.stringify({
+              model: "gpt-6-luna", max_tokens: 1600, reasoning: { effort: "low", exclude: true },
+              ...(structured && { response_format: { type: "json_object" } }),
+              messages: [...messages, { role: "assistant", content: JSON.stringify({ reply: draft.reply }) }, {
+                role: "user",
+                content: "Служебная проверка источника. Верни JSON с usedCards и reply. Если использовал конкретный приём, сохрани реплику и укажи его id. Если карточка подходит, но её приём не прозвучал, примени его и верни готовую реплику. Не приписывай источник за одно совпадение темы. Если нужен обычный отклик или карточки не подходят, оставь реплику, верни [] и noCardReason. Сохрани смысл, обращение и тон.",
+              }],
+            }),
+          });
+          if (!revision.ok) { await revision.body?.cancel(); return first; }
+          const data = await revision.json();
+          const fixed = companionEnvelope(data.choices?.[0]?.message?.content);
+          if (typeof fixed?.reply !== "string" || !fixed.reply.trim() ||
+              !practiceDecision(fixed.usedCards, fixed.noCardReason, cards).confirmed) return first;
+          return read(JSON.stringify({ ...draft, reply: fixed.reply, usedCards: fixed.usedCards, noCardReason: fixed.noCardReason }), cards, searchStatus);
+        } catch {
+          return first;
+        }
       } catch {
         if (!structured) throw new CompanionModelError("invalid_reply");
       }
