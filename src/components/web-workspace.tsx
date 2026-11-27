@@ -25,6 +25,7 @@ export const sections = {
 export type SectionId = keyof typeof sections;
 
 export function WebWorkspace({
+  inMessenger,
   homeHref,
   section,
   onSection,
@@ -37,6 +38,7 @@ export function WebWorkspace({
   hideReflection,
   guestBanner,
 }: {
+  inMessenger: boolean;
   guestBanner?: ReactNode;
   homeHref?: string;
   section: SectionId;
@@ -74,6 +76,7 @@ export function WebWorkspace({
   const ids = (Object.keys(sections) as SectionId[]).filter(
     (id) => id !== "sessions" || !personal,
   );
+  const navIds = ids.filter(id => !(hideReflection && id === "reflection"));
   function navigate(id: SectionId) {
     onSection(id);
     main.current?.scrollTo({ top: 0 });
@@ -99,7 +102,7 @@ export function WebWorkspace({
       </header>
       {!blocked && (
         <nav className="desk-nav" aria-label={t("sections")}>
-          {ids.filter(id => !(hideReflection && id === "reflection")).map((id) => {
+          {navIds.map((id) => {
             const restricted = guestBanner && id !== "week" && id !== "journal";
             const Icon = restricted ? LockKeyhole : sections[id][0];
             return (
@@ -124,7 +127,7 @@ export function WebWorkspace({
               {guestBanner}
               {ids.filter(id => !guestBanner || id === "week" || id === "journal").map((id) => (
                 <div key={id} className="desk-section" hidden={id !== section}>
-                  {section === id && id !== "journal" && <h1 className="mb-5 font-display text-2xl sm:text-3xl">
+                  {section === id && id !== "journal" && <h1 className={inMessenger && navIds.includes(id) ? "sr-only" : "mb-5 font-display text-2xl sm:text-3xl"}>
                     {label(id)}
                   </h1>}
                   {(section === id ||
