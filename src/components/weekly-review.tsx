@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
+import { BookOpen, Check, ChevronDown } from "lucide-react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { FieldSelect } from "./ui/field-select";
 import { useI18n } from "./locale-provider";
-import { formatDayLabel, parseDateKey, weekKey } from "@/lib/dates";
+import { formatDayLabel, formatTime, parseDateKey, weekKey } from "@/lib/dates";
+import { feelingFill } from "@/lib/spectrum";
 import { requestBrief } from "@/lib/journal-api";
 import { entriesForTheme, modelRequestStamp, visibleTopic } from "@/lib/themes";
 import {
-  checkInTopic,
   readReview,
   reviewFacts,
   type ReviewEvent,
@@ -36,6 +36,52 @@ function Sources({ notes }: { notes: JournalEntry[] }) {
       )}
     </details>
   ));
+}
+
+function WeekObservation({ text, notes }: { text: string; notes: JournalEntry[] }) {
+  const { count, locale, feeling } = useI18n();
+  const moods = [...new Set(notes.flatMap(note => note.feelings))];
+  return (
+    <details className="group py-1">
+      <summary className="flex cursor-pointer list-none items-start gap-3 rounded-xl px-2 py-3 text-start focus-visible:ring-4 focus-visible:ring-ring/25 [&::-webkit-details-marker]:hidden">
+        <span className="min-w-0 flex-1">
+          <span className="block leading-relaxed">{text}</span>
+          <span className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            {moods.length ? (
+              <span className="inline-flex gap-0.5" title={moods.map(feeling).join(", ")}>
+                {moods.map(f => (
+                  <span key={f} aria-hidden className="h-2 w-1.5 rounded-full" style={{ backgroundColor: feelingFill(f) }} />
+                ))}
+              </span>
+            ) : <BookOpen aria-hidden className="size-3.5" />}
+            {count(notes.length, "note")}
+          </span>
+        </span>
+        <ChevronDown aria-hidden className="mt-1 size-4 shrink-0 text-muted-foreground motion-safe:transition-transform group-open:rotate-180" />
+      </summary>
+      <ul className="mx-2 mb-3 space-y-4 rounded-2xl bg-foreground/[0.04] p-4">
+        {notes.map(note => (
+          <li key={note.id} className="min-w-0 space-y-1.5">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+              <span>{formatDayLabel(note.date, locale)} · {formatTime(note.createdAt, locale)}</span>
+              {note.feelings.map(f => (
+                <span key={f} className="inline-flex items-center gap-1.5">
+                  <span aria-hidden className="size-2 rounded-full" style={{ backgroundColor: feelingFill(f) }} />
+                  {feeling(f)}
+                </span>
+              ))}
+            </div>
+            <p className="whitespace-pre-wrap text-sm leading-relaxed">{note.body}</p>
+            {(note.reflection?.answer || note.reflection?.insight) && (
+              <p className="diary-quote whitespace-pre-wrap text-sm">
+                {[note.reflection.answer, note.reflection.insight].filter(Boolean).join("\n")}
+              </p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
 }
 
 function Answer({
@@ -178,23 +224,14 @@ export function WeeklyReview({
   saveSummary,
 }: ReviewProps) {
   const { locale, t } = useI18n();
-  const answeredToday = themes.some((theme) =>
-    theme.review?.some(
-      (e) =>
-        (e.kind === "still" || e.kind === "resolved") &&
-        e.at.slice(0, 10) === today,
-    ),
-  );
-  const due = live && !answeredToday ? checkInTopic(themes, today) : undefined;
-  const facts = reviewFacts(entries, current, themes, links, due);
+  const facts = reviewFacts(entries, current, themes, links);
   const body = JSON.stringify(facts);
   const stamp = modelRequestStamp("review1", period + locale, 0, body);
   const [reply, setReply] = useState<{ stamp: string; text: string } | null>(
     null,
   );
-  const [closing, setClosing] = useState("");
   const [retry, setRetry] = useState(0);
-  const hasFacts = facts.notes.length > 0 || Boolean(due);
+  const hasFacts = facts.notes.length > 0;
   useEffect(() => {
     if (!hasFacts || saved?.stamp === stamp) return;
     let alive = true;
@@ -212,7 +249,7 @@ export function WeeklyReview({
         const parsed = readReview(text, JSON.parse(body));
         if (
           parsed &&
-          (parsed.lines.length || parsed.changes.length || parsed.question)
+          (parsed.lines.length || parsed.changes.length)
         ) {
           saveSummary(period, JSON.stringify(parsed), stamp, true);
         }
@@ -306,19 +343,18 @@ export function WeeklyReview({
       )
       .map((event) => ({ theme, event })),
   );
-  const checkQuestion =
-    report?.question || (due ? t("reviewStill", { topic: due.title }) : "");
   return (
     <>
       {current.some((e) => e.body.trim()) && (
         <section className={section}>
           <h3 className="diary-card-title">{t("reviewWeek")}</h3>
-          {report?.lines.map((row) => (
-            <div key={row.entries.join() + row.text}>
-              <p>{row.text}</p>
-              <Sources notes={notes(row.entries)} />
+          {report && report.lines.length > 0 && (
+            <div className="divide-y divide-[color:var(--glass-border)] border-t border-[color:var(--glass-border)]">
+              {report.lines.map(row => (
+                <WeekObservation key={row.entries.join() + row.text} text={row.text} notes={notes(row.entries)} />
+              ))}
             </div>
-          ))}
+          )}
           {!settled && <p role="status">{t("formulating")}</p>}
           {settled && !report?.lines.length && (
             <Button variant="ghost" onClick={() => setRetry((n) => n + 1)}>
@@ -383,50 +419,6 @@ export function WeeklyReview({
           <Sources notes={notes(event.entryId ? [event.entryId] : [])} />
         </section>
       ))}
-      {due && (
-        <section className={section}>
-          <h3 className="diary-card-title">{t("reviewCheck")}</h3>
-          <p>{checkQuestion}</p>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                save(due.id, {
-                  kind: "still",
-                  id: crypto.randomUUID(),
-                  at: new Date().toISOString(),
-                })
-              }
-            >
-              {t("answerYes")}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              aria-pressed={closing === due.id}
-              onClick={() => setClosing(due.id)}
-            >
-              {t("answerNo")}
-            </Button>
-          </div>
-          {closing === due.id && (
-            <Answer
-              key={due.id}
-              question={t("reviewWhatChanged")}
-              save={(text) =>
-                save(due.id, {
-                  id: crypto.randomUUID(),
-                  kind: "resolved",
-                  at: new Date().toISOString(),
-                  question: checkQuestion,
-                  text,
-                })
-              }
-            />
-          )}
-        </section>
-      )}
     </>
   );
 }
