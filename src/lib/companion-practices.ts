@@ -11,7 +11,40 @@ const sources = {
     "https://beckinstitute.org/cbt-resources/resources-for-professionals-and-students/cbtresources/",
 };
 
+export const practiceTitles: Record<string, string> = {
+  repair: "Когда собеседник поправляет тебя",
+  listen: "Когда хочется выговориться",
+  wording: "Подобрать слова для разговора",
+  return: "Возвращение к важному разговору или решению",
+  "old-help": "Трудность вернулась. Что раньше помогло?",
+  judgment: "Страх чужой оценки. Что обо мне подумают?",
+  hurt: "Человека уже задели, высмеяли или унизили",
+  anticipation: "Ожидание неприятной реакции, которой пока не было",
+  "self-judgment": "Самокритика и жёсткие слова о себе",
+  "unclear-feeling": "Сильное чувство с неясной причиной",
+  "two-wishes": "Противоречивые желания",
+  boundary: "Трудно отказать или обозначить границу",
+  "ask-for-help": "Хочется разделить нагрузку",
+  "small-change": "Заметить изменение и понять, что помогло",
+  rumination: "Мысль возвращается снова и снова",
+  "practical-step": "Выбрать первый посильный шаг",
+};
+
 type Practice = { id: string; source: string; cue: RegExp; guidance: string };
+
+const comparisonCues = [
+  /(?:сравн(?:ива|ева)[а-я]* с[еи]бя с|сравнение себя с|сравниваю с (?:другими|ровесниками|подругами))/u,
+  /у (?:всех|остальных|других|них|нее|него) (?:уже |все )?(?:вышло|получилось|получается)[, .—–-]*(?:а |но )?(?:у меня (?:нет|не )|я (?:нет|не могу|не смог))/u,
+  /(?:они|остальные|другие|ровесники|все) (?:уже |намного |гораздо )?(?:успешнее|лучше|быстрее|умнее) меня/u,
+  /(?:я (?:во всем |гораздо )?(?:хуже (?:всех|других|остальных)|отстаю от (?:них|всех|ровесников))|(?:все|ровесники) уже [^.!?]{2,45},? а я (?:все еще|до сих пор))/u,
+];
+
+export function comparesSelf(message: string) {
+  const text = message.toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ");
+  return comparisonCues.some(cue => cue.test(text));
+}
+
+export const comparisonQuery = "Сравнение себя с другими, чужие успехи, чувство отставания, самокритика: у других получилось, у меня пока нет. Как узнать, что это значит для человека";
 
 // Specific conversational requests precede topic cues if both match.
 export const practices: Practice[] = [
@@ -76,7 +109,7 @@ export const practices: Practice[] = [
     source: sources.discovery,
     cue: /я (?:никчемн|неудачни|бестолков|ни на что не)|чувствую себя .*клоун|куда мне|руки не оттуда/u,
     guidance:
-      "Вернись от ярлыка к эпизоду. Если уже известно, что произошло, исследуй, где в этой истории человек начал так о себе говорить. Не требуй перечислить достоинства. «У всех вышло, а у меня нет» → «В какой момент стало особенно обидно?»",
+      "«У всех вышло, а у меня нет» может быть сравнением конкретных результатов. Не додумывай зависть или вывод о собственной ценности. Если ещё неясно, что задело: «А чего тебе самой хотелось в этой истории?» Если уже говорит «я тоже хотела эту работу», подхвати именно это. Когда человек резко судит себя, вернись от ярлыка к эпизоду. Не требуй перечислять достоинства.",
   },
   {
     id: "unclear-feeling",
@@ -141,7 +174,8 @@ export function findPractice(message: string, previousReply = "") {
     )
   )
     return;
-  const direct = practices.find((practice) => practice.cue.test(text));
+  const direct = practices.find(practice => practice.cue.test(text) ||
+    (practice.id === "self-judgment" && comparesSelf(text)));
   if (direct) return direct;
   // A short answer may only identify the person referred to by the previous question.
   if (

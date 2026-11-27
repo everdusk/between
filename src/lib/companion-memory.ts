@@ -239,6 +239,7 @@ export function readCompanionReply(
   }
   return {
     reply: clean(data.reply, 3100),
+    usedCards: data.usedCards as unknown,
     notes,
     followUp: clean(data.followUp, 250),
     gender:
