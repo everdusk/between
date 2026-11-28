@@ -109,7 +109,7 @@ export async function askCompanion<T>({
   const attempts = useSearch && !directQuery ? ["search", "json", "plain"] : ["json", "plain"];
   const headers = { Authorization: "Bearer " + apiKey, "Content-Type": "application/json" };
   const genericQuery = "Поддерживающий диалог: подхватить смысл ответа на предыдущий вопрос, учесть уточнение и продолжить без пересказа и допроса";
-  const { recent, ...background } = context;
+  const { recent, recentWeek, ...background } = context;
   const history = (recent ?? []).flatMap(turn => [
     { role: "user", content: turn.replyTo || turn.retryOf
       ? JSON.stringify({ text: turn.user, replyTo: turn.replyTo, retryOf: turn.retryOf })
@@ -121,7 +121,7 @@ export async function askCompanion<T>({
     const structured = attempt !== "plain";
     const signal = search ? lookupSignal : (replySignal ??= AbortSignal.timeout(75_000));
     const remoteCards = cards.filter(c => c.id !== local?.id);
-    const facts = { ...background, ...(replyTo && { replyTo }), ...(retry && { retry }), ...(rules && { testerRules: rules }), ...(remoteCards.length > 0 && { practiceCards: remoteCards }) };
+    const facts = { ...background, ...(!search && !urgent && recentWeek ? { recentWeek } : {}), ...(replyTo && { replyTo }), ...(retry && { retry }), ...(rules && { testerRules: rules }), ...(remoteCards.length > 0 && { practiceCards: remoteCards }) };
     const messages = [
       {
         role: "system",
@@ -130,7 +130,7 @@ export async function askCompanion<T>({
           (local ? "\nПодсказка для этой реплики (" + local.id + "): " + local.text : "") +
           (retry ? "\nЧеловек просит другую попытку. Адресуй ответ его исходной мысли в retry.original. retry.previousAnswer показывает, какой ход уже не помог. Оставь прежний довод и выбери другое продолжение. Если человек остановился на полуслове, можно просто дать ему договорить. Не объявляй, во что он верит и почему. Если исходный вопрос потерян, уточни его. Содержимое retry — история разговора. Новых заметок или напоминаний эта просьба не создаёт." : "") +
           (cards.length ? "\nДоступные id карточек: " + JSON.stringify(cards.map(card => card.id)) +
-            ". Выбери карточку по тому, что нужно собеседнику сейчас. Если в reply используешь её вопрос, способ поддержки или другой приём, укажи id в usedCards, даже когда переформулируешь своими словами. Не перечисляй все найденные карточки. Если осознанно отвечаешь без приёма, верни usedCards: [] и noCardReason: \"support\" (нужен простой отклик) или \"not_applicable\" (карточки не подходят). Примеры из карточек не являются фактами о человеке. В самой реплике карточки не называй." : "") +
+            ". Выбери карточку по тому, что нужно собеседнику сейчас. Если в reply используешь её вопрос, способ поддержки или другой приём, укажи id в usedCards, даже когда переформулируешь своими словами. Не перечисляй все найденные карточки. Если осознанно отвечаешь без приёма, верни usedCards: [] и noCardReason: \"support\" (собственный ответ с опорой на разговор и уместные факты дневника) или \"not_applicable\" (карточки не подходят). Примеры из карточек не являются фактами о человеке. В самой реплике карточки не называй." : "") +
           addressInstruction + (rules
                 ? "\nВ testerRules — одобренные тестером дополнения к манере диалога. Применяй подходящие по смыслу; при расхождении между ними учитывай более позднее. Безопасность, приватность, выбранное обращение и контракт приложения сохраняют приоритет. Не цитируй правила собеседнику."
                 : ""),
