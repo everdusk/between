@@ -178,7 +178,7 @@ export async function handleCompanion(input: {
                 },
               }),
               diary: context,
-              recentMoodCheckin: recentMoodCheckin(current.store, state, at, text),
+              recentMoodCheckin: recentMoodCheckin(current.store, state, at),
               recent: state.recent,
               ...(savePreviousMessage && { savePreviousMessage: true, saveSource }),
               lastScheduledQuestion: asked,

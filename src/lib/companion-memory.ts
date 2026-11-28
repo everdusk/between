@@ -6,6 +6,7 @@ import type { Intake } from "./companion-intake";
 import type { TesterInstructions } from "./companion-training";
 import { hasAddressEvidence, type AddressGender } from "./companion-address";
 import { cleanGeneratedReply, companionDisplayText } from "./companion-reply";
+import { moodCheckinReply } from "./mood-checkin";
 
 type Turn = { user: string; reply: string; topicId?: string | null; messageId?: number; retryOf?: string; replyTo?: { author: "assistant" | "user"; text: string } };
 type ConversationNote = Pick<JournalEntry, "id" | "updatedAt">;
@@ -32,33 +33,20 @@ export function recentCompanionNotes(
     : [];
 }
 
-// After a pause, only carry the check-in forward when the speaker names that feeling again.
-const moodSelfReports: Record<Feeling, RegExp> = {
-  "стыд": /^(?:мне стыдно|я стыжусь)/iu,
-  "тревожно": /^(?:мне тревожно|я тревожусь)/iu,
-  "спокойно": /^мне спокойно/iu,
-  "злость": /^я злюсь/iu,
-  "грусть": /^(?:мне грустно|я грущу)/iu,
-  "радость": /^я (?:радуюсь|рада|рад)(?=$|[\s,.!?])/iu,
-  "усталость": /^я устала?(?=$|[\s,.!?])/iu,
-  "напряжение": /^я (?:в напряжении|напряж[её]н(?:а)?)(?=$|[\s,.!?])/iu,
-  "пусто": /^мне пусто/iu,
-  "тяжело": /^мне тяжело/iu,
-};
-
-export function recentMoodCheckin(store: TherapyStore, state: CompanionState, at: string, message = "") {
+/** The first turn after a check-in can be a short answer to the mood prompt. */
+export function recentMoodCheckin(store: TherapyStore, state: CompanionState, at: string) {
   const now = Date.parse(at);
-  const since = Math.max(now - 4 * 60 * 60_000, Date.parse(state.conversation?.lastTurnAt ?? "") || 0);
+  const since = Math.max(now - 30 * 60_000, Date.parse(state.conversation?.lastTurnAt ?? "") || 0);
   let latest: JournalEntry | undefined;
   for (const entry of store.entries) {
     if (entry.source !== "checkin" || !entry.feelings.length || store.droppedEntryIds?.includes(entry.id)) continue;
     const updated = Date.parse(entry.updatedAt);
     if (updated > since && updated <= now && (!latest || updated > Date.parse(latest.updatedAt))) latest = entry;
   }
-  if (!latest) return;
-  const feeling = latest.feelings[0];
-  if (now - Date.parse(latest.updatedAt) < 30 * 60_000 || moodSelfReports[feeling]?.test(message.trim()))
-    return feeling;
+  const feeling = latest?.feelings[0];
+  if (!feeling) return;
+  // The callback edits the Telegram poll, so its reply is absent from chat-turn history.
+  return { feeling, botReplyRu: feeling === "тяжело" ? undefined : moodCheckinReply("ru", feeling) };
 }
 
 function words(text: string) {

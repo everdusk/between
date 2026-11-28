@@ -95,24 +95,20 @@ test("a fresh mood selection gives context only to the next nearby turn", () => 
   const store = applyCompanionNotes(emptyStore(), "Запиши: встреча", [], 42, date, at);
   store.entries[0] = { ...store.entries[0], source: "checkin", feelings: ["напряжение"], body: "" };
   const next = "2026-11-25T10:05:00Z";
-  assert.equal(recentMoodCheckin(store, emptyCompanion(), next), "напряжение");
+  assert.equal(recentMoodCheckin(store, emptyCompanion(), next)?.feeling, "напряжение");
   assert.equal(recentMoodCheckin(store, emptyCompanion(), "2026-11-25T15:00:00Z"), undefined);
   assert.equal(recentMoodCheckin(store, {
     ...emptyCompanion(), conversation: { lastTurnAt: next, notes: [] },
   }, next), undefined);
 });
 
-test("a delayed explanation can resume a matching mood check-in once", () => {
+test("an older poll answered a minute ago supplies the actual check-in question", () => {
   const store = applyCompanionNotes(emptyStore(), "Запиши: отметка", [], 42, date, at);
-  store.entries[0] = { ...store.entries[0], source: "checkin", feelings: ["стыд"], body: "" };
-  const later = "2026-11-25T12:01:00Z";
-  const explanation = "мне стыдно что я опять проспала часов 12";
-  assert.equal(recentMoodCheckin(store, emptyCompanion(), later, explanation), "стыд");
-  for (const other of ["Мне не стыдно", "Мне тревожно за подругу", "Встретились за обедом"])
-    assert.equal(recentMoodCheckin(store, emptyCompanion(), later, other), undefined);
-  assert.equal(recentMoodCheckin(store, emptyCompanion(), "2026-11-25T15:00:00Z", explanation), undefined);
-  const state = { ...emptyCompanion(), conversation: { lastTurnAt: later, notes: [] } };
-  assert.equal(recentMoodCheckin(store, state, later, explanation), undefined);
+  store.entries[0] = { ...store.entries[0], source: "checkin", feelings: ["стыд"], body: "",
+    createdAt: "2026-11-25T14:00:00Z", updatedAt: "2026-11-25T16:00:00Z" };
+  const context = recentMoodCheckin(store, emptyCompanion(), "2026-11-25T16:01:00Z");
+  assert.equal(context?.feeling, "стыд");
+  assert.match(context?.botReplyRu ?? "", /Хочется рассказать, что случилось\?/);
 });
 
 test("reads the JSON envelope returned by a live Luna file search and validates proposed notes", () => {
