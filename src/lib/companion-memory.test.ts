@@ -102,6 +102,19 @@ test("a fresh mood selection gives context only to the next nearby turn", () => 
   }, next), undefined);
 });
 
+test("a delayed explanation can resume a matching mood check-in once", () => {
+  const store = applyCompanionNotes(emptyStore(), "Запиши: отметка", [], 42, date, at);
+  store.entries[0] = { ...store.entries[0], source: "checkin", feelings: ["стыд"], body: "" };
+  const later = "2026-11-25T12:01:00Z";
+  const explanation = "мне стыдно что я опять проспала часов 12";
+  assert.equal(recentMoodCheckin(store, emptyCompanion(), later, explanation), "стыд");
+  for (const other of ["Мне не стыдно", "Мне тревожно за подругу", "Встретились за обедом"])
+    assert.equal(recentMoodCheckin(store, emptyCompanion(), later, other), undefined);
+  assert.equal(recentMoodCheckin(store, emptyCompanion(), "2026-11-25T15:00:00Z", explanation), undefined);
+  const state = { ...emptyCompanion(), conversation: { lastTurnAt: later, notes: [] } };
+  assert.equal(recentMoodCheckin(store, state, later, explanation), undefined);
+});
+
 test("reads the JSON envelope returned by a live Luna file search and validates proposed notes", () => {
   const inner = {
     reply: "Как всё прошло?",
