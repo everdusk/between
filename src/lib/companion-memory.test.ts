@@ -7,6 +7,7 @@ import {
   applyCompanionNotes,
   applyCompanionMerge,
   companionContext,
+  companionWeek,
   companionEntryPatch,
   emptyCompanion,
   readCompanionReply,
@@ -17,6 +18,44 @@ import {
 
 const at = "2026-11-25T10:00:00Z",
   date = "2026-11-25";
+
+test("ordinary support gets dated, bounded evidence even without matching words or a practice card", async () => {
+  const store = emptyStore();
+  const sample = applyCompanionNotes(store, "Запиши: заметка", [], 42, date, at).entries[0];
+  store.entries = [
+    { ...sample, id: "old", date: "2026-11-18", body: "Старая запись" },
+    { ...sample, id: "1", date: "2026-11-19", body: "", feelings: ["напряжение"] },
+    { ...sample, id: "2", date: "2026-11-22", body: "Готовила отчёт до полуночи", feelings: [] },
+    { ...sample, id: "3", date: "2026-11-24", body: "", feelings: ["радость"] },
+    { ...sample, id: "deleted", date, body: "Удалённая запись" },
+    { ...sample, id: "future", date: "2026-11-26", body: "Будущая запись" },
+  ];
+  store.droppedEntryIds = ["deleted"];
+  const recentWeek = companionWeek(store, date);
+  assert.deepEqual(recentWeek, { from: "2026-11-19", through: date, days: [
+    { date: "2026-11-24", feelings: ["радость"] }, { date: "2026-11-22", feelings: [] },
+    { date: "2026-11-19", feelings: ["напряжение"] },
+  ], excerpts: [{ date: "2026-11-22", text: "Готовила отчёт до полуночи" }] });
+  assert.equal(companionWeek(emptyStore(), date), undefined);
+  let calls = 0;
+  await askCompanion({
+    apiKey: "test", base: "https://example.test", knowledgeBaseId: "kb_test", context: { recentWeek },
+    message: "Проспала 12 часов. Стыдно.", read: raw => raw,
+    request: async (_, init) => {
+      calls++;
+      const body = JSON.parse(String(init?.body));
+      const facts = JSON.parse(body.messages[1].content);
+      if (body.tools) {
+        assert.equal(facts.recentWeek, undefined);
+        return Response.json({ choices: [{ message: { tool_calls: [{ function: { name: "search_practices",
+          arguments: JSON.stringify({ dialogueCard: "plain" }) } }] } }] });
+      }
+      assert.deepEqual(facts.recentWeek, recentWeek);
+      return Response.json({ choices: [{ message: { content: '{"reply":"test","usedCards":[],"noCardReason":"support"}' } }] });
+    },
+  });
+  assert.equal(calls, 2);
+});
 
 test("repairs duplicated noun endings in generated prose without editing diary evidence", () => {
   const text = "После сообщениящения я еле-еле успокоилась.";

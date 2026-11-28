@@ -7,6 +7,7 @@ import type { TesterInstructions } from "./companion-training";
 import { hasAddressEvidence, type AddressGender } from "./companion-address";
 import { cleanGeneratedReply, companionDisplayText } from "./companion-reply";
 import { moodCheckinReply } from "./mood-checkin";
+import { addDays } from "./dates";
 
 type Turn = { user: string; reply: string; topicId?: string | null; messageId?: number; retryOf?: string; replyTo?: { author: "assistant" | "user"; text: string } };
 type ConversationNote = Pick<JournalEntry, "id" | "updatedAt">;
@@ -47,6 +48,28 @@ export function recentMoodCheckin(store: TherapyStore, state: CompanionState, at
   if (!feeling) return;
   // The callback edits the Telegram poll, so its reply is absent from chat-turn history.
   return { feeling, botReplyRu: feeling === "тяжело" ? undefined : moodCheckinReply("ru", feeling) };
+}
+
+/** Dated evidence for the reply, including mood-only days that text retrieval misses. */
+export function companionWeek(store: TherapyStore, today: string) {
+  const firstDay = addDays(today, -6);
+  const deleted = new Set(store.droppedEntryIds);
+  const days = new Map<string, { feelings: Set<Feeling>; note?: JournalEntry }>();
+  for (const entry of store.entries) {
+    if (entry.date < firstDay || entry.date > today || deleted.has(entry.id)) continue;
+    if (!entry.feelings.length && !entry.body.trim()) continue;
+    const day = days.get(entry.date) ?? { feelings: new Set<Feeling>(), note: undefined };
+    for (const feeling of entry.feelings) day.feelings.add(feeling);
+    if (entry.body.trim() && (!day.note || entry.createdAt > day.note.createdAt)) day.note = entry;
+    days.set(entry.date, day);
+  }
+  if (!days.size) return;
+  const dated = [...days].sort(([a], [b]) => b.localeCompare(a));
+  return {
+    from: firstDay, through: today,
+    days: dated.map(([date, day]) => ({ date, feelings: [...day.feelings] })),
+    excerpts: dated.flatMap(([date, day]) => day.note ? [{ date, text: day.note.body.trim().slice(0, 220) }] : []).slice(0, 3),
+  };
 }
 
 function words(text: string) {
